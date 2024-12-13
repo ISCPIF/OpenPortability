@@ -38,7 +38,7 @@ supabase db reset
 In your terminal at the root of your local Chatbot UI repository, run:
 
 ```bash
-cp .env.local.example .env.local
+cp .example.env.local .env.local
 ```
 
 Get the required values by running:
