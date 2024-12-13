@@ -111,6 +111,20 @@ export async function POST(req: Request) {
         throw new Error(`Failed to update user BlueSky info: ${userUpdateError.message}`);
       }
 
+      // Mettre à jour la table sources avec le bluesky_id
+      const { error: sourcesUpdateError } = await supabase
+        .from('sources')
+        .update({
+          bluesky_id: blueskyData.did,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', userId);
+
+      if (sourcesUpdateError) {
+        console.error('Error updating sources BlueSky info:', sourcesUpdateError);
+        throw new Error(`Failed to update sources BlueSky info: ${sourcesUpdateError.message}`);
+      }
+
       // Check if user already has a BlueSky account
       const { data: existingAccount, error: fetchError } = await supabase
         .schema('next-auth')
