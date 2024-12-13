@@ -1,36 +1,96 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+### 1. Install Supabase & Run Locally
 
-## Getting Started
+#### 1. Install Docker
 
-First, run the development server:
+You will need to install Docker to run Supabase locally. You can download it [here](https://docs.docker.com/get-docker) for free.
+
+#### 2. Install Supabase CLI
+
+**MacOS/Linux**
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+brew install supabase/tap/supabase
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+**Windows**
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+scoop bucket add supabase https://github.com/supabase/scoop-bucket.git
+scoop install supabase
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+#### 3. Start Supabase
 
-## Learn More
+Dans le terminal du repo Git cloné, run les commandes suivantes :
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+supabase start
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+[OPTIONNEL]Pour reset la base de données:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+supabase db reset
+```
 
-## Deploy on Vercel
+#### 4. Environment Variables
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+In your terminal at the root of your local Chatbot UI repository, run:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+cp .env.local.example .env.local
+```
+
+Get the required values by running:
+
+```bash
+supabase status
+```
+
+On doit recuperer les valeurs suivants :
+- API URL = NEXT_PUBLIC_SUPABASE_URL
+- anon key = NEXT_PUBLIC_SUPABASE_ANON_KEY
+- service_role key = SUPABASE_SERVICE_ROLE_KEY
+
+
+### 2. Getting Started
+
+### 1. Creer une application Twitter sur : 
+``` https://developer.twitter.com/en/portal/dashboard ```
+
+- Selectionner la version de l'API Twitter : OAuth 2.0
+- Remplir les champs obligatoires 
+- Dans la rubrique Keys and Tokens : en bas de la page, il y a la "OAuth 2.0 Client ID and Client Secret", on veut recuperer les valeurs suivantes :
+    - TWITTER_CLIENT_ID = CLIENT_ID
+    - TWITTER_CLIENT_SECRET =  CLIENT_SECRET
+
+
+Pour les autres variables d'environnement :
+
+NEXTAUTH_URL= la URL de l'application qui doit etre externe pour permettre la connexion avec l'API Twitter 
+
+### 2. Lancer le tunnel pour obtenir l'URL de l'application
+
+Ensuite creer le tunnel pour obtenir l'URL de l'application :
+
+```bash
+cloudflared tunnel --url http://localhost:3000
+```
+
+Recuperer l'URL obtenue et l'ajouter a l'env variable `NEXTAUTH_URL` dans `.env.local`
+
+### 3. Se connecter au developper Portal de Twitter et copier l'url de l'application dans les champs suivants :
+
+User Authentification Settings :
+- Callback URI/ Redirect URL :
+```
+[URL TUNNEL]/api/auth/callback/twitter
+
+```
+
+- Website URL :
+```
+[URL TUNNEL]
+```
+
+### 4. L'application devrait etre accessible !
