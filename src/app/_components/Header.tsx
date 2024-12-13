@@ -2,7 +2,6 @@
 
 import { useSession, signIn, signOut } from "next-auth/react";
 import Link from 'next/link';
-import ActionProgressBar from './ActionProgressBar';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 
@@ -90,10 +89,6 @@ const Header = () => {
           </div>
         </div>
 
-        {/* Barre de progression
-        <div className="absolute bottom-0 left-0 right-0">
-          <ActionProgressBar />
-        </div> */}
       </div>
     </header>
   );

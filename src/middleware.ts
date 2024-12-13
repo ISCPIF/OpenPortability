@@ -11,11 +11,6 @@ export default auth(async (req) => {
     return NextResponse.redirect(new URL('/auth/signin', req.nextUrl))
   }
 
-  // Si on est sur /auth/bluesky, laisser passer
-  if (req.nextUrl.pathname === '/auth/bluesky') {
-    return NextResponse.next()
-  }
-
   // Not logged in: only allow auth pages
   if (!isLoggedIn && !isAuthPage) {
     return NextResponse.redirect(new URL('/auth/signin', req.nextUrl))

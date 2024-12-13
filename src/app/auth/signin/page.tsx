@@ -18,8 +18,8 @@ export default function SignIn() {
       console.log("✅ Session found, redirecting to /dashboard");
       router.replace("/dashboard");
     } else if (status === "authenticated") {
-      console.log("✅ Session found, redirecting to /auth/bluesky");
-      router.replace("/auth/bluesky");
+      console.log("✅ Session found, redirecting to /upload");
+      router.replace("/upload");
     } else {
       setIsLoading(false);
     }
@@ -64,16 +64,6 @@ export default function SignIn() {
                 </svg>
                 Continuer avec Twitter
               </button>
-
-              {/* Bouton Mock uniquement en développement */}
-              {process.env.NODE_ENV === 'development' && (
-                <button
-                  onClick={() => signIn("mock-twitter")}
-                  className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-all duration-200"
-                >
-                  🛠 Mock Login (Dev)
-                </button>
-              )}
             </div>
           </div>
         </motion.div>

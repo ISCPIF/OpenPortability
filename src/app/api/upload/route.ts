@@ -63,7 +63,7 @@ export async function POST(request: Request) {
   try {
     // Vérifier la session et le twitter_id
     const session = await auth();
-    console.log('Session:', session);
+    // console.log('Session:', session);
 
     if (!session?.user?.id) {
       console.log('Session validation failed:', { session });
@@ -81,7 +81,6 @@ export async function POST(request: Request) {
       );
     }
 
-    // S'assurer que l'utilisateur existe dans la table sources
     const { error: sourceError } = await supabase
       .from('sources')
       .upsert({
@@ -114,8 +113,8 @@ export async function POST(request: Request) {
     const followings = processedFiles.flatMap((f) => f?.data || []);
     
     console.log('[Upload Route] Processing files...');
-    console.log('Session -->', session);
-    console.log('following -->', followings);
+    // console.log('Session -->', session);
+    // console.log('following -->', followings);
 
     // D'abord insérer les targets (nécessaire pour la contrainte de clé étrangère)
     if (followings.length > 0) {
