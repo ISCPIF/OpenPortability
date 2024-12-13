@@ -22,12 +22,6 @@ export default function MatchedBlueSkyProfiles({
     <div className="space-y-4">
 
       <div className="flex items-center justify-between mb-6">
-        {/* <h3 className="text-sm font-medium text-white/80">
-          Correspondances BlueSky
-        </h3>
-        <span className="text-xs text-white/60">
-          {profiles.length} trouvé{profiles.length > 1 ? 's' : ''}
-        </span> */}
       </div>
 
       <div className="space-y-3">

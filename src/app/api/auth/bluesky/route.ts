@@ -18,14 +18,14 @@ const supabase = createClient(
 export async function POST(req: Request) {
   try {
     const session = await auth();
-    console.log('Session:', session);
+    // console.log('Session:', session);
     const { identifier, password } = await req.json();
 
-    console.log('Received request:', {
-      hasIdentifier: !!identifier,
-      hasPassword: !!password,
-      hasSession: !!session
-    });
+    // console.log('Received request:', {
+    //   hasIdentifier: !!identifier,
+    //   hasPassword: !!password,
+    //   hasSession: !!session
+    // });
 
     if (!session?.user?.id) {
       console.log('Session validation failed:', { session });
@@ -45,8 +45,8 @@ export async function POST(req: Request) {
 
     const userId = session.user.id;
     const twitterId = session.user.twitter_id;
-    console.log('Using user ID:', userId);
-    console.log('Using Twitter ID:', twitterId);
+    // console.log('Using user ID:', userId);
+    // console.log('Using Twitter ID:', twitterId);
 
     // Authenticate with BlueSky
     try {
@@ -67,12 +67,12 @@ export async function POST(req: Request) {
       }
 
       const blueskyData = await response.json();
-      console.log('BlueSky authentication successful:', {
-        did: blueskyData.did,
-        hasAccessJwt: !!blueskyData.accessJwt,
-        hasRefreshJwt: !!blueskyData.refreshJwt
-      });
-      console.log('BlueSky authentication data:', blueskyData);
+      // console.log('BlueSky authentication successful:', {
+      //   did: blueskyData.did,
+      //   hasAccessJwt: !!blueskyData.accessJwt,
+      //   hasRefreshJwt: !!blueskyData.refreshJwt
+      // });
+      // console.log('BlueSky authentication data:', blueskyData);
 
       // Récupérer les informations détaillées du profil BlueSky
       const profileResponse = await fetch(`https://bsky.social/xrpc/app.bsky.actor.getProfile?actor=${blueskyData.handle}`, {

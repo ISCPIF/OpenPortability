@@ -134,7 +134,7 @@ export default function DashboardPage() {
               <h2 className="text-xl font-semibold text-white mb-4">
                 Connectez votre compte BlueSky
               </h2>
-              <BlueSkyLogin />
+              <BlueSkyLogin onLoginComplete={() => window.location.reload()} />
             </div>
           </section>
         )}

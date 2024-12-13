@@ -81,20 +81,20 @@ export const authConfig = {
 
       // Si on est sur un callback d'authentification
       if (url.includes('/auth/callback')) {
-        console.log(" Auth callback detected, redirecting to /auth/bluesky")
-        return `${baseUrl}/auth/bluesky`
-      }
-
-      // Si on est sur /auth/bluesky
-      if (url.endsWith('/auth/bluesky')) {
-        console.log(" On bluesky page, redirecting to /upload")
+        console.log(" Auth callback detected, redirecting to /upload")
         return `${baseUrl}/upload`
       }
 
+      // // Si on est sur /auth/bluesky
+      // if (url.endsWith('/auth/bluesky')) {
+      //   console.log(" On bluesky page, redirecting to /upload")
+      //   return `${baseUrl}/upload`
+      // }
+
       // Si on est sur la page de signin et qu'on est déjà connecté
       if (url.endsWith('/auth/signin')) {
-        console.log(" Already logged in, redirecting to /auth/bluesky")
-        return `${baseUrl}/auth/bluesky`
+        console.log(" Already logged in, redirecting to /upload")
+        return `${baseUrl}/upload`
       }
 
       // Par défaut, on retourne l'URL demandée si elle commence par baseUrl
