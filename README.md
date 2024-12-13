@@ -27,7 +27,7 @@ Dans le terminal du repo Git cloné, run les commandes suivantes :
 supabase start
 ```
 
-[OPTIONNEL]Pour reset la base de données:
+Appliquer la migration lors du premier lancement et pour redemarer la base de donnees en appliquant les modifications des migrations
 
 ```bash
 supabase db reset
