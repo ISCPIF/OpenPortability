@@ -1,7 +1,7 @@
 -- Create sources table (authenticated users)
 create table if not exists "public"."sources" (
     "id" uuid references "next-auth"."users" on delete cascade primary key,
-    "twitter_id" text not null unique,
+    "twitter_id" text unique,
     "bluesky_id" text unique,
     "username" text,
     "full_name" text,
@@ -31,10 +31,11 @@ create table if not exists "public"."targets" (
 
 -- Create sources_targets junction table
 create table if not exists "public"."sources_targets" (
+    "source_id" uuid references "public"."sources"(id) on delete cascade,
     "source_twitter_id" text references "public"."sources"(twitter_id) on delete cascade,
     "target_twitter_id" text references "public"."targets"(twitter_id) on delete cascade,
     "created_at" timestamp with time zone default timezone('utc'::text, now()) not null,
-    primary key (source_twitter_id, target_twitter_id)
+    primary key (source_id, target_twitter_id)
 );
 
 -- Enable RLS

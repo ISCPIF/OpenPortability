@@ -73,10 +73,10 @@ export async function POST(request: Request) {
       );
     }
 
-    if (!session?.user?.twitter_id) {
-      console.log('No Twitter ID in session:', { session });
+    if (!session?.user?.twitter_id && !session?.user?.bluesky_id) {
+      console.log('No Twitter ID and No Bluesky ID in session:', { session });
       return NextResponse.json(
-        { error: "Twitter ID not found" },
+        { error: "Twitter ID and Bluesky ID not found" },
         { status: 400 }
       );
     }
@@ -85,7 +85,7 @@ export async function POST(request: Request) {
       .from('sources')
       .upsert({
         id: session.user.id,
-        twitter_id: session.user.twitter_id,
+        twitter_id: session.user.twitter_id || null,
         bluesky_id: session.user.bluesky_id || null,
         username: session.user.name,
         full_name: session.user.name,
@@ -150,7 +150,8 @@ export async function POST(request: Request) {
             .map(f => f.following)
             .filter(Boolean)
             .map(following => ({
-              source_twitter_id: session.user.twitter_id,
+              source_id: session.user.id,
+              source_twitter_id: session.user.twitter_id || null,
               target_twitter_id: following!.accountId,
               created_at: new Date().toISOString()
             }))

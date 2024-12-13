@@ -3,6 +3,7 @@
 import { useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { BskyAgent } from '@atproto/api';
+import { signIn } from 'next-auth/react';
 
 interface BlueSkyLoginProps {
   onLoginComplete?: (agent: BskyAgent) => void;
@@ -13,7 +14,6 @@ export default function BlueSkyLogin({ onLoginComplete }: BlueSkyLoginProps) {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   
-  // Use refs instead of state for sensitive data
   const identifierRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
 
@@ -55,15 +55,30 @@ export default function BlueSkyLogin({ onLoginComplete }: BlueSkyLoginProps) {
 
       // Clear sensitive data
       clearSensitiveData();
-      
-      // Refresh the page to update the session
-      router.refresh();
+
+      // Utiliser signIn de NextAuth avec le provider bluesky
+      const result = await signIn('bluesky', {
+        redirect: false,
+        identifier: data.handle,
+        did: data.did,
+        name: data.profile.displayName,
+        image: data.profile.avatar,
+        callbackUrl: '/dashboard'
+      });
+
+      if (result?.error) {
+        throw new Error(result.error);
+      }
+
+      // Si la connexion est réussie, rediriger
+      if (result?.ok) {
+        router.push(result.url || '/dashboard');
+      }
 
       if (onLoginComplete) {
         const agent = new BskyAgent({
           service: 'https://bsky.social'
         });
-        // On ne tente de créer une session que si on a les tokens nécessaires
         if (data.accessJwt && data.refreshJwt) {
           await agent.resumeSession({
             did: data.did,

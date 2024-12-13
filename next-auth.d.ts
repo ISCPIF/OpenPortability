@@ -1,5 +1,4 @@
-import "next-auth"
-import { DefaultSession } from "next-auth"
+import NextAuth, { DefaultSession } from "next-auth"
 
 declare module "next-auth" {
   interface Session {
@@ -18,47 +17,49 @@ declare module "next-auth" {
     };
     user: {
       id: string
-      name?: string | null
-      twitter_username?: string | null
-      twitter_image?: string | null
-      twitter_id?: string | null
-      bluesky_id?: string | null
-      bluesky_username?: string | null
-      bluesky_image?: string | null
       has_onboarded: boolean
+      twitter_id: string
+      twitter_username: string
+      twitter_image: string
+      bluesky_id: string | null
+      bluesky_username: string | null
+      bluesky_image: string | null
+      mastodon_id: string | null
+      mastodon_username: string | null
+      mastodon_image: string | null
+      mastodon_instance: string | null
     } & DefaultSession["user"]
   }
 
   interface User {
     id: string
-    name?: string | null
-    twitter_username?: string | null
-    twitter_image?: string | null
-    twitter_id?: string | null
-    bluesky_id?: string | null
-    bluesky_username?: string | null
-    bluesky_image?: string | null
     has_onboarded: boolean
+    twitter_id: string
+    twitter_username: string
+    twitter_image: string
+    bluesky_id: string | null
+    bluesky_username: string | null
+    bluesky_image: string | null
+    mastodon_id: string | null
+    mastodon_username: string | null
+    mastodon_image: string | null
+    mastodon_instance: string | null
   }
 }
 
 declare module "next-auth/jwt" {
   interface JWT {
-    sub?: string
-    userId?: string
-    twitterAccessToken?: string
-    supabaseAccessToken?: string
-    mastodonAccessToken?: string
-    mastodonServer?: string
-    blueskyAccessToken?: string
-    blueskyServer?: string
-    id?: string
-    has_onboarded?: boolean
-    twitter_id?: string
-    twitter_username?: string
-    twitter_image?: string
-    bluesky_id?: string | null
-    bluesky_username?: string | null
-    bluesky_image?: string | null
+    id: string
+    has_onboarded: boolean
+    twitter_id: string
+    twitter_username: string
+    twitter_image: string
+    bluesky_id: string | null
+    bluesky_username: string | null
+    bluesky_image: string | null
+    mastodon_id: string | null
+    mastodon_username: string | null
+    mastodon_image: string | null
+    mastodon_instance: string | null
   }
 }
