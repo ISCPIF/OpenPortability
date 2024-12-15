@@ -9,6 +9,13 @@ import ConsentModal from "../_components/ConsentModal";
 import Header from '../_components/Header';
 import * as zip from '@zip.js/zip.js';
 import { validateTwitterData, extractTargetFiles } from '../_components/UploadButton';
+import Image from 'next/image';
+import seaBackground from '../../../public/sea.svg'
+import { plex } from '../fonts/plex';
+import logoHQX from '../../../public/BannerHQX-rose_FR.svg'
+import { motion } from 'framer-motion';
+import boat1 from '../../../public/boats/boat-1.svg'
+import progress0 from '../../../public/progress/progress-0.svg'
 
 const UploadButton = dynamic(() => import('../_components/UploadButton'), {
   loading: () => <div className="animate-pulse bg-gray-200 h-12 w-48 rounded-lg"></div>,
@@ -87,7 +94,7 @@ export default function UploadPage() {
     // Check if they are JS files
     if (files.length === 2) {
       const fileNames = Array.from(files).map(f => f.name.toLowerCase());
-      
+
       // Check if both files are .js
       if (!fileNames.every(name => name.endsWith('.js'))) {
         return 'When uploading individual files, both must be .js files';
@@ -153,12 +160,12 @@ export default function UploadPage() {
       for (const { name, content } of processedFiles) {
         const textContent = new TextDecoder().decode(content);
         const type = name.toLowerCase().includes('following') ? 'following' : 'follower';
-        
+
         const validationError = validateTwitterData(textContent, type);
         if (validationError) {
           throw new Error(validationError);
         }
-        
+
         console.log(`✅ ${name} validation successful`);
         const file = new File([content], name, {
           type: 'application/javascript'
@@ -224,7 +231,7 @@ export default function UploadPage() {
     // Créer un nouveau FileList à partir de l'array
     const dataTransfer = new DataTransfer();
     filesArray.forEach(file => dataTransfer.items.add(file));
-    
+
     setShowConsent(true);
     setPendingFiles(dataTransfer.files);
   };
@@ -237,7 +244,7 @@ export default function UploadPage() {
 
   const handleConsentAccept = async () => {
     console.log('✅ Consentement accepté, début du traitement');
-    
+
     if (!pendingFiles || pendingFiles.length === 0) {
       console.log('❌ Pas de fichiers à traiter:', pendingFiles);
       handleUploadError('No files to process');
@@ -267,22 +274,50 @@ export default function UploadPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-pink-500 to-pink-400">
+    <div className="bg-[#2a39a9] relative w-full max-w-[90rem] m-auto">
       <Header />
-      
-      <main className="container mx-auto px-4 py-8">
+      <div className="absolute top-0 w-full h-[35rem]">
+        <Image src={seaBackground} fill alt="" className="object-cover"></Image>
+        <Image
+          src={logoHQX}
+          alt="HelloQuitteX Logo"
+          width={306}
+          height={125}
+          className="mx-auto lg:mt-8 relative"
+        />
+        <div className="container flex flex-col mx-auto text-center gap-y-4 px-6 lg:gap-y-8 text-[#282729] relative my-8 lg:my-14 max-w-[50rem]">
+          <h1 className={`${plex.className} text-2xl lg:text-3xl font-light`}>Bienvenue à bord d’HelloQuitX !</h1>
+          <p className={`${plex.className} text-lg lg:text-xl font-normal`}>Effectuez les étapes suivantes pour voguer vers de nouveaux horizons et enfin QUITTER X !</p>
+        </div>
+        <motion.div className="absolute top-[65%] left-[46.5%]" style={{ originX: 0.5, originY: 1 }}
+          transition={{
+            repeatType: 'reverse',
+            repeat: Infinity,
+            duration: 2,
+            ease: "linear"
+          }}
+          initial={{ rotateZ: "-5deg" }}
+          animate={{ rotateZ: "5deg" }}
+          exit={{ rotateZ: 0 }}
+        >
+          <Image src={boat1} width={110} height={88} alt="" className=""></Image>
+        </motion.div>
+        <Image src={progress0} width={80} height={82} alt="" className="absolute top-[87%] left-[48%]"></Image>
+      </div>
+
+      <div className="mx-auto px-4 my-[35rem] h-screen">
         <div className="relative max-w-2xl mx-auto p-8 rounded-xl overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-gray-800 to-pink-900"></div>
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(255,255,255,0.1),transparent)] opacity-70"></div>
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_50%,rgba(236,72,153,0.1),transparent)] opacity-50"></div>
-          
+
           <div className="relative space-y-8">
             <div className="text-center">
               <h2 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-200 to-white">
                 Importez vos données Twitter
               </h2>
             </div>
-            
+
             <div className="space-y-6">
               <p className="text-lg text-white/90 text-center font-medium">
                 Téléchargez votre archive Twitter au format ZIP ou les fichiers following.js et follower.js
@@ -297,7 +332,7 @@ export default function UploadPage() {
                   />
                 </div>
               </div>
-                
+
               {isUploading && (
                 <div className="w-full max-w-md mx-auto bg-white/10 backdrop-blur-sm rounded-lg p-4">
                   <div className="flex items-center gap-3">
@@ -327,14 +362,14 @@ export default function UploadPage() {
             onClose={() => setError(null)}
             message={error || ''}
           />
-          
+
           <ConsentModal
             isOpen={showConsent}
             onAccept={handleConsentAccept}
             onDecline={handleConsentDecline}
           />
         </div>
-      </main>
+      </div>
     </div>
   );
 }

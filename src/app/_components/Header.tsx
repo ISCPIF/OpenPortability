@@ -7,6 +7,7 @@ import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import ConnectedAccounts from './ConnectedAccounts';
 import { ChevronDown } from 'lucide-react';
+import logo from '../../../public/logo-2.svg'
 
 const Header = () => {
   const { data: session } = useSession();
@@ -14,45 +15,20 @@ const Header = () => {
 
   return (
     <header className="relative z-10">
-      <div className="absolute inset-0 bg-gradient-to-b from-black/80 to-transparent pointer-events-none" />
-      
+      <div className="absolute inset-0 bg-transparent pointer-events-none" />
+
       <div className="relative">
         <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            {/* Logo et Titre */}
-            <Link href="/" className="group flex items-center gap-4">
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                transition={{ type: "spring", stiffness: 400, damping: 10 }}
-              >
-                <Image
-                  src="/logo.png"
-                  alt="HelloQuitteX Logo"
-                  width={48}
-                  height={48}
-                  className="w-12 h-12 rounded-xl overflow-hidden shadow-lg"
-                />
-              </motion.div>
-              
-              <div className="flex flex-col">
-                <h1 className="font-space-grotesk text-2xl font-bold bg-gradient-to-r from-white to-white/80 bg-clip-text text-transparent">
-                  HelloQuitteX
-                </h1>
-                <p className="text-xs tracking-wider text-white/60 uppercase">
-                  Libérons nos espaces numériques
-                </p>
-              </div>
-            </Link>
-
+          <div className="flex items-right justify-end">
             {/* Actions */}
             <div className="flex items-center gap-6">
-              {session ? (
+              {session && (
                 <div className="flex items-center gap-6">
                   {/* Profil avec menu déroulant */}
                   <div className="relative">
                     <button
                       onClick={() => setIsProfileOpen(!isProfileOpen)}
-                      className="flex items-center gap-3 p-2 rounded-lg hover:bg-white/5 transition-colors"
+                      className="flex items-center gap-3 p-2 rounded-lg hover:bg-black/5 transition-colors"
                     >
                       {session.user?.image && (
                         <Image
@@ -60,19 +36,19 @@ const Header = () => {
                           alt={session.user.name || ''}
                           width={32}
                           height={32}
-                          className="rounded-full border border-white/10"
+                          className="rounded-full border border-black/10"
                         />
                       )}
                       <div className="hidden sm:block">
-                        <p className="text-sm font-medium text-white">
+                        <p className="text-sm font-medium text-black">
                           {session.user?.name}
                         </p>
-                        <p className="text-xs text-white/60">
+                        <p className="text-xs text-black/60">
                           @{session.user?.twitter_username}
                         </p>
                       </div>
-                      <ChevronDown 
-                        className={`w-4 h-4 text-white/60 transition-transform duration-200 
+                      <ChevronDown
+                        className={`w-4 h-4 text-black/60 transition-transform duration-200 
                           ${isProfileOpen ? 'rotate-180' : ''}`}
                       />
                     </button>
@@ -86,11 +62,11 @@ const Header = () => {
                           exit={{ opacity: 0, y: -10 }}
                           className="absolute right-0 mt-2 w-80 origin-top-right"
                         >
-                          <div className="bg-black/40 backdrop-blur-xl rounded-xl border border-white/10 shadow-xl overflow-hidden">
+                          <div className="bg-black/40 backdrop-blur-xl rounded-xl border border-black/10 shadow-xl overflow-hidden">
                             <div className="p-4">
                               <ConnectedAccounts />
                             </div>
-                            <div className="border-t border-white/10">
+                            <div className="border-t border-black/10">
                               <motion.button
                                 whileHover={{ scale: 1.02 }}
                                 whileTap={{ scale: 0.98 }}
@@ -102,9 +78,9 @@ const Header = () => {
                                       });
                                       window.location.href = '/';
                                     } else {
-                                      await signOut({ 
+                                      await signOut({
                                         callbackUrl: '/',
-                                        redirect: true 
+                                        redirect: true
                                       });
                                     }
                                   } catch (error) {
@@ -112,8 +88,8 @@ const Header = () => {
                                     window.location.href = '/';
                                   }
                                 }}
-                                className="w-full px-4 py-2 text-sm text-white/80 hover:text-white 
-                                         hover:bg-white/5 transition-colors text-left"
+                                className="w-full px-4 py-2 text-sm text-black/80 hover:text-black 
+                                         hover:bg-black/5 transition-colors text-left"
                               >
                                 Déconnexion
                               </motion.button>
@@ -124,17 +100,6 @@ const Header = () => {
                     </AnimatePresence>
                   </div>
                 </div>
-              ) : (
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => signIn('twitter')}
-                  className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r 
-                           from-sky-400 to-blue-500 rounded-lg shadow-lg 
-                           hover:from-sky-500 hover:to-blue-600"
-                >
-                  Se connecter avec Twitter
-                </motion.button>
               )}
             </div>
           </div>
