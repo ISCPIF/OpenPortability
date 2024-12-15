@@ -10,7 +10,7 @@ export default function MastodonLogin() {
   const handleMastodonLogin = async () => {
     setIsLoading(true);
     try {
-      await signIn('mastodon', { callbackUrl: '/dashboard' });
+      await signIn('mastodon');
     } catch (error) {
       console.error('Erreur de connexion Mastodon:', error);
     } finally {

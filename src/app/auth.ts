@@ -22,83 +22,110 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
     }
   },
   callbacks: {
-    async session({ session, token }) {
-      console.log("=== Session Callback ===")
-      console.log("Token content:", token)
-      console.log("Session content:", session)
-      if (session.user && token) {
-        session.user.id = token.id as string
-        session.user.has_onboarded = token.has_onboarded as boolean
-        session.user.twitter_id = token.twitter_id as string
-        session.user.twitter_username = token.twitter_username as string
-        session.user.twitter_image = token.twitter_image as string
-        session.user.bluesky_id = token.bluesky_id as string | null
-        session.user.bluesky_username = token.bluesky_username as string | null
-        session.user.bluesky_image = token.bluesky_image as string | null
-        
-        // Get tokens from the database using the user ID
-        const adapter = supabaseAdapter
-        const accounts = await adapter.getAccountsByUserId(token.id as string)
+    async jwt({ token, user, account, profile }) {
+      console.log("\n=== JWT Callback ===")
+      console.log("Token:", token)
+      console.log("User:", user)
+      console.log("Account:", account)
+      console.log("Profile:", profile)
 
-        if (accounts && accounts.length > 0) {
-          // Store all provider tokens in the session
-          session.providers = accounts.reduce((acc, account) => {
-            if (account.provider) {
-              acc[account.provider] = {
-                accessToken: account.access_token || null,
-                refreshToken: account.refresh_token || null,
-                ...(account.expires_at && { expiresAt: account.expires_at }),
-              };
-            }
-            return acc;
-          }, {} as NonNullable<Session['providers']>);
-          
-          // For backward compatibility
-          const twitterAccount = accounts.find(a => a.provider === 'twitter')
-          const mastodonAccount = accounts.find(a => a.provider === 'mastodon')
-          
-          if (twitterAccount) {
-            session.twitterAccessToken = twitterAccount.access_token
-          }
-          if (mastodonAccount) {
-            session.mastodonAccessToken = mastodonAccount.access_token
-            session.mastodonServer = process.env.MASTODON_SERVER
-          }
-        }
-      }
-      return session
-    },
-    async jwt({ token, user, account }) {
       if (user) {
+        // Initial sign in - copy user info to token
         token.id = user.id
         token.has_onboarded = user.has_onboarded
-        token.twitter_id = user.twitter_id
-        token.twitter_username = user.twitter_username
-        token.twitter_image = user.twitter_image
-        token.bluesky_id = user.bluesky_id
-        token.bluesky_username = user.bluesky_username
-        token.bluesky_image = user.bluesky_image
       }
 
-      // Si on vient de la route d'upload, on force un rafraîchissement des données
-      if (token.id) {
-        const userData = await supabaseAdapter.getUser(token.id)
-        if (userData) {
-          token.has_onboarded = userData.has_onboarded
-          token.twitter_id = userData.twitter_id
-          token.twitter_username = userData.twitter_username
-          token.twitter_image = userData.twitter_image
-          token.bluesky_id = userData.bluesky_id
-          token.bluesky_username = userData.bluesky_username
-          token.bluesky_image = userData.bluesky_image
+      if (account && profile) {
+        // Update token with latest provider info
+        if (account.provider === 'twitter' && 'data' in profile) {
+          await supabaseAdapter.updateUser(token.id as string, {
+            provider: 'twitter',
+            profile: profile
+          })
+          token.twitter_id = profile.data.id
+          token.twitter_username = profile.data.username
+          token.twitter_image = profile.data.profile_image_url
+          token.name = profile.data.name
         }
-      }
-
-      if (account) {
-        token.twitterAccessToken = account.access_token
+        else if (account.provider === 'mastodon') {
+          await supabaseAdapter.updateUser(token.id as string, {
+            provider: 'mastodon',
+            profile: profile
+          })
+          token.mastodon_id = profile.id
+          token.mastodon_username = profile.username
+          token.mastodon_image = profile.avatar
+          token.mastodon_instance = profile.url ? new URL(profile.url).origin : null
+          token.name = profile.display_name
+        }
+        else if (account.provider === 'bluesky') {
+          await supabaseAdapter.updateUser(token.id as string, {
+            provider: 'bluesky',
+            profile: profile
+          })
+          token.bluesky_id = profile.did || profile.id
+          token.bluesky_username = profile.identifier || profile.username
+          token.bluesky_image = profile.avatar
+          token.name = profile.name || profile.identifier
+        }
       }
 
       return token
+    },
+
+    async session({ session, token }) {
+      console.log("\n=== Session Callback ===")
+      console.log("Token content:", token)
+      console.log("Session content:", session)
+      
+      if (session.user && token) {
+        // Get the latest user data from the database
+        const user = await supabaseAdapter.getUser(token.id as string)
+        
+        if (user) {
+          // Update session with both token and database info
+          session.user = {
+            ...session.user,
+            id: token.id as string,
+            has_onboarded: token.has_onboarded as boolean,
+            name: token.name,
+            
+            // Twitter info from token (most recent)
+            twitter_id: token.twitter_id as string || user.twitter_id || null,
+            twitter_username: token.twitter_username as string || user.twitter_username || null,
+            twitter_image: token.twitter_image as string || user.twitter_image || null,
+            
+            // Mastodon info from token (most recent)
+            mastodon_id: token.mastodon_id as string || user.mastodon_id || null,
+            mastodon_username: token.mastodon_username as string || user.mastodon_username || null,
+            mastodon_image: token.mastodon_image as string || user.mastodon_image || null,
+            mastodon_instance: token.mastodon_instance as string || user.mastodon_instance || null,
+            
+            // Bluesky info from token (most recent)
+            bluesky_id: token.bluesky_id as string || user.bluesky_id || null,
+            bluesky_username: token.bluesky_username as string || user.bluesky_username || null,
+            bluesky_image: token.bluesky_image as string || user.bluesky_image || null,
+          }
+        }
+      }
+
+      console.log("Session provider called !")
+      console.log("session:", session)
+      return session
+    },
+
+    async redirect({ url, baseUrl }) {
+      console.log(" Redirect Callback:", { url, baseUrl })
+
+      // Si on est sur un callback d'authentification
+      if (url.includes('/auth/callback')) {
+        console.log(" Auth callback detected, redirecting to /dashboard")
+        return `${baseUrl}/dashboard`
+      }
+
+      // Par défaut, on retourne l'URL demandée si elle commence par baseUrl
+      console.log(" Default redirect to:", url)
+      return url.startsWith(baseUrl) ? url : baseUrl
     }
   }
 })

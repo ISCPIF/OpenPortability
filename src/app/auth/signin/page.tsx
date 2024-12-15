@@ -175,7 +175,7 @@ export default function SignIn() {
               </motion.div>
 
               {/* Mastodon Button and Form */}
-              {/* <motion.div variants={itemVariants}>
+               <motion.div variants={itemVariants}>
                 <motion.button
                   whileHover={{ scale: 1.02, boxShadow: "0 0 20px rgba(168, 85, 247, 0.5)" }}
                   whileTap={{ scale: 0.98 }}
@@ -213,7 +213,7 @@ export default function SignIn() {
                     </motion.div>
                   )}
                 </AnimatePresence>
-              </motion.div> */}
+              </motion.div> 
             </motion.div>
           </motion.div>
         </motion.div>

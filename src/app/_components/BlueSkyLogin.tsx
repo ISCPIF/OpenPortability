@@ -48,51 +48,31 @@ export default function BlueSkyLogin({ onLoginComplete }: BlueSkyLoginProps) {
       });
 
       const data = await response.json();
-
+      
       if (!response.ok) {
-        throw new Error(data.error || 'Authentication failed');
+        throw new Error(data.error || 'Failed to sign in');
       }
 
       // Clear sensitive data
       clearSensitiveData();
 
-      // Utiliser signIn de NextAuth avec le provider bluesky
-      const result = await signIn('bluesky', {
+      // Use signIn to create the client-side session
+      await signIn('credentials', {
         redirect: false,
-        identifier: data.handle,
-        did: data.did,
-        name: data.profile.displayName,
-        image: data.profile.avatar,
+        id: data.user.id,
         callbackUrl: '/dashboard'
       });
 
-      if (result?.error) {
-        throw new Error(result.error);
-      }
-
-      // Si la connexion est réussie, rediriger
-      if (result?.ok) {
-        router.push(result.url || '/dashboard');
-      }
-
-      if (onLoginComplete) {
-        const agent = new BskyAgent({
-          service: 'https://bsky.social'
-        });
-        if (data.accessJwt && data.refreshJwt) {
-          await agent.resumeSession({
-            did: data.did,
-            handle: identifier,
-            accessJwt: data.accessJwt,
-            refreshJwt: data.refreshJwt,
-            active: true
-          });
-        }
-        onLoginComplete(agent);
-      }
-    } catch (err) {
-      console.error('Login error:', err);
-      setError(err instanceof Error ? err.message : 'An error occurred during login');
+      // Wait a bit for the session to be set
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Redirect to dashboard
+      router.push('/dashboard');
+      router.refresh();
+      
+    } catch (error) {
+      console.error('Error:', error);
+      setError(error instanceof Error ? error.message : 'An error occurred');
     } finally {
       setIsLoading(false);
     }
@@ -140,6 +120,7 @@ export default function BlueSkyLogin({ onLoginComplete }: BlueSkyLoginProps) {
             className="w-full px-4 py-2 rounded bg-gray-800 border border-gray-700 text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
             placeholder="handle.bsky.social"
             required
+            disabled={isLoading}
           />
         </div>
         <div>
@@ -152,6 +133,7 @@ export default function BlueSkyLogin({ onLoginComplete }: BlueSkyLoginProps) {
             id="password"
             className="w-full px-4 py-2 rounded bg-gray-800 border border-gray-700 text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
             required
+            disabled={isLoading}
           />
           <p className="mt-2 text-sm text-gray-400">
             Utilisez un{' '}

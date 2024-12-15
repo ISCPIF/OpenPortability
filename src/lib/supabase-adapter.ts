@@ -21,6 +21,23 @@ interface CustomAdapterUser extends Omit<AdapterUser, 'email' | 'emailVerified' 
   mastodon_instance?: string | null
 }
 
+interface TwitterData {
+  data: {
+    id: string
+    name: string
+    username: string
+    profile_image_url: string
+  }
+}
+
+interface MastodonProfile {
+  id: string
+  username: string
+  display_name: string
+  avatar: string
+  url: string
+}
+
 // Créer deux clients Supabase distincts
 const authClient = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -47,71 +64,58 @@ const publicClient = createClient(
   }
 )
 
-const createUser = async (user) => {
-  console.log("\n=== [Adapter] Starting user creation ===")
-  console.log("→ Input user data:", JSON.stringify(user, null, 2))
-  try {
-    console.log("→ Attempting to insert user into next-auth.users...")
-    // Créer l'utilisateur avec les infos disponibles (Twitter, BlueSky ou Mastodon)
-    const { data: authUser, error: authError } = await authClient
-      .from("users")
-      .insert([
-        {
-          name: user.name,
-          email: user.email,
-          email_verified: user.email_verified,
-          // Twitter data
-          twitter_id: user.twitter_id || null,
-          twitter_username: user.twitter_username || null,
-          twitter_image: user.twitter_image || null,
-          // BlueSky data
-          bluesky_id: user.bluesky_id || null,
-          bluesky_username: user.bluesky_username || null,
-          bluesky_image: user.bluesky_image || null,
-          // Mastodon data
-          mastodon_id: user.mastodon_id || null,
-          mastodon_username: user.mastodon_username || null,
-          mastodon_image: user.mastodon_image || null,
-          mastodon_instance: user.mastodon_instance || null,
-          has_onboarded: user.has_onboarded || false
-        }
-      ])
-      .select()
-      .single()
-
-    if (authError) {
-      console.error("❌ [Adapter] Error creating user in next-auth:")
-      console.error("  Error code:", authError.code)
-      console.error("  Error message:", authError.message)
-      console.error("  Error details:", authError.details)
-      throw authError
-    }
-
-    console.log("✅ [Adapter] User successfully created in next-auth:")
-    console.log("  User ID:", authUser.id)
-    console.log("  Full user data:", JSON.stringify(authUser, null, 2))
-
-    return {
-      id: authUser.id,
-      name: authUser.name,
-      email: authUser.email,
-      email_verified: authUser.email_verified,
-      twitter_id: authUser.twitter_id,
-      twitter_username: authUser.twitter_username,
-      twitter_image: authUser.twitter_image,
-      bluesky_id: authUser.bluesky_id,
-      bluesky_username: authUser.bluesky_username,
-      bluesky_image: authUser.bluesky_image,
-      mastodon_id: authUser.mastodon_id,
-      mastodon_username: authUser.mastodon_username,
-      mastodon_image: authUser.mastodon_image,
-      mastodon_instance: authUser.mastodon_instance,
-      has_onboarded: authUser.has_onboarded
-    }
-  } catch (error) {
-    console.error("❌ [Adapter] Unexpected error during user creation:", error)
-    throw error
+const createUser = async (
+  userData: Partial<CustomAdapterUser> & {
+    provider?: 'twitter' | 'bluesky' | 'mastodon',
+    profile?: any
   }
+): Promise<CustomAdapterUser> => {
+  console.log("\n=== [Adapter] Starting user creation ===")
+  console.log("→ Input user data:", JSON.stringify(userData, null, 2))
+
+  const userToCreate: Partial<CustomAdapterUser> = {
+    name: userData.name,
+    has_onboarded: false
+  }
+
+  // Remplir les champs spécifiques au provider avec les données brutes
+  if (userData.provider === 'twitter' && userData.profile?.data) {
+    const twitterData = userData.profile.data
+    userToCreate.twitter_id = twitterData.id
+    userToCreate.twitter_username = twitterData.username
+    userToCreate.twitter_image = twitterData.profile_image_url
+    userToCreate.name = twitterData.name // Utiliser le nom Twitter comme nom principal
+  } 
+  else if (userData.provider === 'mastodon' && userData.profile) {
+    const mastodonData = userData.profile
+    console.log("Mastodon data:", mastodonData)
+    userToCreate.mastodon_id = mastodonData.id
+    userToCreate.mastodon_username = mastodonData.username
+    userToCreate.mastodon_image = mastodonData.avatar
+    userToCreate.mastodon_instance = mastodonData.url ? new URL(mastodonData.url).origin : null
+    userToCreate.name = mastodonData.display_name // Utiliser le display_name Mastodon comme nom principal
+  }
+  else if (userData.provider === 'bluesky' && userData.profile) {
+    const blueskyData = userData.profile
+    userToCreate.bluesky_id = blueskyData.did || blueskyData.id
+    userToCreate.bluesky_username = blueskyData.handle || blueskyData.username
+    userToCreate.bluesky_image = blueskyData.avatar
+    userToCreate.name = blueskyData.name || blueskyData.identifier
+  }
+
+  const { data: authUser, error: authError } = await authClient
+    .from("users")
+    .insert([userToCreate])
+    .select()
+    .single()
+
+  if (authError) {
+    console.error("❌ [Adapter] Error creating user in next-auth:", authError)
+    throw authError
+  }
+
+  console.log("✅ [Adapter] User successfully created:", authUser)
+  return authUser
 }
 
 const getUser = async (id: string): Promise<CustomAdapterUser | null> => {
@@ -225,33 +229,49 @@ const getUserByAccount = async ({ providerAccountId, provider }): Promise<Custom
   }
 }
 
-const updateUser = async (user: Partial<CustomAdapterUser>): Promise<CustomAdapterUser> => {
+const updateUser = async (
+  userId: string,
+  providerData?: {
+    provider: 'twitter' | 'bluesky' | 'mastodon',
+    profile: TwitterData | MastodonProfile | any
+  }
+): Promise<CustomAdapterUser> => {
   console.log("\n=== [Adapter] updateUser ===")
-  console.log("→ Updating user with ID:", user.id)
+  console.log("→ Updating user with provider data:", JSON.stringify(providerData, null, 2))
 
-  const { data: updatedUser, error: userError } = await authClient
+  const updates: Partial<CustomAdapterUser> = {}
+  
+  if (providerData) {
+    switch (providerData.provider) {
+      case 'twitter':
+        const twitterProfile = providerData.profile as TwitterData
+        updates.twitter_id = twitterProfile.data.id
+        updates.twitter_username = twitterProfile.data.username
+        updates.twitter_image = twitterProfile.data.profile_image_url
+        updates.name = twitterProfile.data.name
+        break
+
+      case 'mastodon':
+        const mastodonProfile = providerData.profile as MastodonProfile
+        updates.mastodon_id = mastodonProfile.id
+        updates.mastodon_username = mastodonProfile.username
+        updates.mastodon_image = mastodonProfile.avatar
+        updates.name = mastodonProfile.display_name
+        updates.mastodon_instance = new URL(mastodonProfile.url).origin
+        break
+    }
+  }
+
+  const { data: updatedUser, error } = await authClient
     .from("users")
-    .update({
-      name: user.name,
-      twitter_id: user.twitter_id,
-      twitter_username: user.twitter_username,
-      twitter_image: user.twitter_image,
-      bluesky_id: user.bluesky_id,
-      bluesky_username: user.bluesky_username,
-      bluesky_image: user.bluesky_image,
-      mastodon_id: user.mastodon_id,
-      mastodon_username: user.mastodon_username,
-      mastodon_image: user.mastodon_image,
-      mastodon_instance: user.mastodon_instance,
-      has_onboarded: user.has_onboarded
-    })
-    .eq("id", user.id)
+    .update(updates)
+    .eq("id", userId)
     .select()
     .single()
 
-  if (userError) {
-    console.log("❌ Error updating user:", userError.message)
-    throw userError
+  if (error) {
+    console.log("❌ Error updating user:", error.message)
+    throw error
   }
 
   console.log("✅ User updated:", updatedUser)
@@ -272,41 +292,32 @@ const updateUser = async (user: Partial<CustomAdapterUser>): Promise<CustomAdapt
   }
 }
 
-const linkAccount = async (account: any) => {
-  try {
-    console.log("\n=== [Adapter] linkAccount ===")
-    console.log("→ Linking account:", account)
+const linkAccount = async (account: AdapterAccount): Promise<void> => {
+  console.log("\n=== [Adapter] linkAccount ===")
+  console.log("→ Linking account:", JSON.stringify(account, null, 2))
+  
+  const { error } = await authClient
+    .from("accounts")
+    .insert([{
+      user_id: account.userId,
+      type: account.type,
+      provider: account.provider,
+      provider_account_id: account.providerAccountId,
+      refresh_token: account.refresh_token,
+      access_token: account.access_token,
+      expires_at: account.expires_at,
+      token_type: account.token_type,
+      scope: account.scope,
+      id_token: account.id_token,
+      session_state: account.session_state,
+    }])
 
-    // Créer le compte dans next-auth.accounts
-    const { error: accountError } = await authClient
-      .from("accounts")
-      .insert([
-        {
-          user_id: account.userId,
-          type: account.type,
-          provider: account.provider,
-          provider_account_id: account.providerAccountId,
-          refresh_token: account.refresh_token,
-          access_token: account.access_token,
-          expires_at: account.expires_at,
-          token_type: account.token_type,
-          scope: account.scope,
-          id_token: account.id_token,
-          session_state: account.session_state,
-        }
-      ])
-
-    if (accountError) {
-      console.log("❌ Error linking account:", accountError)
-      throw accountError
-    }
-
-    console.log("✅ Account linked successfully")
-    return account
-  } catch (error) {
-    console.error("❌ [Adapter] Error linking account:", error)
+  if (error) {
+    console.log("❌ Error linking account:", error)
     throw error
   }
+
+  console.log("✅ Account linked successfully")
 }
 
 const createSession = async (session) => {
