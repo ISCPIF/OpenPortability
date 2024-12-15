@@ -2,31 +2,42 @@
 
 import { useSession } from 'next-auth/react'
 import Image from 'next/image'
-import { FaTwitter } from 'react-icons/fa'
+import { FaTwitter, FaMastodon } from 'react-icons/fa'
 import { SiBluesky } from "react-icons/si"
 
 type ProfileCardProps = {
-  type: 'twitter' | 'bluesky'
+  type: 'twitter' | 'bluesky' | 'mastodon'
 }
 
 export default function ProfileCard({ type }: ProfileCardProps) {
   const { data: session } = useSession()
   if (!session?.user) return null
 
-  const isTwitter = type === 'twitter'
-  const profile = isTwitter ? {
-    username: session.user.twitter_username,
-    image: session.user.twitter_image,
-    id: session.user.twitter_id,
-    icon: <FaTwitter className="text-[#1DA1F2] text-2xl" />,
-    connected: !!session.user.twitter_id
-  } : {
-    username: session.user.bluesky_username,
-    image: session.user.bluesky_image,
-    id: session.user.bluesky_id,
-    icon: <SiBluesky className="text-[#0085FF] text-2xl" />,
-    connected: !!session.user.bluesky_id
+  const profiles = {
+    twitter: {
+      username: session.user.twitter_username,
+      image: session.user.twitter_image,
+      id: session.user.twitter_id,
+      icon: <FaTwitter className="text-[#1DA1F2] text-2xl" />,
+      connected: !!session.user.twitter_id
+    },
+    bluesky: {
+      username: session.user.bluesky_username,
+      image: session.user.bluesky_image,
+      id: session.user.bluesky_id,
+      icon: <SiBluesky className="text-[#0085FF] text-2xl" />,
+      connected: !!session.user.bluesky_id
+    },
+    mastodon: {
+      username: session.user.mastodon_username,
+      image: session.user.mastodon_image,
+      id: session.user.mastodon_id,
+      icon: <FaMastodon className="text-[#6364FF] text-2xl" />,
+      connected: !!session.user.mastodon_id
+    }
   }
+
+  const profile = profiles[type]
 
   if (!profile.connected) return null
 

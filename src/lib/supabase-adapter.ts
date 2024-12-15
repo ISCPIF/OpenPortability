@@ -85,6 +85,18 @@ const createUser = async (
     userToCreate.twitter_username = twitterData.username
     userToCreate.twitter_image = twitterData.profile_image_url
     userToCreate.name = twitterData.name // Utiliser le nom Twitter comme nom principal
+
+    // Chercher d'abord un utilisateur existant avec ce twitter_id
+    const { data: existingUser } = await authClient
+      .from('users')
+      .select('*')
+      .eq('twitter_id', twitterData.id)
+      .single()
+
+    if (existingUser) {
+      console.log("→ Found existing user with Twitter ID:", existingUser.id)
+      return existingUser as CustomAdapterUser
+    }
   } 
   else if (userData.provider === 'mastodon' && userData.profile) {
     const mastodonData = userData.profile
@@ -94,28 +106,53 @@ const createUser = async (
     userToCreate.mastodon_image = mastodonData.avatar
     userToCreate.mastodon_instance = mastodonData.url ? new URL(mastodonData.url).origin : null
     userToCreate.name = mastodonData.display_name // Utiliser le display_name Mastodon comme nom principal
+
+    // Chercher d'abord un utilisateur existant avec ce mastodon_id
+    const { data: existingUser } = await authClient
+      .from('users')
+      .select('*')
+      .eq('mastodon_id', mastodonData.id)
+      .single()
+
+    if (existingUser) {
+      console.log("→ Found existing user with Mastodon ID:", existingUser.id)
+      return existingUser as CustomAdapterUser
+    }
   }
   else if (userData.provider === 'bluesky' && userData.profile) {
     const blueskyData = userData.profile
     userToCreate.bluesky_id = blueskyData.did || blueskyData.id
     userToCreate.bluesky_username = blueskyData.handle || blueskyData.username
     userToCreate.bluesky_image = blueskyData.avatar
-    userToCreate.name = blueskyData.name || blueskyData.identifier
+    userToCreate.name = blueskyData.displayName || blueskyData.name // Utiliser le displayName Bluesky comme nom principal
+
+    // Chercher d'abord un utilisateur existant avec ce bluesky_id
+    const { data: existingUser } = await authClient
+      .from('users')
+      .select('*')
+      .eq('bluesky_id', userToCreate.bluesky_id)
+      .single()
+
+    if (existingUser) {
+      console.log("→ Found existing user with Bluesky ID:", existingUser.id)
+      return existingUser as CustomAdapterUser
+    }
   }
 
-  const { data: authUser, error: authError } = await authClient
-    .from("users")
+  // Si aucun utilisateur existant n'a été trouvé, créer un nouveau
+  console.log("→ Creating new user with data:", userToCreate)
+  const { data: newUser, error: createError } = await authClient
+    .from('users')
     .insert([userToCreate])
     .select()
     .single()
 
-  if (authError) {
-    console.error("❌ [Adapter] Error creating user in next-auth:", authError)
-    throw authError
+  if (createError) {
+    console.error("Error creating user:", createError)
+    throw new Error(createError.message)
   }
 
-  console.log("✅ [Adapter] User successfully created:", authUser)
-  return authUser
+  return newUser as CustomAdapterUser
 }
 
 const getUser = async (id: string): Promise<CustomAdapterUser | null> => {

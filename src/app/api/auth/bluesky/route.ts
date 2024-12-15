@@ -21,247 +21,191 @@ const supabase = createClient(
 
 export async function POST(req: Request) {
   try {
-    // Récupérer la session actuelle
-    const session = await auth();
-    console.log("SESSION FROM BLUESKY ROUTE:", session)
     const { identifier, password } = await req.json();
 
-    // Authenticate with BlueSky using the SDK
+    if (!identifier || !password) {
+      return NextResponse.json(
+        { error: 'Missing identifier or password' },
+        { status: 400 }
+      );
+    }
+
+    // Connexion à Bluesky
     const agent = new BskyAgent({ service: 'https://bsky.social' });
-    await agent.login({ identifier, password });
+    let session;
+    try {
+      session = await agent.login({ identifier, password });
+    } catch (error: any) {
+      console.error('Bluesky login error:', error);
+      return NextResponse.json(
+        { error: 'Invalid Bluesky credentials' },
+        { status: 401 }
+      );
+    }
 
-    // Get session data
-    const blueskyData = {
-      did: agent.session?.did!,
-      handle: agent.session?.handle!,
-      accessJwt: agent.session?.accessJwt!,
-      refreshJwt: agent.session?.refreshJwt!,
-    };
+    // Récupérer les informations du profil
+    const profile = await agent.getProfile({ actor: session.data.handle });
+    
+    // Chercher si l'utilisateur existe déjà
+    const existingUser = await supabase
+      .from('users')
+      .select('*')
+      .eq('bluesky_id', session.data.did)
+      .single();
 
-    // Get profile data using the SDK
-    const profileResponse = await agent.getProfile({ actor: blueskyData.handle });
-    const profileData = {
-      displayName: profileResponse.data.displayName || blueskyData.handle,
-      avatar: profileResponse.data.avatar || null
-    };
-
-    // Si nous avons une session, mettre à jour l'utilisateur existant
-    if (session?.user?.id) {
-      console.log("Updating existing user with ID:", session.user.id);
-      console.log("BlueSky data to update:", {
-        did: blueskyData.did,
-        handle: blueskyData.handle,
-        displayName: profileData.displayName,
-        avatar: profileData.avatar
-      });
-
-      // D'abord, vérifier si un autre utilisateur a déjà ces identifiants BlueSky
-      const { data: existingBlueSkyUser, error: checkError } = await supabase
-        .from('users')
-        .select('id')
-        .eq('bluesky_id', blueskyData.did)
-        .neq('id', session.user.id)
-        .single();
-
-      if (existingBlueSkyUser) {
-        throw new Error('This BlueSky account is already linked to another user');
-      }
-
-      // Mettre à jour l'utilisateur avec les informations BlueSky
-      const { data: updatedUser, error: userError } = await supabase
+    let userId;
+    
+    if (existingUser.data) {
+      // Mettre à jour l'utilisateur existant
+      const { error: updateError } = await supabase
         .from('users')
         .update({
-          bluesky_id: blueskyData.did,
-          bluesky_username: blueskyData.handle,
-          bluesky_image: profileData.avatar,
+          name: profile.data.displayName || profile.data.handle,
           updated_at: new Date().toISOString()
         })
-        .eq('id', session.user.id)
-        .select()
-        .single();
+        .eq('id', existingUser.data.id);
 
-      console.log("Update response - User:", updatedUser);
-      console.log("Update response - Error:", userError);
-
-      if (userError) {
-        console.error('Error updating user:', userError);
-        throw new Error('Failed to update user with BlueSky data');
+      if (updateError) {
+        console.error('Error updating user:', updateError);
+        return NextResponse.json(
+          { error: 'Failed to update user' },
+          { status: 500 }
+        );
       }
 
-      // Vérifier si un compte BlueSky existe déjà pour cet utilisateur
-      console.log("Checking for existing BlueSky account...");
-      const { data: existingAccount, error: accountQueryError } = await supabase
+      userId = existingUser.data.id;
+
+      // Mettre à jour les tokens dans la table accounts
+      const { error: accountUpdateError } = await supabase
         .from('accounts')
-        .select('*')
-        .eq('user_id', session.user.id)
-        .eq('provider', 'bluesky')
-        .single();
+        .update({
+          access_token: session.data.accessJwt,
+          refresh_token: session.data.refreshJwt,
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', userId)
+        // .eq('provider', 'bluesky');
 
-      console.log("Existing account check - Account:", existingAccount);
-      console.log("Existing account check - Error:", accountQueryError);
-
-      if (existingAccount) {
-        console.log("Updating existing BlueSky account...");
-        // Mettre à jour le compte existant
-        const { error: accountError } = await supabase
-          .from('accounts')
-          .update({
-            access_token: blueskyData.accessJwt,
-            refresh_token: blueskyData.refreshJwt,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', existingAccount.id);
-
-        console.log("Account update error:", accountError);
-
-        if (accountError) {
-          console.error('Error updating account:', accountError);
-          throw new Error('Failed to update BlueSky account');
-        }
-      } else {
-        console.log("Creating new BlueSky account...");
-        // Créer un nouveau compte BlueSky
-        const accountData = {
-          user_id: session.user.id,
-          type: 'oauth',
-          provider: 'bluesky',
-          provider_account_id: blueskyData.did,
-          access_token: blueskyData.accessJwt,
-          refresh_token: blueskyData.refreshJwt,
-          expires_at: null,
-          id_token: null,
-          scope: null,
-          session_state: null,
-          token_type: 'bearer'
-        };
-
-        console.log("New account data:", accountData);
-
-        const { error: accountError } = await supabase
-          .from('accounts')
-          .insert(accountData);
-
-        console.log("Account creation error:", accountError);
-
-        if (accountError) {
-          console.error('Error creating account:', accountError);
-          throw new Error('Failed to create BlueSky account association');
-        }
+      if (accountUpdateError) {
+        console.error('Error updating account:', accountUpdateError);
+        return NextResponse.json(
+          { error: 'Failed to update account' },
+          { status: 500 }
+        );
       }
     } else {
-      // Première connexion avec BlueSky
-      console.log("Creating new user with BlueSky credentials");
-
-      // Vérifier si un utilisateur existe déjà avec ce compte BlueSky
-      const { data: existingUser } = await supabase
-        .from('users')
-        .select('*')
-        .eq('bluesky_id', blueskyData.did)
-        .single();
-
-      if (existingUser) {
-        throw new Error('This BlueSky account is already linked to an existing user');
-      }
-
       // Créer un nouvel utilisateur
-      const { data: newUser, error: userError } = await supabase
+      const { data: newUser, error: createError } = await supabase
         .from('users')
         .insert({
-          name: profileData.displayName || blueskyData.handle,
-          email: `${blueskyData.did}@bsky.social`,
-          email_verified: new Date().toISOString(),
-          bluesky_id: blueskyData.did,
-          bluesky_username: blueskyData.handle,
-          bluesky_image: profileData.avatar,
-          has_onboarded: false,
+          name: profile.data.displayName || profile.data.handle,
+          bluesky_id: session.data.did,
+          // provider: 'bluesky',
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         })
         .select()
         .single();
 
-      if (userError) {
-        console.error('Error creating user:', userError);
-        throw new Error('Failed to create new user');
+      if (createError || !newUser) {
+        console.error('Error creating user:', createError);
+        return NextResponse.json(
+          { error: 'Failed to create user' },
+          { status: 500 }
+        );
       }
 
-      // Créer l'entrée dans la table accounts
-      const accountData = {
-        user_id: newUser.id,
-        type: 'oauth',
-        provider: 'bluesky',
-        provider_account_id: blueskyData.did,
-        access_token: blueskyData.accessJwt,
-        refresh_token: blueskyData.refreshJwt,
-        expires_at: null,
-        id_token: null,
-        scope: null,
-        session_state: null,
-        token_type: 'bearer'
-      };
+      userId = newUser.id;
 
+      // Créer l'entrée dans la table accounts
       const { error: accountError } = await supabase
         .from('accounts')
-        .insert(accountData);
+        .insert({
+          user_id: userId,
+          type: 'oauth',
+          provider: 'bluesky',
+          provider_account_id: session.data.did,
+          access_token: session.data.accessJwt,
+          refresh_token: session.data.refreshJwt,
+          token_type: 'bearer',
+          expires_at: null,
+          id_token: null,
+          scope: null,
+          session_state: null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        });
 
       if (accountError) {
         console.error('Error creating account:', accountError);
-        throw new Error('Failed to create BlueSky account');
+        return NextResponse.json(
+          { error: 'Failed to create account' },
+          { status: 500 }
+        );
       }
+    }
 
-      // Create session after user creation/update
-      const sessionToken = crypto.randomUUID();
-      const expires = new Date();
-      expires.setDate(expires.getDate() + 30); // 30 days from now
+    // Créer une session NextAuth
+    const sessionToken = crypto.randomUUID();
+    const expires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 jours
 
-      await supabase
-        .from('sessions')
-        .insert({
-          user_id: newUser.id,
-          expires: expires.toISOString(),
-          session_token: sessionToken,
-        });
+    await supabase.from('sessions').insert({
+      session_token: sessionToken,
+      user_id: userId,
+      expires: expires.toISOString(),
+    });
 
-      console.log("Successfully created new user and account for BlueSky");
-      
-      return NextResponse.json({
-        success: true,
-        user: newUser,
-        session: {
-          user: {
-            id: newUser.id,
-            name: newUser.name,
-            bluesky_id: newUser.bluesky_id,
-            bluesky_username: newUser.bluesky_username,
-            bluesky_image: newUser.bluesky_image,
-            has_onboarded: newUser.has_onboarded,
-          },
-          expires: expires.toISOString()
+    // Retourner la réponse avec le cookie de session
+    return NextResponse.json(
+      { 
+        ok: true,
+        user: {
+          id: userId,
+          name: profile.data.displayName || profile.data.handle,
+          bluesky_handle: session.data.handle
         }
-      }, {
+      },
+      {
         headers: {
           'Set-Cookie': `next-auth.session-token=${sessionToken}; Path=/; HttpOnly; SameSite=Lax; Expires=${expires.toUTCString()}`
         }
-      });
-    }
-
-    // Return the BlueSky authentication data
-    return NextResponse.json({
-      did: blueskyData.did,
-      handle: blueskyData.handle,
-      accessJwt: blueskyData.accessJwt,
-      refreshJwt: blueskyData.refreshJwt,
-      profile: {
-        displayName: profileData.displayName,
-        avatar: profileData.avatar
       }
-    });
+    );
 
   } catch (error) {
-    console.error('Error in BlueSky authentication:', error);
+    console.error('Authentication error:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'An error occurred' },
+      { error: 'Authentication failed' },
       { status: 500 }
     );
+  }
+}
+
+export async function DELETE(req: Request) {
+  const session = await auth();
+  
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+  }
+
+  try {
+    // Supprimer la session de la base de données
+    await supabase
+      .from('sessions')
+      .delete()
+      .eq('user_id', session.user.id);
+
+    // Retourner une réponse avec un cookie expiré
+    return NextResponse.json(
+      { success: true },
+      {
+        headers: {
+          'Set-Cookie': `next-auth.session-token=; Path=/; HttpOnly; SameSite=Lax; Expires=Thu, 01 Jan 1970 00:00:00 GMT`
+        }
+      }
+    );
+  } catch (error) {
+    console.error('Error signing out:', error);
+    return NextResponse.json({ error: 'Failed to sign out' }, { status: 500 });
   }
 }

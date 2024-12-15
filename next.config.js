@@ -5,7 +5,7 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   images: {
-    domains: ['pbs.twimg.com', 'abs.twimg.com', 'cdn.bsky.app'],
+    domains: ['pbs.twimg.com', 'abs.twimg.com', 'cdn.bsky.app', 'mastodon.social']
   },
   headers: async () => {
     return [

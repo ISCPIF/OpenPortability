@@ -42,7 +42,9 @@ export default function SignIn() {
   const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
+    // setIsLoading(true)
     if (session) {
+      setIsLoading(true)
       router.push("/dashboard")
     }
   }, [session, router])
@@ -174,12 +176,12 @@ export default function SignIn() {
                 )}
               </motion.div>
 
-              {/* Mastodon Button and Form */}
-               <motion.div variants={itemVariants}>
+              {/* Mastodon Button */}
+              <motion.div variants={itemVariants}>
                 <motion.button
                   whileHover={{ scale: 1.02, boxShadow: "0 0 20px rgba(168, 85, 247, 0.5)" }}
                   whileTap={{ scale: 0.98 }}
-                  onClick={() => setShowMastodonForm(!showMastodonForm)}
+                  onClick={() => handleSignIn("mastodon")}
                   onMouseEnter={() => setActiveButton("mastodon")}
                   onMouseLeave={() => setActiveButton(null)}
                   className="w-full flex items-center justify-center gap-3 px-4 py-3 
@@ -200,19 +202,6 @@ export default function SignIn() {
                   </motion.div>
                   <span>Continuer avec Mastodon</span>
                 </motion.button>
-                <AnimatePresence>
-                  {showMastodonForm && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.3, ease: "easeInOut" }}
-                      className="mt-4"
-                    >
-                      <MastodonLogin />
-                    </motion.div>
-                  )}
-                </AnimatePresence>
               </motion.div> 
             </motion.div>
           </motion.div>

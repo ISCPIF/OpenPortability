@@ -17,7 +17,7 @@ const UploadButton = dynamic(() => import('../_components/UploadButton'), {
 
 interface UploadStats {
   following: number;
-  // followers: number;
+  followers: number;
 }
 
 interface ExtractedFile {
@@ -35,6 +35,8 @@ export default function UploadPage() {
   const [pendingFiles, setPendingFiles] = useState<FileList | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [uploadStats, setUploadStats] = useState<UploadStats | null>(null);
+  const [showStats, setShowStats] = useState(false);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -190,7 +192,12 @@ export default function UploadPage() {
 
   const handleUploadComplete = async (stats: UploadStats) => {
     console.log('✅ Upload terminé avec succès:', stats);
-    router.push('/dashboard');
+    setUploadStats(stats);
+    setShowStats(true);
+    // Redirection après 3 secondes
+    setTimeout(() => {
+      router.push('/dashboard');
+    }, 3000);
   };
 
   const handleUploadError = (errorMessage: string) => {
@@ -301,6 +308,17 @@ export default function UploadPage() {
                   </div>
                 </div>
               )}
+              {showStats && uploadStats && (
+                <div className="text-center mb-6 p-4 bg-green-50 rounded-lg">
+                  <h2 className="text-xl font-semibold text-green-800 mb-2">Upload Successful!</h2>
+                  <p className="text-green-700">
+                    Found {uploadStats.following} following accounts and {uploadStats.followers} followers.
+                  </p>
+                  <p className="text-sm text-green-600 mt-2">
+                    Redirecting to dashboard...
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 
@@ -309,7 +327,7 @@ export default function UploadPage() {
             onClose={() => setError(null)}
             message={error || ''}
           />
-
+          
           <ConsentModal
             isOpen={showConsent}
             onAccept={handleConsentAccept}

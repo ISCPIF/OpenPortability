@@ -8,9 +8,13 @@ import BlueSkyLogin from '@/app/_components/BlueSkyLogin';
 import MastodonLogin from '@/app/_components/MastodonLogin';
 import ConnectedAccounts from '@/app/_components/ConnectedAccounts';
 import MatchedBlueSkyProfiles from '@/app/_components/MatchedBlueSkyProfiles';
+import UploadResults from '@/app/_components/UploadResults';
+import ProgressSteps from '@/app/_components/ProgressSteps';
+import PartageButton from '@/app/_components/PartageButton';
 import { useSession, signIn } from 'next-auth/react';
 import { motion } from 'framer-motion';
 import { CheckCircle } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 
 type MatchedProfile = {
   bluesky_handle: string
@@ -31,24 +35,64 @@ const LoginButton = ({ provider, onClick, children }: { provider: string, onClic
 
 export default function DashboardPage() {
   const { data: session } = useSession()
+  console.log('session:', session)
   const router = useRouter();
   const [stats, setStats] = useState({
     matchedCount: 0,
     totalUsers: 0,
+    following: 0,
+    followers: 0,
   });
   const [matchedProfiles, setMatchedProfiles] = useState<MatchedProfile[]>([]);
+  const [isLoading, setIsLoading] = useState(true)
 
   // Déterminer quels comptes sont connectés
   const hasMastodon = session?.user?.mastodon_id;
-  const hasTwitter = session?.user?.twitter_id;
   const hasBluesky = session?.user?.bluesky_id;
+  const hasTwitter = session?.user?.twitter_id;
+  const hasOnboarded = session?.user?.has_onboarded;
 
-  console.log('session:', session)
+  const handleShare = async (url: string, platform: string) => {
+    if (session?.user?.id) {
+      try {
+        const { data, error } = await supabase
+          .from('share_events')
+          .insert({
+            user_id: session.user.id,
+            platform,
+            shared_at: new Date().toISOString(),
+            success: true,
+            created_at: new Date().toISOString()
+          })
+          .select()
+          .single()
+
+        if (error) {
+          console.error('Supabase error:', error.message, error.details)
+          throw error
+        }
+
+        console.log('Share event created:', data)
+      } catch (error: any) {
+        console.error('Error tracking share:', {
+          message: error?.message,
+          details: error?.details,
+          error
+        })
+      }
+    }
+    
+    // Toujours ouvrir l'URL, même en cas d'erreur
+    window.open(url, '_blank')
+  }
 
   useEffect(() => {
     async function fetchStats() {
       if (session?.user?.twitter_id) {
         try {
+          // Simuler un chargement de 3 secondes
+          await new Promise(resolve => setTimeout(resolve, 4000))
+          
           // Récupérer les correspondances BlueSky pour l'utilisateur
           const { data: matches, error: matchError } = await supabase
             .from('matched_bluesky_mappings')
@@ -68,18 +112,50 @@ export default function DashboardPage() {
             .select('*', { count: 'exact' });
 
           if (usersError) {
+            console.log(usersError)
             console.error('Erreur lors de la récupération du nombre total d\'utilisateurs:', usersError);
           } else {
             setStats(s => ({ ...s, totalUsers: totalConnectedUsers || 0 }));
           }
+
+          // Récupérer le nombre de following
+          const { data: followingStats, error: followingError } = await supabase
+            .from('sources_targets')
+            .select('target_twitter_id')
+            .eq('source_id', session.user.id);
+
+          console.log('followingStats:', followingStats);
+
+          // Récupérer le nombre de followers
+          const { data: followerStats, error: followerError } = await supabase
+            .from('sources_followers')
+            .select('follower_id')
+            .eq('source_id', session.user.id);
+
+          console.log('followerStats:', followerStats);
+          
+          if (!followingError && !followerError) {
+            setStats(s => ({ 
+              ...s, 
+              following: followingStats?.length || 0,
+              followers: followerStats?.length || 0
+            }));
+          } else {
+            console.error('Erreur lors de la récupération des stats:', { followingError, followerError });
+          }
+
         } catch (error) {
           console.error('Erreur inattendue:', error);
+        } finally {
+          setIsLoading(false)
         }
+      } else {
+        setIsLoading(false)
       }
     }
 
     fetchStats();
-  }, [session]);
+  }, [session, hasOnboarded]);
 
   const renderLoginButtons = () => {
     const remainingButtons = [];
@@ -126,70 +202,89 @@ export default function DashboardPage() {
     ) : null;
   };
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="flex flex-col items-center gap-4"
+        >
+          <Loader2 className="w-12 h-12 text-white animate-spin" />
+          <p className="text-white/60">Chargement de vos données...</p>
+        </motion.div>
+      </div>
+    )
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-pink-700">
       <Header />
       
+      {/* Frise chronologique */}
+      <div className="container mx-auto px-4 py-12">
+        <div className="max-w-2xl mx-auto space-y-6">
+          <ProgressSteps
+            hasTwitter={hasTwitter}
+            hasBluesky={hasBluesky}
+            hasMastodon={hasMastodon}
+            hasOnboarded={hasOnboarded}
+            stats={stats}
+          />
+          
+          {/* Bouton de partage
+          <div className="flex justify-center mb-8">
+            <PartageButton onShare={handleShare} />
+          </div> */}
+        </div>
+      </div>
+
       <main className="container mx-auto px-4 py-8">
-        <div className="max-w-4xl mx-auto mb-12">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center mb-12"
-          >
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 text-transparent bg-clip-text mb-6">
-              Bienvenue sur HelloQuitteX
-            </h1>
-            
-            {renderLoginButtons()}
+        <div className="max-w-2xl mx-auto space-y-8">
+          {hasOnboarded && (
+            <UploadResults 
+              stats={{
+                following: stats.following,
+                followers: stats.followers
+              }}
+              onShare={handleShare}
+            />
+          )}
 
-            {session?.user?.has_onboarded === false && hasTwitter && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-                className="mt-8"
+          {/* Afficher le bouton d'upload si l'utilisateur n'a pas encore onboarded */}
+          {!hasOnboarded && hasTwitter && (
+            <div className="text-center">
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => router.push('/upload')}
+                className="inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-sky-400 to-blue-500 
+                         text-white font-semibold rounded-xl shadow-lg hover:from-sky-500 hover:to-blue-600 
+                         transition-all duration-300 mb-4"
               >
-                <p className="text-lg text-gray-300 mb-4">
-                  Prêt à migrer vos abonnements Twitter vers BlueSky ?
-                </p>
-                <motion.div
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <a
-                    href="/upload"
-                    className="inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-blue-500 to-purple-600 
-                             text-white font-semibold rounded-xl shadow-lg hover:from-blue-600 hover:to-purple-700 
-                             transition-all duration-300"
-                  >
-                    <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M12 5L12 19M12 5L6 11M12 5L18 11" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                    Commencer votre migration
-                  </a>
-                </motion.div>
-              </motion.div>
-            )}
-          </motion.div>
-
-          {/* Stats */}
-          {(hasTwitter || hasMastodon || hasBluesky) && (
-            <div className="grid grid-cols-3 gap-4 mb-8">
-              <div className="bg-white/5 backdrop-blur-sm rounded-lg p-4 text-center border border-white/10">
-                <p className="text-2xl font-bold text-white">{stats.matchedCount}</p>
-                <p className="text-sm text-white/60">Correspondances BlueSky</p>
-                <MatchedBlueSkyProfiles profiles={matchedProfiles} />
-              </div>
-              <div className="bg-white/5 backdrop-blur-sm rounded-lg p-4 text-center border border-white/10">
-                <p className="text-2xl font-bold text-white">{stats.totalUsers}</p>
-                <p className="text-sm text-white/60">Utilisateur·rice·s Connecté·e·s</p>
-              </div>
-              <div className="bg-white/5 backdrop-blur-sm rounded-lg p-4 text-center border border-white/10">
-                <ConnectedAccounts />
-              </div>
+                <CheckCircle className="w-6 h-6" />
+                Importer mes abonnements Twitter
+              </motion.button>
             </div>
           )}
+
+          {/* Boutons de connexion pour les autres services */}
+          {renderLoginButtons()}
+
+          {/* <ConnectedAccounts
+            hasTwitter={hasTwitter}
+            hasMastodon={hasMastodon}
+            hasBluesky={hasBluesky}
+          /> */}
+
+          {/* Afficher les profils BlueSky correspondants */}
+          {/* {hasTwitter && (
+            <MatchedBlueSkyProfiles
+              matchedCount={stats.matchedCount}
+              totalUsers={stats.totalUsers}
+              profiles={matchedProfiles}
+            />
+          )} */}
         </div>
       </main>
     </div>

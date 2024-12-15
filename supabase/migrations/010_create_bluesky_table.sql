@@ -44,15 +44,67 @@ from public.bluesky_mappings bm
 left join public.targets t on t.twitter_id = bm.twitter_id
 where t.twitter_id is null;
 
+-- Create followers table to store Twitter followers
+create table if not exists "public"."followers" (
+    "twitter_id" text primary key,
+    "username" text,
+    "name" text,
+    "created_at" timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- Enable RLS on followers
+alter table "public"."followers" enable row level security;
+
+-- Create RLS policies for followers
+create policy "Followers are viewable by everyone"
+    on followers for select using ( true );
+
+create policy "Authenticated users can create followers"
+    on followers for insert 
+    with check ( auth.uid() in (select id from public.sources) );
+
+-- Create sources_followers table to store relationships
+create table if not exists "public"."sources_followers" (
+    "source_id" uuid references public.sources(id) on delete cascade,
+    "source_twitter_id" text references public.sources(twitter_id) on delete cascade,
+    "follower_id" text references public.followers(twitter_id) on delete cascade,
+    "created_at" timestamp with time zone default timezone('utc'::text, now()) not null,
+    primary key (source_id, follower_id)
+);
+
+-- Enable RLS on sources_followers
+alter table "public"."sources_followers" enable row level security;
+
+-- Create RLS policies for sources_followers
+create policy "Sources followers are viewable by everyone"
+    on sources_followers for select using ( true );
+
+create policy "Users can manage their own followers"
+    on sources_followers for all
+    using ( auth.uid() = source_id );
+
+-- Add indexes for better query performance
+create index if not exists idx_followers_twitter_id 
+    on public.followers(twitter_id);
+create index if not exists idx_sources_followers_source_id 
+    on public.sources_followers(source_id);
+create index if not exists idx_sources_followers_follower_id 
+    on public.sources_followers(follower_id);
+
 -- Vue pour les utilisateurs connectés avec Twitter et Bluesky
 create or replace view "public"."connected_users_bluesky_mapping" as
 select 
-    id as user_id,
-    username as twitter_username,
-    full_name as twitter_name,
-    twitter_id,
-    bluesky_id,
-    updated_at
-from public.sources
-where twitter_id is not null 
-and bluesky_id is not null;
+    s.id as user_id,
+    s.username as twitter_username,
+    s.full_name as twitter_name,
+    s.twitter_id,
+    s.bluesky_id,
+    s.updated_at,
+    count(distinct st.target_twitter_id) as following_count,
+    count(distinct sf.follower_id) as followers_count
+from public.sources s
+left join public.sources_targets st on st.source_id = s.id
+left join public.sources_followers sf on sf.source_id = s.id
+where s.twitter_id is not null 
+and s.bluesky_id is not null
+group by s.id, s.username, s.full_name, s.twitter_id, s.bluesky_id, s.updated_at;

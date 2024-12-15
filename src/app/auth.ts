@@ -23,11 +23,11 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
   },
   callbacks: {
     async jwt({ token, user, account, profile }) {
-      console.log("\n=== JWT Callback ===")
-      console.log("Token:", token)
-      console.log("User:", user)
-      console.log("Account:", account)
-      console.log("Profile:", profile)
+      // console.log("\n=== JWT Callback ===")
+      // console.log("Token:", token)
+      // console.log("User:", user)
+      // console.log("Account:", account)
+      // console.log("Profile:", profile)
 
       if (user) {
         // Initial sign in - copy user info to token
@@ -74,9 +74,9 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
     },
 
     async session({ session, token }) {
-      console.log("\n=== Session Callback ===")
-      console.log("Token content:", token)
-      console.log("Session content:", session)
+      // console.log("\n=== Session Callback ===")
+      // console.log("Token content:", token)
+      // console.log("Session content:", session)
       
       if (session.user && token) {
         // Get the latest user data from the database
@@ -87,7 +87,7 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
           session.user = {
             ...session.user,
             id: token.id as string,
-            has_onboarded: token.has_onboarded as boolean,
+            has_onboarded: user.has_onboarded,
             name: token.name,
             
             // Twitter info from token (most recent)
@@ -109,8 +109,8 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
         }
       }
 
-      console.log("Session provider called !")
-      console.log("session:", session)
+      // console.log("Session provider called !")
+      // console.log("session:", session)
       return session
     },
 
