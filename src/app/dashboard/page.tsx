@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
 import Header from '@/app/_components/Header';
 import Image from 'next/image'
+import { supabase } from '@/lib/supabase';
 import BlueSkyLogin from '@/app/_components/BlueSkyLogin';
 import MastodonLogin from '@/app/_components/MastodonLogin';
 import ConnectedAccounts from '@/app/_components/ConnectedAccounts';
@@ -18,12 +18,20 @@ import { CheckCircle, Link } from 'lucide-react';
 import { Loader2 } from 'lucide-react';
 import seaBackground from '../../../public/sea.svg'
 import boat1 from '../../../public/boats/boat-1.svg'
-import progress0 from '../../../public/progress/progress-0.svg'
-import progress33 from '../../../public/progress/progress-33.svg'
-import progress66 from '../../../public/progress/progress-66.svg'
+// import progress0 from '../../../public/progress/progress-0.svg'
+import progress25 from '../../../public/progress/progress-25.svg'
+import progress50 from '../../../public/progress/progress-50.svg'
+import progress75 from '../../../public/progress/progress-75.svg'
 import progress100 from '../../../public/progress/progress-100.svg'
 import { plex } from '../fonts/plex';
 import logoHQX from '../../../public/BannerHQX-rose_FR.svg'
+import DashboardLoginButtons from '@/app/_components/DashboardLoginButtons';
+
+// const supabase = createClient(
+//   process.env.NEXT_PUBLIC_SUPABASE_URL!,
+//   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+// );
+
 
 
 type MatchedProfile = {
@@ -44,17 +52,20 @@ const LoginButton = ({ provider, onClick, children }: { provider: string, onClic
 );
 
 export default function DashboardPage() {
-  const { data: session } = useSession()
-  console.log('session:', session)
+  const { data: session, update } = useSession()
+  // console.log('session:', session)
   const router = useRouter();
   const [stats, setStats] = useState({
     matchedCount: 0,
     totalUsers: 0,
     following: 0,
     followers: 0,
+    // totalConnectedUsers: 0
   });
   const [matchedProfiles, setMatchedProfiles] = useState<MatchedProfile[]>([]);
   const [isLoading, setIsLoading] = useState(true)
+  const [isShared, setIsShared] = useState(false);
+  const [progress, setProgress] = useState(0);
 
   // Déterminer quels comptes sont connectés
   const hasMastodon = session?.user?.mastodon_id;
@@ -62,49 +73,116 @@ export default function DashboardPage() {
   const hasTwitter = session?.user?.twitter_id;
   const hasOnboarded = session?.user?.has_onboarded;
 
+
   const handleShare = async (url: string, platform: string) => {
-    if (session?.user?.id) {
-      try {
-        const { data, error } = await supabase
-          .from('share_events')
-          .insert({
-            user_id: session.user.id,
-            platform,
-            shared_at: new Date().toISOString(),
-            success: true,
-            created_at: new Date().toISOString()
-          })
-          .select()
-          .single()
+    console.log('🚀 handleShare started');
+    console.log('Platform:', platform, 'URL:', url);
+    update()
 
-        if (error) {
-          console.error('Supabase error:', error.message, error.details)
-          throw error
-        }
-
-        console.log('Share event created:', data)
-      } catch (error: any) {
-        console.error('Error tracking share:', {
-          message: error?.message,
-          details: error?.details,
-          error
-        })
-      }
+    if (!session?.user?.id) {
+      console.log('❌ No user session found, returning');
+      return;
     }
+  
+    try {
+      // Ouvrir l'URL dans un nouvel onglet
+      window.open(url, '_blank');
+      console.log('✅ URL opened in new tab');
+  
+      // Enregistrer via l'API
+      const response = await fetch('/api/share', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          platform,
+          success: true
+        })
+      });
+  
+      if (!response.ok) {
+        throw new Error('Failed to record share event');
+      }
+  
+      console.log('✅ Share event recorded successfully');
+      setIsShared(true);
+    } catch (error) {
+      console.error('❌ Error during share process:', error);
+      
+      // Enregistrer l'échec via l'API
+      await fetch('/api/share', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          platform,
+          success: false
+        })
+      }).catch(console.error);
+    }
+  };
 
-    // Toujours ouvrir l'URL, même en cas d'erreur
-    window.open(url, '_blank')
-  }
+  useEffect(() => {
+    update()
+  }, []);
 
   useEffect(() => {
     async function fetchStats() {
-      if (session?.user?.twitter_id) {
+      if (session?.user?.has_onboarded) {
+        try {
+          // Récupérer le nombre total d'utilisateurs connectés
+          const { count: totalUsers, error: usersError } = await supabase
+            .schema('public')
+            .from('sources')
+            .select('*', { count: 'exact' });
+          
+          if (usersError) {
+            console.log(usersError)
+            console.error('Erreur lors de la récupération du nombre total d\'utilisateurs:', usersError);
+          }
+
+          // Récupérer le nombre de following
+          const { data: followingStats, error: followingError } = await supabase
+            .schema('public')
+            .from('sources_targets')
+            .select('target_twitter_id')
+            .eq('source_id', session.user.id);
+
+          // Récupérer le nombre de followers
+          const { data: followerStats, error: followerError } = await supabase
+            .schema('public')
+            .from('sources_followers')
+            .select('follower_id')
+            .eq('source_id', session.user.id);
+
+          setStats(s => ({
+            ...s,
+            totalUsers: totalUsers || 0,
+            following: followingStats?.length || 0,
+            followers: followerStats?.length || 0
+          }));
+
+        } catch (error) {
+          console.error('Erreur lors de la récupération des stats:', error);
+        }
+      }
+    }
+    fetchStats();
+  }, [session]);
+
+  useEffect(() => {
+    async function fetchStats() {
+      console.log('session from useEffect:', session)
+      if (session?.user?.has_onboarded) {
         try {
           // Simuler un chargement de 3 secondes
           await new Promise(resolve => setTimeout(resolve, 4000))
 
           // Récupérer les correspondances BlueSky pour l'utilisateur
           const { data: matches, error: matchError } = await supabase
+            .schema('public')
             .from('matched_bluesky_mappings')
             .select('bluesky_handle')
             .eq('source_twitter_id', session.user.twitter_id);
@@ -118,9 +196,10 @@ export default function DashboardPage() {
 
           // Récupérer le nombre total d'utilisateurs connectés
           const { count: totalConnectedUsers, error: usersError } = await supabase
-            .from('connected_users_bluesky_mapping')
+            .schema('public')
+            .from('sources')
             .select('*', { count: 'exact' });
-
+          console.log('totalConnectedUsers:', totalConnectedUsers);
           if (usersError) {
             console.log(usersError)
             console.error('Erreur lors de la récupération du nombre total d\'utilisateurs:', usersError);
@@ -130,6 +209,7 @@ export default function DashboardPage() {
 
           // Récupérer le nombre de following
           const { data: followingStats, error: followingError } = await supabase
+            .schema('public')
             .from('sources_targets')
             .select('target_twitter_id')
             .eq('source_id', session.user.id);
@@ -138,6 +218,7 @@ export default function DashboardPage() {
 
           // Récupérer le nombre de followers
           const { data: followerStats, error: followerError } = await supabase
+            .schema('public')
             .from('sources_followers')
             .select('follower_id')
             .eq('source_id', session.user.id);
@@ -165,51 +246,16 @@ export default function DashboardPage() {
     }
 
     fetchStats();
-  }, [session, hasOnboarded]);
+  }, [session]);
 
-  const renderLoginButtons = () => {
-    const remainingButtons = [];
 
-    if (!hasTwitter) {
-      remainingButtons.push(
-        <LoginButton key="connect-twitter" provider="twitter" onClick={() => signIn("twitter")}>
-          <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M23.643 4.937c-.835.37-1.732.62-2.675.733.962-.576 1.7-1.49 2.048-2.578-.9.534-1.897.922-2.958 1.13-.85-.904-2.06-1.47-3.4-1.47-2.572 0-4.658 2.086-4.658 4.66 0 .364.042.718.12 1.06-3.873-.195-7.304-2.05-9.602-4.868-.4.69-.63 1.49-.63 2.342 0 1.616.823 3.043 2.072 3.878-.764-.025-1.482-.234-2.11-.583v.06c0 2.257 1.605 4.14 3.737 4.568-.392.106-.803.162-1.227.162-.3 0-.593-.028-.877-.082.593 1.85 2.313 3.198 4.352 3.234-1.595 1.25-3.604 1.995-5.786 1.995-.376 0-.747-.022-1.112-.065 2.062 1.323 4.51 2.093 7.14 2.093 8.57 0 13.255-7.098 13.255-13.254 0-.2-.005-.402-.014-.602.91-.658 1.7-1.477 2.323-2.41z" />
-          </svg>
-          Se connecter avec Twitter
-        </LoginButton>
-      );
-    }
-
-    if (!hasMastodon) {
-      remainingButtons.push(
-        <LoginButton key="connect-mastodon" provider="mastodon" onClick={() => signIn("mastodon")}>
-          Se connecter avec Mastodon
-        </LoginButton>
-      );
-    }
-
-    if (!hasBluesky) {
-      remainingButtons.push(
-        <div key="connect-bluesky" className="w-full">
-          <BlueSkyLogin onLoginComplete={() => {
-            // Optionally handle successful login
-            router.refresh();
-          }} />
-        </div>
-      );
-    }
-
-    return remainingButtons.length > 0 ? (
-      <div className="space-y-4">
-        <p className="text-lg text-gray-300 mb-4">
-          Connectez d'autres comptes pour enrichir votre expérience
-        </p>
-        <div className="space-y-4">
-          {remainingButtons}
-        </div>
-      </div>
-    ) : null;
+  const getProgressImage = () => {
+    // if (progress <= 0) return progress0;
+    if (progress <= 25) return progress25;
+    if (progress <= 50) return progress50;
+    if (progress <= 75) return progress75;
+    if (progress <= 100) return progress100;
+    return progress25;
   };
 
   if (isLoading) {
@@ -241,7 +287,7 @@ export default function DashboardPage() {
         />
         <div className="container flex flex-col mx-auto text-center gap-y-4 px-6 lg:gap-y-8 text-[#282729] relative my-8 lg:my-14 max-w-[50rem]">
           <h1 className={`${plex.className} text-2xl lg:text-3xl font-light`}>Bienvenue à bord d’HelloQuitX !</h1>
-          <p className={`${plex.className} text-lg lg:text-xl font-normal`}>Effectuez les étapes suivantes pour voguer vers de nouveaux horizons et enfin QUITTER X !</p>
+          {/* <p className={`${plex.className} text-lg lg:text-xl font-normal`}>Effectuez les étapes suivantes pour voguer vers de nouveaux horizons et enfin QUITTER X !</p> */}
         </div>
         <motion.div className="absolute top-[65%] left-[46.5%]" style={{ originX: 0.5, originY: 1 }}
           transition={{
@@ -256,39 +302,67 @@ export default function DashboardPage() {
         >
           <Image src={boat1} width={110} height={88} alt="" className=""></Image>
         </motion.div>
-        <Image src={progress0} width={80} height={82} alt="" className="absolute top-[87%] left-[48%]"></Image>
+        <Image src={getProgressImage()} width={80} height={82} alt="" className="absolute top-[87%] left-[48%]"></Image>
       </div>
       <div className="mx-auto px-4 my-[30rem]">
         {/* Frise chronologique */}
         <div className="container mx-auto px-4 py-12">
           <div className="max-w-2xl mx-auto space-y-6">
+            {/* Message conditionnel basé sur le progrès */}
+            <div className="text-center mb-8">
+              {progress === 100 ? (
+                <div className="space-y-2">
+                  <h2 className={`${plex.className} text-xl font-semibold text-indigo-100`}>
+                    Vous avez réalisé la première étape de votre migration
+                  </h2>
+                  <p className={`${plex.className} text-indigo-200`}>
+                    {Math.ceil((new Date('2025-01-20').getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} restants jours avant le grand départ
+                  </p>
+                </div>
+              ) : (
+                <h2 className={`${plex.className} text-xl font-semibold text-indigo-100`}>
+                  Effectuez les étapes suivantes pour voguer vers de nouveaux horizons et enfin quitter X
+                </h2>
+              )}
+            </div>
+
             <ProgressSteps
               hasTwitter={hasTwitter}
               hasBluesky={hasBluesky}
               hasMastodon={hasMastodon}
               hasOnboarded={hasOnboarded}
               stats={stats}
+              onShare={handleShare}
+              isShared={isShared}
+              onProgressChange={setProgress}
+              userId={session?.user?.id}
+              twitterId={session?.user?.twitter_id}
+              isLoading={isLoading}
+              setIsLoading={setIsLoading}
             />
-
-            {/* Bouton de partage
-          <div className="flex justify-center mb-8">
-            <PartageButton onShare={handleShare} />
-          </div> */}
           </div>
         </div>
         <div className="max-w-2xl mx-auto space-y-8">
-          {hasOnboarded && (
-            <UploadResults
-              stats={{
-                following: stats.following,
-                followers: stats.followers
-              }}
+          {stats && session?.user?.has_onboarded && (
+            <UploadResults 
+              stats={stats} 
               onShare={handleShare}
             />
           )}
-
+          <div className="max-w-md mx-auto">
+            <DashboardLoginButtons 
+              connectedServices={{
+                twitter: !!session?.user?.twitter_id,
+                bluesky: !!session?.user?.bluesky_id,
+                mastodon: !!session?.user?.mastodon_id
+              }}
+              hasUploadedArchive={!!stats}
+              onLoadingChange={setIsLoading}
+            />
+          </div>
+          {/* Removed old button since it's now handled by DashboardLoginButtons */}
           {/* Afficher le bouton d'upload si l'utilisateur n'a pas encore onboarded */}
-          {!hasOnboarded && hasTwitter && (
+          {!hasOnboarded && (
             <div className="text-center">
               <motion.button
                 whileHover={{ scale: 1.05 }}
@@ -299,13 +373,12 @@ export default function DashboardPage() {
                          transition-all duration-300 mb-4"
               >
                 <CheckCircle className="w-6 h-6" />
-                Importer mes abonnements Twitter
+                Importer mon archive Twitter pour continuer ma migration
               </motion.button>
             </div>
           )}
-
           {/* Boutons de connexion pour les autres services */}
-          {renderLoginButtons()}
+          {/* {renderLoginButtons()} */}
 
           {/* <ConnectedAccounts
             hasTwitter={hasTwitter}

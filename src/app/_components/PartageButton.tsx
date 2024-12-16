@@ -31,7 +31,7 @@ export default function PartageButton({ onShare }: PartageButtonProps) {
       icon: <SiBluesky className="w-5 h-5" />,
       color: 'bg-[#0085FF]',
       isAvailable: !!session?.user?.bluesky_id,
-      shareUrl: `https://bsky.app/intent/compose?text=${encodeURIComponent(shareText + ' ' + shareUrl)}`
+      shareUrl: `https://bsky.app/intent/compose?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`
     },
     {
       name: 'Mastodon',
@@ -39,7 +39,7 @@ export default function PartageButton({ onShare }: PartageButtonProps) {
       color: 'bg-[#6364FF]',
       isAvailable: !!session?.user?.mastodon_id,
       shareUrl: session?.user?.mastodon_instance 
-        ? `${session.user.mastodon_instance}/share?text=${encodeURIComponent(shareText + ' ' + shareUrl)}`
+        ? `${session.user.mastodon_instance}/share?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`
         : ''
     },
     {
