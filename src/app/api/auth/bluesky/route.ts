@@ -50,30 +50,44 @@ export async function POST(req: Request) {
     // Récupérer les informations du profil
     console.log('Fetching BlueSky profile...');
     const profile = await agent.getProfile({ actor: session.data.handle });
-    console.log('Profile fetched:', {
-      profile
-    });
+    console.log('Profile fetched:', { profile });
 
-    // Chercher si l'utilisateur existe déjà
-    console.log('Checking for existing user with BlueSky ID:', session.data.did);
-    const existingUser = await supabase
+    // Vérifier si le BlueSky ID est déjà utilisé
+    console.log('Checking if BlueSky ID exists:', session.data.did);
+    const existingBlueSkyId = await supabase
       .from('users')
-      .select('*')
+      .select('id')
       .eq('bluesky_id', session.data.did)
       .single();
 
+    if (existingBlueSkyId.data) {
+      console.log('BlueSky ID already in use');
+      return NextResponse.json(
+        { error: 'Ce compte BlueSky est déjà lié à un autre utilisateur' },
+        { status: 400 }
+      );
+    }
+
+    // Vérifier si c'est une première connexion ou un ajout de compte
+    const currentSession = await auth();
+    console.log('Current session:', currentSession);
+
     let userId;
-    
-    if (existingUser.data) {
-      console.log('Existing user found, updating...', existingUser.data);
-      // Mettre à jour l'utilisateur existant
+
+    if (currentSession?.user?.id) {
+      // Cas de linking account : utilisateur déjà connecté
+      console.log('Linking BlueSky account to existing user:', currentSession.user.id);
+      
+      // Mettre à jour l'utilisateur existant avec les infos BlueSky
       const { error: updateError } = await supabase
         .from('users')
         .update({
-          name: profile.data.displayName || profile.data.handle,
+          bluesky_id: session.data.did,
+          bluesky_username: session.data.handle,
+          bluesky_image: profile.data.avatar,
           updated_at: new Date().toISOString()
         })
-        .eq('id', existingUser.data.id);
+        .eq('id', currentSession.user.id);
 
       if (updateError) {
         console.error('Error updating user:', updateError);
@@ -83,29 +97,10 @@ export async function POST(req: Request) {
         );
       }
 
-      userId = existingUser.data.id;
-
-      // Mettre à jour les tokens dans la table accounts
-      const { error: accountUpdateError } = await supabase
-        .from('accounts')
-        .update({
-          access_token: session.data.accessJwt,
-          refresh_token: session.data.refreshJwt,
-          updated_at: new Date().toISOString()
-        })
-        .eq('user_id', userId)
-        // .eq('provider', 'bluesky');
-
-      if (accountUpdateError) {
-        console.error('Error updating account:', accountUpdateError);
-        return NextResponse.json(
-          { error: 'Failed to update account' },
-          { status: 500 }
-        );
-      }
+      userId = currentSession.user.id;
     } else {
-      console.log('Creating new user...');
-      // Créer un nouvel utilisateur
+      // Cas de création : nouvel utilisateur
+      console.log('Creating new user with BlueSky account');
       const { data: newUser, error: createError } = await supabase
         .from('users')
         .insert({
@@ -113,13 +108,6 @@ export async function POST(req: Request) {
           bluesky_id: session.data.did,
           bluesky_username: session.data.handle,
           bluesky_image: profile.data.avatar,
-          // twitter_id: null,
-          // twitter_username: null,
-          // twitter_image: null,
-          // mastodon_id: null,
-          // mastodon_username: null,
-          // mastodon_image: null,
-          // mastodon_instance: null,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         })
@@ -135,33 +123,34 @@ export async function POST(req: Request) {
       }
 
       userId = newUser.id;
+    }
 
-      // Créer l'entrée dans la table accounts
-      const { error: accountError } = await supabase
-        .from('accounts')
-        .insert({
-          user_id: userId,
-          type: 'oauth',
-          provider: 'bluesky',
-          provider_account_id: session.data.did,
-          access_token: session.data.accessJwt,
-          refresh_token: session.data.refreshJwt,
-          token_type: 'bearer',
-          expires_at: null,
-          id_token: null,
-          scope: null,
-          session_state: null,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        });
+    // Créer ou mettre à jour l'entrée dans la table accounts
+    console.log('Creating/updating BlueSky account entry');
+    const { error: accountError } = await supabase
+      .from('accounts')
+      .upsert({
+        user_id: userId,
+        type: 'oauth',
+        provider: 'bluesky',
+        provider_account_id: session.data.did,
+        access_token: session.data.accessJwt,
+        refresh_token: session.data.refreshJwt,
+        token_type: 'bearer',
+        expires_at: null,
+        id_token: null,
+        scope: null,
+        session_state: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      });
 
-      if (accountError) {
-        console.error('Error creating account:', accountError);
-        return NextResponse.json(
-          { error: 'Failed to create account' },
-          { status: 500 }
-        );
-      }
+    if (accountError) {
+      console.error('Error with account entry:', accountError);
+      return NextResponse.json(
+        { error: 'Failed to create/update account entry' },
+        { status: 500 }
+      );
     }
 
     // Créer une session NextAuth
