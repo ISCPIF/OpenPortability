@@ -22,8 +22,10 @@ const supabase = createClient(
 export async function POST(req: Request) {
   try {
     const { identifier, password } = await req.json();
+    console.log('BlueSky auth attempt for identifier:', identifier);
 
     if (!identifier || !password) {
+      console.log('Missing credentials');
       return NextResponse.json(
         { error: 'Missing identifier or password' },
         { status: 400 }
@@ -31,10 +33,12 @@ export async function POST(req: Request) {
     }
 
     // Connexion à Bluesky
+    console.log('Attempting BlueSky login...');
     const agent = new BskyAgent({ service: 'https://bsky.social' });
     let session;
     try {
       session = await agent.login({ identifier, password });
+      console.log('BlueSky login successful for handle:', session.data.handle);
     } catch (error: any) {
       console.error('Bluesky login error:', error);
       return NextResponse.json(
@@ -44,9 +48,14 @@ export async function POST(req: Request) {
     }
 
     // Récupérer les informations du profil
+    console.log('Fetching BlueSky profile...');
     const profile = await agent.getProfile({ actor: session.data.handle });
-    
+    console.log('Profile fetched:', {
+      profile
+    });
+
     // Chercher si l'utilisateur existe déjà
+    console.log('Checking for existing user with BlueSky ID:', session.data.did);
     const existingUser = await supabase
       .from('users')
       .select('*')
@@ -56,6 +65,7 @@ export async function POST(req: Request) {
     let userId;
     
     if (existingUser.data) {
+      console.log('Existing user found, updating...', existingUser.data);
       // Mettre à jour l'utilisateur existant
       const { error: updateError } = await supabase
         .from('users')
@@ -94,13 +104,22 @@ export async function POST(req: Request) {
         );
       }
     } else {
+      console.log('Creating new user...');
       // Créer un nouvel utilisateur
       const { data: newUser, error: createError } = await supabase
         .from('users')
         .insert({
           name: profile.data.displayName || profile.data.handle,
           bluesky_id: session.data.did,
-          // provider: 'bluesky',
+          bluesky_username: session.data.handle,
+          bluesky_image: profile.data.avatar,
+          // twitter_id: null,
+          // twitter_username: null,
+          // twitter_image: null,
+          // mastodon_id: null,
+          // mastodon_username: null,
+          // mastodon_image: null,
+          // mastodon_instance: null,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         })
@@ -146,6 +165,7 @@ export async function POST(req: Request) {
     }
 
     // Créer une session NextAuth
+    console.log('Creating NextAuth session for user ID:', userId);
     const sessionToken = crypto.randomUUID();
     const expires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 jours
 
@@ -155,6 +175,7 @@ export async function POST(req: Request) {
       expires: expires.toISOString(),
     });
 
+    console.log('Session created successfully, returning response with cookie');
     // Retourner la réponse avec le cookie de session
     return NextResponse.json(
       { 
