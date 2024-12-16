@@ -1,19 +1,21 @@
 'use client'
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { CheckCircle } from 'lucide-react';
+import { useSession } from 'next-auth/react';
+import { supabase } from '@/lib/supabase';
 
 function ProgressStep({ 
   step, 
   title, 
   description, 
   isCompleted, 
-  isLast,
+  isLast = false,
   onClick
 }: { 
-  step: number; 
-  title: string; 
-  description: string; 
+  step: number;
+  title: string;
+  description: string;
   isCompleted: boolean;
   isLast?: boolean;
   onClick?: () => void;
@@ -71,29 +73,101 @@ interface ProgressStepsProps {
     following: number;
     followers: number;
   };
+  onShare: () => void;
+  isShared: boolean;
+  onProgressChange?: (progress: number) => void; // 0, 25, 50, 75, ou 100
 }
 
 export default function ProgressSteps({ 
   hasTwitter, 
   hasBluesky, 
-  hasMastodon, 
+  hasMastodon,
   hasOnboarded,
-  stats 
+  stats,
+  onShare,
+  isShared: initialIsShared,
+  onProgressChange
 }: ProgressStepsProps) {
-  const [isShared, setIsShared] = useState(false);
+  const { data: session } = useSession();
+  const [hasSuccessfulShare, setHasSuccessfulShare] = useState(initialIsShared);
 
-  const handleShare = async () => {
-    try {
-      await navigator.share({
-        title: 'Goodbye X',
-        text: 'Je migre mes abonnements Twitter vers d\'autres réseaux sociaux avec Goodbye X !',
-        url: window.location.href
-      });
-      setIsShared(true);
-    } catch (error) {
-      console.error('Erreur lors du partage:', error);
+  useEffect(() => {
+    async function checkShareStatus() {
+      // console.log('🔍 Checking share status...');
+      if (!session?.user?.id) {
+        console.log('❌ No user session found');
+        return;
+      }
+      const userId = session.user.id;
+      // console.log('👤 User ID type:', typeof userId);
+      // console.log('👤 User ID value:', userId);
+      // console.log('👤 User session:', {
+      //   id: session.user.id,
+      //   email: session.user.email,
+      // });
+
+      try {
+        // console.log('📊 Fetching share events...');
+        
+        const response = await fetch('/api/share', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to fetch share events');
+        }
+
+        const { data } = await response.json();
+        console.log('📦 Share events:', data);
+
+        // Vérifier qu'au moins un partage est réussi
+        const hasShared = Array.isArray(data) && data.length > 0 && data.some(event => event.success);
+        console.log('✅ Share status:', hasShared ? 'Has shared' : 'Has not shared');
+        setHasSuccessfulShare(hasShared);
+      } catch (error) {
+        console.error('❌ Failed to check share status:', error);
+      }
     }
+
+    checkShareStatus();
+  }, [session?.user?.id, initialIsShared]);
+
+  const getConnectedAccountsCount = () => {
+    return [hasTwitter, hasBluesky, hasMastodon].filter(Boolean).length;
   };
+
+  useEffect(() => {
+    let progress = 0;
+    let completedSteps = 0;
+
+    if (hasTwitter) completedSteps++;
+    if (getConnectedAccountsCount() >= 2) completedSteps++;
+    if (hasOnboarded) completedSteps++;
+    if (hasSuccessfulShare) completedSteps++;
+
+    switch (completedSteps) {
+      case 0:
+        progress = 0;
+        break;
+      case 1:
+        progress = 25;
+        break;
+      case 2:
+        progress = 50;
+        break;
+      case 3:
+        progress = 75;
+        break;
+      case 4:
+        progress = 100;
+        break;
+    }
+
+    onProgressChange?.(progress);
+  }, [hasTwitter, hasBluesky, hasMastodon, hasOnboarded, hasSuccessfulShare, onProgressChange]);
 
   return (
     <div className="bg-black/20 backdrop-blur-lg rounded-2xl p-8">
@@ -109,11 +183,11 @@ export default function ProgressSteps({
           step={2}
           title="Réseaux sociaux"
           description={
-            hasTwitter && (hasBluesky || hasMastodon)
+            getConnectedAccountsCount() >= 2
               ? "Connexion à plusieurs réseaux"
               : "Connectez un autre réseau"
           }
-          isCompleted={hasTwitter && (hasBluesky || hasMastodon)}
+          isCompleted={getConnectedAccountsCount() >= 2}
         />
         
         <ProgressStep
@@ -131,9 +205,9 @@ export default function ProgressSteps({
           step={4}
           title="Partage"
           description="Aidez vos amis à migrer"
-          isCompleted={isShared}
+          isCompleted={hasSuccessfulShare}
           isLast={true}
-          onClick={handleShare}
+          onClick={onShare}
         />
       </div>
     </div>

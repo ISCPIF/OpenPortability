@@ -15,7 +15,7 @@ import { plex } from '../fonts/plex';
 import logoHQX from '../../../public/BannerHQX-rose_FR.svg'
 import { motion } from 'framer-motion';
 import boat1 from '../../../public/boats/boat-1.svg'
-import progress0 from '../../../public/progress/progress-0.svg'
+// import progress0 from '../../../public/progress/progress-0.svg'
 
 const UploadButton = dynamic(() => import('../_components/UploadButton'), {
   loading: () => <div className="animate-pulse bg-gray-200 h-12 w-48 rounded-lg"></div>,
@@ -36,7 +36,7 @@ const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 
 export default function UploadPage() {
   const router = useRouter();
-  const { data: session, status } = useSession();
+  const { data: session, status, update } = useSession();
   const [error, setError] = useState<string | null>(null);
   const [showConsent, setShowConsent] = useState(false);
   const [pendingFiles, setPendingFiles] = useState<FileList | null>(null);
@@ -52,6 +52,7 @@ export default function UploadPage() {
     }
     if (session?.user?.has_onboarded) {
       console.log("✅ User already onboarded, redirecting to /dashboard");
+      update()
       router.replace("/dashboard");
     }
     if (status !== "loading") {
@@ -204,7 +205,7 @@ export default function UploadPage() {
     // Redirection après 3 secondes
     setTimeout(() => {
       router.push('/dashboard');
-    }, 3000);
+    }, 10000);
   };
 
   const handleUploadError = (errorMessage: string) => {
@@ -302,7 +303,7 @@ export default function UploadPage() {
         >
           <Image src={boat1} width={110} height={88} alt="" className=""></Image>
         </motion.div>
-        <Image src={progress0} width={80} height={82} alt="" className="absolute top-[87%] left-[48%]"></Image>
+        {/* <Image src={progress0} width={80} height={82} alt="" className="absolute top-[87%] left-[48%]"></Image> */}
       </div>
 
       <div className="mx-auto px-4 my-[35rem] h-screen">

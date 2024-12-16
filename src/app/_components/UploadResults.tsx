@@ -7,38 +7,54 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 
 interface UploadStats {
+  totalUsers: number;
   following: number;
   followers: number;
 }
 
 interface UploadResultsProps {
-  stats: UploadStats;
   showRedirectMessage?: boolean;
   onShare: (url: string, platform: string) => void;
+  stats: {
+    totalUsers: number;
+    following: number;
+    followers: number;
+  };
+  hasTwitter?: boolean;
+  hasBluesky?: boolean;
+  hasMastodon?: boolean;
+  hasOnboarded?: boolean;
+  userId?: string;
+  twitterId?: string;
+  isLoading?: boolean;
+  setIsLoading?: (loading: boolean) => void;
 }
 
 export default function UploadResults({ 
-  stats, 
   showRedirectMessage = false,
-  onShare 
+  onShare,
+  stats,
+  hasTwitter = false,
+  hasBluesky = false,
+  hasMastodon = false,
+  hasOnboarded = false,
+  userId,
+  twitterId,
+  isLoading,
+  setIsLoading
 }: UploadResultsProps) {
-  const [totalUsers, setTotalUsers] = useState<number>(0);
+  const [totalUsers, setTotalUsers] = useState<number>(stats.totalUsers);
+
+  // Calculate completion status
+  const totalSteps = 4; 
+  const completedSteps = [hasTwitter, hasBluesky, hasMastodon, hasOnboarded].filter(Boolean).length;
+  const isThreeQuartersComplete = completedSteps >= (totalSteps * 0.75);
 
   useEffect(() => {
-    async function fetchTotalUsers() {
-      try {
-        const { count } = await supabase
-          .from('connected_users_bluesky_mapping')
-          .select('*', { count: 'exact', head: true });
-        
-        setTotalUsers(count || 0);
-      } catch (error) {
-        console.error('Error fetching total users:', error);
-      }
+    if (setIsLoading) {
+      setIsLoading(false);
     }
-
-    fetchTotalUsers();
-  }, []);
+  }, [setIsLoading]);
 
   return (
     <motion.div
@@ -48,14 +64,20 @@ export default function UploadResults({
     >
       <div className="bg-gradient-to-br from-green-500/10 via-emerald-500/10 to-teal-500/10 
                     backdrop-blur-xl rounded-2xl border border-white/10 shadow-xl p-6 space-y-6">
-        <div className="flex items-center gap-4">
-          <div className="bg-green-500/20 p-3 rounded-full">
-            <CheckCircle className="w-6 h-6 text-green-500" />
-          </div>
-          <h2 className="text-2xl font-bold bg-gradient-to-r from-green-400 to-emerald-500 
+        <div className="space-y-4">
+          <div className="flex items-center gap-4">
+            <div className="bg-green-500/20 p-3 rounded-full">
+              <CheckCircle className="w-6 h-6 text-green-500" />
+            </div>
+            <h2 className="text-2xl font-bold bg-gradient-to-r from-green-400 to-emerald-500 
                        bg-clip-text text-transparent">
-            Félicitations !
-          </h2>
+              Félicitations !
+            </h2>
+          </div>
+
+          <div className={`flex items-center justify-center transition-opacity duration-300 ${isThreeQuartersComplete ? 'opacity-100' : 'opacity-70'}`}>
+            <PartageButton onShare={onShare} />
+          </div>
         </div>
 
         <p className="text-white/80">
@@ -92,13 +114,6 @@ export default function UploadResults({
               <p className="text-2xl font-bold text-white">{totalUsers}</p>
             </div>
           </div>
-        </div>
-
-        <div className="flex flex-col items-center pt-6 border-t border-white/10">
-          <p className="text-sm text-white/60 mb-4">
-            Partagez votre migration avec votre communauté
-          </p>
-          <PartageButton onShare={onShare} />
         </div>
 
         {showRedirectMessage && (
