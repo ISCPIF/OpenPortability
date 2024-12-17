@@ -32,6 +32,8 @@ export async function POST(req: Request) {
       );
     }
 
+
+
     // Connexion à Bluesky
     console.log('Attempting BlueSky login...');
     const agent = new BskyAgent({ service: 'https://bsky.social' });
@@ -101,6 +103,7 @@ export async function POST(req: Request) {
     } else {
       // Cas de création : nouvel utilisateur
       console.log('Creating new user with BlueSky account');
+      console.log(supabase)
       const { data: newUser, error: createError } = await supabase
         .from('users')
         .insert({
