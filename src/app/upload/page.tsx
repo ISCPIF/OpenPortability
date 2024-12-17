@@ -32,7 +32,7 @@ interface ExtractedFile {
   content: Uint8Array;
 }
 
-const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+const MAX_FILE_SIZE = 300 * 1024 * 1024; // 50MB
 
 export default function UploadPage() {
   const router = useRouter();
