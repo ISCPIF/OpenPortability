@@ -36,7 +36,7 @@ const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 
 export default function UploadPage() {
   const router = useRouter();
-  const { data: session, status, update } = useSession();
+  const { data: session, status } = useSession();
   const [error, setError] = useState<string | null>(null);
   const [showConsent, setShowConsent] = useState(false);
   const [pendingFiles, setPendingFiles] = useState<FileList | null>(null);
@@ -52,7 +52,7 @@ export default function UploadPage() {
     }
     if (session?.user?.has_onboarded) {
       console.log("✅ User already onboarded, redirecting to /dashboard");
-      update()
+      // update()
       router.replace("/dashboard");
     }
     if (status !== "loading") {
@@ -202,10 +202,7 @@ export default function UploadPage() {
     console.log('✅ Upload terminé avec succès:', stats);
     setUploadStats(stats);
     setShowStats(true);
-    // Redirection après 3 secondes
-    setTimeout(() => {
-      router.push('/dashboard');
-    }, 10000);
+    setIsUploading(false);
   };
 
   const handleUploadError = (errorMessage: string) => {
@@ -334,7 +331,7 @@ export default function UploadPage() {
                 </div>
               </div>
 
-              {isUploading && (
+              {isUploading ? (
                 <div className="w-full max-w-md mx-auto bg-white/10 backdrop-blur-sm rounded-lg p-4">
                   <div className="flex items-center gap-3">
                     <div className="animate-spin rounded-full h-4 w-4 border-2 border-pink-200 border-t-transparent"></div>
@@ -343,16 +340,18 @@ export default function UploadPage() {
                     </span>
                   </div>
                 </div>
-              )}
-              {showStats && uploadStats && (
+              ) : uploadStats && (
                 <div className="text-center mb-6 p-4 bg-green-50 rounded-lg">
                   <h2 className="text-xl font-semibold text-green-800 mb-2">Upload Successful!</h2>
                   <p className="text-green-700">
                     Found {uploadStats.following} following accounts and {uploadStats.followers} followers.
                   </p>
-                  <p className="text-sm text-green-600 mt-2">
-                    Redirecting to dashboard...
-                  </p>
+                  <button
+                    onClick={() => router.push('/dashboard')}
+                    className="mt-4 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                  >
+                    Go to Dashboard
+                  </button>
                 </div>
               )}
             </div>

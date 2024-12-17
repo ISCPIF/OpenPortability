@@ -1,0 +1,2 @@
+FROM supabase/postgres-meta:v0.75.0
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*

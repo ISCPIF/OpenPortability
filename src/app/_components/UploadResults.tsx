@@ -110,7 +110,7 @@ export default function UploadResults({
               <Globe className="w-5 h-5 text-emerald-400" />
             </div>
             <div>
-              <p className="text-sm text-white/60">Total Migrés</p>
+              <p className="text-sm text-white/60">Migrations</p>
               <p className="text-2xl font-bold text-white">{totalUsers}</p>
             </div>
           </div>
