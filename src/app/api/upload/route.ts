@@ -17,6 +17,22 @@ const supabase = createClient(
   }
 );
 
+
+const supabaseAuth = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    },
+    db: {
+      schema: "next-auth"
+    }
+  }
+);
+
+
 interface TwitterData {
   following?: {
     accountId: string;
@@ -73,10 +89,10 @@ export async function POST(request: Request) {
       );
     }
 
-    if (!session?.user?.twitter_id) {
-      console.log('No Twitter ID in session:', { session });
+    if (!session?.user?.twitter_id && !session?.user?.bluesky_id) {
+      console.log('No Twitter ID and No Bluesky ID in session:', { session });
       return NextResponse.json(
-        { error: "Twitter ID not found" },
+        { error: "Twitter ID and Bluesky ID not found" },
         { status: 400 }
       );
     }
@@ -85,7 +101,7 @@ export async function POST(request: Request) {
       .from('sources')
       .upsert({
         id: session.user.id,
-        twitter_id: session.user.twitter_id,
+        twitter_id: session.user.twitter_id || null,
         bluesky_id: session.user.bluesky_id || null,
         username: session.user.name,
         full_name: session.user.name,
@@ -110,11 +126,14 @@ export async function POST(request: Request) {
 
     // Process files in parallel
     const processedFiles = await processFiles(files);
-    const followings = processedFiles.flatMap((f) => f?.data || []);
+    const followings = processedFiles
+      .filter(f => f?.type === 'following')
+      .flatMap(f => f?.data || []);
+    const followers = processedFiles
+      .filter(f => f?.type === 'followers')
+      .flatMap(f => f?.data || []);
     
     console.log('[Upload Route] Processing files...');
-    // console.log('Session -->', session);
-    // console.log('following -->', followings);
 
     // D'abord insérer les targets (nécessaire pour la contrainte de clé étrangère)
     if (followings.length > 0) {
@@ -141,7 +160,34 @@ export async function POST(request: Request) {
       }
     }
 
-    // Ensuite créer les relations sources_targets
+    console.log("Followers are ->", followers)
+
+    // Insérer les followers
+    if (followers.length > 0) {
+      const followersData = followers
+        .map(f => f.follower)
+        .filter(Boolean)
+        .map(follower => ({
+          twitter_id: follower!.accountId,
+          // username: null,
+          // name: follower!.name,
+          created_at: new Date().toISOString()
+        }));
+
+      const { error: followersError } = await supabase
+        .from('followers')
+        .upsert(followersData);
+
+      if (followersError) {
+        console.error('[Upload Route] Error creating followers:', followersError);
+        return NextResponse.json(
+          { error: 'Failed to create followers' },
+          { status: 500 }
+        );
+      }
+    }
+
+    // Créer les relations sources_targets
     if (followings.length > 0) {
       const { error: followingError } = await supabase
         .from('sources_targets')
@@ -150,6 +196,7 @@ export async function POST(request: Request) {
             .map(f => f.following)
             .filter(Boolean)
             .map(following => ({
+              source_id: session.user.id,
               source_twitter_id: session.user.twitter_id,
               target_twitter_id: following!.accountId,
               created_at: new Date().toISOString()
@@ -165,34 +212,49 @@ export async function POST(request: Request) {
       }
     }
 
-    console.log('✅ Twitter data saved successfully');
+    // Créer les relations sources_followers
+    if (followers.length > 0) {
+      const { error: followersRelError } = await supabase
+        .from('sources_followers')
+        .upsert(
+          followers
+            .map(f => f.follower)
+            .filter(Boolean)
+            .map(follower => ({
+              source_id: session.user.id,
+              follower_id: follower!.accountId,
+              created_at: new Date().toISOString()
+            }))
+        );
 
-    // Mise à jour du statut has_onboarded via l'adaptateur
-    try {
-      await supabaseAdapter.updateUser({
-        id: session.user.id,
-        has_onboarded: true
-      });
-      console.log('✅ Onboarding status updated successfully');
-    } catch (error) {
-      console.error('Failed to update onboarding status:', error);
-      return NextResponse.json(
-        { 
-          error: 'Failed to update onboarding status',
-          details: error instanceof Error ? error.message : 'Unknown error'
-        },
-        { status: 500 }
-      );
+      if (followersRelError) {
+        console.error('[Upload Route] Error creating follower relationships:', followersRelError);
+        return NextResponse.json(
+          { error: 'Failed to create follower relationships' },
+          { status: 500 }
+        );
+      }
     }
 
+    // Mettre à jour le statut onboarding de l'utilisateur
+    const { error: userUpdateError } = await supabaseAuth
+      .from('users')
+      .update({ has_onboarded: true })
+      .eq('id', session.user.id);
+
+    if (userUpdateError) {
+      console.error('Failed to update onboarding status:', userUpdateError);
+    }
+
+    console.log('✅ Twitter data saved successfully');
+
     return NextResponse.json({
-      success: true,
-      message: 'Files processed successfully',
+      message: 'Upload successful',
       stats: {
-        following: followings.length
+        following: followings.length,
+        followers: followers.length
       }
     });
-
   } catch (error) {
     console.error('[Upload Route] Error:', error);
     return NextResponse.json(

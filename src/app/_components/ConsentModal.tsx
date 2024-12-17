@@ -32,9 +32,9 @@ export default function ConsentModal({ isOpen, onAccept, onDecline }: ConsentMod
             En uploadant vos fichiers Twitter, vous confirmez que :
           </p>
           <ul className="text-gray-300 list-disc list-inside space-y-2">
-            <li>Vous êtes le propriétaire légitime de ces données</li>
-            <li>Vous autorisez HelloQuitteX à traiter ces données pour la migration</li>
-            <li>Vous comprenez que ces données seront utilisées pour créer votre profil sur le Fédiverse</li>
+            <li>Vous êtes le propriétaire légitime de ces données.</li>
+            <li>Vous acceptez que les donnees fournies soient utilisées par le Centre Nationale de la Recherche Scientifique (CNRS) dans le cadre de l'opération HelloQuitteX.</li>
+            <li>Vous comprenez que ces données seront utilisées pour créer votre profil sur HelloQuitteX.</li>
           </ul>
         </div>
 
