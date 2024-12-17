@@ -41,6 +41,7 @@ export default function Boat({
   zindex = 1,
 }: BoatProps) {
   const animationLength = 10;
+  const startSign = Math.random() < 0.5 ? -1 : 1
 
   const getBoatImage = (model: number) => {
     switch (model) {
@@ -88,7 +89,7 @@ export default function Boat({
     const arr = new Array(len).fill(undefined);
     const values = arr.map((_item, idx) => {
       const sign = idx % 2 === 0 ? 1 : -1;
-      return `${sign * rndm(0.5, 5, 0.5)}deg`;
+      return `${startSign * sign * rndm(0.5, 5, 0.5)}deg`;
     });
     return values;
   };
