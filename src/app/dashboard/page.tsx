@@ -262,14 +262,14 @@ export default function DashboardPage() {
   return (
     <div className="bg-[#2a39a9] relative w-full max-w-[90rem] m-auto">
       <Header />
-      <Sea step={progress} />
+      <Sea progress={progress} />
 
       <div className="mx-auto px-4 my-[30rem]">
         {/* Frise chronologique */}
         <div className="container mx-auto px-4 py-12">
           <div className="max-w-2xl mx-auto space-y-6">
             {/* Message conditionnel basé sur le progrès */}
-            <div className="text-center mb-8">
+            <div className="text-center mb-8 z-50 relative">
               {progress === 100 ? (
                 <div className="space-y-2">
                   <h2 className={`${plex.className} text-xl font-semibold text-indigo-100`}>
