@@ -12,19 +12,12 @@ import MatchedBlueSkyProfiles from '@/app/_components/MatchedBlueSkyProfiles';
 import UploadResults from '@/app/_components/UploadResults';
 import ProgressSteps from '@/app/_components/ProgressSteps';
 import PartageButton from '@/app/_components/PartageButton';
+import Sea from '@/app/_components/Sea';
 import { useSession, signIn } from 'next-auth/react';
 import { motion } from 'framer-motion';
 import { CheckCircle, Link } from 'lucide-react';
 import { Loader2 } from 'lucide-react';
-import seaBackground from '../../../public/sea.svg'
-import boat1 from '../../../public/boats/boat-1.svg'
-// import progress0 from '../../../public/progress/progress-0.svg'
-import progress25 from '../../../public/progress/progress-25.svg'
-import progress50 from '../../../public/progress/progress-50.svg'
-import progress75 from '../../../public/progress/progress-75.svg'
-import progress100 from '../../../public/progress/progress-100.svg'
 import { plex } from '../fonts/plex';
-import logoHQX from '../../../public/BannerHQX-rose_FR.svg'
 import DashboardLoginButtons from '@/app/_components/DashboardLoginButtons';
 
 // const supabase = createClient(
@@ -83,12 +76,12 @@ export default function DashboardPage() {
       console.log('❌ No user session found, returning');
       return;
     }
-  
+
     try {
       // Ouvrir l'URL dans un nouvel onglet
       window.open(url, '_blank');
       console.log('✅ URL opened in new tab');
-  
+
       // Enregistrer via l'API
       const response = await fetch('/api/share', {
         method: 'POST',
@@ -100,16 +93,16 @@ export default function DashboardPage() {
           success: true
         })
       });
-  
+
       if (!response.ok) {
         throw new Error('Failed to record share event');
       }
-  
+
       console.log('✅ Share event recorded successfully');
       setIsShared(true);
     } catch (error) {
       console.error('❌ Error during share process:', error);
-      
+
       // Enregistrer l'échec via l'API
       await fetch('/api/share', {
         method: 'POST',
@@ -137,7 +130,7 @@ export default function DashboardPage() {
             .schema('public')
             .from('sources')
             .select('*', { count: 'exact' });
-          
+
           if (usersError) {
             console.log(usersError)
             console.error('Erreur lors de la récupération du nombre total d\'utilisateurs:', usersError);
@@ -249,14 +242,7 @@ export default function DashboardPage() {
   }, [session]);
 
 
-  const getProgressImage = () => {
-    // if (progress <= 0) return progress0;
-    if (progress <= 25) return progress25;
-    if (progress <= 50) return progress50;
-    if (progress <= 75) return progress75;
-    if (progress <= 100) return progress100;
-    return progress25;
-  };
+
 
   if (isLoading) {
     return (
@@ -276,40 +262,14 @@ export default function DashboardPage() {
   return (
     <div className="bg-[#2a39a9] relative w-full max-w-[90rem] m-auto">
       <Header />
-      <div className="absolute top-0 w-full h-[35rem]">
-        <Image src={seaBackground} fill alt="" className="object-cover"></Image>
-        <Image
-          src={logoHQX}
-          alt="HelloQuitteX Logo"
-          width={306}
-          height={125}
-          className="mx-auto lg:mt-8 relative"
-        />
-        <div className="container flex flex-col mx-auto text-center gap-y-4 px-6 lg:gap-y-8 text-[#282729] relative my-8 lg:my-14 max-w-[50rem]">
-          <h1 className={`${plex.className} text-2xl lg:text-3xl font-light`}>Bienvenue à bord d’HelloQuitX !</h1>
-          {/* <p className={`${plex.className} text-lg lg:text-xl font-normal`}>Effectuez les étapes suivantes pour voguer vers de nouveaux horizons et enfin QUITTER X !</p> */}
-        </div>
-        <motion.div className="absolute top-[65%] left-[46.5%]" style={{ originX: 0.5, originY: 1 }}
-          transition={{
-            repeatType: 'reverse',
-            repeat: Infinity,
-            duration: 2,
-            ease: "linear"
-          }}
-          initial={{ rotateZ: "-5deg" }}
-          animate={{ rotateZ: "5deg" }}
-          exit={{ rotateZ: 0 }}
-        >
-          <Image src={boat1} width={110} height={88} alt="" className=""></Image>
-        </motion.div>
-        <Image src={getProgressImage()} width={80} height={82} alt="" className="absolute top-[87%] left-[48%]"></Image>
-      </div>
+      <Sea progress={progress} />
+
       <div className="mx-auto px-4 my-[30rem]">
         {/* Frise chronologique */}
         <div className="container mx-auto px-4 py-12">
           <div className="max-w-2xl mx-auto space-y-6">
             {/* Message conditionnel basé sur le progrès */}
-            <div className="text-center mb-8">
+            <div className="text-center mb-8 z-50 relative">
               {progress === 100 ? (
                 <div className="space-y-2">
                   <h2 className={`${plex.className} text-xl font-semibold text-indigo-100`}>
@@ -344,13 +304,13 @@ export default function DashboardPage() {
         </div>
         <div className="max-w-2xl mx-auto space-y-8">
           {stats && session?.user?.has_onboarded && (
-            <UploadResults 
-              stats={stats} 
+            <UploadResults
+              stats={stats}
               onShare={handleShare}
             />
           )}
           <div className="max-w-md mx-auto">
-            <DashboardLoginButtons 
+            <DashboardLoginButtons
               connectedServices={{
                 twitter: !!session?.user?.twitter_id,
                 bluesky: !!session?.user?.bluesky_id,
