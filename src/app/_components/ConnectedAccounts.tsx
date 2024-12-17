@@ -11,8 +11,20 @@ export default function ConnectedAccounts() {
 
   const hasTwitter = !!session.user.twitter_id
   const hasBluesky = !!session.user.bluesky_id
+  const hasMastodon = !!session.user.mastodon_id
 
-  if (!hasTwitter && !hasBluesky) return null
+  if (!hasTwitter && !hasBluesky && !hasMastodon) return null
+
+  const connectedServices = [
+    hasTwitter && 'Twitter',
+    hasBluesky && 'BlueSky',
+    hasMastodon && 'Mastodon'
+  ].filter(Boolean).join(', ')
+
+  const lastCommaIndex = connectedServices.lastIndexOf(',')
+  const formattedServices = lastCommaIndex !== -1
+    ? connectedServices.substring(0, lastCommaIndex) + ' et' + connectedServices.substring(lastCommaIndex + 1)
+    : connectedServices
 
   return (
     <div className="relative w-full max-w-md mx-auto">
@@ -27,9 +39,7 @@ export default function ConnectedAccounts() {
         {/* Message de statut */}
         <div className="mb-4">
           <p className="text-center text-sm text-white/60">
-            {hasTwitter && hasBluesky 
-              ? "Vous êtes connecté avec Twitter et BlueSky ✨" 
-              : `Vous êtes connecté avec ${hasTwitter ? 'Twitter' : 'BlueSky'}`}
+            Vous êtes connecté avec {formattedServices} ✨
           </p>
         </div>
 
@@ -51,6 +61,15 @@ export default function ConnectedAccounts() {
               transition={{ duration: 0.3, delay: 0.1 }}
             >
               <ProfileCard type="bluesky" />
+            </motion.div>
+          )}
+          {hasMastodon && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.2 }}
+            >
+              <ProfileCard type="mastodon" />
             </motion.div>
           )}
         </div>

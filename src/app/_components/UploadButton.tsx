@@ -3,6 +3,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { signIn, useSession } from 'next-auth/react';
 import * as zip from '@zip.js/zip.js';
+import { motion } from 'framer-motion';
+import { Upload, Loader2, CheckCircle, XCircle } from 'lucide-react';
+import { plex } from '../fonts/plex';
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 const ALLOWED_TYPES = ['.zip', '.js'];
@@ -12,6 +15,13 @@ const REQUIRED_FILES = ['following.js', 'follower.js'];
 interface ExtractedFile {
   name: string;
   content: Uint8Array;
+}
+
+interface UnzipProgress {
+  fileName: string;
+  progress: number;
+  status: 'pending' | 'extracting' | 'done' | 'error';
+  message?: string;
 }
 
 interface TwitterData {
@@ -125,41 +135,77 @@ const validateFiles = (files: FileList): string | null => {
 };
 
 export const extractTargetFiles = async (file: File): Promise<ExtractedFile[]> => {
-  try {
-    console.log('📦 Processing ZIP file...');
-    
-    const reader = new zip.ZipReader(new zip.BlobReader(file));
-    const entries = await reader.getEntries();
-    const extractedFiles: ExtractedFile[] = [];
+  const reader = new zip.ZipReader(new zip.BlobReader(file));
+  const entries = await reader.getEntries();
+  const extractedFiles: ExtractedFile[] = [];
+  const progressMap = new Map<string, UnzipProgress>();
 
-    // Parcourir les entrées
+  // Initialiser le statut pour chaque fichier cible
+  TARGET_FILES.forEach(targetFile => {
+    progressMap.set(targetFile, {
+      fileName: targetFile,
+      progress: 0,
+      status: 'pending'
+    });
+  });
+
+  try {
     for (const entry of entries) {
       const normalizedPath = normalizeFilePath(entry.filename);
-      
-      // Vérifier si le fichier correspond à un des fichiers cibles
-      if (TARGET_FILES.some(target => normalizedPath.endsWith(normalizeFilePath(target)))) {
-        console.log('✨ Found target file:', entry.filename);
-        
-        // Lire le contenu du fichier
-        const uint8Array = await entry.getData!(new zip.Uint8ArrayWriter());
-        const fileName = entry.filename.split('/').pop() || '';
-        
-        extractedFiles.push({
-          name: fileName,  // On ne garde que le nom du fichier, pas le chemin complet
-          content: uint8Array
+      if (TARGET_FILES.includes(normalizedPath)) {
+        progressMap.set(normalizedPath, {
+          fileName: normalizedPath,
+          progress: 0,
+          status: 'extracting'
         });
+
+        try {
+          const uint8Array = await entry.getData!(new zip.Uint8ArrayWriter(), {
+            onprogress: (current, total) => {
+              const progress = Math.round((current / total) * 100);
+              progressMap.set(normalizedPath, {
+                fileName: normalizedPath,
+                progress,
+                status: 'extracting'
+              });
+              // Mettre à jour l'UI avec la progression
+              window.dispatchEvent(new CustomEvent('unzipProgress', {
+                detail: Array.from(progressMap.values())
+              }));
+            }
+          });
+
+          extractedFiles.push({
+            name: normalizedPath,
+            content: uint8Array
+          });
+
+          progressMap.set(normalizedPath, {
+            fileName: normalizedPath,
+            progress: 100,
+            status: 'done'
+          });
+        } catch (error) {
+          console.error(`Error extracting ${normalizedPath}:`, error);
+          progressMap.set(normalizedPath, {
+            fileName: normalizedPath,
+            progress: 0,
+            status: 'error',
+            message: error instanceof Error ? error.message : 'Unknown error'
+          });
+          throw error;
+        }
       }
     }
-
+  } finally {
     await reader.close();
-
-    console.log('✅ Extraction complete:', extractedFiles.length, 'files found');
-    return extractedFiles;
-
-  } catch (error) {
-    console.error('❌ Extraction error:', error);
-    throw error;
   }
+
+  if (extractedFiles.length < TARGET_FILES.length) {
+    throw new Error('Some required files were not found in the zip');
+  }
+
+  return extractedFiles;
 };
 
 export const processFiles = async (files: FileList): Promise<{ name: string; content: Uint8Array }[]> => {
@@ -199,123 +245,148 @@ export const processFiles = async (files: FileList): Promise<{ name: string; con
 export default function UploadButton({ onUploadComplete, onError, onFilesSelected, filesToProcess }: UploadButtonProps) {
   const { data: session } = useSession();
   const [isUploading, setIsUploading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [retryCount, setRetryCount] = useState(0);
+  const [unzipProgress, setUnzipProgress] = useState<UnzipProgress[]>([]);
+  const [selectedFiles, setSelectedFiles] = useState<FileList | null>(null);
+  const maxRetries = 3;
 
-  // Quand on reçoit des fichiers à traiter (après consentement)
+  useEffect(() => {
+    const handleUnzipProgress = (event: CustomEvent<UnzipProgress[]>) => {
+      setUnzipProgress(event.detail);
+    };
+
+    window.addEventListener('unzipProgress', handleUnzipProgress as EventListener);
+    return () => {
+      window.removeEventListener('unzipProgress', handleUnzipProgress as EventListener);
+    };
+  }, []);
+
   useEffect(() => {
     if (filesToProcess) {
-      handleProcessFiles(filesToProcess);
+      handleUpload(filesToProcess);
     }
   }, [filesToProcess]);
 
-  const handleFiles = (files: FileList | null) => {
-    if (!files || files.length === 0) return;
-    onFilesSelected(files);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
-
-  const handleProcessFiles = async (files: FileList) => {
+  const handleUpload = async (files: FileList) => {
     setIsUploading(true);
-    setError(null);
-
-    try {
-      if (!session?.user?.id) {
-        throw new Error('You must be logged in to upload files');
-      }
-
-      const processedFiles = await processFiles(files);
-      
-      if (processedFiles.length === 0) {
-        throw new Error('No valid files found');
-      }
-
-      console.log('📤 Preparing upload...');
-      const formData = new FormData();
-      
-      for (const { name, content } of processedFiles) {
-        const textContent = new TextDecoder().decode(content);
-        
-        const type = name.toLowerCase().includes('following') ? 'following' : 'follower';
-        const validationError = validateTwitterData(textContent, type);
-        if (validationError) {
-          throw new Error(validationError);
-        }
-        
-        console.log(`✅ ${name} validation successful: correct Twitter data format`);
-        
-        const file = new File([content], name, {
-          type: 'application/javascript'
+    setRetryCount(0);
+    
+    const tryProcess = async (): Promise<void> => {
+      try {
+        const extractedFiles = await processFiles(files);
+        setIsUploading(false);
+        onUploadComplete({
+          following: extractedFiles.length,
+          followers: extractedFiles.length
         });
-        formData.append('file', file);
+      } catch (error) {
+        console.error('Upload error:', error);
+        
+        if (retryCount < maxRetries) {
+          const delay = Math.pow(2, retryCount) * 1000;
+          await new Promise(resolve => setTimeout(resolve, delay));
+          
+          setRetryCount(prev => prev + 1);
+          return tryProcess();
+        } else {
+          setIsUploading(false);
+          onError('Upload failed after multiple attempts. Please try again.');
+        }
       }
+    };
 
-      const response = await fetch(`/api/upload/${session.user.id}`, {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Upload failed');
-      }
-
-      console.log('✅ Upload successful');
-      const result = await response.json();
-      onUploadComplete(result.stats);
-    } catch (error) {
-      onError(error instanceof Error ? error.message : 'Failed to process files');
-    } finally {
-      setIsUploading(false);
-    }
+    await tryProcess();
   };
 
   return (
-    <div className="flex flex-col items-center gap-4 w-full max-w-md">
-      <div
-        className={`w-full p-8 border-2 border-dashed rounded-lg text-center cursor-pointer transition-colors
-          ${isUploading 
-            ? 'border-violet-500 bg-violet-50' 
-            : 'border-gray-300 hover:border-violet-400'
-          }`}
-        onClick={() => fileInputRef.current?.click()}
-      >
-        <div className="flex flex-col items-center gap-2">
-          <svg 
-            className={`w-8 h-8 ${isUploading ? 'text-violet-500' : 'text-gray-400'}`}
-            fill="none" 
-            strokeWidth="1.5" 
-            stroke="currentColor" 
-            viewBox="0 0 24 24"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z" />
-          </svg>
-          <div className="text-sm text-gray-600">
-            <span className="font-semibold">Click to upload</span> or drag and drop
-          </div>
-          <div className="text-xs text-gray-500">
-            Upload your Twitter data: following.js and follower.js files or a ZIP archive
-          </div>
-        </div>
-      </div>
-
+    <div className={`w-full max-w-md mx-auto ${plex.className}`}>
       <input
         type="file"
-        ref={fileInputRef}
-        onChange={(e) => handleFiles(e.target.files)}
+        onChange={(e) => {
+          const files = e.target.files;
+          if (files) {
+            setSelectedFiles(files);
+            onFilesSelected(files);
+          }
+        }}
         accept=".zip,.js"
         multiple
         className="hidden"
+        id="file-upload"
       />
+      <motion.label
+        htmlFor="file-upload"
+        whileHover={{ scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
+        className={`
+          w-full px-6 py-4 flex items-center justify-center gap-3
+          text-white font-semibold rounded-xl cursor-pointer
+          bg-gradient-to-r from-blue-600 to-blue-800
+          hover:from-blue-700 hover:to-blue-900
+          shadow-lg hover:shadow-xl
+          transition-all duration-300
+          disabled:from-gray-400 disabled:to-gray-500 
+          disabled:cursor-not-allowed
+          ${isUploading ? 'pointer-events-none' : ''}
+        `}
+      >
+        {isUploading ? (
+          <Loader2 className="w-5 h-5 animate-spin" />
+        ) : (
+          <Upload className="w-5 h-5" />
+        )}
+        {isUploading ? 'Processing...' : 'Select Twitter Archive'}
+      </motion.label>
 
-      {error && (
-        <div className="text-red-500 text-sm">{error}</div>
-      )}
-
-      {isUploading && (
-        <div className="text-violet-600">Uploading...</div>
+      {unzipProgress.length > 0 && (
+        <motion.div 
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mt-6 space-y-3"
+        >
+          {unzipProgress.map((progress, index) => (
+            <motion.div 
+              key={index}
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: index * 0.1 }}
+              className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20"
+            >
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-sm font-medium text-gray-100">{progress.fileName}</span>
+                <span className="text-sm font-medium">
+                  {progress.status === 'done' ? (
+                    <CheckCircle className="w-5 h-5 text-green-400" />
+                  ) : progress.status === 'error' ? (
+                    <XCircle className="w-5 h-5 text-red-400" />
+                  ) : (
+                    `${Math.round(progress.progress)}%`
+                  )}
+                </span>
+              </div>
+              <div className="w-full bg-gray-700/50 rounded-full h-2 overflow-hidden">
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${progress.progress}%` }}
+                  transition={{ duration: 0.5 }}
+                  className={`h-full rounded-full ${
+                    progress.status === 'error' ? 'bg-red-500' :
+                    progress.status === 'done' ? 'bg-green-400' : 'bg-blue-500'
+                  }`}
+                />
+              </div>
+              {progress.message && (
+                <motion.p 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="text-sm text-red-400 mt-2"
+                >
+                  {progress.message}
+                </motion.p>
+              )}
+            </motion.div>
+          ))}
+        </motion.div>
       )}
     </div>
   );
