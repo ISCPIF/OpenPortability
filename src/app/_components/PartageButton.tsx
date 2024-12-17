@@ -15,7 +15,7 @@ export default function PartageButton({ onShare }: PartageButtonProps) {
   const { data: session } = useSession()
   const [isModalOpen, setIsModalOpen] = useState(false)
 
-  const shareText = "Je migre mes abonnements Twitter vers d'autres réseaux sociaux avec Goodbye X !"
+  const shareText = "Je migre mes abonnements Twitter vers d'autres réseaux sociaux avec HelloQuitteX !"
   const shareUrl = typeof window !== 'undefined' ? window.location.href : ''
 
   const shareOptions = [

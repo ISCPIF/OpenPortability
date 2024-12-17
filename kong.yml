@@ -1,0 +1,70 @@
+_format_version: "2.1"
+_transform: true
+
+services:
+  - name: meta
+    url: http://meta:8080
+    routes:
+      - name: meta-api
+        paths:
+          - /api/
+        strip_path: false
+      - name: meta-root
+        paths:
+          - /pg-meta/
+        strip_path: true
+    plugins:
+      - name: cors
+
+  - name: studio
+    url: http://studio:3000
+    routes:
+      - name: studio-root
+        paths:
+          - /
+          - /project/
+          - /css/
+          - /monaco-editor/
+          - /favicon/
+          - /img/
+          - /js/
+        strip_path: false
+      - name: studio-api
+        paths:
+          - /api/
+        strip_path: false
+    plugins:
+      - name: cors
+
+  - name: rest
+    url: http://rest:3000
+    routes:
+      - name: rest-all
+        strip_path: true
+        paths:
+          - /rest/v1/
+    plugins:
+      - name: cors
+      - name: key-auth
+        config:
+          key_names:
+            - apikey
+      - name: acl
+        config:
+          hide_groups_header: true
+          allow:
+            - anon
+            - service_role
+
+consumers:
+  - username: anon
+    keyauth_credentials:
+      - key: ${ANON_KEY}
+    acls:
+      - group: anon
+
+  - username: service_role
+    keyauth_credentials:
+      - key: ${SERVICE_ROLE_KEY}
+    acls:
+      - group: service_role

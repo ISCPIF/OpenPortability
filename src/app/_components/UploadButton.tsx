@@ -3,6 +3,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { signIn, useSession } from 'next-auth/react';
 import * as zip from '@zip.js/zip.js';
+import { motion } from 'framer-motion';
+import { Upload, Loader2, CheckCircle, XCircle } from 'lucide-react';
+import { plex } from '../fonts/plex';
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 const ALLOWED_TYPES = ['.zip', '.js'];
@@ -244,6 +247,7 @@ export default function UploadButton({ onUploadComplete, onError, onFilesSelecte
   const [isUploading, setIsUploading] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const [unzipProgress, setUnzipProgress] = useState<UnzipProgress[]>([]);
+  const [selectedFiles, setSelectedFiles] = useState<FileList | null>(null);
   const maxRetries = 3;
 
   useEffect(() => {
@@ -257,6 +261,12 @@ export default function UploadButton({ onUploadComplete, onError, onFilesSelecte
     };
   }, []);
 
+  useEffect(() => {
+    if (filesToProcess) {
+      handleUpload(filesToProcess);
+    }
+  }, [filesToProcess]);
+
   const handleUpload = async (files: FileList) => {
     setIsUploading(true);
     setRetryCount(0);
@@ -264,7 +274,6 @@ export default function UploadButton({ onUploadComplete, onError, onFilesSelecte
     const tryProcess = async (): Promise<void> => {
       try {
         const extractedFiles = await processFiles(files);
-        // Traitement réussi
         setIsUploading(false);
         onUploadComplete({
           following: extractedFiles.length,
@@ -274,7 +283,6 @@ export default function UploadButton({ onUploadComplete, onError, onFilesSelecte
         console.error('Upload error:', error);
         
         if (retryCount < maxRetries) {
-          // Attendre avant de réessayer (backoff exponentiel)
           const delay = Math.pow(2, retryCount) * 1000;
           await new Promise(resolve => setTimeout(resolve, delay));
           
@@ -291,58 +299,94 @@ export default function UploadButton({ onUploadComplete, onError, onFilesSelecte
   };
 
   return (
-    <div className="w-full max-w-md mx-auto">
+    <div className={`w-full max-w-md mx-auto ${plex.className}`}>
       <input
         type="file"
         onChange={(e) => {
           const files = e.target.files;
           if (files) {
+            setSelectedFiles(files);
             onFilesSelected(files);
-            handleUpload(files);
           }
         }}
         accept=".zip,.js"
         multiple
         className="hidden"
+        id="file-upload"
       />
-      <button
-        onClick={() => {
-          const input = document.querySelector('input[type="file"]');
-          input?.click();
-        }}
-        disabled={isUploading}
-        className="w-full px-4 py-2 text-white bg-blue-500 rounded hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed"
+      <motion.label
+        htmlFor="file-upload"
+        whileHover={{ scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
+        className={`
+          w-full px-6 py-4 flex items-center justify-center gap-3
+          text-white font-semibold rounded-xl cursor-pointer
+          bg-gradient-to-r from-blue-600 to-blue-800
+          hover:from-blue-700 hover:to-blue-900
+          shadow-lg hover:shadow-xl
+          transition-all duration-300
+          disabled:from-gray-400 disabled:to-gray-500 
+          disabled:cursor-not-allowed
+          ${isUploading ? 'pointer-events-none' : ''}
+        `}
       >
+        {isUploading ? (
+          <Loader2 className="w-5 h-5 animate-spin" />
+        ) : (
+          <Upload className="w-5 h-5" />
+        )}
         {isUploading ? 'Processing...' : 'Select Twitter Archive'}
-      </button>
+      </motion.label>
 
       {unzipProgress.length > 0 && (
-        <div className="mt-4 space-y-2">
+        <motion.div 
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mt-6 space-y-3"
+        >
           {unzipProgress.map((progress, index) => (
-            <div key={index} className="border rounded p-2">
-              <div className="flex justify-between mb-1">
-                <span className="text-sm">{progress.fileName}</span>
-                <span className="text-sm">
-                  {progress.status === 'done' ? '100%' : 
-                   progress.status === 'error' ? 'Error' : 
-                   `${progress.progress}%`}
+            <motion.div 
+              key={index}
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: index * 0.1 }}
+              className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20"
+            >
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-sm font-medium text-gray-100">{progress.fileName}</span>
+                <span className="text-sm font-medium">
+                  {progress.status === 'done' ? (
+                    <CheckCircle className="w-5 h-5 text-green-400" />
+                  ) : progress.status === 'error' ? (
+                    <XCircle className="w-5 h-5 text-red-400" />
+                  ) : (
+                    `${Math.round(progress.progress)}%`
+                  )}
                 </span>
               </div>
-              <div className="w-full bg-gray-200 rounded h-2">
-                <div
-                  className={`h-full rounded ${
+              <div className="w-full bg-gray-700/50 rounded-full h-2 overflow-hidden">
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${progress.progress}%` }}
+                  transition={{ duration: 0.5 }}
+                  className={`h-full rounded-full ${
                     progress.status === 'error' ? 'bg-red-500' :
-                    progress.status === 'done' ? 'bg-green-500' : 'bg-blue-500'
+                    progress.status === 'done' ? 'bg-green-400' : 'bg-blue-500'
                   }`}
-                  style={{ width: `${progress.progress}%` }}
                 />
               </div>
               {progress.message && (
-                <p className="text-sm text-red-500 mt-1">{progress.message}</p>
+                <motion.p 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="text-sm text-red-400 mt-2"
+                >
+                  {progress.message}
+                </motion.p>
               )}
-            </div>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       )}
     </div>
   );
