@@ -1,10 +1,11 @@
 'use client'
 
 import { motion } from 'framer-motion';
-import { CheckCircle, Users, UserPlus, Globe } from 'lucide-react';
+import { Ship, Users, Globe } from 'lucide-react';
 import PartageButton from './PartageButton';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import { plex } from '../fonts/plex';
 
 interface UploadStats {
   totalUsers: number;
@@ -28,6 +29,7 @@ interface UploadResultsProps {
   twitterId?: string;
   isLoading?: boolean;
   setIsLoading?: (loading: boolean) => void;
+  setIsModalOpen: (open: boolean) => void;
 }
 
 export default function UploadResults({ 
@@ -41,7 +43,8 @@ export default function UploadResults({
   userId,
   twitterId,
   isLoading,
-  setIsLoading
+  setIsLoading,
+  setIsModalOpen
 }: UploadResultsProps) {
   const [totalUsers, setTotalUsers] = useState<number>(stats.totalUsers);
 
@@ -60,51 +63,57 @@ export default function UploadResults({
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="w-full max-w-2xl mx-auto mb-8"
+      className={`w-full max-w-2xl mx-auto mb-8 ${plex.className}`}
     >
       <div className="bg-gradient-to-br from-green-500/10 via-emerald-500/10 to-teal-500/10 
                     backdrop-blur-xl rounded-2xl border border-white/10 shadow-xl p-6 space-y-6">
         <div className="space-y-4">
           <div className="flex items-center gap-4">
-            <div className="bg-green-500/20 p-3 rounded-full">
-              <CheckCircle className="w-6 h-6 text-green-500" />
+            <div className="bg-pink-500/20 p-3 rounded-full">
+              <Ship className="w-6 h-6 text-pink-400" />
             </div>
-            <h2 className="text-2xl font-bold bg-gradient-to-r from-green-400 to-emerald-500 
+            <h2 className="text-2xl font-bold bg-gradient-to-r from-pink-400 to-rose-500 
                        bg-clip-text text-transparent">
-              Félicitations !
+              Félicitations vous êtes inscrits pour le voyage !
             </h2>
           </div>
-
+{/* 
           <div className={`flex items-center justify-center transition-opacity duration-300 ${isThreeQuartersComplete ? 'opacity-100' : 'opacity-70'}`}>
             <PartageButton onShare={onShare} />
+          </div> */}
+        </div>
+
+        <p className="text-white/80 text-center">
+          L'importation de vos fichiers a permis d'inscrire {stats.following + stats.followers} nouveaux passagers !
+        </p>
+
+        <div className="flex justify-center gap-4">
+          <div className="bg-black/20 rounded-xl p-4 flex items-center gap-4">
+            <div className="bg-pink-500/20 p-2 rounded-full">
+              <Users className="w-5 h-5 text-pink-400" />
+            </div>
+            <div>
+              <p className="text-sm text-white/60">Comptes Twitters</p>
+              <p className="text-2xl font-bold text-white">{stats.following + stats.followers}</p>
+            </div>
+          </div>
+
+          <div className="bg-black/20 rounded-xl p-4 flex items-center gap-4">
+            <div className="bg-pink-500/20 p-2 rounded-full">
+              <Globe className="w-5 h-5 text-pink-400" />
+            </div>
+            <div>
+              <p className="text-sm text-white/60">Voyageurs prêts</p>
+              <p className="text-2xl font-bold text-white">20314</p>
+            </div>
           </div>
         </div>
 
-        <p className="text-white/80">
-          Vous avez commencé votre migration avec succès. Voici un résumé de vos données importées :
-        </p>
+        <div className={`flex items-center justify-center transition-opacity duration-300 ${isThreeQuartersComplete ? 'opacity-100' : 'opacity-70'}`}>
+          <PartageButton onClick={() => setIsModalOpen(true)} />
+        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-black/20 rounded-xl p-4 flex items-center gap-4">
-            <div className="bg-blue-500/20 p-2 rounded-full">
-              <UserPlus className="w-5 h-5 text-blue-400" />
-            </div>
-            <div>
-              <p className="text-sm text-white/60">Following</p>
-              <p className="text-2xl font-bold text-white">{stats.following}</p>
-            </div>
-          </div>
-
-          <div className="bg-black/20 rounded-xl p-4 flex items-center gap-4">
-            <div className="bg-purple-500/20 p-2 rounded-full">
-              <Users className="w-5 h-5 text-purple-400" />
-            </div>
-            <div>
-              <p className="text-sm text-white/60">Followers</p>
-              <p className="text-2xl font-bold text-white">{stats.followers}</p>
-            </div>
-          </div>
-
+        {/* <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-black/20 rounded-xl p-4 flex items-center gap-4">
             <div className="bg-emerald-500/20 p-2 rounded-full">
               <Globe className="w-5 h-5 text-emerald-400" />
@@ -114,9 +123,9 @@ export default function UploadResults({
               <p className="text-2xl font-bold text-white">{totalUsers}</p>
             </div>
           </div>
-        </div>
+        </div> */}
 
-        {showRedirectMessage && (
+        {/* {showRedirectMessage && (
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -124,7 +133,7 @@ export default function UploadResults({
           >
             Redirection vers le tableau de bord...
           </motion.p>
-        )}
+        )} */}
       </div>
     </motion.div>
   );
