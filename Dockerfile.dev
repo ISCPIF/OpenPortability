@@ -1,0 +1,19 @@
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Installation des dépendances
+COPY package*.json ./
+RUN npm install
+
+# Copie du reste des fichiers
+COPY . .
+
+ENV NODE_ENV development
+ENV PORT 3000
+ENV HOSTNAME "0.0.0.0"
+
+# S'assurer que next est disponible dans le PATH
+RUN npm install -g next
+
+CMD ["npm", "run", "dev"]
