@@ -1,19 +1,16 @@
 FROM node:18-alpine
-
 WORKDIR /app
 
-# Installation des dépendances
+# Copie de tous les fichiers nécessaires comme dans le Dockerfile original
 COPY package*.json ./
-RUN npm install
-
-# Copie du reste des fichiers
 COPY . .
 
+# Installation des dépendances en mode développement
+RUN npm install
+
 ENV NODE_ENV development
+EXPOSE 3000
 ENV PORT 3000
 ENV HOSTNAME "0.0.0.0"
-
-# S'assurer que next est disponible dans le PATH
-RUN npm install -g next
 
 CMD ["npm", "run", "dev"]
