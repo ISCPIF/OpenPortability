@@ -46,6 +46,8 @@ export default function UploadPage() {
   const [showStats, setShowStats] = useState(false);
 
   useEffect(() => {
+
+    console.log("hello par ici")
     if (status === "unauthenticated") {
       console.log("⛔️ No session found, redirecting to /auth/signin");
       router.replace("/auth/signin");
@@ -167,23 +169,43 @@ export default function UploadPage() {
           throw new Error(validationError);
         }
 
+
+
+
+
         console.log(`✅ ${name} validation successful`);
-        const file = new File([content], name, {
-          type: 'application/javascript'
-        });
-        formData.append('file', file);
+        const cleanedContent = textContent.replace(/window\.YTD\.[a-zA-Z]+\.part0 = /, '');
+        
+        // Parser le JSON pour l'ajouter à notre objet de données
+        const jsonData = JSON.parse(cleanedContent);
+        if (name.includes('follower')) {
+          formData.append('followers', JSON.stringify(jsonData));
+        } else {
+          formData.append('following', JSON.stringify(jsonData));
+        }
       }
 
       if (!session?.user?.id) {
         throw new Error('User not authenticated');
       }
 
+      const dataToSend = {
+        userId: session.user.id,
+        followers: formData.get('followers') ? JSON.parse(formData.get('followers') as string) : [],
+        following: formData.get('following') ? JSON.parse(formData.get('following') as string) : []
+      };
+
+      console.log("Données à envoyer:", dataToSend);
       // Envoi au serveur avec le bon endpoint
       const response = await fetch(`/api/upload`, {
         method: 'POST',
-        body: formData,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(dataToSend),
       });
 
+      
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Upload failed');

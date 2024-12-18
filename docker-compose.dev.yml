@@ -9,13 +9,15 @@ services:
       - .:/app
       - /app/node_modules
       - /app/.next
-    ports:
-      - "3000:3000"
-    env_file:
-      - .env.local
     environment:
       - NODE_ENV=development
-    command: npm run dev
+      - WATCHPACK_POLLING=true  # Activer le polling pour un meilleur hot reload
+    env_file:
+      - .env.local
+    networks:
+      - app_network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
   nginx:
     image: nginx:alpine
@@ -23,14 +25,14 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/certs:/etc/nginx/certs:ro
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/certs:/etc/nginx/certs
+      - ./certbot/www:/var/www/certbot
     depends_on:
       - app
     networks:
       - app_network
     command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
-
 
 networks:
   app_network:

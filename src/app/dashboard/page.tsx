@@ -46,7 +46,7 @@ const LoginButton = ({ provider, onClick, children }: { provider: string, onClic
 
 export default function DashboardPage() {
   const { data: session, update } = useSession()
-  // console.log('session:', session)
+  console.log('session par ici:', session)
   const router = useRouter();
   const [stats, setStats] = useState({
     matchedCount: 0,
@@ -124,7 +124,7 @@ export default function DashboardPage() {
     const fetchStats = async () => {
       try {
         setIsLoading(true);
-        await new Promise(resolve => setTimeout(resolve, 4000))
+        // await new Promise(resolve => setTimeout(resolve, 2000))
         const response = await fetch('/api/stats');
         if (!response.ok) {
           throw new Error('Failed to fetch stats');
