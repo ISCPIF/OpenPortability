@@ -2,12 +2,12 @@
 
 interface ErrorModalProps {
   isOpen: boolean;
-  error: string | null;
+  message: string;
   onClose: () => void;
 }
 
-export default function ErrorModal({ isOpen, error, onClose }: ErrorModalProps) {
-  if (!isOpen || !error) return null;
+export default function ErrorModal({ isOpen, message, onClose }: ErrorModalProps) {
+  if (!isOpen || !message) return null;
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
@@ -47,25 +47,17 @@ export default function ErrorModal({ isOpen, error, onClose }: ErrorModalProps) 
         </div>
 
         <p className="text-gray-300 mb-6">
-          {error}
+          {message}
         </p>
 
-        <div className="bg-gray-800/50 rounded-lg p-4 mb-6">
-          <p className="text-sm text-white font-medium mb-2">Conditions d'acceptation du fichier :</p>
-          <ul className="list-disc list-inside text-sm space-y-1 text-gray-300">
-            <li>Format accepté : fichier .zip ou fichiers .js individuels</li>
-            <li>Taille maximale : 50MB</li>
-            <li>Fichiers requis : following.js et follower.js</li>
-            <li>Les fichiers doivent contenir des données Twitter valides</li>
-          </ul>
+        <div className="flex justify-end">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors"
+          >
+            Fermer
+          </button>
         </div>
-
-        <button
-          onClick={onClose}
-          className="w-full bg-violet-600 text-white px-4 py-2 rounded-lg hover:bg-violet-700 transition-colors"
-        >
-          Fermer
-        </button>
       </div>
     </div>
   );

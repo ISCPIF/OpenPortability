@@ -144,7 +144,17 @@ export default function UploadPage() {
 
       if (files.length === 1 && files[0].name.toLowerCase().endsWith('.zip')) {
         console.log('📦 Traitement du fichier ZIP:', files[0].name);
-        processedFiles = await extractTargetFiles(files[0]);
+        try {
+          processedFiles = await extractTargetFiles(files[0]);
+          if (processedFiles.length === 0) {
+            throw new Error('No valid files found in the ZIP archive. Please make sure it contains follower.js and/or following.js');
+          }
+        } catch (error) {
+          if (error instanceof Error) {
+            throw new Error(`Failed to process ZIP file: ${error.message}`);
+          }
+          throw new Error('Failed to process ZIP file');
+        }
       } else {
         console.log('📑 Traitement des fichiers JS directs');
         for (const file of files) {
@@ -164,19 +174,19 @@ export default function UploadPage() {
         const textContent = new TextDecoder().decode(content);
         const type = name.toLowerCase().includes('following') ? 'following' : 'follower';
 
-        const validationError = validateTwitterData(textContent, type);
-        if (validationError) {
-          throw new Error(validationError);
+        try {
+          const validationError = validateTwitterData(textContent, type);
+          if (validationError) {
+            throw new Error(validationError);
+          }
+        } catch (error) {
+          throw new Error(`Invalid content in ${name}: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
 
-
-
-
-
         console.log(`✅ ${name} validation successful`);
-        const cleanedContent = textContent.replace(/window\.YTD\.[a-zA-Z]+\.part0 = /, '');
         
         // Parser le JSON pour l'ajouter à notre objet de données
+        const cleanedContent = textContent.replace(/window\.YTD\.[a-zA-Z]+\.part0 = /, '');
         const jsonData = JSON.parse(cleanedContent);
         if (name.includes('follower')) {
           formData.append('followers', JSON.stringify(jsonData));
@@ -189,13 +199,19 @@ export default function UploadPage() {
         throw new Error('User not authenticated');
       }
 
+      // Créer l'objet final à envoyer
       const dataToSend = {
         userId: session.user.id,
         followers: formData.get('followers') ? JSON.parse(formData.get('followers') as string) : [],
         following: formData.get('following') ? JSON.parse(formData.get('following') as string) : []
       };
 
+      if (dataToSend.followers.length === 0 && dataToSend.following.length === 0) {
+        throw new Error('No valid data found in the files. Please make sure they contain follower or following information.');
+      }
+
       console.log("Données à envoyer:", dataToSend);
+      
       // Envoi au serveur avec le bon endpoint
       const response = await fetch(`/api/upload`, {
         method: 'POST',
@@ -205,7 +221,6 @@ export default function UploadPage() {
         body: JSON.stringify(dataToSend),
       });
 
-      
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Upload failed');
@@ -215,8 +230,9 @@ export default function UploadPage() {
       const result = await response.json();
       handleUploadComplete(result.stats);
     } catch (error) {
-      console.error('❌ Error processing files:', error);
+      // console.error('❌ Error processing files:', error);
       handleUploadError(error instanceof Error ? error.message : 'Failed to process files');
+      setIsUploading(false);
     }
   };
 
@@ -231,6 +247,8 @@ export default function UploadPage() {
     console.log('❌ Erreur durant l\'upload:', errorMessage);
     setError(errorMessage);
     setIsUploading(false);
+    setPendingFiles(null);
+    setShowConsent(false);
   };
 
   const handleCloseError = () => {
@@ -333,14 +351,14 @@ export default function UploadPage() {
 
           <div className="relative space-y-8">
             <div className="text-center">
-              <h2 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-200 to-white">
+              <h2 className={`text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-200 to-white ${plex.className}`}>
                 Importez vos données Twitter
               </h2>
             </div>
 
             <div className="space-y-6">
-              <p className="text-lg text-white/90 text-center font-medium">
-                Téléchargez votre archive Twitter au format ZIP ou les fichiers following.js et follower.js
+              <p className={`text-lg text-white/90 text-center font-medium ${plex.className}`}>
+              Déposez votre fichier .zip (si sa taille ne dépasse pas 300 Mo) ou, si vous l'avez déjà décompressé, téléversez vos fichiers data/following.js et data/follower.js
               </p>
 
               <div className="flex items-center justify-center">
@@ -357,22 +375,22 @@ export default function UploadPage() {
                 <div className="w-full max-w-md mx-auto bg-white/10 backdrop-blur-sm rounded-lg p-4">
                   <div className="flex items-center gap-3">
                     <div className="animate-spin rounded-full h-4 w-4 border-2 border-pink-200 border-t-transparent"></div>
-                    <span className="text-white/90 font-medium">
+                    <span className={`text-white/90 font-medium ${plex.className}`}>
                       Traitement en cours...
                     </span>
                   </div>
                 </div>
               ) : uploadStats && (
-                <div className="text-center mb-6 p-4 bg-green-50 rounded-lg">
-                  <h2 className="text-xl font-semibold text-green-800 mb-2">Upload Successful!</h2>
-                  <p className="text-green-700">
-                    Found {uploadStats.following} following accounts and {uploadStats.followers} followers.
+                <div className={`text-center mb-6 p-4 bg-pink-50 rounded-lg ${plex.className}`}>
+                  <h2 className="text-xl font-semibold text-pink-800 mb-2">Traitement terminé</h2>
+                  <p className="text-pink-700">
+                    Vous avez importés {uploadStats.following} followings et {uploadStats.followers} followers.
                   </p>
                   <button
                     onClick={() => router.push('/dashboard')}
-                    className="mt-4 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                    className="mt-4 px-4 py-2 bg-gradient-to-r from-pink-400 to-rose-500 hover:from-pink-500 hover:to-rose-600 text-white rounded-lg transition-colors"
                   >
-                    Go to Dashboard
+                    Retourner au tableau de bord pour la prochaine étape
                   </button>
                 </div>
               )}
@@ -381,8 +399,8 @@ export default function UploadPage() {
 
           <ErrorModal
             isOpen={!!error}
-            onClose={() => setError(null)}
             message={error || ''}
+            onClose={handleCloseError}
           />
 
           <ConsentModal
