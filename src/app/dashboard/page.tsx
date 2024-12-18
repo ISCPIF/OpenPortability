@@ -53,7 +53,6 @@ export default function DashboardPage() {
     totalUsers: 0,
     following: 0,
     followers: 0,
-    // totalConnectedUsers: 0
   });
   const [matchedProfiles, setMatchedProfiles] = useState<MatchedProfile[]>([]);
   const [isLoading, setIsLoading] = useState(true)
@@ -122,124 +121,29 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => {
-    async function fetchStats() {
-      if (session?.user?.has_onboarded) {
-        try {
-          // Récupérer le nombre total d'utilisateurs connectés
-          const { count: totalUsers, error: usersError } = await supabase
-            .schema('public')
-            .from('sources')
-            .select('*', { count: 'exact' });
-
-          if (usersError) {
-            console.log(usersError)
-            console.error('Erreur lors de la récupération du nombre total d\'utilisateurs:', usersError);
-          }
-
-          // Récupérer le nombre de following
-          const { data: followingStats, error: followingError } = await supabase
-            .schema('public')
-            .from('sources_targets')
-            .select('target_twitter_id')
-            .eq('source_id', session.user.id);
-
-          // Récupérer le nombre de followers
-          const { data: followerStats, error: followerError } = await supabase
-            .schema('public')
-            .from('sources_followers')
-            .select('follower_id')
-            .eq('source_id', session.user.id);
-
-          setStats(s => ({
-            ...s,
-            totalUsers: totalUsers || 0,
-            following: followingStats?.length || 0,
-            followers: followerStats?.length || 0
-          }));
-
-        } catch (error) {
-          console.error('Erreur lors de la récupération des stats:', error);
+    const fetchStats = async () => {
+      try {
+        setIsLoading(true);
+        await new Promise(resolve => setTimeout(resolve, 4000))
+        const response = await fetch('/api/stats');
+        if (!response.ok) {
+          throw new Error('Failed to fetch stats');
         }
+        const data = await response.json();
+        setStats(data);
+      } catch (error) {
+        console.error('Error fetching stats:', error);
+      } finally {
+        setIsLoading(false);
       }
+    };
+
+    if (session?.user?.id) {
+      fetchStats();
     }
-    fetchStats();
   }, [session]);
 
-  useEffect(() => {
-    async function fetchStats() {
-      console.log('session from useEffect:', session)
-      if (session?.user?.has_onboarded) {
-        try {
-          // Simuler un chargement de 3 secondes
-          await new Promise(resolve => setTimeout(resolve, 4000))
-
-          // Récupérer les correspondances BlueSky pour l'utilisateur
-          const { data: matches, error: matchError } = await supabase
-            .schema('public')
-            .from('matched_bluesky_mappings')
-            .select('bluesky_handle')
-            .eq('source_twitter_id', session.user.twitter_id);
-
-          if (matchError) {
-            console.error('Erreur lors de la récupération des correspondances:', matchError);
-          } else {
-            setMatchedProfiles(matches || []);
-            setStats(s => ({ ...s, matchedCount: matches?.length || 0 }));
-          }
-
-          // Récupérer le nombre total d'utilisateurs connectés
-          const { count: totalConnectedUsers, error: usersError } = await supabase
-            .schema('public')
-            .from('sources')
-            .select('*', { count: 'exact' });
-          console.log('totalConnectedUsers:', totalConnectedUsers);
-          if (usersError) {
-            console.log(usersError)
-            console.error('Erreur lors de la récupération du nombre total d\'utilisateurs:', usersError);
-          } else {
-            setStats(s => ({ ...s, totalUsers: totalConnectedUsers || 0 }));
-          }
-
-          // Récupérer le nombre de following
-          const { data: followingStats, error: followingError } = await supabase
-            .schema('public')
-            .from('sources_targets')
-            .select('target_twitter_id')
-            .eq('source_id', session.user.id);
-
-          console.log('followingStats:', followingStats);
-
-          // Récupérer le nombre de followers
-          const { data: followerStats, error: followerError } = await supabase
-            .schema('public')
-            .from('sources_followers')
-            .select('follower_id')
-            .eq('source_id', session.user.id);
-
-          console.log('followerStats:', followerStats);
-
-          if (!followingError && !followerError) {
-            setStats(s => ({
-              ...s,
-              following: followingStats?.length || 0,
-              followers: followerStats?.length || 0
-            }));
-          } else {
-            console.error('Erreur lors de la récupération des stats:', { followingError, followerError });
-          }
-
-        } catch (error) {
-          console.error('Erreur inattendue:', error);
-        } finally {
-          setIsLoading(false)
-        }
-      } else {
-        setIsLoading(false)
-      }
-    }
-
-    fetchStats();
-  }, [session]);
+  
 
 
 
