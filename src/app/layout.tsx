@@ -42,7 +42,7 @@ export default async function RootLayout({
 
   return (
     <html lang="en" className={`${inter.variable} ${spaceGrotesk.variable}`}>
-      <body className={`${geistSans.variable} ${geistMono.variable} ${inter.className} antialiased`}>
+      <body className={`${geistSans.variable} ${geistMono.variable} ${inter.className} antialiased bg-gray-800`}>
         <Providers>
           <main className="min-h-screen">
             <MotionConfig reducedMotion="user">
