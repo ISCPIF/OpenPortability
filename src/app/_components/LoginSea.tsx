@@ -21,7 +21,7 @@ interface SeaProps {
 export default function LoginSea() {
 
   return (
-    <div className="absolute top-0 w-full h-[35rem]">
+    <div className="absolute top-0 left-0 w-full h-[35rem]">
       <Image src={seaBackground} fill alt="" className="object-cover"></Image>
       <Image
         src={logoHQX}
