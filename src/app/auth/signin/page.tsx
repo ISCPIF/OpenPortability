@@ -30,22 +30,23 @@ export default function SignIn() {
   return (
     <div className="min-h-screen bg-[#2a39a9] relative w-full max-w-[90rem] m-auto">
       <div className="container mx-auto py-12">
-        <div className="container flex flex-col m-auto text-center gap-y-8 text-[#E2E4DF]">
+        <div className="container flex flex-col m-auto text-center  text-[#E2E4DF]">
           <LoginSea />
-          <div className="m-auto relative my-[10rem]">
+          <div className="m-auto relative my-32 lg:my-40">
             {(status === "loading" || isLoading) ?
               <>
-                <div className=" my-36" />
+                <div className="my-24 sm:my-36" />
                 <LoadingIndicator msg="Chargement des informations…" />
               </>
-              : (<>
-                <h1 className={`${plex.className} text-3xl`}>Prêt à migrer vers de nouveaux rivages ?</h1>
-                <p className={`${plex.className} text-xl my-10`}>
-                  Commencez par vous connecter avec Twitter pour migrer vos données
-                </p>
-                <div className=" my-28" />
-                <LoginButtons onLoadingChange={setIsLoading} />
-              </>)
+              : (
+                <div className="relative z-10">
+                  <h1 className={`${plex.className} text-2xl lg:text-3xl`}>Prêt à migrer vers de nouveaux rivages ?</h1>
+                  <p className={`${plex.className} text-lg lg:text-xl my-8 lg:my-10`}>
+                    Commencez par vous connecter avec Twitter pour migrer vos données
+                  </p>
+                  <div className="my-40 lg:my-28" />
+                  <LoginButtons onLoadingChange={setIsLoading} />
+                </div>)
             }
           </div>
         </div>
