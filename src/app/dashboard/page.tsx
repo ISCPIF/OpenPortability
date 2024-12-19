@@ -12,7 +12,7 @@ import MatchedBlueSkyProfiles from '@/app/_components/MatchedBlueSkyProfiles';
 import UploadResults from '@/app/_components/UploadResults';
 import ProgressSteps from '@/app/_components/ProgressSteps';
 import PartageButton from '@/app/_components/PartageButton';
-import Sea from '@/app/_components/Sea';
+import DahsboardSea from '@/app/_components/DashboardSea';
 import { useSession, signIn } from 'next-auth/react';
 import { motion } from 'framer-motion';
 import { Ship, Link } from 'lucide-react';
@@ -170,7 +170,7 @@ export default function DashboardPage() {
       icon: <FaMastodon className="w-5 h-5" />,
       color: 'bg-gradient-to-r from-rose-400 to-rose-600',
       isAvailable: !!session?.user?.mastodon_id,
-      shareUrl: session?.user?.mastodon_instance 
+      shareUrl: session?.user?.mastodon_instance
         ? `${session.user.mastodon_instance}/share?text=${encodeURIComponent(shareText)}`
         : ''
     },
@@ -199,9 +199,9 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="bg-[#2a39a9] relative w-full max-w-[90rem] m-auto">
+    <div className="min-h-screen bg-[#2a39a9] relative w-full max-w-[90rem] m-auto">
       <Header />
-      <Sea progress={progress} />
+      <DahsboardSea progress={progress} />
 
       <div className="mx-auto px-4 my-[30rem]">
         {/* Frise chronologique */}
@@ -268,9 +268,9 @@ export default function DashboardPage() {
                 whileTap={{ scale: 0.95 }}
                 onClick={() => router.push('/upload')}
                 className={`inline-flex items-center gap-3 px-8 py-4 
-                         ${(hasTwitter && hasMastodon) || (hasBluesky && hasMastodon) || (hasBluesky && hasTwitter) 
-                           ? 'bg-gradient-to-r from-pink-400 to-rose-500 hover:from-pink-500 hover:to-rose-600' 
-                           : 'bg-gradient-to-r from-sky-400 to-blue-500 hover:from-sky-500 hover:to-blue-600'}
+                         ${(hasTwitter && hasMastodon) || (hasBluesky && hasMastodon) || (hasBluesky && hasTwitter)
+                    ? 'bg-gradient-to-r from-pink-400 to-rose-500 hover:from-pink-500 hover:to-rose-600'
+                    : 'bg-gradient-to-r from-sky-400 to-blue-500 hover:from-sky-500 hover:to-blue-600'}
                          text-white font-semibold rounded-xl shadow-lg 
                          transition-all duration-300 mb-4 ${plex.className}`}
               >
@@ -303,7 +303,7 @@ export default function DashboardPage() {
       <AnimatePresence>
         {isModalOpen && (
           <div className="fixed inset-0" style={{ zIndex: 9999 }}>
-            <div 
+            <div
               className="fixed inset-0 bg-[#0D0D0D] opacity-50"
               onClick={() => setIsModalOpen(false)}
             />
@@ -333,19 +333,19 @@ export default function DashboardPage() {
                     {shareOptions
                       .filter(option => option.isAvailable)
                       .map((option) => (
-                      <motion.button
-                        key={option.name}
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        onClick={() => handleShare(option.shareUrl, option.name)}
-                        className={`w-full flex items-center gap-3 p-3 rounded-xl text-white 
+                        <motion.button
+                          key={option.name}
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => handleShare(option.shareUrl, option.name)}
+                          className={`w-full flex items-center gap-3 p-3 rounded-xl text-white 
                                 transition-all duration-200 ${option.color} 
                                 hover:brightness-110 shadow-lg ${plex.className}`}
-                      >
-                        {option.icon}
-                        <span>Partager sur {option.name}</span>
-                      </motion.button>
-                    ))}
+                        >
+                          {option.icon}
+                          <span>Partager sur {option.name}</span>
+                        </motion.button>
+                      ))}
                   </div>
                 </div>
               </motion.div>
