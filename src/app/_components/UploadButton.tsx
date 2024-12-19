@@ -138,73 +138,76 @@ export const extractTargetFiles = async (file: File): Promise<ExtractedFile[]> =
   const reader = new zip.ZipReader(new zip.BlobReader(file));
   const entries = await reader.getEntries();
   const extractedFiles: ExtractedFile[] = [];
-  const progressMap = new Map<string, UnzipProgress>();
+  const targetFileNames = ['following.js', 'follower.js'];
 
-  // Initialiser le statut pour chaque fichier cible
-  TARGET_FILES.forEach(targetFile => {
-    progressMap.set(targetFile, {
-      fileName: targetFile,
-      progress: 0,
-      status: 'pending'
-    });
-  });
+  // Initialiser la progression pour les deux fichiers
+  const progressMap = new Map<string, number>();
+  targetFileNames.forEach(fileName => progressMap.set(fileName, 0));
 
-  try {
-    for (const entry of entries) {
-      const normalizedPath = normalizeFilePath(entry.filename);
-      if (TARGET_FILES.includes(normalizedPath)) {
-        progressMap.set(normalizedPath, {
-          fileName: normalizedPath,
-          progress: 0,
-          status: 'extracting'
-        });
+  // Fonction pour mettre à jour la progression
+  const updateProgress = () => {
+    const progressArray = Array.from(progressMap.entries()).map(([fileName, progress]) => ({
+      fileName,
+      progress,
+      status: progress === 100 ? 'done' : 'extracting' as UnzipProgress['status']
+    }));
+    window.dispatchEvent(new CustomEvent('unzipProgress', { detail: progressArray }));
+  };
 
-        try {
-          const uint8Array = await entry.getData!(new zip.Uint8ArrayWriter(), {
-            onprogress: (current, total) => {
-              const progress = Math.round((current / total) * 100);
-              progressMap.set(normalizedPath, {
-                fileName: normalizedPath,
-                progress,
-                status: 'extracting'
-              });
-              // Mettre à jour l'UI avec la progression
-              window.dispatchEvent(new CustomEvent('unzipProgress', {
-                detail: Array.from(progressMap.values())
-              }));
-            }
-          });
+  // Initialiser l'affichage de la progression
+  updateProgress();
 
-          extractedFiles.push({
-            name: normalizedPath,
-            content: uint8Array
-          });
+  const processFile = async (entry: zip.Entry) => {
+    const fileName = entry.filename.split('/').pop();
+    if (!fileName || !targetFileNames.includes(fileName)) return null;
 
-          progressMap.set(normalizedPath, {
-            fileName: normalizedPath,
-            progress: 100,
-            status: 'done'
-          });
-        } catch (error) {
-          console.error(`Error extracting ${normalizedPath}:`, error);
-          progressMap.set(normalizedPath, {
-            fileName: normalizedPath,
-            progress: 0,
-            status: 'error',
-            message: error instanceof Error ? error.message : 'Unknown error'
-          });
-          throw error;
+    try {
+      const data = await entry.getData(new zip.Uint8ArrayWriter(), {
+        onprogress: (processed: number) => {
+          const progress = Math.round((processed / entry.uncompressedSize) * 100);
+          progressMap.set(fileName, progress);
+          updateProgress();
         }
-      }
+      });
+
+      progressMap.set(fileName, 100);
+      updateProgress();
+
+      return {
+        name: fileName,
+        content: data
+      };
+    } catch (error) {
+      const errorProgress = {
+        fileName,
+        progress: 0,
+        status: 'error' as const,
+        message: error instanceof Error ? error.message : 'Erreur lors de l\'extraction'
+      };
+      window.dispatchEvent(new CustomEvent('unzipProgress', { 
+        detail: [errorProgress, ...Array.from(progressMap.entries())
+          .filter(([name]) => name !== fileName)
+          .map(([name, progress]) => ({
+            fileName: name,
+            progress,
+            status: progress === 100 ? 'done' : 'extracting' as UnzipProgress['status']
+          }))]
+      }));
+      return null;
     }
-  } finally {
-    await reader.close();
-  }
+  };
 
-  if (extractedFiles.length < TARGET_FILES.length) {
-    throw new Error('Some required files were not found in the zip');
-  }
+  // Traiter tous les fichiers en parallèle
+  const results = await Promise.all(
+    entries
+      .filter(entry => targetFileNames.includes(entry.filename.split('/').pop() || ''))
+      .map(processFile)
+  );
 
+  // Filtrer les résultats null (en cas d'erreur)
+  extractedFiles.push(...results.filter((result): result is ExtractedFile => result !== null));
+
+  await reader.close();
   return extractedFiles;
 };
 
@@ -248,7 +251,9 @@ export default function UploadButton({ onUploadComplete, onError, onFilesSelecte
   const [retryCount, setRetryCount] = useState(0);
   const [unzipProgress, setUnzipProgress] = useState<UnzipProgress[]>([]);
   const [selectedFiles, setSelectedFiles] = useState<FileList | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const maxRetries = 3;
+  const dropZoneRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleUnzipProgress = (event: CustomEvent<UnzipProgress[]>) => {
@@ -266,6 +271,48 @@ export default function UploadButton({ onUploadComplete, onError, onFilesSelecte
       handleUpload(filesToProcess);
     }
   }, [filesToProcess]);
+
+  const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Vérifie si on quitte vraiment la zone de drop
+    const rect = dropZoneRef.current?.getBoundingClientRect();
+    if (rect) {
+      const { clientX, clientY } = e;
+      if (
+        clientX <= rect.left ||
+        clientX >= rect.right ||
+        clientY <= rect.top ||
+        clientY >= rect.bottom
+      ) {
+        setIsDragging(false);
+      }
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      setSelectedFiles(files);
+      onFilesSelected(files);
+    }
+  };
 
   const handleUpload = async (files: FileList) => {
     setIsUploading(true);
@@ -299,7 +346,14 @@ export default function UploadButton({ onUploadComplete, onError, onFilesSelecte
   };
 
   return (
-    <div className={`w-full max-w-md mx-auto ${plex.className}`}>
+    <div 
+      ref={dropZoneRef}
+      className={`w-full max-w-md mx-auto ${plex.className} relative`}
+      onDragEnter={handleDragEnter}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
       <input
         type="file"
         onChange={(e) => {
@@ -320,7 +374,7 @@ export default function UploadButton({ onUploadComplete, onError, onFilesSelecte
         whileTap={{ scale: 0.98 }}
         className={`
           w-full px-6 py-4 flex items-center justify-center gap-3
-          text-white font-semibold rounded-xl cursor-pointer
+          text-white cursor-pointer text-sm
           bg-gradient-to-r from-blue-600 to-blue-800
           hover:from-blue-700 hover:to-blue-900
           shadow-lg hover:shadow-xl
@@ -328,6 +382,8 @@ export default function UploadButton({ onUploadComplete, onError, onFilesSelecte
           disabled:from-gray-400 disabled:to-gray-500 
           disabled:cursor-not-allowed
           ${isUploading ? 'pointer-events-none' : ''}
+          ${isDragging ? 'ring-2 ring-white ring-opacity-50' : ''}
+          relative z-10
         `}
       >
         {isUploading ? (
@@ -335,8 +391,15 @@ export default function UploadButton({ onUploadComplete, onError, onFilesSelecte
         ) : (
           <Upload className="w-5 h-5" />
         )}
-        {isUploading ? 'Processing...' : 'Select Twitter Archive'}
+        {isUploading ? 'Nous analysons votre archive, veuillez patienter ...' : 'Cliquez ou glissez votre archive ici'}
       </motion.label>
+
+      {/* Overlay de drop */}
+      {isDragging && (
+        <div className="absolute inset-0 bg-blue-600/20 backdrop-blur-sm rounded-xl border-2 border-white border-dashed flex items-center justify-center z-20">
+          <p className="text-white text-lg font-medium">Déposez votre fichier ici</p>
+        </div>
+      )}
 
       {unzipProgress.length > 0 && (
         <motion.div 
@@ -354,15 +417,7 @@ export default function UploadButton({ onUploadComplete, onError, onFilesSelecte
             >
               <div className="flex justify-between items-center mb-2">
                 <span className="text-sm font-medium text-gray-100">{progress.fileName}</span>
-                <span className="text-sm font-medium">
-                  {progress.status === 'done' ? (
-                    <CheckCircle className="w-5 h-5 text-green-400" />
-                  ) : progress.status === 'error' ? (
-                    <XCircle className="w-5 h-5 text-red-400" />
-                  ) : (
-                    `${Math.round(progress.progress)}%`
-                  )}
-                </span>
+                <span className="text-sm font-medium text-gray-100">{progress.progress}%</span>
               </div>
               <div className="w-full bg-gray-700/50 rounded-full h-2 overflow-hidden">
                 <motion.div
@@ -371,7 +426,7 @@ export default function UploadButton({ onUploadComplete, onError, onFilesSelecte
                   transition={{ duration: 0.5 }}
                   className={`h-full rounded-full ${
                     progress.status === 'error' ? 'bg-red-500' :
-                    progress.status === 'done' ? 'bg-green-400' : 'bg-blue-500'
+                    'bg-gradient-to-r from-pink-400 to-rose-500'
                   }`}
                 />
               </div>
