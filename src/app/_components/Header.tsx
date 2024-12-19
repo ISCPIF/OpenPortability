@@ -7,7 +7,6 @@ import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import ConnectedAccounts from './ConnectedAccounts';
 import { ChevronDown } from 'lucide-react';
-import logo from '../../../public/logo-2.svg'
 
 const Header = () => {
   const { data: session } = useSession();

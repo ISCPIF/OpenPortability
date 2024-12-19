@@ -12,7 +12,7 @@ import { validateTwitterData, extractTargetFiles } from '../_components/UploadBu
 import Image from 'next/image';
 import seaBackground from '../../../public/sea.svg'
 import { plex } from '../fonts/plex';
-import logoHQX from '../../../public/BannerHQX-rose_FR.svg'
+import logoHQX from '../../../public/logoxHQX/HQX-rose-FR.svg'
 import { motion } from 'framer-motion';
 import boat1 from '../../../public/boats/boat-1.svg'
 // import progress0 from '../../../public/progress/progress-0.svg'
@@ -184,7 +184,7 @@ export default function UploadPage() {
         }
 
         console.log(`✅ ${name} validation successful`);
-        
+
         // Parser le JSON pour l'ajouter à notre objet de données
         const cleanedContent = textContent.replace(/window\.YTD\.[a-zA-Z]+\.part0 = /, '');
         const jsonData = JSON.parse(cleanedContent);
@@ -211,7 +211,7 @@ export default function UploadPage() {
       }
 
       console.log("Données à envoyer:", dataToSend);
-      
+
       // Envoi au serveur avec le bon endpoint
       const response = await fetch(`/api/upload`, {
         method: 'POST',
@@ -358,7 +358,7 @@ export default function UploadPage() {
 
             <div className="space-y-6">
               <p className={`text-lg text-white/90 text-center font-medium ${plex.className}`}>
-              Déposez votre fichier .zip (si sa taille ne dépasse pas 300 Mo) ou, si vous l'avez déjà décompressé, téléversez vos fichiers data/following.js et data/follower.js
+                Déposez votre fichier .zip (si sa taille ne dépasse pas 300 Mo) ou, si vous l'avez déjà décompressé, téléversez vos fichiers data/following.js et data/follower.js
               </p>
 
               <div className="flex items-center justify-center">

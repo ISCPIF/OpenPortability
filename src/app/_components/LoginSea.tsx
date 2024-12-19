@@ -4,7 +4,7 @@ import Image from 'next/image';
 
 import { plex } from '@/app/fonts/plex';
 
-import logoHQX from '../../../public/logo-bg-bleu.svg'
+import logoHQX from '../../../public/logoxHQX/HQX-blanc-FR.svg'
 import seaBackground from '../../../public/sea-wave.svg';
 import Boat from './Boat';
 
