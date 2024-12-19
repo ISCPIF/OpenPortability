@@ -182,11 +182,7 @@ export default function ProgressSteps({
         <ProgressStep
           step={2}
           title="Réseaux sociaux"
-          description={
-            getConnectedAccountsCount() >= 2
-              ? "Connexion à plusieurs réseaux"
-              : "Connectez un autre réseau"
-          }
+          description={"Ajoutez un réseau social"}
           isCompleted={getConnectedAccountsCount() >= 2}
         />
         

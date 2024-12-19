@@ -48,6 +48,12 @@ interface TwitterData {
   };
 }
 
+interface UploadData {
+  userId: string;
+  followers: Array<{ follower: { accountId: string; userLink: string } }>;
+  following: Array<{ following: { accountId: string; userLink: string } }>;
+}
+
 // Traiter les fichiers en parallèle
 const processFiles = async (files: FormDataEntryValue[]) => {
   return Promise.all(
@@ -79,7 +85,6 @@ export async function POST(request: Request) {
   try {
     // Vérifier la session et le twitter_id
     const session = await auth();
-    // console.log('Session:', session);
 
     if (!session?.user?.id) {
       console.log('Session validation failed:', { session });
@@ -117,35 +122,23 @@ export async function POST(request: Request) {
       );
     }
 
-    const formData = await request.formData();
-    const files = formData.getAll('file');
+    // Récupérer les données JSON du corps de la requête
+    const data = await request.json() as UploadData;
+    const { followers, following } = data;
 
-    if (!files || files.length === 0) {
-      return NextResponse.json({ error: 'No files provided' }, { status: 400 });
+    if (!Array.isArray(followers) || !Array.isArray(following)) {
+      return NextResponse.json({ error: 'Invalid data format' }, { status: 400 });
     }
 
-    // Process files in parallel
-    const processedFiles = await processFiles(files);
-    const followings = processedFiles
-      .filter(f => f?.type === 'following')
-      .flatMap(f => f?.data || []);
-    const followers = processedFiles
-      .filter(f => f?.type === 'followers')
-      .flatMap(f => f?.data || []);
-    
-    console.log('[Upload Route] Processing files...');
+    console.log('[Upload Route] Processing data...');
 
     // D'abord insérer les targets (nécessaire pour la contrainte de clé étrangère)
-    if (followings.length > 0) {
-      const targets = followings
-        .map(f => f.following)
-        .filter(Boolean)
-        .map(following => ({
-          twitter_id: following!.accountId,
-          username: following!.username || following!.accountId,
-          name: following!.name,
-          created_at: new Date().toISOString()
-        }));
+    if (following.length > 0) {
+      const targets = following.map(f => ({
+        twitter_id: f.following.accountId,
+        username: f.following.accountId, // Utiliser accountId comme username par défaut
+        created_at: new Date().toISOString()
+      }));
 
       const { error: targetsError } = await supabase
         .from('targets')
@@ -160,19 +153,12 @@ export async function POST(request: Request) {
       }
     }
 
-    console.log("Followers are ->", followers)
-
     // Insérer les followers
     if (followers.length > 0) {
-      const followersData = followers
-        .map(f => f.follower)
-        .filter(Boolean)
-        .map(follower => ({
-          twitter_id: follower!.accountId,
-          // username: null,
-          // name: follower!.name,
-          created_at: new Date().toISOString()
-        }));
+      const followersData = followers.map(f => ({
+        twitter_id: f.follower.accountId,
+        created_at: new Date().toISOString()
+      }));
 
       const { error: followersError } = await supabase
         .from('followers')
@@ -188,11 +174,11 @@ export async function POST(request: Request) {
     }
 
     // Créer les relations sources_targets
-    if (followings.length > 0) {
+    if (following.length > 0) {
       const { error: followingError } = await supabase
         .from('sources_targets')
         .upsert(
-          followings
+          following
             .map(f => f.following)
             .filter(Boolean)
             .map(following => ({
@@ -251,7 +237,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       message: 'Upload successful',
       stats: {
-        following: followings.length,
+        following: following.length,
         followers: followers.length
       }
     });

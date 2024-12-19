@@ -12,13 +12,17 @@ import MatchedBlueSkyProfiles from '@/app/_components/MatchedBlueSkyProfiles';
 import UploadResults from '@/app/_components/UploadResults';
 import ProgressSteps from '@/app/_components/ProgressSteps';
 import PartageButton from '@/app/_components/PartageButton';
-import Sea from '@/app/_components/Sea';
+import DahsboardSea from '@/app/_components/DashboardSea';
 import { useSession, signIn } from 'next-auth/react';
 import { motion } from 'framer-motion';
-import { CheckCircle, Link } from 'lucide-react';
+import { Ship, Link } from 'lucide-react';
 import { Loader2 } from 'lucide-react';
 import { plex } from '../fonts/plex';
 import DashboardLoginButtons from '@/app/_components/DashboardLoginButtons';
+import { FaTwitter, FaMastodon } from 'react-icons/fa';
+import { SiBluesky } from "react-icons/si";
+import { Share2, Mail, X } from 'lucide-react';
+import { AnimatePresence } from 'framer-motion';
 
 // const supabase = createClient(
 //   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -46,19 +50,19 @@ const LoginButton = ({ provider, onClick, children }: { provider: string, onClic
 
 export default function DashboardPage() {
   const { data: session, update } = useSession()
-  // console.log('session:', session)
+  console.log('session par ici:', session)
   const router = useRouter();
   const [stats, setStats] = useState({
     matchedCount: 0,
     totalUsers: 0,
     following: 0,
     followers: 0,
-    // totalConnectedUsers: 0
   });
   const [matchedProfiles, setMatchedProfiles] = useState<MatchedProfile[]>([]);
   const [isLoading, setIsLoading] = useState(true)
   const [isShared, setIsShared] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Déterminer quels comptes sont connectés
   const hasMastodon = session?.user?.mastodon_id;
@@ -122,127 +126,62 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => {
-    async function fetchStats() {
-      if (session?.user?.has_onboarded) {
-        try {
-          // Récupérer le nombre total d'utilisateurs connectés
-          const { count: totalUsers, error: usersError } = await supabase
-            .schema('public')
-            .from('sources')
-            .select('*', { count: 'exact' });
-
-          if (usersError) {
-            console.log(usersError)
-            console.error('Erreur lors de la récupération du nombre total d\'utilisateurs:', usersError);
-          }
-
-          // Récupérer le nombre de following
-          const { data: followingStats, error: followingError } = await supabase
-            .schema('public')
-            .from('sources_targets')
-            .select('target_twitter_id')
-            .eq('source_id', session.user.id);
-
-          // Récupérer le nombre de followers
-          const { data: followerStats, error: followerError } = await supabase
-            .schema('public')
-            .from('sources_followers')
-            .select('follower_id')
-            .eq('source_id', session.user.id);
-
-          setStats(s => ({
-            ...s,
-            totalUsers: totalUsers || 0,
-            following: followingStats?.length || 0,
-            followers: followerStats?.length || 0
-          }));
-
-        } catch (error) {
-          console.error('Erreur lors de la récupération des stats:', error);
+    const fetchStats = async () => {
+      try {
+        setIsLoading(true);
+        // await new Promise(resolve => setTimeout(resolve, 2000))
+        const response = await fetch('/api/stats');
+        if (!response.ok) {
+          throw new Error('Failed to fetch stats');
         }
+        const data = await response.json();
+        setStats(data);
+      } catch (error) {
+        console.error('Error fetching stats:', error);
+      } finally {
+        setIsLoading(false);
       }
+    };
+
+    if (session?.user?.id) {
+      fetchStats();
     }
-    fetchStats();
   }, [session]);
 
-  useEffect(() => {
-    async function fetchStats() {
-      console.log('session from useEffect:', session)
-      if (session?.user?.has_onboarded) {
-        try {
-          // Simuler un chargement de 3 secondes
-          await new Promise(resolve => setTimeout(resolve, 4000))
+  const shareText = `🔥L'exode de X est massif ! Ne perdez pas un seul de vos followers. Grâce à #HelloQuitX j'ai inscrit ${stats.followers + stats.following} nouveaux passagers pour un voyage vers #BlueSky & #Mastodon. Embarquez vous aussi et retrouvez automatiquement vos communautés le #20Janvier ! https://app.beta.helloquitx.com `;
 
-          // Récupérer les correspondances BlueSky pour l'utilisateur
-          const { data: matches, error: matchError } = await supabase
-            .schema('public')
-            .from('matched_bluesky_mappings')
-            .select('bluesky_handle')
-            .eq('source_twitter_id', session.user.twitter_id);
-
-          if (matchError) {
-            console.error('Erreur lors de la récupération des correspondances:', matchError);
-          } else {
-            setMatchedProfiles(matches || []);
-            setStats(s => ({ ...s, matchedCount: matches?.length || 0 }));
-          }
-
-          // Récupérer le nombre total d'utilisateurs connectés
-          const { count: totalConnectedUsers, error: usersError } = await supabase
-            .schema('public')
-            .from('sources')
-            .select('*', { count: 'exact' });
-          console.log('totalConnectedUsers:', totalConnectedUsers);
-          if (usersError) {
-            console.log(usersError)
-            console.error('Erreur lors de la récupération du nombre total d\'utilisateurs:', usersError);
-          } else {
-            setStats(s => ({ ...s, totalUsers: totalConnectedUsers || 0 }));
-          }
-
-          // Récupérer le nombre de following
-          const { data: followingStats, error: followingError } = await supabase
-            .schema('public')
-            .from('sources_targets')
-            .select('target_twitter_id')
-            .eq('source_id', session.user.id);
-
-          console.log('followingStats:', followingStats);
-
-          // Récupérer le nombre de followers
-          const { data: followerStats, error: followerError } = await supabase
-            .schema('public')
-            .from('sources_followers')
-            .select('follower_id')
-            .eq('source_id', session.user.id);
-
-          console.log('followerStats:', followerStats);
-
-          if (!followingError && !followerError) {
-            setStats(s => ({
-              ...s,
-              following: followingStats?.length || 0,
-              followers: followerStats?.length || 0
-            }));
-          } else {
-            console.error('Erreur lors de la récupération des stats:', { followingError, followerError });
-          }
-
-        } catch (error) {
-          console.error('Erreur inattendue:', error);
-        } finally {
-          setIsLoading(false)
-        }
-      } else {
-        setIsLoading(false)
-      }
+  const shareOptions = [
+    {
+      name: 'Twitter',
+      icon: <FaTwitter className="w-5 h-5" />,
+      color: 'bg-gradient-to-r from-pink-500 to-rose-600',
+      isAvailable: !!session?.user?.twitter_id,
+      shareUrl: `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`
+    },
+    {
+      name: 'Bluesky',
+      icon: <SiBluesky className="w-5 h-5" />,
+      color: 'bg-gradient-to-r from-pink-400 to-pink-600',
+      isAvailable: !!session?.user?.bluesky_id,
+      shareUrl: `https://bsky.app/intent/compose?text=${encodeURIComponent(shareText)}`
+    },
+    {
+      name: 'Mastodon',
+      icon: <FaMastodon className="w-5 h-5" />,
+      color: 'bg-gradient-to-r from-rose-400 to-rose-600',
+      isAvailable: !!session?.user?.mastodon_id,
+      shareUrl: session?.user?.mastodon_instance
+        ? `${session.user.mastodon_instance}/share?text=${encodeURIComponent(shareText)}`
+        : ''
+    },
+    {
+      name: 'Email',
+      icon: <Mail className="w-5 h-5" />,
+      color: 'bg-gradient-to-r from-pink-300 to-pink-500',
+      isAvailable: true,
+      shareUrl: `mailto:?subject=${encodeURIComponent('Ma migration avec HelloQuitteX')}&body=${encodeURIComponent(shareText)}`
     }
-
-    fetchStats();
-  }, [session]);
-
-
-
+  ];
 
   if (isLoading) {
     return (
@@ -260,9 +199,9 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="bg-[#2a39a9] relative w-full max-w-[90rem] m-auto">
+    <div className="min-h-screen bg-[#2a39a9] relative w-full max-w-[90rem] m-auto">
       <Header />
-      <Sea progress={progress} />
+      <DahsboardSea progress={progress} />
 
       <div className="mx-auto px-4 my-[30rem]">
         {/* Frise chronologique */}
@@ -281,7 +220,7 @@ export default function DashboardPage() {
                 </div>
               ) : (
                 <h2 className={`${plex.className} text-xl font-semibold text-indigo-100`}>
-                  Effectuez les étapes suivantes pour voguer vers de nouveaux horizons et enfin quitter X
+                  Effectuez les étapes suivantes pour voguer vers de nouveaux rivages !
                 </h2>
               )}
             </div>
@@ -295,10 +234,7 @@ export default function DashboardPage() {
               onShare={handleShare}
               isShared={isShared}
               onProgressChange={setProgress}
-              userId={session?.user?.id}
-              twitterId={session?.user?.twitter_id}
-              isLoading={isLoading}
-              setIsLoading={setIsLoading}
+              setIsModalOpen={setIsModalOpen}
             />
           </div>
         </div>
@@ -307,19 +243,22 @@ export default function DashboardPage() {
             <UploadResults
               stats={stats}
               onShare={handleShare}
+              setIsModalOpen={setIsModalOpen}
             />
           )}
-          <div className="max-w-md mx-auto">
-            <DashboardLoginButtons
-              connectedServices={{
-                twitter: !!session?.user?.twitter_id,
-                bluesky: !!session?.user?.bluesky_id,
-                mastodon: !!session?.user?.mastodon_id
-              }}
-              hasUploadedArchive={!!stats}
-              onLoadingChange={setIsLoading}
-            />
-          </div>
+          {!((hasTwitter && hasMastodon) || (hasBluesky && hasMastodon) || (hasBluesky && hasTwitter)) && (
+            <div className="max-w-md mx-auto">
+              <DashboardLoginButtons
+                connectedServices={{
+                  twitter: !!session?.user?.twitter_id,
+                  bluesky: !!session?.user?.bluesky_id,
+                  mastodon: !!session?.user?.mastodon_id
+                }}
+                hasUploadedArchive={!!stats}
+                onLoadingChange={setIsLoading}
+              />
+            </div>
+          )}
           {/* Removed old button since it's now handled by DashboardLoginButtons */}
           {/* Afficher le bouton d'upload si l'utilisateur n'a pas encore onboarded */}
           {!hasOnboarded && (
@@ -328,12 +267,15 @@ export default function DashboardPage() {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => router.push('/upload')}
-                className="inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-sky-400 to-blue-500 
-                         text-white font-semibold rounded-xl shadow-lg hover:from-sky-500 hover:to-blue-600 
-                         transition-all duration-300 mb-4"
+                className={`inline-flex items-center gap-3 px-8 py-4 
+                         ${(hasTwitter && hasMastodon) || (hasBluesky && hasMastodon) || (hasBluesky && hasTwitter)
+                    ? 'bg-gradient-to-r from-pink-400 to-rose-500 hover:from-pink-500 hover:to-rose-600'
+                    : 'bg-gradient-to-r from-sky-400 to-blue-500 hover:from-sky-500 hover:to-blue-600'}
+                         text-white font-semibold rounded-xl shadow-lg 
+                         transition-all duration-300 mb-4 ${plex.className}`}
               >
-                <CheckCircle className="w-6 h-6" />
-                Importer mon archive Twitter pour continuer ma migration
+                <Ship className="w-6 h-6" />
+                Importer mon archive Twitter pour continuer mon voyage
               </motion.button>
             </div>
           )}
@@ -356,6 +298,61 @@ export default function DashboardPage() {
           )} */}
         </div>
       </div>
-    </div >
+
+      {/* Modale de partage */}
+      <AnimatePresence>
+        {isModalOpen && (
+          <div className="fixed inset-0" style={{ zIndex: 9999 }}>
+            <div
+              className="fixed inset-0 bg-[#0D0D0D] opacity-50"
+              onClick={() => setIsModalOpen(false)}
+            />
+            <div className="fixed inset-0 flex items-center justify-center">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                className={`relative w-full max-w-md mx-4 ${plex.className}`}
+              >
+                <div className="bg-[#0D0D0D] rounded-2xl border border-pink-500/20 
+                            shadow-2xl overflow-hidden">
+                  <div className="flex items-center justify-between p-4 border-b border-pink-500/20 bg-[#0D0D0D]">
+                    <h3 className="text-lg font-medium text-white">Partager votre migration</h3>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsModalOpen(false);
+                      }}
+                      className="p-1 hover:bg-pink-500/10 rounded-lg transition-colors"
+                    >
+                      <X className="w-5 h-5 text-pink-400" />
+                    </button>
+                  </div>
+
+                  <div className="p-4 space-y-3 bg-[#0D0D0D]">
+                    {shareOptions
+                      .filter(option => option.isAvailable)
+                      .map((option) => (
+                        <motion.button
+                          key={option.name}
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => handleShare(option.shareUrl, option.name)}
+                          className={`w-full flex items-center gap-3 p-3 rounded-xl text-white 
+                                transition-all duration-200 ${option.color} 
+                                hover:brightness-110 shadow-lg ${plex.className}`}
+                        >
+                          {option.icon}
+                          <span>Partager sur {option.name}</span>
+                        </motion.button>
+                      ))}
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+          </div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }

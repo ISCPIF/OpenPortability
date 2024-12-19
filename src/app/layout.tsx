@@ -4,6 +4,7 @@ import { Inter, Space_Grotesk } from 'next/font/google'
 import "./globals.css";
 import { Providers } from "./providers";
 import { auth } from "@/app/auth";
+import { MotionConfig } from "framer-motion";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -18,9 +19,9 @@ const geistMono = localFont({
 });
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
-const spaceGrotesk = Space_Grotesk({ 
-  subsets: ['latin'], 
-  variable: '--font-space-grotesk' 
+const spaceGrotesk = Space_Grotesk({
+  subsets: ['latin'],
+  variable: '--font-space-grotesk'
 })
 
 export const metadata: Metadata = {
@@ -41,10 +42,12 @@ export default async function RootLayout({
 
   return (
     <html lang="en" className={`${inter.variable} ${spaceGrotesk.variable}`}>
-      <body className={`${geistSans.variable} ${geistMono.variable} ${inter.className} antialiased`}>
+      <body className={`${geistSans.variable} ${geistMono.variable} ${inter.className} antialiased bg-gray-800`}>
         <Providers>
           <main className="min-h-screen">
-            {children}
+            <MotionConfig reducedMotion="user">
+              {children}
+            </MotionConfig>
           </main>
         </Providers>
       </body>
