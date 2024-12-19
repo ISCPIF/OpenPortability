@@ -384,7 +384,7 @@ export default function UploadPage() {
                 <div className={`text-center mb-6 p-4 bg-pink-50 rounded-lg ${plex.className}`}>
                   <h2 className="text-xl font-semibold text-pink-800 mb-2">Traitement terminé</h2>
                   <p className="text-pink-700">
-                    Vous avez importés {uploadStats.following} followings et {uploadStats.followers} followers.
+                    Vous avez importé {uploadStats.following} followings et {uploadStats.followers} followers.
                   </p>
                   <button
                     onClick={() => router.push('/dashboard')}
