@@ -6,6 +6,7 @@ import type {
   AdapterSession,
   VerificationToken
 } from "next-auth/adapters"
+import type { Profile } from "next-auth"
 
 interface CustomAdapterUser extends Omit<AdapterUser, 'email' | 'emailVerified' | 'image'> {
   has_onboarded: boolean
@@ -21,7 +22,7 @@ interface CustomAdapterUser extends Omit<AdapterUser, 'email' | 'emailVerified' 
   mastodon_instance?: string | null
 }
 
-interface TwitterData {
+export interface TwitterData extends Profile {
   data: {
     id: string
     name: string
@@ -30,13 +31,26 @@ interface TwitterData {
   }
 }
 
-interface MastodonProfile {
+export interface MastodonProfile extends Profile {
   id: string
   username: string
   display_name: string
   avatar: string
   url: string
 }
+
+export interface BlueskyProfile extends Profile {
+  did?: string
+  id?: string
+  handle?: string
+  username?: string
+  displayName?: string
+  name?: string
+  avatar?: string
+  identifier?: string
+}
+
+export type ProviderProfile = TwitterData | MastodonProfile | BlueskyProfile
 
 // Créer deux clients Supabase distincts
 const authClient = createClient(
@@ -67,7 +81,7 @@ const publicClient = createClient(
 const createUser = async (
   userData: Partial<CustomAdapterUser> & {
     provider?: 'twitter' | 'bluesky' | 'mastodon',
-    profile?: any
+    profile?: ProviderProfile
   }
 ): Promise<CustomAdapterUser> => {
   console.log("\n=== [Adapter] Starting user creation ===")
@@ -79,18 +93,18 @@ const createUser = async (
   }
 
   // Remplir les champs spécifiques au provider avec les données brutes
-  if (userData.provider === 'twitter' && userData.profile?.data) {
-    const twitterData = userData.profile.data
-    userToCreate.twitter_id = twitterData.id
-    userToCreate.twitter_username = twitterData.username
-    userToCreate.twitter_image = twitterData.profile_image_url
-    userToCreate.name = twitterData.name // Utiliser le nom Twitter comme nom principal
+  if (userData.provider === 'twitter' && userData.profile) {
+    const twitterData = userData.profile as TwitterData
+    userToCreate.twitter_id = twitterData.data.id
+    userToCreate.twitter_username = twitterData.data.username
+    userToCreate.twitter_image = twitterData.data.profile_image_url
+    userToCreate.name = twitterData.data.name // Utiliser le nom Twitter comme nom principal
 
     // Chercher d'abord un utilisateur existant avec ce twitter_id
     const { data: existingUser } = await authClient
       .from('users')
       .select('*')
-      .eq('twitter_id', twitterData.id)
+      .eq('twitter_id', twitterData.data.id)
       .single()
 
     if (existingUser) {
@@ -99,7 +113,7 @@ const createUser = async (
     }
   } 
   else if (userData.provider === 'mastodon' && userData.profile) {
-    const mastodonData = userData.profile
+    const mastodonData = userData.profile as MastodonProfile
     console.log("Mastodon data:", mastodonData)
     userToCreate.mastodon_id = mastodonData.id
     userToCreate.mastodon_username = mastodonData.username
@@ -120,7 +134,7 @@ const createUser = async (
     }
   }
   else if (userData.provider === 'bluesky' && userData.profile) {
-    const blueskyData = userData.profile
+    const blueskyData = userData.profile as BlueskyProfile
     userToCreate.bluesky_id = blueskyData.did || blueskyData.id
     userToCreate.bluesky_username = blueskyData.handle || blueskyData.username
     userToCreate.bluesky_image = blueskyData.avatar
@@ -270,63 +284,55 @@ const updateUser = async (
   userId: string,
   providerData?: {
     provider: 'twitter' | 'bluesky' | 'mastodon',
-    profile: TwitterData | MastodonProfile | any
+    profile: ProviderProfile
   }
 ): Promise<CustomAdapterUser> => {
-  console.log("\n=== [Adapter] updateUser ===")
-  console.log("→ Updating user with provider data:", JSON.stringify(providerData, null, 2))
+  console.log("\n=== [Adapter] Starting user update ===")
+  console.log("→ User ID:", userId)
+  console.log("→ Provider data:", JSON.stringify(providerData, null, 2))
 
-  const updates: Partial<CustomAdapterUser> = {}
-  
-  if (providerData) {
-    switch (providerData.provider) {
-      case 'twitter':
-        const twitterProfile = providerData.profile as TwitterData
-        updates.twitter_id = twitterProfile.data.id
-        updates.twitter_username = twitterProfile.data.username
-        updates.twitter_image = twitterProfile.data.profile_image_url
-        updates.name = twitterProfile.data.name
-        break
-
-      case 'mastodon':
-        const mastodonProfile = providerData.profile as MastodonProfile
-        updates.mastodon_id = mastodonProfile.id
-        updates.mastodon_username = mastodonProfile.username
-        updates.mastodon_image = mastodonProfile.avatar
-        updates.name = mastodonProfile.display_name
-        updates.mastodon_instance = new URL(mastodonProfile.url).origin
-        break
-    }
+  if (!userId) {
+    throw new Error("User ID is required")
   }
 
-  const { data: updatedUser, error } = await authClient
+  const updates: Partial<CustomAdapterUser> = {}
+
+  if (providerData?.provider === 'twitter' && providerData.profile && 'data' in providerData.profile) {
+    const twitterData = providerData.profile.data
+    updates.twitter_id = twitterData.id
+    updates.twitter_username = twitterData.username
+    updates.twitter_image = twitterData.profile_image_url
+    updates.name = twitterData.name
+  }
+  else if (providerData?.provider === 'mastodon' && providerData.profile && 'url' in providerData.profile) {
+    const mastodonData = providerData.profile
+    updates.mastodon_id = mastodonData.id
+    updates.mastodon_username = mastodonData.username
+    updates.mastodon_image = mastodonData.avatar
+    updates.mastodon_instance = mastodonData.url ? new URL(mastodonData.url).origin : null
+    updates.name = mastodonData.display_name
+  }
+  else if (providerData?.provider === 'bluesky' && providerData.profile) {
+    const blueskyData = providerData.profile as BlueskyProfile
+    updates.bluesky_id = blueskyData.did || blueskyData.id
+    updates.bluesky_username = blueskyData.handle || blueskyData.username || blueskyData.identifier
+    updates.bluesky_image = blueskyData.avatar
+    updates.name = blueskyData.displayName || blueskyData.name
+  }
+
+  const { data: user, error: updateError } = await authClient
     .from("users")
     .update(updates)
     .eq("id", userId)
     .select()
     .single()
 
-  if (error) {
-    console.log("❌ Error updating user:", error.message)
-    throw error
+  if (updateError) {
+    console.error("Error updating user:", updateError)
+    throw new Error(updateError.message)
   }
 
-  console.log("✅ User updated:", updatedUser)
-  return {
-    id: updatedUser.id,
-    name: updatedUser.name,
-    twitter_id: updatedUser.twitter_id,
-    twitter_username: updatedUser.twitter_username,
-    twitter_image: updatedUser.twitter_image,
-    bluesky_id: updatedUser.bluesky_id,
-    bluesky_username: updatedUser.bluesky_username,
-    bluesky_image: updatedUser.bluesky_image,
-    mastodon_id: updatedUser.mastodon_id,
-    mastodon_username: updatedUser.mastodon_username,
-    mastodon_image: updatedUser.mastodon_image,
-    mastodon_instance: updatedUser.mastodon_instance,
-    has_onboarded: updatedUser.has_onboarded
-  }
+  return user as CustomAdapterUser
 }
 
 const linkAccount = async (account: AdapterAccount): Promise<void> => {

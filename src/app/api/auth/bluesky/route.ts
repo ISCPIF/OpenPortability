@@ -1,189 +1,63 @@
-import { createClient } from '@supabase/supabase-js';
-import { NextResponse } from "next/server";
+import { NextResponse } from "next/server"
+import { BskyAgent } from '@atproto/api'
 import { auth } from "@/app/auth"
-import { authConfig } from "@/app/auth.config";
-import { BskyAgent } from '@atproto/api';
-
-// Create a single Supabase client for the API route
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false
-    },
-    db: {
-      schema: "next-auth"
-    }
-  }
-)
+import { supabaseAdapter } from "@/lib/supabase-adapter"
+import { cookies } from 'next/headers'
 
 export async function POST(req: Request) {
   try {
     const { identifier, password } = await req.json();
-    console.log('BlueSky auth attempt for identifier:', identifier);
 
-    if (!identifier || !password) {
-      console.log('Missing credentials');
-      return NextResponse.json(
-        { error: 'Missing identifier or password' },
-        { status: 400 }
-      );
-    }
-
-
-
-    // Connexion à Bluesky
-    console.log('Attempting BlueSky login...');
+    // Authentification Bluesky
     const agent = new BskyAgent({ service: 'https://bsky.social' });
-    let session;
-    try {
-      session = await agent.login({ identifier, password });
-      console.log('BlueSky login successful for handle:', session.data.handle);
-    } catch (error: any) {
-      console.error('Bluesky login error:', error);
-      return NextResponse.json(
-        { error: 'Invalid Bluesky credentials' },
-        { status: 401 }
-      );
-    }
-
-    // Récupérer les informations du profil
-    console.log('Fetching BlueSky profile...');
+    const session = await agent.login({ identifier, password });
     const profile = await agent.getProfile({ actor: session.data.handle });
-    console.log('Profile fetched:', { profile });
 
-    // Vérifier si le BlueSky ID est déjà utilisé
-    console.log('Checking if BlueSky ID exists:', session.data.did);
-    const existingBlueSkyId = await supabase
-      .from('users')
-      .select('id')
-      .eq('bluesky_id', session.data.did)
-      .single();
-
-    if (existingBlueSkyId.data) {
-      console.log('BlueSky ID already in use');
-      return NextResponse.json(
-        { error: 'Ce compte BlueSky est déjà lié à un autre utilisateur' },
-        { status: 400 }
-      );
-    }
-
-    // Vérifier si c'est une première connexion ou un ajout de compte
-    const currentSession = await auth();
-    console.log('Current session:', currentSession);
-
-    let userId;
-
-    if (currentSession?.user?.id) {
-      // Cas de linking account : utilisateur déjà connecté
-      console.log('Linking BlueSky account to existing user:', currentSession.user.id);
-      
-      // Mettre à jour l'utilisateur existant avec les infos BlueSky
-      const { error: updateError } = await supabase
-        .from('users')
-        .update({
-          bluesky_id: session.data.did,
-          bluesky_username: session.data.handle,
-          bluesky_image: profile.data.avatar,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', currentSession.user.id);
-
-      if (updateError) {
-        console.error('Error updating user:', updateError);
-        return NextResponse.json(
-          { error: 'Failed to update user' },
-          { status: 500 }
-        );
+    // Créer ou mettre à jour l'utilisateur avec le format attendu par l'adaptateur
+    const user = await supabaseAdapter.createUser({
+      provider: 'bluesky',
+      profile: {
+        did: session.data.did,
+        handle: session.data.handle,
+        displayName: profile.data.displayName,
+        avatar: profile.data.avatar
       }
-
-      userId = currentSession.user.id;
-    } else {
-      // Cas de création : nouvel utilisateur
-      console.log('Creating new user with BlueSky account');
-      console.log(supabase)
-      const { data: newUser, error: createError } = await supabase
-        .from('users')
-        .insert({
-          name: profile.data.displayName || profile.data.handle,
-          bluesky_id: session.data.did,
-          bluesky_username: session.data.handle,
-          bluesky_image: profile.data.avatar,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })
-        .select()
-        .single();
-
-      if (createError || !newUser) {
-        console.error('Error creating user:', createError);
-        return NextResponse.json(
-          { error: 'Failed to create user' },
-          { status: 500 }
-        );
-      }
-
-      userId = newUser.id;
-    }
-
-    // Créer ou mettre à jour l'entrée dans la table accounts
-    console.log('Creating/updating BlueSky account entry');
-    const { error: accountError } = await supabase
-      .from('accounts')
-      .upsert({
-        user_id: userId,
-        type: 'oauth',
-        provider: 'bluesky',
-        provider_account_id: session.data.did,
-        access_token: session.data.accessJwt,
-        refresh_token: session.data.refreshJwt,
-        token_type: 'bearer',
-        expires_at: null,
-        id_token: null,
-        scope: null,
-        session_state: null,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      });
-
-    if (accountError) {
-      console.error('Error with account entry:', accountError);
-      return NextResponse.json(
-        { error: 'Failed to create/update account entry' },
-        { status: 500 }
-      );
-    }
-
-    // Créer une session NextAuth
-    console.log('Creating NextAuth session for user ID:', userId);
-    const sessionToken = crypto.randomUUID();
-    const expires = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 jours
-
-    await supabase.from('sessions').insert({
-      session_token: sessionToken,
-      user_id: userId,
-      expires: expires.toISOString(),
     });
 
-    console.log('Session created successfully, returning response with cookie');
-    // Retourner la réponse avec le cookie de session
-    return NextResponse.json(
-      { 
-        ok: true,
-        user: {
-          id: userId,
-          name: profile.data.displayName || profile.data.handle,
-          bluesky_handle: session.data.handle
-        }
-      },
-      {
-        headers: {
-          'Set-Cookie': `next-auth.session-token=${sessionToken}; Path=/; HttpOnly; SameSite=Lax; Expires=${expires.toUTCString()}`
-        }
+    // Vérifier si le compte existe déjà
+    const existingAccount = await supabaseAdapter.getAccountsByUserId(user.id);
+    const blueskyAccount = existingAccount?.find(acc => acc.provider === 'bluesky');
+
+    if (!blueskyAccount) {
+      // Lier le compte seulement s'il n'existe pas déjà
+      await supabaseAdapter.linkAccount({
+        provider: 'bluesky',
+        type: 'oauth',
+        providerAccountId: session.data.did,
+        access_token: session.data.accessJwt,
+        refresh_token: session.data.refreshJwt,
+        userId: user.id,
+        expires_at: undefined,
+        token_type: 'bearer',
+        scope: undefined,
+      });
+    }
+
+    // Créer une session
+    await supabaseAdapter.createSession({
+      session_token: crypto.randomUUID(),
+      user_id: user.id,
+      expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 jours
+    });
+
+    return NextResponse.json({ 
+      ok: true,
+      user: {
+        id: user.id,
+        name: profile.data.displayName || profile.data.handle,
+        bluesky_handle: session.data.handle
       }
-    );
+    });
 
   } catch (error) {
     console.error('Authentication error:', error);
@@ -198,27 +72,39 @@ export async function DELETE(req: Request) {
   const session = await auth();
   
   if (!session?.user?.id) {
-    return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+    return NextResponse.json(
+      { error: 'Not authenticated' },
+      { status: 401 }
+    );
   }
 
   try {
-    // Supprimer la session de la base de données
-    await supabase
-      .from('sessions')
-      .delete()
-      .eq('user_id', session.user.id);
+    // Supprimer la session
+    await supabaseAdapter.deleteSession(session.user.id);
 
-    // Retourner une réponse avec un cookie expiré
+    // Effacer les cookies de session
+    const cookieStore = cookies();
+    cookieStore.delete('next-auth.session-token');
+    cookieStore.delete('next-auth.csrf-token');
+    cookieStore.delete('next-auth.callback-url');
+
     return NextResponse.json(
-      { success: true },
+      { ok: true },
       {
         headers: {
-          'Set-Cookie': `next-auth.session-token=; Path=/; HttpOnly; SameSite=Lax; Expires=Thu, 01 Jan 1970 00:00:00 GMT`
+          'Set-Cookie': [
+            'next-auth.session-token=; Path=/; HttpOnly; SameSite=Lax; Expires=Thu, 01 Jan 1970 00:00:00 GMT',
+            'next-auth.csrf-token=; Path=/; HttpOnly; SameSite=Lax; Expires=Thu, 01 Jan 1970 00:00:00 GMT',
+            'next-auth.callback-url=; Path=/; HttpOnly; SameSite=Lax; Expires=Thu, 01 Jan 1970 00:00:00 GMT'
+          ]
         }
       }
     );
   } catch (error) {
-    console.error('Error signing out:', error);
-    return NextResponse.json({ error: 'Failed to sign out' }, { status: 500 });
+    console.error('Logout error:', error);
+    return NextResponse.json(
+      { error: 'Logout failed' },
+      { status: 500 }
+    );
   }
 }
