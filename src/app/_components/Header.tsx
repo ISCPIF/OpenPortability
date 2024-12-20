@@ -76,7 +76,10 @@ const Header = () => {
                                       await fetch('/api/auth/bluesky', {
                                         method: 'DELETE',
                                       });
-                                      window.location.href = '/';
+                                      await signOut({
+                                        callbackUrl: '/',
+                                        redirect: true
+                                      });
                                     } else {
                                       await signOut({
                                         callbackUrl: '/',
@@ -85,7 +88,6 @@ const Header = () => {
                                     }
                                   } catch (error) {
                                     console.error('Error signing out:', error);
-                                    window.location.href = '/';
                                   }
                                 }}
                                 className="w-full px-4 py-2 text-sm text-black/80 hover:text-black 
