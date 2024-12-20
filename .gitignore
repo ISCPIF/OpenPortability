@@ -15,8 +15,12 @@
 /.next/
 /out/
 
-# production
+# production et tests
 /build
+/tmp
+/logs
+/volumes
+
 
 # misc
 .DS_Store

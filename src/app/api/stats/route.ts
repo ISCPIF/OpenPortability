@@ -4,13 +4,7 @@ import { auth } from "@/app/auth";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false
-    }
-  }
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
 export async function GET() {
@@ -34,29 +28,29 @@ export async function GET() {
     const { count: totalUsers, error: usersError } = await supabase
       .schema('public')
       .from('sources')
-      .select('*', { count: 'exact' });
+      .select('*', { count: 'exact', head: true });
 
     if (usersError) {
       console.error('Erreur lors de la récupération du nombre total d\'utilisateurs:', usersError);
       throw usersError;
     }
 
-    // Récupérer le nombre de following
-    const { data: followingStats, error: followingError } = await supabase
+    // Récupérer le nombre de following avec count
+    const { count: followingCount, error: followingError } = await supabase
       .schema('public')
       .from('sources_targets')
-      .select('target_twitter_id')
+      .select('*', { count: 'exact', head: true })
       .eq('source_id', session.user.id);
 
     if (followingError) {
       throw followingError;
     }
 
-    // Récupérer le nombre de followers
-    const { data: followerStats, error: followerError } = await supabase
+    // Récupérer le nombre de followers avec count
+    const { count: followerCount, error: followerError } = await supabase
       .schema('public')
       .from('sources_followers')
-      .select('follower_id')
+      .select('*', { count: 'exact', head: true })
       .eq('source_id', session.user.id);
 
     if (followerError) {
@@ -66,8 +60,8 @@ export async function GET() {
     return NextResponse.json({
       matchedCount: 0, // Cette valeur n'était pas utilisée dans la logique originale
       totalUsers: totalUsers || 0,
-      following: followingStats?.length || 0,
-      followers: followerStats?.length || 0
+      following: followingCount || 0,
+      followers: followerCount || 0
     });
 
   } catch (error) {
