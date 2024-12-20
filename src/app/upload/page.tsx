@@ -16,6 +16,7 @@ import logoHQX from '../../../public/BannerHQX-rose_FR.svg'
 import { motion } from 'framer-motion';
 import boat1 from '../../../public/boats/boat-1.svg'
 // import progress0 from '../../../public/progress/progress-0.svg'
+import { createClient } from '@supabase/supabase-js';
 
 const UploadButton = dynamic(() => import('../_components/UploadButton'), {
   loading: () => <div className="animate-pulse bg-gray-200 h-12 w-48 rounded-lg"></div>,
@@ -23,8 +24,16 @@ const UploadButton = dynamic(() => import('../_components/UploadButton'), {
 });
 
 interface UploadStats {
-  following: number;
-  followers: number;
+  totalItems: number;
+  totalBatches: number;
+}
+
+interface ImportJob {
+  id: string;
+  status: 'pending' | 'processing' | 'completed' | 'failed';
+  current_batch: number;
+  total_items: number;
+  error_log?: string;
 }
 
 interface ExtractedFile {
@@ -32,7 +41,43 @@ interface ExtractedFile {
   content: Uint8Array;
 }
 
-const MAX_FILE_SIZE = 300 * 1024 * 1024; // 50MB
+interface BatchUpdate {
+  id: string;
+  job_id: string;
+  batch_number: number;
+  batch_type: 'followers' | 'following';
+  processed: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+interface BatchStats {
+  followers: {
+    total: number;
+    processed: number;
+  };
+  following: {
+    total: number;
+    processed: number;
+  };
+}
+
+interface JobStatus {
+  status: 'pending' | 'processing' | 'completed' | 'failed';
+  progress: number | null;
+  error?: string;
+  totalItems: number;
+  stats?: {
+    total: number;
+    processed: number;
+    followers: number;
+    following: number;
+  };
+  batchStats?: BatchStats;
+}
+
+const MAX_FILE_SIZE = 1000 * 1024 * 1024; // 50MB
+const MAX_CLIENT_PARSE_SIZE = 5 * 1024 * 1024; // 5MB - seuil pour le parsing côté client
 
 export default function UploadPage() {
   const router = useRouter();
@@ -44,6 +89,19 @@ export default function UploadPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [uploadStats, setUploadStats] = useState<UploadStats | null>(null);
   const [showStats, setShowStats] = useState(false);
+  const [currentJob, setCurrentJob] = useState<ImportJob | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
+  const [batchStats, setBatchStats] = useState<BatchStats>({
+    followers: {
+      total: 0,
+      processed: 0
+    },
+    following: {
+      total: 0,
+      processed: 0
+    }
+  });
+  const [progressMessage, setProgressMessage] = useState<string>('');
 
   useEffect(() => {
 
@@ -70,6 +128,106 @@ export default function UploadPage() {
       isUploading,
     });
   }, [showConsent, pendingFiles, isUploading]);
+
+  useEffect(() => {
+    console.log("État actuel du currentJob", currentJob)
+    if (!currentJob?.id) return;
+
+    console.log('🔄 Setting up realtime subscription for job:', currentJob.id);
+
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+
+    const fetchBatchStats = async () => {
+      const { data: batches, error } = await supabase
+        .from('import_job_batches')
+        .select('*')
+        .eq('job_id', currentJob.id);
+
+      if (!error && batches) {
+        const processedBatches = batches.filter(b => b.processed).length;
+        const totalBatches = batches.length;
+        const progress = Math.round((processedBatches / totalBatches) * 100);
+        
+        const stats = {
+          followers: {
+            total: batches.filter(b => b.batch_type === 'followers').length,
+            processed: batches.filter(b => b.processed && b.batch_type === 'followers').length
+          },
+          following: {
+            total: batches.filter(b => b.batch_type === 'following').length,
+            processed: batches.filter(b => b.processed && b.batch_type === 'following').length
+          }
+        };
+        
+        setBatchStats(stats);
+        setUploadProgress(progress);
+        setProgressMessage(`Traitement des données : ${processedBatches}/${totalBatches} lots (${progress}%)`);
+      }
+    };
+
+    const subscription = supabase
+      .channel(`job-${currentJob.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'import_job_batches',
+          filter: `job_id=eq.${currentJob.id}`
+        },
+        async () => {
+          await fetchBatchStats();
+        }
+      )
+      .subscribe();
+
+    fetchBatchStats();
+
+    // Vérifier le statut du job toutes les 5 secondes
+    const statusInterval = setInterval(() => {
+      checkJobStatus(currentJob.id);
+    }, 5000);
+
+    return () => {
+      console.log('🧹 Cleaning up realtime subscription');
+      subscription.unsubscribe();
+      clearInterval(statusInterval);
+    };
+  }, [currentJob?.id]);
+
+  const checkJobStatus = async (jobId: string) => {
+    try {
+      const response = await fetch(`/api/import-status/${jobId}`);
+      const data = await response.json();
+
+      console.log("data from checkJobStatus", data)
+      
+      if (data.error) {
+        setError(data.error);
+        setIsUploading(false);
+        return;
+      }
+
+      if (data.status === 'completed') {
+        setIsUploading(false);
+        setUploadStats({
+          totalBatches: data.stats?.total || 0, // Nombre total de batches
+          totalItems: data.totalItems || 0      // Nombre total d'importations (followers + following)
+        });
+        setShowStats(true);
+      } else if (data.status === 'failed') {
+        setError(data.error || 'Import failed');
+        setIsUploading(false);
+      }
+    } catch (error) {
+      console.error('Failed to check job status:', error);
+      setError('Failed to check job status');
+      setIsUploading(false);
+    }
+  };
 
   const validateFile = (file: File): string | null => {
     if (file.size > MAX_FILE_SIZE) {
@@ -123,115 +281,168 @@ export default function UploadPage() {
     return 'Please upload either a ZIP file or both following.js and follower.js files';
   };
 
-  const processFiles = async (files: FileList) => {
+  const handleFileUpload = async (files: FileList) => {
+    setIsUploading(true);
+    setError(null);
+
     try {
-      console.log('🔄 Début du traitement des fichiers', {
-        filesLength: files.length,
-        firstFile: files[0] ? {
-          name: files[0].name,
-          type: files[0].type,
-          size: files[0].size
-        } : null
-      });
-
-      // Validation initiale des fichiers
-      const validationError = validateFiles(files);
-      if (validationError) {
-        throw new Error(validationError);
-      }
-
-      let processedFiles: ExtractedFile[] = [];
-
-      if (files.length === 1 && files[0].name.toLowerCase().endsWith('.zip')) {
-        console.log('📦 Traitement du fichier ZIP:', files[0].name);
-        try {
-          processedFiles = await extractTargetFiles(files[0]);
-          if (processedFiles.length === 0) {
-            throw new Error('No valid files found in the ZIP archive. Please make sure it contains follower.js and/or following.js');
-          }
-        } catch (error) {
-          if (error instanceof Error) {
-            throw new Error(`Failed to process ZIP file: ${error.message}`);
-          }
-          throw new Error('Failed to process ZIP file');
-        }
-      } else {
-        console.log('📑 Traitement des fichiers JS directs');
-        for (const file of files) {
-          const arrayBuffer = await file.arrayBuffer();
-          processedFiles.push({
-            name: file.name,
-            content: new Uint8Array(arrayBuffer)
-          });
-        }
-      }
-
-      console.log('📦 Fichiers traités:', processedFiles.map(f => f.name));
-
-      // Validation du contenu des fichiers
       const formData = new FormData();
-      for (const { name, content } of processedFiles) {
-        const textContent = new TextDecoder().decode(content);
-        const type = name.toLowerCase().includes('following') ? 'following' : 'follower';
+      let requiresServerProcessing = false;
 
+      for (const file of Array.from(files)) {
+        if (file.size > MAX_CLIENT_PARSE_SIZE) {
+          requiresServerProcessing = true;
+          formData.append('files', file);
+        }
+      }
+
+      if (requiresServerProcessing) {
+        const response = await fetch('/api/upload/large-files', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to upload large files');
+        }
+
+        const { jobId } = await response.json();
+        router.push(`/upload/large-files?jobId=${jobId}`);
+        return;
+      }
+
+      // Continuer avec la logique existante pour les petits fichiers
+      const processFiles = async (files: FileList) => {
         try {
-          const validationError = validateTwitterData(textContent, type);
+          console.log('🔄 Début du traitement des fichiers', {
+            filesLength: files.length,
+            firstFile: files[0] ? {
+              name: files[0].name,
+              type: files[0].type,
+              size: files[0].size
+            } : null
+          });
+
+          // Validation initiale des fichiers
+          const validationError = validateFiles(files);
           if (validationError) {
             throw new Error(validationError);
           }
+
+          let processedFiles: ExtractedFile[] = [];
+
+          if (files.length === 1 && files[0].name.toLowerCase().endsWith('.zip')) {
+            console.log('📦 Traitement du fichier ZIP:', files[0].name);
+            try {
+              processedFiles = await extractTargetFiles(files[0]);
+              if (processedFiles.length === 0) {
+                throw new Error('No valid files found in the ZIP archive. Please make sure it contains follower.js and/or following.js');
+              }
+            } catch (error) {
+              if (error instanceof Error) {
+                throw new Error(`Failed to process ZIP file: ${error.message}`);
+              }
+              throw new Error('Failed to process ZIP file');
+            }
+          } else {
+            console.log('📑 Traitement des fichiers JS directs');
+            for (const file of files) {
+              const arrayBuffer = await file.arrayBuffer();
+              processedFiles.push({
+                name: file.name,
+                content: new Uint8Array(arrayBuffer)
+              });
+            }
+          }
+
+          console.log('📦 Fichiers traités:', processedFiles.map(f => f.name));
+
+          // Validation du contenu des fichiers
+          const formData = new FormData();
+          for (const { name, content } of processedFiles) {
+            const textContent = new TextDecoder().decode(content);
+            const type = name.toLowerCase().includes('following') ? 'following' : 'follower';
+
+            try {
+              const validationError = validateTwitterData(textContent, type);
+              if (validationError) {
+                throw new Error(validationError);
+              }
+            } catch (error) {
+              throw new Error(`Invalid content in ${name}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            }
+
+            console.log(`✅ ${name} validation successful`);
+            
+            // Parser le JSON pour l'ajouter à notre objet de données
+            const cleanedContent = textContent.replace(/window\.YTD\.[a-zA-Z]+\.part0 = /, '');
+            const jsonData = JSON.parse(cleanedContent);
+            if (name.includes('follower')) {
+              formData.append('followers', JSON.stringify(jsonData));
+            } else {
+              formData.append('following', JSON.stringify(jsonData));
+            }
+          }
+
+          if (!session?.user?.id) {
+            throw new Error('User not authenticated');
+          }
+
+          // Créer l'objet final à envoyer
+          const dataToSend = {
+            userId: session.user.id,
+            followers: formData.get('followers') ? JSON.parse(formData.get('followers') as string) : [],
+            following: formData.get('following') ? JSON.parse(formData.get('following') as string) : []
+          };
+
+          if (dataToSend.followers.length === 0 && dataToSend.following.length === 0) {
+            throw new Error('No valid data found in the files. Please make sure they contain follower or following information.');
+          }
+
+          console.log("Données à envoyer:", dataToSend);
+          
+          // Envoi au serveur avec le bon endpoint
+          const response = await fetch(`/api/upload`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(dataToSend),
+          });
+
+          const result = await response.json();
+
+          if (result.error) {
+            throw new Error(result.error);
+          }
+
+          if (result.jobId) {
+            // Grand import, démarrer le polling
+            setCurrentJob({
+              id: result.jobId,
+              status: 'pending',
+              current_batch: 0,
+              total_items: result.totalItems
+            });
+            checkJobStatus(result.jobId);
+          } else {
+            // Petit import, traitement normal
+            setUploadStats(result.stats);
+            setShowStats(true);
+            // setTimeout(() => {
+            //   router.replace("/dashboard");
+            // }, 2000);
+          }
         } catch (error) {
-          throw new Error(`Invalid content in ${name}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          // console.error('❌ Error processing files:', error);
+          handleUploadError(error instanceof Error ? error.message : 'Failed to process files');
+          setIsUploading(false);
         }
-
-        console.log(`✅ ${name} validation successful`);
-        
-        // Parser le JSON pour l'ajouter à notre objet de données
-        const cleanedContent = textContent.replace(/window\.YTD\.[a-zA-Z]+\.part0 = /, '');
-        const jsonData = JSON.parse(cleanedContent);
-        if (name.includes('follower')) {
-          formData.append('followers', JSON.stringify(jsonData));
-        } else {
-          formData.append('following', JSON.stringify(jsonData));
-        }
-      }
-
-      if (!session?.user?.id) {
-        throw new Error('User not authenticated');
-      }
-
-      // Créer l'objet final à envoyer
-      const dataToSend = {
-        userId: session.user.id,
-        followers: formData.get('followers') ? JSON.parse(formData.get('followers') as string) : [],
-        following: formData.get('following') ? JSON.parse(formData.get('following') as string) : []
       };
-
-      if (dataToSend.followers.length === 0 && dataToSend.following.length === 0) {
-        throw new Error('No valid data found in the files. Please make sure they contain follower or following information.');
-      }
-
-      console.log("Données à envoyer:", dataToSend);
-      
-      // Envoi au serveur avec le bon endpoint
-      const response = await fetch(`/api/upload`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(dataToSend),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Upload failed');
-      }
-
-      console.log('✅ Upload successful');
-      const result = await response.json();
-      handleUploadComplete(result.stats);
+      await processFiles(files);
     } catch (error) {
-      // console.error('❌ Error processing files:', error);
-      handleUploadError(error instanceof Error ? error.message : 'Failed to process files');
+      setError(error.message);
+    } finally {
       setIsUploading(false);
     }
   };
@@ -300,7 +511,86 @@ export default function UploadPage() {
 
     setShowConsent(false);
     setIsUploading(true);
-    await processFiles(pendingFiles);
+    await handleFileUpload(pendingFiles);
+  };
+
+  const renderProgress = (jobStatus: JobStatus) => {
+    if (!jobStatus) return null;
+
+    const { status, progress, batchStats } = jobStatus;
+
+    if (status === 'failed') {
+      return (
+        <div className="text-red-500">
+          Une erreur est survenue lors de l'importation.
+          {jobStatus.error && <div className="text-sm">{jobStatus.error}</div>}
+        </div>
+      );
+    }
+
+    if (status === 'completed') {
+      return (
+        <div className="space-y-2">
+          <div className="text-green-500">
+            Import terminé ! {jobStatus.totalItems} éléments importés.
+          </div>
+          {batchStats && (
+            <div className="text-sm space-y-1">
+              <div>
+                Followers : {batchStats.followers.processed}/{batchStats.followers.total} batches
+              </div>
+              <div>
+                Following : {batchStats.following.processed}/{batchStats.following.total} batches
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    if (status === 'processing') {
+      return (
+        <div className="space-y-2">
+          <div>
+            Import en cours... {progress}%
+          </div>
+          {batchStats && (
+            <div className="text-sm space-y-1">
+              <div className="flex items-center gap-2">
+                <div className="w-24">Followers :</div>
+                <div className="flex-1 bg-gray-200 rounded-full h-2.5">
+                  <div 
+                    className="bg-blue-600 h-2.5 rounded-full transition-all duration-500"
+                    style={{ 
+                      width: `${(batchStats.followers.processed / batchStats.followers.total) * 100}%`
+                    }}
+                  ></div>
+                </div>
+                <div className="w-20 text-right">
+                  {batchStats.followers.processed}/{batchStats.followers.total}
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-24">Following :</div>
+                <div className="flex-1 bg-gray-200 rounded-full h-2.5">
+                  <div 
+                    className="bg-green-600 h-2.5 rounded-full transition-all duration-500"
+                    style={{ 
+                      width: `${(batchStats.following.processed / batchStats.following.total) * 100}%`
+                    }}
+                  ></div>
+                </div>
+                <div className="w-20 text-right">
+                  {batchStats.following.processed}/{batchStats.following.total}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    return <div>En attente de traitement...</div>;
   };
 
   if (isLoading) {
@@ -371,31 +661,82 @@ export default function UploadPage() {
                 </div>
               </div>
 
-              {isUploading ? (
-                <div className="w-full max-w-md mx-auto bg-white/10 backdrop-blur-sm rounded-lg p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-pink-200 border-t-transparent"></div>
-                    <span className={`text-white/90 font-medium ${plex.className}`}>
-                      Traitement en cours...
-                    </span>
-                  </div>
+              {isUploading && (
+                <div className="mt-4">
+                  {renderProgress({
+                    status: currentJob?.status,
+                    progress: uploadProgress,
+                    batchStats: batchStats,
+                    totalItems: currentJob?.total_items,
+                    error: error
+                  })}
                 </div>
-              ) : uploadStats && (
+              )}
+              {uploadStats && (
                 <div className={`text-center mb-6 p-4 bg-pink-50 rounded-lg ${plex.className}`}>
                   <h2 className="text-xl font-semibold text-pink-800 mb-2">Traitement terminé</h2>
                   <p className="text-pink-700">
-                    Vous avez importé {uploadStats.following} followings et {uploadStats.followers} followers.
+                    {uploadStats.totalBatches} batches traités pour {uploadStats.totalItems.toLocaleString()} importations
                   </p>
                   <button
-                    onClick={() => router.push('/dashboard')}
-                    className="mt-4 px-4 py-2 bg-gradient-to-r from-pink-400 to-rose-500 hover:from-pink-500 hover:to-rose-600 text-white rounded-lg transition-colors"
+                    onClick={() => router.replace("/dashboard")}
+                    className="mt-4 px-6 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 transition-colors"
                   >
-                    Retourner au tableau de bord pour la prochaine étape
+                    Aller au dashboard
                   </button>
                 </div>
               )}
             </div>
           </div>
+
+          {currentJob && (
+            <div className="mt-8 p-6 bg-white rounded-lg shadow-lg max-w-2xl mx-auto">
+              <h3 className="text-xl font-semibold mb-4">Import Progress</h3>
+              
+              <div className="space-y-4">
+                <div>
+                  <p className="text-sm text-gray-600">Overall Progress</p>
+                  <div className="w-full bg-gray-200 rounded-full h-2.5">
+                    <div 
+                      className="bg-blue-600 h-2.5 rounded-full transition-all duration-500"
+                      style={{ width: `${(currentJob.current_batch / Math.ceil(currentJob.total_items / 1000)) * 100}%` }}
+                    ></div>
+                  </div>
+                  <p className="text-sm text-gray-600 mt-1">
+                    {currentJob.current_batch} / {Math.ceil(currentJob.total_items / 1000)} batches
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-gray-600">Followers</p>
+                    <div className="w-full bg-gray-200 rounded-full h-2.5">
+                      <div 
+                        className="bg-green-600 h-2.5 rounded-full transition-all duration-500"
+                        style={{ width: `${(batchStats.followers.processed / batchStats.followers.total) * 100}%` }}
+                      ></div>
+                    </div>
+                    <p className="text-sm text-gray-600 mt-1">
+                      {batchStats.followers.processed} / {batchStats.followers.total} batches
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-sm text-gray-600">Following</p>
+                    <div className="w-full bg-gray-200 rounded-full h-2.5">
+                      <div 
+                        className="bg-purple-600 h-2.5 rounded-full transition-all duration-500"
+                        style={{ width: `${(batchStats.following.processed / batchStats.following.total) * 100}%` }}
+                      ></div>
+                    </div>
+                    <p className="text-sm text-gray-600 mt-1">
+                      {batchStats.following.processed} / {batchStats.following.total} batches
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           <ErrorModal
             isOpen={!!error}

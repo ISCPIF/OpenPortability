@@ -121,7 +121,7 @@ export default function DashboardLoginButtons({
       >
         <div className="absolute inset-0 bg-gradient-to-br from-indigo-400/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
         <span className={`${plex.className} relative z-10 text-lg`}>
-          Se connecter à d'autres réseaux sociaux
+        Ajoutez un autre réseau social
         </span>
         <motion.div
           animate={{ rotate: showLoginOptions ? 180 : 0 }}
