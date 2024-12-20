@@ -1,10 +1,11 @@
 import NextAuth, { NextAuthConfig } from "next-auth"
 import TwitterProvider from "next-auth/providers/twitter"
-import CredentialsProvider from "next-auth/providers/credentials"
 import MastodonProvider from "next-auth/providers/mastodon"
 import { supabaseAdapter } from "@/lib/supabase-adapter"
-import type { TwitterProfile } from "next-auth/providers/twitter"
-import {auth} from "./auth"
+import type { MastodonProfile } from "./auth"
+import type { TwitterData } from "@/lib/supabase-adapter"
+import type { User, Account, Profile } from "next-auth"
+import type { AdapterUser } from "next-auth/adapters"
 
 export const authConfig = {
   adapter: supabaseAdapter,
@@ -23,20 +24,34 @@ export const authConfig = {
     }
   },
   callbacks: {
-    async signIn({ user, account, profile }) {
-      if (account?.provider === 'twitter' && profile) {
-        await supabaseAdapter.updateUser(user.id, {
-          provider: 'twitter',
-          profile: profile
-        })
+    async signIn({ user, account, profile }: {
+      user: User | AdapterUser
+      account: Account | null
+      profile?: Profile
+    }) {
+      if (!user?.id) {
+        console.error("No user ID provided in signIn callback")
+        return false
       }
-      else if (account?.provider === 'mastodon' && profile) {
-        await supabaseAdapter.updateUser(user.id, {
-          provider: 'mastodon',
-          profile: profile
-        })
+
+      try {
+        if (account?.provider === 'twitter' && profile && 'data' in profile) {
+          await supabaseAdapter.updateUser(user.id, {
+            provider: 'twitter',
+            profile: profile as TwitterData
+          })
+        }
+        else if (account?.provider === 'mastodon' && profile && 'url' in profile) {
+          await supabaseAdapter.updateUser(user.id, {
+            provider: 'mastodon',
+            profile: profile as MastodonProfile
+          })
+        }
+        return true
+      } catch (error) {
+        console.error("Error in signIn callback:", error)
+        return false
       }
-      return true
     }
   },
   providers: [
@@ -46,6 +61,7 @@ export const authConfig = {
       version: "2.0",
       profile(profile) {
         return {
+          id: profile.data.id,
           name: profile.data.name,
           provider: 'twitter',
           profile: profile,
@@ -58,29 +74,17 @@ export const authConfig = {
       clientId: process.env.AUTH_MASTODON_ID!,
       clientSecret: process.env.AUTH_MASTODON_SECRET!,
       issuer: process.env.AUTH_MASTODON_ISSUER!,
-      profile(profile) {
+      profile(profile: MastodonProfile) {
         return {
+          id: profile.id,
           name: profile.display_name,
           provider: 'mastodon',
           profile: profile,
           has_onboarded: false
         }
       }
-    }),
-
-    CredentialsProvider({
-      id: "credentials",
-      name: "Credentials",
-      credentials: {},
-      async authorize(credentials) {
-        if (!credentials?.id) return null;
-        
-        const user = await supabaseAdapter.getUser(credentials.id as string);
-        return user;
-      }
     })
   ],
- 
 
   pages: {
     signIn: '/auth/signin',

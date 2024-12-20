@@ -1,7 +1,12 @@
 import NextAuth from "next-auth"
 import { authConfig } from "./auth.config"
 import { supabaseAdapter } from "@/lib/supabase-adapter"
-import { Session } from "next-auth"
+import type { Profile } from "next-auth"
+import type { TwitterData, MastodonProfile as AdapterMastodonProfile, BlueskyProfile as AdapterBlueskyProfile } from "@/lib/supabase-adapter"
+
+export type { TwitterData as TwitterProfile } from "@/lib/supabase-adapter"
+export type { AdapterMastodonProfile as MastodonProfile }
+export type { AdapterBlueskyProfile as BlueskyProfile }
 
 export const { auth, signIn, signOut, handlers } = NextAuth({
   ...authConfig,
@@ -23,50 +28,52 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
   },
   callbacks: {
     async jwt({ token, user, account, profile }) {
-      // console.log("\n=== JWT Callback ===")
-      // console.log("Token:", token)
-      // console.log("User:", user)
-      // console.log("Account:", account)
-      // console.log("Profile:", profile)
-
-      if (user) {
-        // Initial sign in - copy user info to token
+      // S'assurer que token.id existe et que user.id est une string
+      if (!token.id && user?.id && typeof user.id === 'string') {
         token.id = user.id
-        token.has_onboarded = user.has_onboarded
+        token.has_onboarded = !!user.has_onboarded // Conversion explicite en boolean
       }
 
       if (account && profile) {
-        // Update token with latest provider info
-        if (account.provider === 'twitter' && 'data' in profile) {
-          await supabaseAdapter.updateUser(token.id as string, {
-            provider: 'twitter',
-            profile: profile
-          })
-          token.twitter_id = profile.data.id
-          token.twitter_username = profile.data.username
-          token.twitter_image = profile.data.profile_image_url
-          token.name = profile.data.name
-        }
-        else if (account.provider === 'mastodon') {
-          await supabaseAdapter.updateUser(token.id as string, {
-            provider: 'mastodon',
-            profile: profile
-          })
-          token.mastodon_id = profile.id
-          token.mastodon_username = profile.username
-          token.mastodon_image = profile.avatar
-          token.mastodon_instance = profile.url ? new URL(profile.url).origin : null
-          token.name = profile.display_name
-        }
-        else if (account.provider === 'bluesky') {
-          await supabaseAdapter.updateUser(token.id as string, {
-            provider: 'bluesky',
-            profile: profile
-          })
-          token.bluesky_id = profile.did || profile.id
-          token.bluesky_username = profile.identifier || profile.username
-          token.bluesky_image = profile.avatar
-          token.name = profile.name || profile.identifier
+        try {
+          if (account.provider === 'twitter' && profile && isTwitterProfile(profile)) {
+            await supabaseAdapter.updateUser(token.id || '', {
+              provider: 'twitter',
+              profile: profile
+            })
+            token.twitter_id = profile.data.id
+            token.twitter_username = profile.data.username
+            token.twitter_image = profile.data.profile_image_url
+            token.name = profile.data.name
+          }
+          else if (account.provider === 'mastodon' && profile && isMastodonProfile(profile)) {
+            await supabaseAdapter.updateUser(token.id || '', {
+              provider: 'mastodon',
+              profile: profile
+            })
+            token.mastodon_id = profile.id
+            token.mastodon_username = profile.username
+            token.mastodon_image = profile.avatar
+            token.mastodon_instance = profile.url ? new URL(profile.url).origin : undefined
+            token.name = profile.display_name
+          }
+          else if (account.provider === 'bluesky' && profile && isBlueskyProfile(profile)) {
+            await supabaseAdapter.updateUser(token.id || '', {
+              provider: 'bluesky',
+              profile: profile
+            })
+            // Utiliser des valeurs par défaut pour les champs optionnels
+            const blueskyId = profile.did || profile.id || token.id || ''
+            const blueskyUsername = profile.handle || profile.username || profile.identifier || 'unknown'
+            const blueskyName = profile.displayName || profile.name || blueskyUsername
+
+            token.bluesky_id = blueskyId
+            token.bluesky_username = blueskyUsername
+            token.bluesky_image = profile.avatar || undefined
+            token.name = blueskyName
+          }
+        } catch (error) {
+          console.error(`Error updating user profile for ${account.provider}:`, error)
         }
       }
 
@@ -74,58 +81,75 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
     },
 
     async session({ session, token }) {
-      // console.log("\n=== Session Callback ===")
-      // console.log("Token content:", token)
-      // console.log("Session content:", session)
-      
-      if (session.user && token) {
-        // Get the latest user data from the database
-        const user = await supabaseAdapter.getUser(token.id as string)
-        
-        if (user) {
-          // Update session with both token and database info
-          session.user = {
-            ...session.user,
-            id: token.id as string,
-            has_onboarded: user.has_onboarded,
-            name: token.name,
-            
-            // Twitter info from token (most recent)
-            twitter_id: token.twitter_id as string || user.twitter_id || null,
-            twitter_username: token.twitter_username as string || user.twitter_username || null,
-            twitter_image: token.twitter_image as string || user.twitter_image || null,
-            
-            // Mastodon info from token (most recent)
-            mastodon_id: token.mastodon_id as string || user.mastodon_id || null,
-            mastodon_username: token.mastodon_username as string || user.mastodon_username || null,
-            mastodon_image: token.mastodon_image as string || user.mastodon_image || null,
-            mastodon_instance: token.mastodon_instance as string || user.mastodon_instance || null,
-            
-            // Bluesky info from token (most recent)
-            bluesky_id: token.bluesky_id as string || user.bluesky_id || null,
-            bluesky_username: token.bluesky_username as string || user.bluesky_username || null,
-            bluesky_image: token.bluesky_image as string || user.bluesky_image || null,
+      if (session.user && token.id) {
+        try {
+          const user = await supabaseAdapter.getUser(token.id)
+          
+          if (user) {
+            session.user = {
+              ...session.user,
+              id: token.id,
+              has_onboarded: !!user.has_onboarded, // Conversion explicite en boolean
+              name: token.name || user.name,
+              
+              twitter_id: token.twitter_id || user.twitter_id || undefined,
+              twitter_username: token.twitter_username || user.twitter_username || undefined,
+              twitter_image: token.twitter_image || user.twitter_image || undefined,
+              
+              mastodon_id: token.mastodon_id || user.mastodon_id || undefined,
+              mastodon_username: token.mastodon_username || user.mastodon_username || undefined,
+              mastodon_image: token.mastodon_image || user.mastodon_image || undefined,
+              mastodon_instance: token.mastodon_instance || user.mastodon_instance || undefined,
+              
+              bluesky_id: token.bluesky_id || user.bluesky_id || undefined,
+              bluesky_username: token.bluesky_username || user.bluesky_username || undefined,
+              bluesky_image: token.bluesky_image || user.bluesky_image || undefined,
+            }
           }
+        } catch (error) {
+          console.error("Error fetching user data for session:", error)
         }
       }
 
-      // console.log("Session provider called !")
-      // console.log("session:", session)
       return session
     },
 
     async redirect({ url, baseUrl }) {
       console.log(" Redirect Callback:", { url, baseUrl })
 
-      // Si on est sur un callback d'authentification
       if (url.includes('/auth/callback')) {
         console.log(" Auth callback detected, redirecting to /dashboard")
         return `${baseUrl}/dashboard`
       }
 
-      // Par défaut, on retourne l'URL demandée si elle commence par baseUrl
       console.log(" Default redirect to:", url)
       return url.startsWith(baseUrl) ? url : baseUrl
     }
   }
 })
+
+// Type guards
+function isTwitterProfile(profile: any): profile is TwitterData {
+  return profile && 
+    typeof profile === 'object' && 
+    'data' in profile && 
+    typeof profile.data === 'object' && 
+    profile.data !== null &&
+    'id' in profile.data && 
+    'username' in profile.data && 
+    'profile_image_url' in profile.data &&
+    'name' in profile.data
+}
+
+function isMastodonProfile(profile: Profile): profile is AdapterMastodonProfile {
+  return 'url' in profile && 
+    'id' in profile && 
+    'username' in profile && 
+    'display_name' in profile && 
+    'avatar' in profile
+}
+
+function isBlueskyProfile(profile: Profile): profile is AdapterBlueskyProfile {
+  return ('did' in profile || 'id' in profile) && 
+    ('handle' in profile || 'username' in profile || 'identifier' in profile)
+}
