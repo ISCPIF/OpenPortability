@@ -35,10 +35,10 @@ interface WorkerConfig {
 
 const DEFAULT_CONFIG: WorkerConfig = {
   id: 'worker1',
-  pollingInterval: 1000,     // 1 seconde
+  pollingInterval: 15000,     // 1 seconde
   stalledJobTimeout: 60000,  // 1 minute
-  circuitBreakerResetTimeout: 5000,  // 5 secondes
-  retryDelay: 1000,         // 1 seconde
+  circuitBreakerResetTimeout: 15000,  // 5 secondes
+  retryDelay: 15000,         // 1 seconde
 };
 
 // Récupérer la configuration depuis les variables d'environnement
@@ -90,10 +90,14 @@ async function recoverStalledJobs() {
   console.log(`🔍 [Worker ${WORKER_CONFIG.id}] Checking for stalled jobs...`);
   
   try {
+    // Récupérer les jobs bloqués depuis plus de X minutes
+    const stalledTimeout = new Date(Date.now() - WORKER_CONFIG.stalledJobTimeout);
+    
     const { data: jobs, error } = await supabase
       .from('import_jobs')
       .select('*')
-      .in('status', ['processing'])
+      .eq('status', 'processing')
+      .lt('updated_at', stalledTimeout.toISOString())
       .order('created_at')
       .limit(1);
 
@@ -104,23 +108,36 @@ async function recoverStalledJobs() {
     if (jobs && jobs.length > 0) {
       const job = jobs[0];
       console.log(`✨ [Worker ${WORKER_CONFIG.id}] Recovering stalled job: ${job.id}`);
-      
-      try {
-        await processJob(job, WORKER_CONFIG.id);
-      } catch (err) {
-        const error = err as Error;
-        throw new StalledJobError(
-          `Failed to recover stalled job: ${error?.message || 'Unknown error'}`,
-          job.id
-        );
-      }
+      await processJob(job, WORKER_CONFIG.id);
     }
   } catch (error) {
-    if (error instanceof WorkerError) {
-      console.error(`❌ [Worker ${WORKER_CONFIG.id}] ${error.name} (${error.code}):`, error.message);
-    } else {
-      console.error(`❌ [Worker ${WORKER_CONFIG.id}] Unexpected error:`, error);
+    console.error(`❌ [Worker ${WORKER_CONFIG.id}] Error recovering stalled jobs:`, error);
+    await sleep(WORKER_CONFIG.retryDelay);
+  }
+}
+
+async function checkForPendingJobs() {
+  console.log(`🔍 [Worker ${WORKER_CONFIG.id}] Checking for pending jobs...`);
+  
+  try {
+    // Utiliser la fonction claim_next_pending_job pour récupérer et verrouiller le prochain job
+    const { data: jobs, error } = await supabase
+      .rpc('claim_next_pending_job', { worker_id_input: WORKER_CONFIG.id });
+
+    if (error) {
+      throw new SupabaseError('Failed to claim next job', error);
     }
+
+    if (!jobs || jobs.length === 0) {
+      console.log(`💤 [Worker ${WORKER_CONFIG.id}] No pending jobs, waiting...`);
+      return;
+    }
+
+    const job = jobs[0];
+    await processJob(job, WORKER_CONFIG.id);
+  } catch (error) {
+    console.error(`❌ [Worker ${WORKER_CONFIG.id}] Error checking for pending jobs:`, error);
+    await sleep(WORKER_CONFIG.retryDelay);
   }
 }
 
@@ -171,41 +188,7 @@ async function startWorker() {
   try {
     while (true) {
       try {
-        await safeSupabaseCall(async () => {
-          console.log(`🔍 [Worker ${WORKER_CONFIG.id}] Checking for pending jobs...`);
-          
-          // Prendre un job de manière atomique
-          const { data: jobs, error } = await supabase
-            .rpc('claim_next_pending_job', {
-              worker_id_input: WORKER_CONFIG.id
-            });
-
-          if (error) {
-            if (error.code === '42P01') {
-              console.warn(`⚠️ [Worker ${WORKER_CONFIG.id}] Table import_jobs not found, waiting longer...`);
-              await sleep(WORKER_CONFIG.pollingInterval * 2);
-              return;
-            }
-            throw new SupabaseError('Failed to fetch pending jobs', error);
-          }
-
-          if (jobs && jobs.length > 0) {
-            const job = jobs[0];
-            console.log(`✨ [Worker ${WORKER_CONFIG.id}] Processing job: ${job.id} (type: ${job.job_type})`);
-            try {
-              await processJob(job, WORKER_CONFIG.id);
-            } catch (err) {
-              const error = err as Error;
-              throw new JobProcessingError(
-                `Failed to process job: ${error?.message || 'Unknown error'}`,
-                job.id
-              );
-            }
-          } else {
-            console.log(`💤 [Worker ${WORKER_CONFIG.id}] No pending jobs, waiting...`);
-            await sleep(WORKER_CONFIG.pollingInterval);
-          }
-        });
+        await checkForPendingJobs();
       } catch (error) {
         if (error instanceof CircuitBreakerError) {
           console.log(`⚡ [Worker ${WORKER_CONFIG.id}] Circuit breaker triggered, waiting before retry...`);
@@ -221,6 +204,7 @@ async function startWorker() {
           await sleep(WORKER_CONFIG.retryDelay);
         }
       }
+      await sleep(WORKER_CONFIG.pollingInterval);
     }
   } catch (error) {
     console.error(`💥 [Worker ${WORKER_CONFIG.id}] Fatal error:`, error);

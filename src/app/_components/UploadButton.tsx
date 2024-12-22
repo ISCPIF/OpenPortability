@@ -7,7 +7,7 @@ import { motion } from 'framer-motion';
 import { Upload, Loader2, CheckCircle, XCircle } from 'lucide-react';
 import { plex } from '../fonts/plex';
 
-const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+const MAX_FILE_SIZE = 1000 * 1024 * 1024;
 const ALLOWED_TYPES = ['.zip', '.js'];
 const TARGET_FILES = ['data/following.js', 'data/follower.js'];
 const REQUIRED_FILES = ['following.js', 'follower.js'];
@@ -50,7 +50,7 @@ export const validateTwitterData = (content: string, type: 'following' | 'follow
   const prefix = `window.YTD.${type}.part0 = `;
   
   if (!content.startsWith(prefix)) {
-    return `Invalid file format: ${type}.js must start with "${prefix}"`;
+    return `Format de fichier invalide : ${type}.js doit commencer par "${prefix}"`;
   }
 
   try {
@@ -62,34 +62,34 @@ export const validateTwitterData = (content: string, type: 'following' | 'follow
     for (const entry of data) {
       const item = entry[type];
       if (!item) {
-        return `Invalid ${type} data structure`;
+        return `Structure de données ${type} invalide`;
       }
 
       const { accountId, userLink } = item;
       if (!accountId || !userLink) {
-        return `Missing required fields in ${type} data`;
+        return `Champs requis manquants dans les données ${type}`;
       }
 
       const expectedUserLink = `https://twitter.com/intent/user?user_id=${accountId}`;
       if (userLink !== expectedUserLink) {
-        return `Invalid userLink format in ${type} data`;
+        return `Format de lien utilisateur invalide dans les données ${type}`;
       }
     }
 
     return null;
   } catch (error) {
-    return `Invalid JSON in ${type}.js: ${error instanceof Error ? error.message : 'Unknown error'}`;
+    return `JSON invalide dans ${type}.js : ${error instanceof Error ? error.message : 'Erreur inconnue'}`;
   }
 };
 
 const validateFile = (file: File): string | null => {
   if (file.size > MAX_FILE_SIZE) {
-    return 'File size exceeds 50MB limit';
+    return 'La taille du fichier dépasse la limite de 50MB';
   }
 
   const extension = '.' + file.name.split('.').pop()?.toLowerCase();
   if (!ALLOWED_TYPES.includes(extension)) {
-    return 'Invalid file type. Please upload either a ZIP file or following.js and follower.js files';
+    return 'Type de fichier invalide. Veuillez télécharger un fichier ZIP ou les fichiers following.js et follower.js';
   }
 
   return null;
@@ -97,7 +97,7 @@ const validateFile = (file: File): string | null => {
 
 const validateFiles = (files: FileList): string | null => {
   if (files.length === 0) {
-    return 'No files selected';
+    return 'Aucun fichier sélectionné';
   }
 
   // Check if it's a single ZIP file
@@ -111,7 +111,7 @@ const validateFiles = (files: FileList): string | null => {
     
     // Check if both files are .js
     if (!fileNames.every(name => name.endsWith('.js'))) {
-      return 'When uploading individual files, both must be .js files';
+      return 'Lorsque vous téléchargez des fichiers individuels, les deux doivent être des fichiers .js';
     }
 
     // Check if we have both following.js and follower.js
@@ -119,7 +119,7 @@ const validateFiles = (files: FileList): string | null => {
     const hasFollower = fileNames.some(name => name === 'follower.js');
 
     if (!hasFollowing || !hasFollower) {
-      return 'Please upload both following.js and follower.js files';
+      return 'Veuillez télécharger les deux fichiers following.js et follower.js';
     }
 
     // Check file sizes
@@ -131,13 +131,53 @@ const validateFiles = (files: FileList): string | null => {
     return null;
   }
 
-  return 'Please upload either a ZIP file or both following.js and follower.js files';
+  return 'Veuillez télécharger soit un fichier ZIP, soit exactement les deux fichiers following.js et follower.js';
 };
 
 export const extractTargetFiles = async (file: File): Promise<ExtractedFile[]> => {
+  const extractedFiles: ExtractedFile[] = [];
   const reader = new zip.ZipReader(new zip.BlobReader(file));
   const entries = await reader.getEntries();
-  const extractedFiles: ExtractedFile[] = [];
+
+  // Constantes de sécurité
+  const MAX_COMPRESSION_RATIO = 10; // Ratio maximum de compression accepté
+  const MAX_PATH_LENGTH = 255; // Longueur maximum d'un chemin de fichier
+  const SAFE_PATH_REGEX = /^[a-zA-Z0-9-_/]+$/; // Caractères autorisés dans les chemins
+
+  // Vérification de la taille décompressée totale
+  let totalUncompressedSize = 0;
+  for (const entry of entries) {
+    totalUncompressedSize += entry.uncompressedSize;
+    
+    // Vérification du ratio de compression pour chaque fichier
+    if (entry.uncompressedSize > 0 && entry.compressedSize > 0) {
+      const ratio = entry.uncompressedSize / entry.compressedSize;
+      if (ratio > MAX_COMPRESSION_RATIO) {
+        throw new Error(`Ratio de compression suspect détecté (${ratio.toFixed(2)}x) pour ${entry.filename}`);
+      }
+    }
+
+    // Vérification de la longueur et du format du chemin
+    if (entry.filename.length > MAX_PATH_LENGTH) {
+      throw new Error(`Nom de fichier trop long : ${entry.filename}`);
+    }
+    if (!SAFE_PATH_REGEX.test(entry.filename)) {
+      throw new Error(`Nom de fichier invalide : ${entry.filename}`);
+    }
+    
+    // Protection contre le path traversal
+    const normalizedPath = normalizeFilePath(entry.filename);
+    if (normalizedPath.includes('..') || normalizedPath.startsWith('/')) {
+      throw new Error(`Chemin de fichier non sécurisé détecté : ${entry.filename}`);
+    }
+  }
+
+  // Vérification de la taille totale décompressée
+  const maxUncompressedSize = MAX_FILE_SIZE * 2; // 2x la taille max du fichier compressé
+  if (totalUncompressedSize > maxUncompressedSize) {
+    throw new Error(`Taille décompressée totale trop importante : ${(totalUncompressedSize / 1024 / 1024).toFixed(2)}MB`);
+  }
+
   const targetFileNames = ['following.js', 'follower.js'];
 
   // Initialiser la progression pour les deux fichiers
@@ -205,9 +245,19 @@ export const extractTargetFiles = async (file: File): Promise<ExtractedFile[]> =
   );
 
   // Filtrer les résultats null (en cas d'erreur)
-  extractedFiles.push(...results.filter((result): result is ExtractedFile => result !== null));
+  const validFiles = results.filter((result): result is ExtractedFile => result !== null);
+  extractedFiles.push(...validFiles);
 
   await reader.close();
+
+  // Vérifier qu'on a bien les deux fichiers requis
+  const foundFiles = new Set(validFiles.map(f => f.name));
+  const missingFiles = targetFileNames.filter(name => !foundFiles.has(name));
+  
+  if (missingFiles.length > 0) {
+    throw new Error(`Fichiers manquants dans l'archive ZIP : ${missingFiles.join(', ')}`);
+  }
+
   return extractedFiles;
 };
 
@@ -218,7 +268,7 @@ export const processFiles = async (files: FileList): Promise<{ name: string; con
   if (files.length === 1 && files[0].name.toLowerCase().endsWith('.zip')) {
     const extractedFiles = await extractTargetFiles(files[0]);
     if (extractedFiles.length === 0) {
-      throw new Error('No valid files found in ZIP');
+      throw new Error('Aucun fichier valide trouvé dans l\'archive ZIP');
     }
     return extractedFiles;
   }
@@ -230,7 +280,7 @@ export const processFiles = async (files: FileList): Promise<{ name: string; con
   );
 
   if (missingFiles.length > 0) {
-    throw new Error(`Missing required files: ${missingFiles.join(', ')}`);
+    throw new Error(`Fichiers manquants : ${missingFiles.join(', ')}`);
   }
 
   // Process each file
@@ -327,7 +377,7 @@ export default function UploadButton({ onUploadComplete, onError, onFilesSelecte
           followers: extractedFiles.length
         });
       } catch (error) {
-        console.error('Upload error:', error);
+        console.error('Erreur de téléchargement :', error);
         
         if (retryCount < maxRetries) {
           const delay = Math.pow(2, retryCount) * 1000;
@@ -337,7 +387,7 @@ export default function UploadButton({ onUploadComplete, onError, onFilesSelecte
           return tryProcess();
         } else {
           setIsUploading(false);
-          onError('Upload failed after multiple attempts. Please try again.');
+          onError('Le téléchargement a échoué après plusieurs tentatives. Veuillez réessayer.');
         }
       }
     };

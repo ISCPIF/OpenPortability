@@ -74,8 +74,12 @@ export default function BlueSkyLogin({ onLoginComplete }: BlueSkyLoginProps) {
         id: data.user.id
       });
       
-      router.refresh();
-      router.push('/dashboard');
+      // Redirect to the dashboard
+      if (data.redirect) {
+        router.push(data.redirect);
+      } else {
+        router.push('/dashboard');
+      }
     } catch (err: any) {
       setError(err.message);
       clearSensitiveData();

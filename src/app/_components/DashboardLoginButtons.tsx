@@ -70,7 +70,9 @@ export default function DashboardLoginButtons({
 
   const handleSignIn = async (provider: string) => {
     onLoadingChange(true)
-    await signIn(provider)
+    await signIn(provider, {
+      callbackUrl: '/dashboard?linking=true'
+    })
   }
 
   if (!hasUploadedArchive) {

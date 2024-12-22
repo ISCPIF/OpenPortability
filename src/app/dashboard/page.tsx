@@ -32,7 +32,7 @@ import { AnimatePresence } from 'framer-motion';
 
 
 type MatchedProfile = {
-  bluesky_handle: string
+  bluesky_username: string
 }
 
 const LoginButton = ({ provider, onClick, children }: { provider: string, onClick: () => void, children: React.ReactNode }) => (
@@ -49,7 +49,7 @@ const LoginButton = ({ provider, onClick, children }: { provider: string, onClic
 );
 
 export default function DashboardPage() {
-  const { data: session, update } = useSession()
+  const { data: session, status, update } = useSession(); // Ajoutez status
   console.log('session par ici:', session)
   const router = useRouter();
   const [stats, setStats] = useState({
@@ -69,6 +69,68 @@ export default function DashboardPage() {
   const hasBluesky = session?.user?.bluesky_id;
   const hasTwitter = session?.user?.twitter_id;
   const hasOnboarded = session?.user?.has_onboarded;
+
+    // Ajoutez cette vérification
+    useEffect(() => {
+      if (status === "unauthenticated" ) {
+        router.replace("/auth/signin");
+        return;
+      }
+      
+      if (status !== "loading") {
+        setIsLoading(false);
+      }
+    }, [status, router]);
+
+    // useEffect(() => {
+    //   if (session?.user && !session.user.twitter_id && !session.user.mastodon_id && !session.user.bluesky_id) {
+    //     // Si la session est incomplète, forcer une mise à jour
+    //     update();
+    //   }
+    // }, [session, update]);
+
+    useEffect(() => {
+      update()
+    }, []);
+  
+    useEffect(() => {
+      const fetchStats = async () => {
+        try {
+          setIsLoading(true);
+          // await new Promise(resolve => setTimeout(resolve, 2000))
+          const response = await fetch('/api/stats');
+          if (!response.ok) {
+            throw new Error('Failed to fetch stats');
+          }
+          const data = await response.json();
+          setStats(data);
+        } catch (error) {
+          console.error('Error fetching stats:', error);
+        } finally {
+          setIsLoading(false);
+        }
+      };
+  
+      if (session?.user?.id) {
+        fetchStats();
+      }
+    }, [session]);
+  
+    // Si en chargement ou pas de session, afficher le loader
+    if (status === "loading" || isLoading) {
+      return (
+        <div className="min-h-screen flex items-center justify-center">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="flex flex-col items-center gap-4"
+          >
+            <Loader2 className="w-12 h-12 text-white animate-spin" />
+            <p className="text-white/60">Chargement de vos données...</p>
+          </motion.div>
+        </div>
+      );
+    }
 
 
   const handleShare = async (url: string, platform: string) => {
@@ -120,33 +182,6 @@ export default function DashboardPage() {
       }).catch(console.error);
     }
   };
-
-  useEffect(() => {
-    update()
-  }, []);
-
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        setIsLoading(true);
-        // await new Promise(resolve => setTimeout(resolve, 2000))
-        const response = await fetch('/api/stats');
-        if (!response.ok) {
-          throw new Error('Failed to fetch stats');
-        }
-        const data = await response.json();
-        setStats(data);
-      } catch (error) {
-        console.error('Error fetching stats:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    if (session?.user?.id) {
-      fetchStats();
-    }
-  }, [session]);
 
   const shareText = `🔥L'exode de X est massif ! Ne perdez pas un seul de vos followers. Grâce à #HelloQuitX j'ai inscrit ${stats.followers + stats.following} nouveaux passagers pour un voyage vers #BlueSky & #Mastodon. Embarquez vous aussi et retrouvez automatiquement vos communautés le #20Janvier ! https://app.beta.helloquitx.com `;
 
