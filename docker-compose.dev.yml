@@ -9,6 +9,7 @@ services:
       - .:/app
       - /app/node_modules
       - /app/.next
+      - shared-tmp:/app/tmp
     environment:
       - NODE_ENV=development
       - WATCHPACK_POLLING=true  # Activer le polling pour un meilleur hot reload
@@ -34,6 +35,28 @@ services:
       - app_network
     command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
 
+  worker:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./worker:/app
+      - /app/node_modules
+      - shared-tmp:/app/tmp
+    env_file:
+      - ./worker/.env
+    environment:
+      - NODE_ENV=development
+    networks:
+      - app_network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - app
+
 networks:
   app_network:
     driver: bridge
+
+volumes:
+  shared-tmp:

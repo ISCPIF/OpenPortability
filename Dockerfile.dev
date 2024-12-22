@@ -8,9 +8,11 @@ COPY . .
 # Installation des dépendances en mode développement
 RUN npm install
 
-ENV NODE_ENV development
-EXPOSE 3000
-ENV PORT 3000
-ENV HOSTNAME "0.0.0.0"
+# Set environment variables
+ENV NODE_ENV=development
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
 
-CMD ["npm", "run", "dev"]
+# Start the Next.js development server
+CMD ["npx", "next", "dev"]

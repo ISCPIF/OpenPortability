@@ -29,9 +29,47 @@ export async function POST(request: Request) {
     console.log(' [Large Files API] Starting file upload process');
     
     const session = await auth();
-    if (!session?.user) {
+    if (!session?.user || session.user.has_onboarded) {
       console.log(' [Large Files API] Unauthorized access attempt');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // 1. Vérifier si l'utilisateur a déjà complété son onboarding
+    // const { data: userData, error: userError } = await supabase
+    //   .from('users')
+    //   .select('has_onboarded')
+    //   .eq('id', session.user.id)
+    //   .single();
+
+    // if (session.user.has_onboarded) {
+    //   console.log(' [Large Files API] User has already completed onboarding');
+    //   return NextResponse.json(
+    //     { error: 'User has already completed onboarding' },
+    //     { status: 400 }
+    //   );
+    // }
+
+    // 2. Vérifier si l'utilisateur a déjà un job en cours
+    const { data: existingJobs, error: jobCheckError } = await supabase
+      .from('import_jobs')
+      .select('id, status')
+      .eq('user_id', session.user.id)
+      .in('status', ['pending', 'processing']);
+
+    if (jobCheckError) {
+      console.error(' [Large Files API] Error checking existing jobs:', jobCheckError);
+      return NextResponse.json(
+        { error: 'Failed to verify existing jobs' },
+        { status: 500 }
+      );
+    }
+
+    if (existingJobs && existingJobs.length > 0) {
+      console.log(' [Large Files API] User has pending or processing jobs');
+      return NextResponse.json(
+        { error: 'You already have a file upload in progress' },
+        { status: 400 }
+      );
     }
 
     const formData = await request.formData();
@@ -53,13 +91,22 @@ export async function POST(request: Request) {
 
     // Sauvegarder les fichiers
     for (const file of files) {
-      if (!(file instanceof File)) continue;
-      
-      const fileName = file.name.toLowerCase().includes('following') ? 'following.js' : 'follower.js';
-      const filePath = join(userDir, fileName);
-      const buffer = Buffer.from(await file.arrayBuffer());
-      await writeFile(filePath, buffer);
-      console.log(` [Large Files API] Saved ${fileName} (${buffer.length} bytes)`);
+      try {
+        const fileName = file.name.toLowerCase().includes('following') ? 'following.js' : 'follower.js';
+        const filePath = join(userDir, fileName);
+        
+        // Vérifier si le fichier a la méthode arrayBuffer
+        if (typeof file.arrayBuffer !== 'function') {
+          console.log(` [Large Files API] Invalid file object for ${fileName}`);
+          continue;
+        }
+
+        const buffer = Buffer.from(await file.arrayBuffer());
+        await writeFile(filePath, buffer);
+        console.log(` [Large Files API] Saved ${fileName} (${buffer.length} bytes)`);
+      } catch (error) {
+        console.error(` [Large Files API] Error saving file ${fileName}:`, error);
+      }
     }
 
     // Créer le job pour le traitement asynchrone

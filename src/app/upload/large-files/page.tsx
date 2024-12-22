@@ -15,14 +15,19 @@ import { Loader2 } from 'lucide-react';
 
 interface JobStatus {
   status: 'pending' | 'processing' | 'completed' | 'failed';
-  progress: number;
   error?: string;
-  totalItems: number;
   stats?: {
     total: number;
+    progress: number;
     processed: number;
-    followers: number;
-    following: number;
+    followers: {
+      processed: number;
+      total: number;
+    };
+    following: {
+      processed: number;
+      total: number;
+    };
   };
 }
 
@@ -38,6 +43,8 @@ export default function LargeFilesPage() {
   const { data: session, status } = useSession();
   const searchParams = useSearchParams();
   const jobId = searchParams.get('jobId');
+  const followerCount = parseInt(searchParams.get('followerCount') || '0', 10);
+  const followingCount = parseInt(searchParams.get('followingCount') || '0', 10);
 
   const [error, setError] = useState<string | null>(null);
   const [jobStatus, setJobStatus] = useState<JobStatus | null>(null);
@@ -63,13 +70,25 @@ export default function LargeFilesPage() {
           throw new Error(data.error || 'Failed to fetch job status');
         }
 
-        setJobStatus({
-          status: data.status,
-          progress: data.progress,
-          totalItems: data.totalItems,
-          error: data.error,
-          stats: data.stats
-        });
+        // S'assurer que la structure des stats est correcte
+        const updatedData = {
+          ...data,
+          stats: {
+            total: data.stats?.total || 0,
+            progress: data.stats?.progress || 0,
+            processed: data.stats?.processed || 0,
+            followers: {
+              processed: data.stats?.followers?.processed || 0,
+              total: followerCount
+            },
+            following: {
+              processed: data.stats?.following?.processed || 0,
+              total: followingCount
+            }
+          }
+        };
+
+        setJobStatus(updatedData);
 
         // Si le job est terminé, arrêter le polling
         if (data.status === 'completed' || data.status === 'failed') {
@@ -91,11 +110,16 @@ export default function LargeFilesPage() {
     };
 
     pollStatus();
-  }, [jobId]);
+  }, [jobId, followerCount, followingCount]);
 
-  // Calculer le pourcentage de progression
-  const progressPercentage = jobStatus?.stats ? 
-    Math.round((jobStatus.stats.processed / jobStatus.stats.total) * 100) : 0;
+  // Calculer les pourcentages de progression
+  const followerProgress = jobStatus?.stats?.followers?.processed !== undefined ? 
+    Math.round((jobStatus.stats.followers.processed / followerCount) * 100) : 0;
+  
+  const followingProgress = jobStatus?.stats?.following?.processed !== undefined ? 
+    Math.round((jobStatus.stats.following.processed / followingCount) * 100) : 0;
+
+  const totalProgress = jobStatus?.stats?.progress || 0;
 
   if (status === 'loading' || !session) {
     return <div className="flex justify-center items-center min-h-screen">
@@ -132,20 +156,69 @@ export default function LargeFilesPage() {
               <div className="text-white">
                 <h2 className={`${plex.className} text-2xl font-bold mb-6 text-center`}>Import en cours</h2>
                 
-                {/* Progress Bar */}
-                <div className="mb-6">
-                  <div className="flex justify-between mb-2">
-                    <span className="font-semibold">Progression totale</span>
-                    <span>{progressPercentage}% ({jobStatus.stats?.processed.toLocaleString()} / {jobStatus.stats?.total.toLocaleString()})</span>
+                {/* Progress Bars */}
+                <div className="space-y-6">
+                  {/* Global Progress */}
+                  <div className="mb-6">
+                    <div className="flex justify-between mb-2">
+                      <span className="font-semibold">Total Progress</span>
+                      <span className="text-white/60">
+                        {totalProgress}% ({jobStatus.stats?.processed?.toLocaleString()} / {jobStatus.stats?.total?.toLocaleString()})
+                      </span>
+                    </div>
+                    <div className="w-full bg-black/20 rounded-full h-2.5">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${totalProgress}%` }}
+                        transition={{ duration: 0.5 }}
+                        className="bg-gradient-to-r from-pink-500 to-purple-500 h-2.5 rounded-full"
+                      />
+                    </div>
                   </div>
-                  <div className="w-full bg-black/20 rounded-full h-2.5">
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: `${progressPercentage}%` }}
-                      transition={{ duration: 0.5 }}
-                      className="bg-gradient-to-r from-pink-500 to-blue-500 h-2.5 rounded-full"
-                    />
-                  </div>
+
+                  {/* Followers Progress */}
+                  {followerCount > 0 && jobStatus?.stats?.followers?.processed !== undefined && (
+                    <div className="mb-6">
+                      <div className="flex justify-between mb-2">
+                        <span className="font-semibold">Followers</span>
+                        <span>
+                          {followerProgress}% (
+                          {jobStatus.stats.followers.processed.toLocaleString()} / 
+                          {followerCount.toLocaleString()})
+                        </span>
+                      </div>
+                      <div className="w-full bg-black/20 rounded-full h-2.5">
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: `${followerProgress}%` }}
+                          transition={{ duration: 0.5 }}
+                          className="bg-gradient-to-r from-pink-500 to-purple-500 h-2.5 rounded-full"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Following Progress */}
+                  {followingCount > 0 && jobStatus?.stats?.following?.processed !== undefined && (
+                    <div className="mb-6">
+                      <div className="flex justify-between mb-2">
+                        <span className="font-semibold">Following</span>
+                        <span>
+                          {followingProgress}% (
+                          {jobStatus.stats.following.processed.toLocaleString()} / 
+                          {followingCount.toLocaleString()})
+                        </span>
+                      </div>
+                      <div className="w-full bg-black/20 rounded-full h-2.5">
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: `${followingProgress}%` }}
+                          transition={{ duration: 0.5 }}
+                          className="bg-gradient-to-r from-blue-500 to-cyan-500 h-2.5 rounded-full"
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Status and Stats */}
@@ -165,14 +238,18 @@ export default function LargeFilesPage() {
                     </span>
                   </div>
                   
-                  {jobStatus.stats && (
+                  {jobStatus.status === 'completed' && (
                     <div className="grid grid-cols-2 gap-6 mt-6 text-center">
                       <div className="p-4 bg-black/20 rounded-xl">
-                        <p className="text-3xl font-bold text-pink-400">{jobStatus.stats.followers.toLocaleString()}</p>
+                        <p className="text-3xl font-bold text-pink-400">
+                          {followerCount.toLocaleString()}
+                        </p>
                         <p className="text-sm text-white/60 mt-1">Followers</p>
                       </div>
                       <div className="p-4 bg-black/20 rounded-xl">
-                        <p className="text-3xl font-bold text-blue-400">{jobStatus.stats.following.toLocaleString()}</p>
+                        <p className="text-3xl font-bold text-blue-400">
+                          {followingCount.toLocaleString()}
+                        </p>
                         <p className="text-sm text-white/60 mt-1">Following</p>
                       </div>
                     </div>
