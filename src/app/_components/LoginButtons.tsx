@@ -4,6 +4,7 @@ import { signIn } from "next-auth/react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useState } from "react"
 import BlueSkyLogin from "./BlueSkyLogin"
+import TwitterRateLimit from "./TwitterRateLimit"
 import { SiBluesky } from 'react-icons/si'
 import { plex } from "@/app/fonts/plex"
 
@@ -39,14 +40,45 @@ export default function LoginButtons({ onLoadingChange }: LoginButtonsProps) {
   const [showBlueSkyForm, setShowBlueSkyForm] = useState(false)
   const [showAlternatives, setShowAlternatives] = useState(false)
   const [activeButton, setActiveButton] = useState<string | null>(null)
+  const [isRateLimited, setIsRateLimited] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const handleSignIn = async (provider: string) => {
-    onLoadingChange(true)
-    await signIn(provider)
+    try {
+      setError(null)
+      setIsRateLimited(false)
+      onLoadingChange(true)
+      const result = await signIn(provider, { redirect: false })
+      
+      if (result?.error) {
+        if (result.error.includes("temporairement indisponible")) {
+          setIsRateLimited(true);
+        } else {
+          setError("Une erreur est survenue lors de la connexion. Veuillez réessayer.");
+        }
+      }
+    } catch (err: any) {
+      setError(err.message || "Une erreur est survenue lors de la connexion. Veuillez réessayer.");
+    } finally {
+      onLoadingChange(false)
+    }
   }
 
   return (
     <div className="max-w-96 mx-auto mt-8">
+      {error && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4"
+          role="alert"
+        >
+          <span className="block sm:inline">{error}</span>
+        </motion.div>
+      )}
+      {isRateLimited && (
+        <TwitterRateLimit onShowAlternatives={() => setShowAlternatives(true)} />
+      )}
       <motion.div variants={containerVariants} className="space-y-6">
         {/* Twitter Button */}
         <AnimatePresence mode="wait">

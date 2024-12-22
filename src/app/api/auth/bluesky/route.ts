@@ -1,70 +1,107 @@
 import { NextResponse } from "next/server"
 import { BskyAgent } from '@atproto/api'
-import { auth } from "@/app/auth"
+import { auth, signIn } from "@/app/auth"
 import { supabaseAdapter } from "@/lib/supabase-adapter"
 import { cookies } from 'next/headers'
+import { encode } from 'next-auth/jwt'
 
 export async function POST(req: Request) {
   try {
     const { identifier, password } = await req.json();
+    const session = await auth();
 
-    // Authentification Bluesky
+    // Bluesky Authentication
     const agent = new BskyAgent({ service: 'https://bsky.social' });
-    const session = await agent.login({ identifier, password });
-    const profile = await agent.getProfile({ actor: session.data.handle });
+    const bskySession = await agent.login({ identifier, password });
+    const profile = await agent.getProfile({ actor: bskySession.data.handle });
 
-    // Créer ou mettre à jour l'utilisateur avec le format attendu par l'adaptateur
-    const user = await supabaseAdapter.createUser({
+    let userId = session?.user?.id;
+    let user;
+
+    // Check if user exists with this Bluesky ID
+    const existingUser = await supabaseAdapter.getUserByAccount({
       provider: 'bluesky',
-      profile: {
-        did: session.data.did,
-        handle: session.data.handle,
-        displayName: profile.data.displayName,
-        avatar: profile.data.avatar
-      }
+      providerAccountId: bskySession.data.did
     });
 
-    // Vérifier si le compte existe déjà
-    const existingAccount = await supabaseAdapter.getAccountsByUserId(user.id);
-    const blueskyAccount = existingAccount?.find(acc => acc.provider === 'bluesky');
+    if (existingUser) {
+      // User exists, update their profile
+      userId = existingUser.id;
+      user = await supabaseAdapter.updateUser(userId, {
+        provider: 'bluesky',
+        profile: {
+          did: bskySession.data.did,
+          handle: bskySession.data.handle,
+          displayName: profile.data.displayName,
+          avatar: profile.data.avatar
+        }
+      });
+    } else if (userId) {
+      // User is logged in but not linked to this Bluesky account
+      user = await supabaseAdapter.updateUser(userId, {
+        provider: 'bluesky',
+        profile: {
+          did: bskySession.data.did,
+          handle: bskySession.data.handle,
+          displayName: profile.data.displayName,
+          avatar: profile.data.avatar
+        }
+      });
+    } else {
+      // Create new user
+      console.log('Creating new user with Bluesky data');
+      user = await supabaseAdapter.createUser({
+        provider: 'bluesky',
+        profile: {
+          did: bskySession.data.did,
+          handle: bskySession.data.handle,
+          displayName: profile.data.displayName,
+          avatar: profile.data.avatar
+        }
+      });
+      userId = user.id;
 
-    if (!blueskyAccount) {
-      // Lier le compte seulement s'il n'existe pas déjà
+      // Link account for new user
       await supabaseAdapter.linkAccount({
         provider: 'bluesky',
         type: 'oauth',
-        providerAccountId: session.data.did,
-        access_token: session.data.accessJwt,
-        refresh_token: session.data.refreshJwt,
-        userId: user.id,
+        providerAccountId: bskySession.data.did,
+        access_token: bskySession.data.accessJwt,
+        refresh_token: bskySession.data.refreshJwt,
+        userId: userId,
         expires_at: undefined,
         token_type: 'bearer',
         scope: undefined,
       });
     }
 
-    // Créer une session
-    await supabaseAdapter.createSession({
-      session_token: crypto.randomUUID(),
-      user_id: user.id,
-      expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 jours
+    // Create session using Next-Auth's signIn
+    const signInResult = await signIn('credentials', {
+      redirect: false,
+      id: userId,
+      bluesky_id: bskySession.data.did,
+      bluesky_username: bskySession.data.handle,
+      bluesky_image: profile.data.avatar,
+      name: profile.data.displayName || bskySession.data.handle,
+      callbackUrl: '/dashboard'
     });
 
+    if (signInResult?.error) {
+      throw new Error(signInResult.error);
+    }
+
     return NextResponse.json({ 
-      ok: true,
+      success: true,
+      redirect: signInResult?.url || '/dashboard',
       user: {
         id: user.id,
-        name: profile.data.displayName || profile.data.handle,
-        bluesky_handle: session.data.handle
+        bluesky_username: bskySession.data.handle
       }
     });
 
   } catch (error) {
-    console.error('Authentication error:', error);
-    return NextResponse.json(
-      { error: 'Authentication failed' },
-      { status: 500 }
-    );
+    console.error('Error in Bluesky authentication:', error);
+    return NextResponse.json({ error: 'Authentication failed' }, { status: 401 });
   }
 }
 
@@ -84,9 +121,9 @@ export async function DELETE(req: Request) {
 
     // Effacer les cookies de session
     const cookieStore = cookies();
-    cookieStore.delete('next-auth.session-token');
-    cookieStore.delete('next-auth.csrf-token');
-    cookieStore.delete('next-auth.callback-url');
+    await cookieStore.delete('next-auth.session-token');
+    await cookieStore.delete('next-auth.csrf-token');
+    await cookieStore.delete('next-auth.callback-url');
 
     return NextResponse.json(
       { ok: true },

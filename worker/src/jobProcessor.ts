@@ -15,11 +15,16 @@ const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const BATCH_SIZE = 1000;
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 3000;
-const LOCK_DIR = '/tmp/goodbyex-locks';
+const LOCK_DIR = '/app/tmp/locks';
+const UPLOADS_DIR = '/app/tmp/uploads';
+const LOCK_TIMEOUT = 5 * 60 * 1000;
 
-// S'assurer que le dossier de locks existe
+// S'assurer que les dossiers existent
 if (!existsSync(LOCK_DIR)) {
   fs.mkdir(LOCK_DIR, { recursive: true });
+}
+if (!existsSync(UPLOADS_DIR)) {
+  fs.mkdir(UPLOADS_DIR, { recursive: true });
 }
 
 if (!supabaseUrl || !supabaseKey) {
@@ -30,14 +35,37 @@ if (!supabaseUrl || !supabaseKey) {
     process.exit(1);
   }
 
+interface LockData {
+  workerId: string;
+  timestamp: number;
+}
+
 async function acquireLock(jobId: string, workerId: string): Promise<boolean> {
   const lockFile = `${LOCK_DIR}/job_${jobId}.lock`;
   try {
-    // Essayer de créer le fichier de lock
-    await fs.writeFile(lockFile, workerId, { flag: 'wx' });
+    const lockData: LockData = {
+      workerId,
+      timestamp: Date.now()
+    };
+    
+    // Check if lock exists and is stale
+    if (existsSync(lockFile)) {
+      const existingLock = JSON.parse(await fs.readFile(lockFile, 'utf-8'));
+      const lockAge = Date.now() - existingLock.timestamp;
+      
+      if (lockAge > LOCK_TIMEOUT) {
+        // Lock is stale, we can take it
+        console.log(`🔓 [Worker ${workerId}] Taking over stale lock for job ${jobId}`);
+        await fs.writeFile(lockFile, JSON.stringify(lockData));
+        return true;
+      }
+      return false;
+    }
+
+    // Create new lock
+    await fs.writeFile(lockFile, JSON.stringify(lockData), { flag: 'wx' });
     return true;
   } catch (err) {
-    // Si le fichier existe déjà, un autre worker a le lock
     return false;
   }
 }
@@ -45,13 +73,120 @@ async function acquireLock(jobId: string, workerId: string): Promise<boolean> {
 async function releaseLock(jobId: string, workerId: string) {
   const lockFile = `${LOCK_DIR}/job_${jobId}.lock`;
   try {
-    // Vérifier que c'est bien notre lock
-    const owner = await fs.readFile(lockFile, 'utf-8');
-    if (owner === workerId) {
+    const lockData = JSON.parse(await fs.readFile(lockFile, 'utf-8'));
+    if (lockData.workerId === workerId) {
       await fs.unlink(lockFile);
+      console.log(`🔓 [Worker ${workerId}] Released lock for job ${jobId}`);
     }
   } catch (err) {
-    // Ignorer les erreurs si le fichier n'existe pas
+    // Ignore errors if file doesn't exist
+  }
+}
+
+async function refreshLock(jobId: string, workerId: string): Promise<boolean> {
+  const lockFile = `${LOCK_DIR}/job_${jobId}.lock`;
+  try {
+    const lockData = JSON.parse(await fs.readFile(lockFile, 'utf-8'));
+    if (lockData.workerId === workerId) {
+      lockData.timestamp = Date.now();
+      await fs.writeFile(lockFile, JSON.stringify(lockData));
+      return true;
+    }
+    return false;
+  } catch (err) {
+    return false;
+  }
+}
+
+interface JobStats {
+  followers: {
+    processed: number;
+    total: number;
+  };
+  following: {
+    processed: number;
+    total: number;
+  };
+}
+
+async function updateJobProgress(
+  jobId: string, 
+  processedItems: { followers: number; following: number }, 
+  totalItems: { followers: number; following: number }, 
+  workerId: string,
+  status: 'processing' | 'completed' | 'failed' = 'processing'
+) {
+  const updateData: any = {
+    status,
+    updated_at: new Date().toISOString(),
+    stats: {
+      total: totalItems.followers + totalItems.following,
+      progress: Math.round(((processedItems.followers + processedItems.following) / (totalItems.followers + totalItems.following)) * 100),
+      followers: {
+        processed: processedItems.followers,
+        total: totalItems.followers
+      },
+      following: {
+        processed: processedItems.following,
+        total: totalItems.following
+      },
+      processed: processedItems.followers + processedItems.following
+    }
+  };
+
+  if (status === 'completed') {
+    updateData.completed_at = new Date().toISOString();
+  }
+
+  const { error } = await supabase
+    .from('import_jobs')
+    .update(updateData)
+    .eq('id', jobId);
+
+  if (error) {
+    console.error(`❌ [Worker ${workerId}] Failed to update job progress:`, error);
+  }
+}
+
+async function processBatch<T>(
+  items: T[],
+  startIndex: number,
+  batchSize: number,
+  processFn: (items: T[]) => Promise<void>,
+  workerId: string,
+  jobId: string,
+  totalItems: { followers: number; following: number },
+  type: 'followers' | 'following'
+): Promise<void> {
+  let retries = 0;
+  const maxRetries = 3;
+
+  while (retries < maxRetries) {
+    try {
+      const batch = items.slice(startIndex, startIndex + batchSize);
+      if (batch.length === 0) return;
+
+      await processFn(batch);
+      
+      // Update progress after successful batch
+      const processedItems = {
+        followers: type === 'followers' ? startIndex + batch.length : 0,
+        following: type === 'following' ? startIndex + batch.length : 0
+      };
+      
+      await updateJobProgress(jobId, processedItems, totalItems, workerId);
+      
+      return;
+    } catch (error) {
+      retries++;
+      console.error(`Error ⚠️ [Worker ${workerId}] Batch processing failed (attempt ${retries}/${maxRetries}):`, error);
+      
+      if (retries === maxRetries) {
+        throw new Error(`Error Failed to process batch after ${maxRetries} attempts`);
+      }
+      
+      await sleep(Math.pow(2, retries) * 1000);
+    }
   }
 }
 
@@ -71,8 +206,6 @@ const supabaseAuth = createClient(supabaseUrl, supabaseKey, {
     schema: "next-auth"
   }
 });
-
-const TEMP_UPLOAD_DIR = join(process.cwd(), 'tmp', 'uploads');
 
 // Validation des fichiers Twitter
 function validateTwitterData(content: string, type: 'following' | 'follower'): string | null {
@@ -139,53 +272,6 @@ async function processTwitterFile(filePath: string, workerId: string): Promise<a
   }
 }
 
-async function processBatch<T>(
-  items: T[],
-  startIndex: number,
-  batchSize: number,
-  processFn: (items: T[]) => Promise<void>,
-  workerId: string
-): Promise<void> {
-  const endIndex = Math.min(startIndex + batchSize, items.length);
-  const batch = items.slice(startIndex, endIndex);
-  
-  if (batch.length === 0) return;
-
-  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
-    try {
-      await processFn(batch);
-      return;
-    } catch (error) {
-      console.error(`❌ [Worker ${workerId}] Error processing batch (attempt ${attempt + 1}/${MAX_RETRIES}):`, error);
-      if (attempt === MAX_RETRIES - 1) throw error;
-      await sleep(RETRY_DELAY);
-    }
-  }
-}
-
-interface ImportJob {
-  id: string;
-  user_id: string;
-  status: 'pending' | 'processing' | 'completed' | 'failed';
-  current_batch: number;
-  total_items: number;
-  error_log?: string;
-  file_paths?: string[];
-  job_type?: 'large_file_import' | 'direct_import';
-}
-
-async function updateJobProgress(jobId: string, processedItems: number, totalItems: number, workerId: string) {
-  const progress = (processedItems / totalItems) * 100;
-  await supabase
-    .from('import_jobs')
-    .update({ 
-      current_batch: processedItems,
-      updated_at: new Date().toISOString()
-    })
-    .eq('id', jobId);
-  console.log(`🔄 [Worker ${workerId}] Updated job progress: ${progress}%`);
-}
-
 async function cleanupTempFiles(filePaths: string[], workerId: string) {
   try {
     // Supprimer d'abord les fichiers
@@ -233,155 +319,150 @@ async function ensureSourceExists(userId: string, workerId: string) {
   }
 }
 
+interface ImportJob {
+  id: string;
+  user_id: string;
+  status: 'pending' | 'processing' | 'completed' | 'failed';
+  total_items: number;
+  error_log?: string;
+  file_paths?: string[];
+  job_type?: 'large_file_import' | 'direct_import';
+  stats?: JobStats;
+}
+
 export async function processJob(job: ImportJob, workerId: string) {
-  // Essayer d'acquérir le lock pour ce job
-  if (!await acquireLock(job.id, workerId)) {
-    console.log(`⏭️ [Worker ${workerId}] Job ${job.id} is being processed by another worker`);
-    return;
-  }
-
   try {
-    console.log(`🎯 [Worker ${workerId}] Starting job ${job.id}`);
+    console.log(`🚀 [Worker ${workerId}] Starting job processing:`, job);
 
-    // Marquer le job comme en cours
-    const { error: updateError } = await supabase
-      .from('import_jobs')
-      .update({
-        status: 'processing',
-        started_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', job.id)
-      .eq('status', 'pending');
-
-    if (updateError) {
-      console.log(`⚠️ [Worker ${workerId}] Failed to update job ${job.id}`);
+    // Acquire lock for this job
+    if (!await acquireLock(job.id, workerId)) {
+      console.log(`⏳ [Worker ${workerId}] Job ${job.id} is locked by another worker`);
       return;
     }
 
-    let processedItems = 0;
-    let followersCount = 0;
-    let followingCount = 0;
-
-    // Traiter le fichier
-    if (job.file_paths) {
-      console.log(`📂 [Worker ${workerId}] Processing ${job.file_paths.length} files for job ${job.id}`);
-      
-      // Traiter chaque fichier séparément
-      for (const filePath of job.file_paths) {
-        const data = await processTwitterFile(filePath, workerId);
-        const isFollowing = filePath.toLowerCase().includes('following');
-        
-        // Mettre à jour les compteurs
-        if (isFollowing) {
-          followingCount += data.length;
-        } else {
-          followersCount += data.length;
-        }
-        
-        // Mettre à jour les stats totales
-        const totalItems = followersCount + followingCount;
-        await supabase
-          .from('import_jobs')
-          .update({ 
-            total_items: totalItems,
-            stats: {
-              followers: followersCount,
-              following: followingCount,
-              total: totalItems,
-              processed: processedItems
-            }
-          })
-          .eq('id', job.id);
-        
-        // Traiter par lots
-        console.log(`🔄 [Worker ${workerId}] Processing in batches of ${BATCH_SIZE}`);
-        for (let i = 0; i < data.length; i += BATCH_SIZE) {
-          const batch = data.slice(i, i + BATCH_SIZE);
-          await processBatch(
-            batch,
-            0,
-            batch.length,
-            async (items) => {
-              if (isFollowing) {
-                await processFollowing(items, job.user_id, workerId);
-              } else {
-                await processFollowers(items, job.user_id, workerId);
-              }
-              processedItems += batch.length;
-              
-              // Mettre à jour les stats de progression
-              await supabase
-                .from('import_jobs')
-                .update({ 
-                  stats: {
-                    followers: followersCount,
-                    following: followingCount,
-                    total: totalItems,
-                    processed: processedItems
-                  }
-                })
-                .eq('id', job.id);
-            },
-            workerId
-          );
-          console.log(`✨ [Worker ${workerId}] Processed batch of ${batch.length} items`);
-        }
-      }
-
-      // Nettoyer les fichiers temporaires
-      await cleanupTempFiles(job.file_paths, workerId);
-      console.log(`🧹 [Worker ${workerId}] Cleaned up temporary files`);
-
-      // Mettre à jour le statut final
-      const { error: finalError } = await supabase
-        .from('import_jobs')
-        .update({
-          status: 'completed',
-          completed_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          stats: {
-            followers: followersCount,
-            following: followingCount,
-            total: followersCount + followingCount,
-            processed: processedItems
-          }
-        })
-        .eq('id', job.id);
-
-      const {error: hasBoardEror } = await supabaseAuth
-        .from('users')
-        .update({hasBoard: true})
-        .eq('id', job.user_id);
-
-      if (hasBoardEror) {
-        console.error(`❌ [Worker ${workerId}] Error updating hasBoard:`, hasBoardEror);
-        throw hasBoardEror;
-      }
-      if (finalError) {
-        console.error(`❌ [Worker ${workerId}] Error updating final status:`, finalError);
-        throw finalError;
-      }
-
-      console.log(`✅ [Worker ${workerId}] Job ${job.id} completed successfully`);
-    }
-  } catch (err) {
-    console.error(`❌ [Worker ${workerId}] Error processing job ${job.id}:`, err);
+    let followersData: any[] = [];
+    let followingData: any[] = [];
+    let totalItems = {
+      followers: 0,
+      following: 0
+    };
     
-    const error = err as Error;
-    // Marquer le job comme échoué
+    // Pour suivre la progression
+    let currentProgress = {
+      followers: 0,
+      following: 0
+    };
+
+    // Process each file
+    if (job.file_paths) {
+      for (const filePath of job.file_paths) {
+        if (!existsSync(filePath)) {
+          throw new Error(`File not found: ${filePath}`);
+        }
+
+        const data = await processTwitterFile(filePath, workerId);
+        
+        if (filePath.includes('follower.js')) {
+          followersData = data;
+          totalItems.followers = data.length;
+        } else if (filePath.includes('following.js')) {
+          followingData = data;
+          totalItems.following = data.length;
+        }
+      }
+    }
+
+    // Ensure source exists
+    await ensureSourceExists(job.user_id, workerId);
+
+    // Process followers
+    if (followersData.length > 0) {
+      console.log(`📊 [Worker ${workerId}] Processing ${followersData.length} followers`);
+      for (let i = 0; i < followersData.length; i += BATCH_SIZE) {
+        const batch = followersData.slice(i, i + BATCH_SIZE);
+        await processFollowers(batch, job.user_id, workerId);
+        
+        // Mettre à jour la progression des followers
+        currentProgress.followers = i + batch.length;
+        
+        // Envoyer la mise à jour avec les deux progressions
+        await updateJobProgress(
+          job.id,
+          currentProgress,
+          totalItems,
+          workerId,
+          'processing'
+        );
+      }
+    }
+
+    // Process following
+    if (followingData.length > 0) {
+      console.log(`📊 [Worker ${workerId}] Processing ${followingData.length} following`);
+      for (let i = 0; i < followingData.length; i += BATCH_SIZE) {
+        const batch = followingData.slice(i, i + BATCH_SIZE);
+        await processFollowing(batch, job.user_id, workerId);
+        
+        // Mettre à jour la progression des following
+        currentProgress.following = i + batch.length;
+        
+        // Envoyer la mise à jour avec les deux progressions
+        await updateJobProgress(
+          job.id,
+          currentProgress,
+          totalItems,
+          workerId,
+          'processing'
+        );
+      }
+    }
+
+    // Cleanup temp files
+    if (job.file_paths) {
+      await cleanupTempFiles(job.file_paths, workerId);
+    }
+
+    // Mark job as completed with final progress
+    await updateJobProgress(
+      job.id,
+      {
+        followers: totalItems.followers,
+        following: totalItems.following
+      },
+      totalItems,
+      workerId,
+      'completed'
+    );
+
+    // Update user onboarding status
+    const { error: hasBoardError } = await supabaseAuth
+      .from('users')
+      .update({ has_onboarded: true })
+      .eq('id', job.user_id);
+    console.log("error from updating has_onboarded", hasBoardError);
+    // Release lock
+    await releaseLock(job.id, workerId);
+    
+    if (hasBoardError) {
+      console.error(`❌ [Worker ${workerId}] Error updating user has_onboarded:`, hasBoardError);
+    }
+    
+    console.log(`✅ [Worker ${workerId}] Job completed successfully`);
+  } catch (error) {
+    console.error(`❌ [Worker ${workerId}] Job processing failed:`, error);
+    
+    // Update job status to failed
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     await supabase
       .from('import_jobs')
       .update({
         status: 'failed',
-        error: error?.message || 'Unknown error',
+        error_log: errorMessage,
         updated_at: new Date().toISOString()
       })
       .eq('id', job.id);
 
-    throw error;
-  } finally {
-    // Toujours libérer le lock à la fin
+    // Release lock
     await releaseLock(job.id, workerId);
   }
 }

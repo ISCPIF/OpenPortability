@@ -5,6 +5,7 @@ import type { NextRequest } from 'next/server'
 export default auth(async (req) => {
   const isLoggedIn = !!req.auth
   const isAuthPage = req.nextUrl.pathname.startsWith('/auth')
+  const isDashboard = req.nextUrl.pathname.startsWith('/dashboard')
 
   // Si on est sur la page d'accueil, rediriger vers /auth/signin
   if (req.nextUrl.pathname === '/') {
@@ -13,7 +14,16 @@ export default auth(async (req) => {
 
   // Not logged in: only allow auth pages
   if (!isLoggedIn && !isAuthPage) {
-    return NextResponse.redirect(new URL('/auth/signin', req.nextUrl))
+    let redirectUrl = new URL('/auth/signin', req.nextUrl)
+    if (isDashboard) {
+      redirectUrl.searchParams.set('callbackUrl', '/dashboard')
+    }
+    return NextResponse.redirect(redirectUrl)
+  }
+
+  // Logged in: don't allow auth pages
+  if (isLoggedIn && isAuthPage) {
+    return NextResponse.redirect(new URL('/dashboard', req.nextUrl))
   }
 
   return NextResponse.next()
