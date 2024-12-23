@@ -8,7 +8,7 @@ import ErrorModal from "../../_components/ErrorModal";
 import Image from 'next/image';
 import seaBackground from '../../../../public/sea.svg';
 import { plex } from '../../fonts/plex';
-import logoHQX from '../../../../public/BannerHQX-rose_FR.svg';
+import logoHQX from '../../../../public/logoxHQX/HQX-rose-FR.svg';
 import { motion, AnimatePresence } from 'framer-motion';
 import boat1 from '../../../../public/boats/boat-1.svg';
 import { Loader2 } from 'lucide-react';
@@ -131,31 +131,21 @@ export default function LargeFilesPage() {
     <div className="min-h-screen bg-[#2a39a9] relative w-full max-w-[90rem] m-auto">
       <Header />
       
-      <div className="relative">
+      <div className="flex justify-center mt-8 mb-8">
         <Image
-          src={seaBackground}
-          alt="Sea background"
-          className="w-full h-auto"
+          src={logoHQX}
+          alt="HelloQuitteX Logo"
+          width={306}
+          height={125}
+          className="mx-auto"
           priority
         />
-        
-        <div className="absolute inset-0 flex flex-col items-center justify-center p-8">
-          <Image
-            src={logoHQX}
-            alt="GoodbyeX Logo"
-            className="w-64 mb-8"
-            priority
-          />
-          
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-black/40 backdrop-blur-xl rounded-xl border border-black/10 shadow-xl p-8 max-w-2xl w-full"
-          >
+      </div>
+
+      <div className="relative">
+        <div className="absolute inset-0 flex flex-col items-center justify-center p-8 mt-44">
             {jobStatus && (
-              <div className="text-white">
-                <h2 className={`${plex.className} text-2xl font-bold mb-6 text-center`}>Import en cours</h2>
-                
+              <div className="text-white">                
                 {/* Progress Bars */}
                 <div className="space-y-6">
                   {/* Global Progress */}
@@ -279,30 +269,8 @@ export default function LargeFilesPage() {
                 </div>
               </div>
             )}
-          </motion.div>
         </div>
-
-        <motion.div
-          className="absolute bottom-0 left-1/2 transform -translate-x-1/2"
-          animate={{
-            y: [0, -10, 0],
-          }}
-          transition={{
-            duration: 3,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }}
-        >
-          <Image src={boat1} alt="Boat" className="w-32" />
-        </motion.div>
       </div>
-      
-      {error && (
-        <ErrorModal
-          message={error}
-          onClose={() => setError(null)}
-        />
-      )}
     </div>
   );
 }

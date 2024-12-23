@@ -23,6 +23,7 @@ import { FaTwitter, FaMastodon } from 'react-icons/fa';
 import { SiBluesky } from "react-icons/si";
 import { Share2, Mail, X } from 'lucide-react';
 import { AnimatePresence } from 'framer-motion';
+import logoHQX from '../../../public/logoxHQX/HQX-rose-FR.svg';
 
 // const supabase = createClient(
 //   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -134,8 +135,6 @@ export default function DashboardPage() {
 
 
   const handleShare = async (url: string, platform: string) => {
-    console.log('🚀 handleShare started');
-    console.log('Platform:', platform, 'URL:', url);
     update()
 
     if (!session?.user?.id) {
@@ -163,8 +162,6 @@ export default function DashboardPage() {
       if (!response.ok) {
         throw new Error('Failed to record share event');
       }
-
-      console.log('✅ Share event recorded successfully');
       setIsShared(true);
     } catch (error) {
       console.error('❌ Error during share process:', error);
@@ -236,21 +233,24 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-[#2a39a9] relative w-full max-w-[90rem] m-auto">
       <Header />
-      <DahsboardSea progress={progress} />
+      <div className="absolute inset-0 w-full h-full pointer-events-none">
+        <DahsboardSea progress={progress} />
+      </div>
 
-      <div className="mx-auto px-4 my-[30rem]">
-        {/* Frise chronologique */}
-        <div className="container mx-auto px-4 py-12">
-          <div className="max-w-2xl mx-auto space-y-6">
-            {/* Message conditionnel basé sur le progrès */}
-            <div className="text-center mb-8 z-50 relative">
+      {/* Conteneur principal avec padding vertical ajusté */}
+      <div className="relative min-h-[calc(100vh-4rem)] pt-80">
+        {/* Section du haut avec le message et ProgressSteps */}
+        <div className="container mx-auto px-4">
+          <div className="max-w-2xl mx-auto">
+            {/* Message conditionnel */}
+            <div className="text-center mb-20 relative z-10">
               {progress === 100 ? (
-                <div className="space-y-2">
+                <div className="space-y-2 mt-12">
                   <h2 className={`${plex.className} text-xl font-semibold text-indigo-100`}>
                     Vous avez réalisé la première étape de votre migration
                   </h2>
                   <p className={`${plex.className} text-indigo-200`}>
-                    {Math.ceil((new Date('2025-01-20').getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} restants jours avant le grand départ
+                    {Math.ceil((new Date('2025-01-20').getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} jours restants avant le grand départ
                   </p>
                 </div>
               ) : (
@@ -260,132 +260,118 @@ export default function DashboardPage() {
               )}
             </div>
 
-            <ProgressSteps
-              hasTwitter={hasTwitter}
-              hasBluesky={hasBluesky}
-              hasMastodon={hasMastodon}
-              hasOnboarded={hasOnboarded}
-              stats={stats}
-              onShare={handleShare}
-              isShared={isShared}
-              onProgressChange={setProgress}
-              setIsModalOpen={setIsModalOpen}
-            />
-          </div>
-        </div>
-        <div className="max-w-2xl mx-auto space-y-8">
-          {stats && session?.user?.has_onboarded && (
-            <UploadResults
-              stats={stats}
-              onShare={handleShare}
-              setIsModalOpen={setIsModalOpen}
-            />
-          )}
-          {!((hasTwitter && hasMastodon) || (hasBluesky && hasMastodon) || (hasBluesky && hasTwitter)) && (
-            <div className="max-w-md mx-auto">
-              <DashboardLoginButtons
-                connectedServices={{
-                  twitter: !!session?.user?.twitter_id,
-                  bluesky: !!session?.user?.bluesky_id,
-                  mastodon: !!session?.user?.mastodon_id
-                }}
-                hasUploadedArchive={!!stats}
-                onLoadingChange={setIsLoading}
+            {/* ProgressSteps avec marge importante */}
+            <div className="mb-24 relative z-10">
+              <ProgressSteps
+                hasTwitter={hasTwitter}
+                hasBluesky={hasBluesky}
+                hasMastodon={hasMastodon}
+                hasOnboarded={hasOnboarded}
+                stats={stats}
+                isShared={isShared}
+                onProgressChange={setProgress}
+                setIsModalOpen={setIsModalOpen}
               />
             </div>
-          )}
-          {/* Removed old button since it's now handled by DashboardLoginButtons */}
-          {/* Afficher le bouton d'upload si l'utilisateur n'a pas encore onboarded */}
-          {!hasOnboarded && (
-            <div className="text-center">
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => router.push('/upload')}
-                className={`inline-flex items-center gap-3 px-8 py-4 
-                         ${(hasTwitter && hasMastodon) || (hasBluesky && hasMastodon) || (hasBluesky && hasTwitter)
-                    ? 'bg-gradient-to-r from-pink-400 to-rose-500 hover:from-pink-500 hover:to-rose-600'
-                    : 'bg-gradient-to-r from-sky-400 to-blue-500 hover:from-sky-500 hover:to-blue-600'}
-                         text-white font-semibold rounded-xl shadow-lg 
-                         transition-all duration-300 mb-4 ${plex.className}`}
-              >
-                <Ship className="w-6 h-6" />
-                Importer mon archive Twitter pour continuer mon voyage
-              </motion.button>
-            </div>
-          )}
-          {/* Boutons de connexion pour les autres services */}
-          {/* {renderLoginButtons()} */}
+          </div>
+        </div>
 
-          {/* <ConnectedAccounts
-            hasTwitter={hasTwitter}
-            hasMastodon={hasMastodon}
-            hasBluesky={hasBluesky}
-          /> */}
+        {/* Section du bas avec les autres composants */}
+        <div className="container mx-auto px-4 pb-20">
+          <div className="max-w-2xl mx-auto space-y-16">
+            {stats && session?.user?.has_onboarded && (
+              <div className="relative z-10">
+                <UploadResults
+                  stats={stats}
+                  onShare={handleShare}
+                  setIsModalOpen={setIsModalOpen}
+                />
+              </div>
+            )} 
+            
+            {!((hasTwitter && hasMastodon) || (hasBluesky && hasMastodon) || (hasBluesky && hasTwitter)) && (
+              <div className="max-w-md mx-auto relative z-10">
+                <DashboardLoginButtons
+                  connectedServices={{
+                    twitter: !!session?.user?.twitter_id,
+                    bluesky: !!session?.user?.bluesky_id,
+                    mastodon: !!session?.user?.mastodon_id
+                  }}
+                  hasUploadedArchive={!!stats}
+                  onLoadingChange={setIsLoading}
+                />
+              </div>
+            )}
 
-          {/* Afficher les profils BlueSky correspondants */}
-          {/* {hasTwitter && (
-            <MatchedBlueSkyProfiles
-              matchedCount={stats.matchedCount}
-              totalUsers={stats.totalUsers}
-              profiles={matchedProfiles}
-            />
-          )} */}
+            {!hasOnboarded && (
+              <div className="text-center relative z-10">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => router.push('/upload')}
+                  className={`inline-flex items-center gap-3 px-8 py-4 
+                           ${(hasTwitter && hasMastodon) || (hasBluesky && hasMastodon) || (hasBluesky && hasTwitter)
+                      ? 'bg-gradient-to-r from-pink-400 to-rose-500 hover:from-pink-500 hover:to-rose-600'
+                      : 'bg-gradient-to-r from-sky-400 to-blue-500 hover:from-sky-500 hover:to-blue-600'}
+                           text-white font-semibold rounded-xl shadow-lg 
+                           transition-all duration-300 ${plex.className}`}
+                >
+                  <Ship className="w-6 h-6" />
+                  Importer mon archive Twitter pour continuer mon voyage
+                </motion.button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
       {/* Modale de partage */}
       <AnimatePresence>
         {isModalOpen && (
-          <div className="fixed inset-0" style={{ zIndex: 9999 }}>
-            <div
-              className="fixed inset-0 bg-[#0D0D0D] opacity-50"
-              onClick={() => setIsModalOpen(false)}
-            />
-            <div className="fixed inset-0 flex items-center justify-center">
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                className={`relative w-full max-w-md mx-4 ${plex.className}`}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50"
+            onClick={() => setIsModalOpen(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-xl p-8 max-w-lg w-full mx-4 relative"
+              onClick={e => e.stopPropagation()}
+            >
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
               >
-                <div className="bg-[#0D0D0D] rounded-2xl border border-pink-500/20 
-                            shadow-2xl overflow-hidden">
-                  <div className="flex items-center justify-between p-4 border-b border-pink-500/20 bg-[#0D0D0D]">
-                    <h3 className="text-lg font-medium text-white">Partager votre migration</h3>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
+                <X className="w-6 h-6" />
+              </button>
+
+              <h3 className="text-2xl font-bold mb-6">Partager votre voyage</h3>
+              <div className="space-y-4">
+                {shareOptions.map((option, index) => (
+                  option.isAvailable && (
+                    <motion.button
+                      key={option.name}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => {
+                        handleShare(option.shareUrl, option.name.toLowerCase());
                         setIsModalOpen(false);
                       }}
-                      className="p-1 hover:bg-pink-500/10 rounded-lg transition-colors"
+                      className={`w-full py-3 px-4 rounded-xl text-white flex items-center gap-3 
+                                ${option.color} transition-all duration-200`}
                     >
-                      <X className="w-5 h-5 text-pink-400" />
-                    </button>
-                  </div>
-
-                  <div className="p-4 space-y-3 bg-[#0D0D0D]">
-                    {shareOptions
-                      .filter(option => option.isAvailable)
-                      .map((option) => (
-                        <motion.button
-                          key={option.name}
-                          whileHover={{ scale: 1.02 }}
-                          whileTap={{ scale: 0.98 }}
-                          onClick={() => handleShare(option.shareUrl, option.name)}
-                          className={`w-full flex items-center gap-3 p-3 rounded-xl text-white 
-                                transition-all duration-200 ${option.color} 
-                                hover:brightness-110 shadow-lg ${plex.className}`}
-                        >
-                          {option.icon}
-                          <span>Partager sur {option.name}</span>
-                        </motion.button>
-                      ))}
-                  </div>
-                </div>
-              </motion.div>
-            </div>
-          </div>
+                      {option.icon}
+                      <span>Partager sur {option.name}</span>
+                    </motion.button>
+                  )
+                ))}
+              </div>
+            </motion.div>
+          </motion.div>
         )}
       </AnimatePresence>
     </div>
