@@ -87,7 +87,7 @@ class StalledJobError extends WorkerError {
 }
 
 async function recoverStalledJobs() {
-  console.log(`🔍 [Worker ${WORKER_CONFIG.id}] Checking for stalled jobs...`);
+  // console.log(`🔍 [Worker ${WORKER_CONFIG.id}] Checking for stalled jobs...`);
   
   try {
     // Récupérer les jobs bloqués depuis plus de X minutes
@@ -117,7 +117,7 @@ async function recoverStalledJobs() {
 }
 
 async function checkForPendingJobs() {
-  console.log(`🔍 [Worker ${WORKER_CONFIG.id}] Checking for pending jobs...`);
+  // console.log(`🔍 [Worker ${WORKER_CONFIG.id}] Checking for pending jobs...`);
   
   try {
     // Utiliser la fonction claim_next_pending_job pour récupérer et verrouiller le prochain job
@@ -129,7 +129,7 @@ async function checkForPendingJobs() {
     }
 
     if (!jobs || jobs.length === 0) {
-      console.log(`💤 [Worker ${WORKER_CONFIG.id}] No pending jobs, waiting...`);
+      // console.log(`💤 [Worker ${WORKER_CONFIG.id}] No pending jobs, waiting...`);
       return;
     }
 
@@ -173,7 +173,7 @@ async function startWorker() {
   
   // Démarrer la vérification des jobs bloqués en arrière-plan
   const stalledJobsInterval = setInterval(async () => {
-    console.log(`🔍 [Worker ${WORKER_CONFIG.id}] Checking for stalled jobs...`);
+    // console.log(`🔍 [Worker ${WORKER_CONFIG.id}] Checking for stalled jobs...`);
     try {
       await recoverStalledJobs();
     } catch (error) {

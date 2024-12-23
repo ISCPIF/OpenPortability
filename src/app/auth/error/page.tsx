@@ -1,65 +1,113 @@
 'use client'
 
 import { useSearchParams } from 'next/navigation'
-import { motion } from "framer-motion"
-import TwitterRateLimit from "@/app/_components/TwitterRateLimit"
-import { useRouter } from 'next/navigation'
-import { plex } from "@/app/fonts/plex"
+import { useEffect, useState } from 'react'
+import { motion } from 'framer-motion'
+import { AlertCircle } from 'lucide-react'
+import { plex } from '@/app/fonts/plex'
 
-export default function ErrorPage() {
+export default function AuthError() {
   const searchParams = useSearchParams()
-  const router = useRouter()
   const error = searchParams.get('error')
-  const provider = searchParams.get('provider')
+  const message = searchParams.get('message')
+  const [retryTime, setRetryTime] = useState<number | null>(null)
 
-  // Décode l'erreur si elle est encodée en URI
-  const decodedError = error ? decodeURIComponent(error) : null
+  useEffect(() => {
+    if (error === 'RateLimit') {
+      const resetTimeStr = searchParams.get('reset')
+      if (resetTimeStr) {
+        const resetTime = new Date(parseInt(resetTimeStr))
+        const now = new Date()
+        const waitSeconds = Math.ceil((resetTime.getTime() - now.getTime()) / 1000)
+        setRetryTime(waitSeconds)
+      }
+    }
+  }, [error, searchParams])
 
-  console.log("Error page - Decoded error:", decodedError)
-  console.log("Error page - Provider:", provider)
+  const getErrorMessage = (errorCode: string, customMessage?: string) => {
+    switch (errorCode) {
+      case 'RateLimit':
+        return {
+          title: 'Trop de requêtes',
+          message: retryTime 
+            ? `Limite d'API Twitter dépassée. Veuillez réessayer dans ${Math.floor(retryTime / 60)} minutes et ${retryTime % 60} secondes.`
+            : `Limite d'API Twitter dépassée. Veuillez réessayer plus tard.`,
+          action: 'Réessayer'
+        }
+      case 'InvalidProfile':
+        return {
+          title: 'Profil invalide',
+          message: 'Impossible de récupérer votre profil Twitter. Veuillez vérifier que votre compte Twitter est actif et réessayer.',
+          action: 'Réessayer'
+        }
+      case 'Configuration':
+        return {
+          title: 'Erreur de configuration',
+          message: 'Une erreur de configuration est survenue. Veuillez contacter le support.',
+          action: 'Retour à l\'accueil'
+        }
+      case 'OAuthSignin':
+        return {
+          title: 'Erreur de connexion',
+          message: 'Une erreur est survenue lors de l\'initialisation de la connexion.',
+          action: 'Réessayer'
+        }
+      case 'OAuthCallback':
+        return {
+          title: 'Erreur de callback',
+          message: 'Une erreur est survenue lors de la validation de votre connexion.',
+          action: 'Réessayer'
+        }
+      case 'AccessDenied':
+        return {
+          title: 'Accès refusé',
+          message: 'Vous avez refusé l\'accès à votre compte.',
+          action: 'Réessayer'
+        }
+      default:
+        return {
+          title: 'Erreur d\'authentification',
+          message: customMessage || 'Une erreur inattendue est survenue lors de l\'authentification.',
+          action: 'Réessayer'
+        }
+    }
+  }
 
-  // Si l'erreur vient de Twitter
-  const isTwitterError = provider === 'twitter'
+  const { title, message: displayMessage, action } = getErrorMessage(error || 'Default', message || undefined)
 
   return (
-    <div className="min-h-screen bg-[#2a39a9] relative w-full max-w-[90rem] m-auto">
-      <div className="container mx-auto py-12">
-        <div className="container flex flex-col m-auto text-center gap-y-8 text-[#E2E4DF]">
-          <div className="m-auto relative my-[10rem]">
-            {isTwitterError ? (
-              <TwitterRateLimit onShowAlternatives={() => router.push('/auth/signin?show_alternatives=true')} />
-            ) : (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-red-100 border-l-4 border-red-400 p-4"
-              >
-                <div className="flex">
-                  <div className="flex-shrink-0">
-                    <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                  <div className="ml-3">
-                    <h3 className={`${plex.className} text-sm font-medium text-red-800`}>
-                      Erreur d'authentification
-                    </h3>
-                    <div className="mt-2 text-sm text-red-700">
-                      <p>{decodedError || "Une erreur est survenue lors de la connexion."}</p>
-                      <button
-                        onClick={() => router.push('/auth/signin')}
-                        className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                      >
-                        Retour à la connexion
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            )}
+    <div className="min-h-screen bg-[#2a39a9] flex items-center justify-center p-4">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="max-w-md w-full"
+      >
+        <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl p-6 shadow-xl">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2 bg-red-500/10 rounded-full">
+              <AlertCircle className="w-6 h-6 text-red-500" />
+            </div>
+            <h1 className={`${plex.className} text-xl font-semibold text-white`}>{title}</h1>
+          </div>
+          
+          <p className={`${plex.className} text-white/80 mb-6`}>{displayMessage}</p>
+          
+          <div className="flex justify-end gap-4">
+            <button
+              onClick={() => window.location.href = '/'}
+              className={`${plex.className} px-4 py-2 text-sm text-white/60 hover:text-white transition-colors`}
+            >
+              Retour à l'accueil
+            </button>
+            <button
+              onClick={() => window.location.href = '/auth/signin'}
+              className={`${plex.className} px-4 py-2 text-sm bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors`}
+            >
+              {action}
+            </button>
           </div>
         </div>
-      </div>
+      </motion.div>
     </div>
   )
 }

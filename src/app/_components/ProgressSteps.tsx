@@ -73,9 +73,9 @@ interface ProgressStepsProps {
     following: number;
     followers: number;
   };
-  onShare: () => void;
+  setIsModalOpen: (open: boolean) => void;
   isShared: boolean;
-  onProgressChange?: (progress: number) => void; // 0, 25, 50, 75, ou 100
+  onProgressChange?: (progress: number) => void;
 }
 
 export default function ProgressSteps({ 
@@ -84,7 +84,7 @@ export default function ProgressSteps({
   hasMastodon,
   hasOnboarded,
   stats,
-  onShare,
+  setIsModalOpen,
   isShared: initialIsShared,
   onProgressChange
 }: ProgressStepsProps) {
@@ -143,7 +143,7 @@ export default function ProgressSteps({
     let progress = 0;
     let completedSteps = 0;
 
-    if (hasTwitter) completedSteps++;
+    if (session) completedSteps++;
     if (getConnectedAccountsCount() >= 2) completedSteps++;
     if (hasOnboarded) completedSteps++;
     if (hasSuccessfulShare) completedSteps++;
@@ -203,7 +203,7 @@ export default function ProgressSteps({
           description="Aidez vos amis à migrer"
           isCompleted={hasSuccessfulShare}
           isLast={true}
-          onClick={onShare}
+          onClick={() => setIsModalOpen(true)}
         />
       </div>
     </div>

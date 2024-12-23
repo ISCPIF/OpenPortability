@@ -46,7 +46,7 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
             token.twitter_image = profile.data.profile_image_url
             token.name = profile.data.name
           }
-          else if (account.provider === 'mastodon' && profile && isMastodonProfile(profile)) {
+          else if ((account.provider === 'mastodon' || account.provider === 'piaille') && profile && isMastodonProfile(profile)) {
             await supabaseAdapter.updateUser(token.id || '', {
               provider: 'mastodon',
               profile: profile
@@ -115,14 +115,14 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
     },
 
     async redirect({ url, baseUrl }) {
-      console.log(" Redirect Callback:", { url, baseUrl })
+      // console.log(" Redirect Callback:", { url, baseUrl })
 
       if (url.includes('/auth/callback')) {
-        console.log(" Auth callback detected, redirecting to /dashboard")
+        // console.log(" Auth callback detected, redirecting to /dashboard")
         return `${baseUrl}/dashboard`
       }
 
-      console.log(" Default redirect to:", url)
+      // console.log(" Default redirect to:", url)
       return url.startsWith(baseUrl) ? url : baseUrl
     }
   }

@@ -377,7 +377,7 @@ export async function processJob(job: ImportJob, workerId: string) {
 
     // Process followers
     if (followersData.length > 0) {
-      console.log(`📊 [Worker ${workerId}] Processing ${followersData.length} followers`);
+      // console.log(`📊 [Worker ${workerId}] Processing ${followersData.length} followers`);
       for (let i = 0; i < followersData.length; i += BATCH_SIZE) {
         const batch = followersData.slice(i, i + BATCH_SIZE);
         await processFollowers(batch, job.user_id, workerId);
@@ -398,7 +398,7 @@ export async function processJob(job: ImportJob, workerId: string) {
 
     // Process following
     if (followingData.length > 0) {
-      console.log(`📊 [Worker ${workerId}] Processing ${followingData.length} following`);
+      // console.log(`📊 [Worker ${workerId}] Processing ${followingData.length} following`);
       for (let i = 0; i < followingData.length; i += BATCH_SIZE) {
         const batch = followingData.slice(i, i + BATCH_SIZE);
         await processFollowing(batch, job.user_id, workerId);
@@ -439,7 +439,7 @@ export async function processJob(job: ImportJob, workerId: string) {
       .from('users')
       .update({ has_onboarded: true })
       .eq('id', job.user_id);
-    console.log("error from updating has_onboarded", hasBoardError);
+    // console.log("error from updating has_onboarded", hasBoardError);
     // Release lock
     await releaseLock(job.id, workerId);
     
@@ -468,7 +468,7 @@ export async function processJob(job: ImportJob, workerId: string) {
 }
 
 async function processFollowers(followers: any[], userId: string, workerId: string) {
-  console.log(` [Worker ${workerId}] Processing ${followers.length} follower relations`);
+  // console.log(` [Worker ${workerId}] Processing ${followers.length} follower relations`);
 
   // Créer la source si elle n'existe pas
   await ensureSourceExists(userId, workerId);
@@ -504,11 +504,11 @@ async function processFollowers(followers: any[], userId: string, workerId: stri
     throw relationsError;
   }
 
-  console.log(` [Worker ${workerId}] Created ${followers.length} follower relations`);
+  // console.log(` [Worker ${workerId}] Created ${followers.length} follower relations`);
 }
 
 async function processFollowing(following: any[], userId: string, workerId: string) {
-  console.log(` [Worker ${workerId}] Processing ${following.length} following relations`);
+  // console.log(` [Worker ${workerId}] Processing ${following.length} following relations`);
 
   // Créer la source si elle n'existe pas
   await ensureSourceExists(userId, workerId);
@@ -543,5 +543,5 @@ async function processFollowing(following: any[], userId: string, workerId: stri
     console.error(` [Worker ${workerId}] Error inserting following relations:`, relationsError);
     throw relationsError;
   }
-  console.log(` [Worker ${workerId}] Created ${following.length} target relations`);
+  // console.log(` [Worker ${workerId}] Created ${following.length} target relations`);
 }

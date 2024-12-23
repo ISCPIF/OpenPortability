@@ -4,7 +4,7 @@ import Image from 'next/image';
 
 import { plex } from '@/app/fonts/plex';
 
-import logoHQX from '../../../public/logo-bg-bleu.svg'
+import logoHQX from '../../../public/logoxHQX/HQX-blanc-FR.svg'
 import seaBackground from '../../../public/sea-wave.svg';
 import Boat from './Boat';
 
@@ -21,7 +21,7 @@ interface SeaProps {
 export default function LoginSea() {
 
   return (
-    <div className="absolute top-0 w-full h-[35rem]">
+    <div className="absolute top-0 left-0 w-full h-[35rem]">
       <Image src={seaBackground} fill alt="" className="object-cover"></Image>
       <Image
         src={logoHQX}

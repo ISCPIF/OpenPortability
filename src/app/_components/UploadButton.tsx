@@ -92,6 +92,14 @@ const validateFile = (file: File): string | null => {
     return 'Type de fichier invalide. Veuillez télécharger un fichier ZIP ou les fichiers following.js et follower.js';
   }
 
+  // Si c'est un fichier zip, on vérifie qu'il correspond au format Twitter
+  if (extension === '.zip') {
+    const zipPattern = /^twitter-\d{4}-\d{2}-\d{2}-[a-f0-9]+\.zip$/i;
+    if (!zipPattern.test(file.name)) {
+      return 'Format du fichier zip invalide. Veuillez télécharger l\'archive Twitter originale.';
+    }
+  }
+
   return null;
 };
 
@@ -140,9 +148,8 @@ export const extractTargetFiles = async (file: File): Promise<ExtractedFile[]> =
   const entries = await reader.getEntries();
 
   // Constantes de sécurité
-  const MAX_COMPRESSION_RATIO = 10; // Ratio maximum de compression accepté
+  const MAX_COMPRESSION_RATIO = 20; // Augmenté à 20 pour accommoder les fichiers Twitter qui sont très compressibles
   const MAX_PATH_LENGTH = 255; // Longueur maximum d'un chemin de fichier
-  const SAFE_PATH_REGEX = /^[a-zA-Z0-9-_/]+$/; // Caractères autorisés dans les chemins
 
   // Vérification de la taille décompressée totale
   let totalUncompressedSize = 0;
@@ -157,12 +164,9 @@ export const extractTargetFiles = async (file: File): Promise<ExtractedFile[]> =
       }
     }
 
-    // Vérification de la longueur et du format du chemin
+    // Vérification de la longueur du chemin
     if (entry.filename.length > MAX_PATH_LENGTH) {
       throw new Error(`Nom de fichier trop long : ${entry.filename}`);
-    }
-    if (!SAFE_PATH_REGEX.test(entry.filename)) {
-      throw new Error(`Nom de fichier invalide : ${entry.filename}`);
     }
     
     // Protection contre le path traversal

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
@@ -12,7 +12,7 @@ import { validateTwitterData, extractTargetFiles } from '../_components/UploadBu
 import Image from 'next/image';
 import seaBackground from '../../../public/sea.svg'
 import { plex } from '../fonts/plex';
-import logoHQX from '../../../public/BannerHQX-rose_FR.svg'
+import logoHQX from '../../../public/logoxHQX/HQX-rose-FR.svg'
 import { motion } from 'framer-motion';
 import boat1 from '../../../public/boats/boat-1.svg'
 
@@ -36,6 +36,7 @@ export default function UploadPage() {
   const [pendingFiles, setPendingFiles] = useState<FileList | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [showHelpModal, setShowHelpModal] = useState(false);
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -387,28 +388,31 @@ export default function UploadPage() {
   return (
     <div className="min-h-screen bg-[#2a39a9] relative w-full max-w-[90rem] m-auto">
       <Header />
-      
-      <div className="relative">
+      <div className="flex justify-center mt-8 mb-8">
         <Image
-          src={seaBackground}
-          alt="Sea background"
-          className="w-full h-auto"
+          src={logoHQX}
+          alt="HelloQuitteX Logo"
+          width={306}
+          height={125}
+          className="mx-auto"
           priority
         />
-        
-        <div className="absolute inset-0 flex flex-col items-center justify-center p-8">
-          <Image
-            src={logoHQX}
-            alt="GoodbyeX Logo"
-            className="w-64 mb-8"
-            priority
-          />
-          
+      </div>
+      <div className="flex justify-center items-center min-h-[60vh]">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-black/40 backdrop-blur-xl rounded-xl border border-black/10 shadow-xl p-8 max-w-2xl w-full"
+            className="bg-black/40 backdrop-blur-xl rounded-xl border border-black/10 shadow-xl p-8 max-w-2xl w-full mx-auto relative"
           >
+            {/* Bouton d'aide */}
+            <button
+              onClick={() => setShowHelpModal(true)}
+              className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors duration-200"
+              aria-label="Aide pour obtenir votre archive Twitter"
+            >
+              ?
+            </button>
+            
             <div className="text-center text-white">
               <h2 className={`${plex.className} text-2xl font-bold mb-6`}>
                 Importez votre archive Twitter pour poursuivre votre 
@@ -428,21 +432,13 @@ export default function UploadPage() {
                 {isUploading && (
                   <div className="flex items-center justify-center space-x-2">
                     <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white"></div>
-                    <span>Processing your files...</span>
+                    <span>Vos fichiers sont en cours de traitement, veuillez rester sur la page jusqu'à la redirection.</span>
                   </div>
                 )}
               </div>
             </div>
           </motion.div>
-          
-          <Image
-            src={boat1}
-            alt="Boat"
-            className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1/2 w-24 animate-float"
-            priority
-          />
-        </div>
-      </div>
+      </div> 
 
       {/* Modals */}
       <ErrorModal
@@ -456,6 +452,34 @@ export default function UploadPage() {
         onDecline={handleConsentDecline}
         isOpen={showConsent}
       />
+
+      {showHelpModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-8 max-w-2xl mx-4 relative">
+            <button
+              onClick={() => setShowHelpModal(false)}
+              className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
+            >
+              ✕
+            </button>
+            <h3 className="text-2xl font-bold mb-4">Comment obtenir votre archive Twitter ?</h3>
+            <div className="space-y-4 text-gray-600">
+              <p>Pour obtenir votre archive Twitter, suivez ces étapes :</p>
+              <ol className="list-decimal list-inside space-y-2">
+                <li>Connectez-vous à votre compte Twitter</li>
+                <li>Allez dans "Plus" dans le menu de gauche</li>
+                <li>Cliquez sur "Paramètres et support" puis "Paramètres et confidentialité"</li>
+                <li>Dans "Votre compte", sélectionnez "Télécharger une archive de vos données"</li>
+                <li>Confirmez votre mot de passe si demandé</li>
+                <li>Cliquez sur "Demander l'archive"</li>
+                <li>Twitter vous enverra un e-mail lorsque votre archive sera prête à être téléchargée</li>
+                <li>Une fois téléchargée, vous pourrez importer le fichier .zip ici</li>
+              </ol>
+              <p className="mt-4 text-sm text-gray-500">Note : La préparation de l'archive par Twitter peut prendre jusqu'à 24 heures.</p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

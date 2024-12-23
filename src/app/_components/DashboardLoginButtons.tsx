@@ -67,6 +67,7 @@ export default function DashboardLoginButtons({
   const [showBlueSkyForm, setShowBlueSkyForm] = useState(false)
   const [showLoginOptions, setShowLoginOptions] = useState(false)
   const [activeButton, setActiveButton] = useState<string | null>(null)
+  const [showMastodonMenu, setShowMastodonMenu] = useState(false)
 
   const handleSignIn = async (provider: string) => {
     onLoadingChange(true)
@@ -114,7 +115,10 @@ export default function DashboardLoginButtons({
         animate="visible"
         whileHover={{ scale: 1.01, y: -2 }}
         whileTap={{ scale: 0.99 }}
-        onClick={() => setShowLoginOptions(!showLoginOptions)}
+        onClick={() => {
+          setShowLoginOptions(!showLoginOptions);
+          setShowMastodonMenu(false);
+        }}
         className="w-full flex items-center justify-between gap-3 px-6 py-4 
                  bg-gradient-to-br from-indigo-500/90 to-indigo-600/90 rounded-2xl
                  hover:from-indigo-500 hover:to-indigo-600
@@ -174,21 +178,82 @@ export default function DashboardLoginButtons({
             )}
 
             {!connectedServices.mastodon && (
-              <motion.button
-                variants={itemVariants}
-                whileHover={{ scale: 1.01, y: -2 }}
-                whileTap={{ scale: 0.99 }}
-                onClick={() => handleSignIn("mastodon")}
-                className="w-full flex items-center justify-center gap-3 px-4 py-4 
-                         bg-gradient-to-br from-purple-500/80 to-purple-600/80 rounded-xl
-                         hover:from-purple-500 hover:to-purple-600
-                         transition-all duration-300 shadow-md hover:shadow-lg hover:shadow-purple-500/20
-                         backdrop-blur-sm relative overflow-hidden group"
-              >
-                <div className="absolute inset-0 bg-gradient-to-br from-purple-400/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                <SiMastodon className="w-5 h-5 relative z-10" />
-                <span className={`${plex.className} relative z-10 text-sm font-medium`}>Mastodon</span>
-              </motion.button>
+              <div className="relative w-full">
+                <AnimatePresence mode="wait">
+                  {!showMastodonMenu ? (
+                    <motion.button
+                      key="mastodon-main"
+                      variants={itemVariants}
+                      initial="hidden"
+                      animate="visible"
+                      exit="exit"
+                      whileHover={{ scale: 1.01, y: -2 }}
+                      whileTap={{ scale: 0.99 }}
+                      onClick={() => setShowMastodonMenu(true)}
+                      onMouseEnter={() => setActiveButton("mastodon")}
+                      onMouseLeave={() => setActiveButton(null)}
+                      className="w-full flex items-center justify-center gap-3 px-4 py-4 
+                               bg-gradient-to-br from-purple-500/80 to-purple-600/80 rounded-xl
+                               hover:from-purple-500 hover:to-purple-600
+                               transition-all duration-300 shadow-md hover:shadow-lg hover:shadow-purple-500/20
+                               backdrop-blur-sm relative overflow-hidden group"
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-br from-purple-400/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                      <motion.div
+                        animate={{
+                          scale: activeButton === "mastodon" ? [1, 1.1, 1] : 1,
+                        }}
+                        transition={{ duration: 0.2 }}
+                        className="relative z-10"
+                      >
+                        <SiMastodon className="w-5 h-5" />
+                      </motion.div>
+                      <span className={`${plex.className} relative z-10 text-sm font-medium`}>Mastodon</span>
+                      <ChevronDown className={`w-4 h-4 ml-2 transition-transform duration-200 relative z-10`} />
+                    </motion.button>
+                  ) : (
+                    <div key="mastodon-options" className="flex gap-3">
+                      <motion.button
+                        variants={itemVariants}
+                        initial="hidden"
+                        animate="visible"
+                        exit="exit"
+                        whileHover={{ scale: 1.01, y: -2 }}
+                        whileTap={{ scale: 0.99 }}
+                        onClick={() => handleSignIn("piaille")}
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-4 
+                                 bg-gradient-to-br from-purple-500/80 to-purple-600/80 rounded-xl
+                                 hover:from-purple-500 hover:to-purple-600
+                                 transition-all duration-300 shadow-md hover:shadow-lg hover:shadow-purple-500/20
+                                 backdrop-blur-sm relative overflow-hidden group"
+                      >
+                        <div className="absolute inset-0 bg-gradient-to-br from-purple-400/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                        <SiMastodon className="w-5 h-5 relative z-10" />
+                        <span className={`${plex.className} relative z-10 text-sm font-medium`}>piaille.fr</span>
+                      </motion.button>
+
+                      <motion.button
+                        variants={itemVariants}
+                        initial="hidden"
+                        animate="visible"
+                        exit="exit"
+                        whileHover={{ scale: 1.01, y: -2 }}
+                        whileTap={{ scale: 0.99 }}
+                        onClick={() => handleSignIn("mastodon")}
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-4 
+                                 bg-gradient-to-br from-purple-500/80 to-purple-600/80 rounded-xl
+                                 hover:from-purple-500 hover:to-purple-600
+                                 transition-all duration-300 shadow-md hover:shadow-lg hover:shadow-purple-500/20
+                                 backdrop-blur-sm relative overflow-hidden group"
+                      >
+                        <div className="absolute inset-0 bg-gradient-to-br from-purple-400/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                        <SiMastodon className="w-5 h-5 relative z-10" />
+                        <span className={`${plex.className} relative z-10 text-sm font-medium`}>mastodon.social</span>
+                      </motion.button>
+                    </div>
+                  )}
+                </AnimatePresence>
+              </div>
             )}
 
             {!connectedServices.bluesky && !showBlueSkyForm && (
