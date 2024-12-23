@@ -144,9 +144,9 @@ export const authConfig = {
     MastodonProvider({
       id: "piaille",
       name: "Piaille",
-      clientId: "TXUajG_HBPiSJnPzvrs5HBmPMhZnso8g7mXqMPwrzr4",
-      clientSecret: "5ydYiv0h8Esn5zvgNo4yF60f9X_KviAfE8a0C6Olvgw",
-      issuer: "https://piaille.fr/",
+      clientId: process.env.AUTH_PIALLE_MASTONDON_ID!,
+      clientSecret: process.env.AUTH_PIAILLE_MASTODON_SECRET!,
+      issuer: process.env.AUTH_PIAILLE_MASTODON_ISSUER!,
       profile(profile: MastodonProfile) {
         return {
           id: profile.id,
