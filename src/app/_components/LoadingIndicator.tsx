@@ -16,7 +16,7 @@ function randomRange(min: number, max: number) {
 export default function LoadingIndicator({ msg }: { msg: string }) {
   const [nextAngle, setNextAngle] = useState(0);
   return (
-    <div className="w-60 h-56 p-10 text-center bg-white rounded-[30px] flex flex-col">
+    <div className="w-60 h-56 p-10 text-center bg-white rounded-[30px] flex flex-col z-10 relative">
       <div className="m-auto">
         <Image
           src={compass}

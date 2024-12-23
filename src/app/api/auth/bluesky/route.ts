@@ -25,6 +25,16 @@ export async function POST(req: Request) {
     });
 
     if (existingUser) {
+      // If the Bluesky account is already linked to another user
+      if (userId && existingUser.id !== userId) {
+        return NextResponse.json(
+          { 
+            success: false, 
+            error: 'This Bluesky account is already linked to another user'
+          },
+          { status: 409 }
+        );
+      }
       // User exists, update their profile
       userId = existingUser.id;
       user = await supabaseAdapter.updateUser(userId, {
@@ -37,6 +47,7 @@ export async function POST(req: Request) {
         }
       });
     } else if (userId) {
+      console.log(`User $userId is logged in but not linked to this Bluesky account`);
       // User is logged in but not linked to this Bluesky account
       user = await supabaseAdapter.updateUser(userId, {
         provider: 'bluesky',

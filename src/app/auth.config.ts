@@ -9,7 +9,7 @@ import type { AdapterUser } from "next-auth/adapters"
 
 export const authConfig = {
   adapter: supabaseAdapter,
-  debug: true,
+  // debug: true,
   secret: process.env.NEXTAUTH_SECRET,
   trustHost: true,
   cookies: {
@@ -35,21 +35,21 @@ export const authConfig = {
       console.log("SignIn callback - Account:", account);
 
       // Si c'est une erreur liée à Twitter
-      if (account?.provider === 'twitter' && error) {
-        return `/auth/error?error=${encodeURIComponent("Twitter est temporairement indisponible. Veuillez réessayer dans quelques minutes.")}&provider=twitter`;
-      }
+      // if (account?.provider === 'twitter' && error) {
+      //   return `/auth/error?error=${encodeURIComponent("Twitter est temporairement indisponible. Veuillez réessayer dans quelques minutes.")}&provider=twitter`;
+      // }
       
       // Si c'est une erreur de rate limit
-      if (profile && 'error' in profile) {
-        console.log("Rate limit error detected in signIn");
-        const errorMessage = `Twitter - ${profile.error.title} (${profile.error.status}): ${profile.error.detail || 'Veuillez réessayer dans quelques minutes.'}`;
-        return `/auth/error?error=${encodeURIComponent(errorMessage)}&provider=twitter`;
-      }
+      // if (profile && 'error' in profile) {
+      //   console.log("Rate limit error detected in signIn");
+      //   const errorMessage = `Twitter - ${profile.error.title} (${profile.error.status}): ${profile.error.detail || 'Veuillez réessayer dans quelques minutes.'}`;
+      //   return `/auth/error?error=${encodeURIComponent(errorMessage)}&provider=twitter`;
+      // }
 
-      // Si pas d'utilisateur à cause du rate limit
-      if (!user && profile?.status === 429) {
-        return `/auth/error?error=${encodeURIComponent("Twitter est temporairement indisponible en raison d'un trop grand nombre de requêtes. Veuillez réessayer dans quelques minutes.")}&provider=twitter`;
-      }
+      // // Si pas d'utilisateur à cause du rate limit
+      // if (!user && profile?.status === 429) {
+      //   return `/auth/error?error=${encodeURIComponent("Twitter est temporairement indisponible en raison d'un trop grand nombre de requêtes. Veuillez réessayer dans quelques minutes.")}&provider=twitter`;
+      // }
 
       if (!user?.id) {
         console.error("No user ID provided in signIn callback")
@@ -63,7 +63,7 @@ export const authConfig = {
             profile: profile as TwitterData
           })
         }
-        else if (account?.provider === 'mastodon' && profile && 'url' in profile) {
+        else if ((account?.provider === 'mastodon' || account?.provider === 'piaille') && profile && 'url' in profile) {
           await supabaseAdapter.updateUser(user.id, {
             provider: 'mastodon',
             profile: profile as MastodonProfile
@@ -102,15 +102,20 @@ export const authConfig = {
       async profile(profile, tokens) {
         console.log("Twitter profile response:", profile);
 
-        // Check for rate limit error
-        if (profile.status === 429 || (profile.title === "Too Many Requests")) {
-          console.log("Twitter rate limit detected");
-          return null
+        if (profile.status === 429 || profile.detail =="Too Many Requests") {
+          console.log("Twitter rate limit detected in profile");
+          throw new Error("RATE_LIMIT");
         }
 
+        // Si le profil est invalide
+        if (!profile || !profile.data) {
+          console.log("Invalid Twitter profile:", profile);
+          throw new Error("INVALID_PROFILE");
+        }
         return {
           id: profile.data.id,
           name: profile.data.name,
+          email:null,
           provider: 'twitter',
           profile: profile,
           has_onboarded: false
@@ -126,6 +131,22 @@ export const authConfig = {
       clientId: process.env.AUTH_MASTODON_ID!,
       clientSecret: process.env.AUTH_MASTODON_SECRET!,
       issuer: process.env.AUTH_MASTODON_ISSUER!,
+      profile(profile: MastodonProfile) {
+        return {
+          id: profile.id,
+          name: profile.display_name,
+          provider: 'mastodon',
+          profile: profile,
+          has_onboarded: false
+        }
+      }
+    }),
+    MastodonProvider({
+      id: "piaille",
+      name: "Piaille",
+      clientId: "TXUajG_HBPiSJnPzvrs5HBmPMhZnso8g7mXqMPwrzr4",
+      clientSecret: "5ydYiv0h8Esn5zvgNo4yF60f9X_KviAfE8a0C6Olvgw",
+      issuer: "https://piaille.fr/",
       profile(profile: MastodonProfile) {
         return {
           id: profile.id,

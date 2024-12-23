@@ -29,6 +29,26 @@ services:
       - app_network
     command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
 
+  worker:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    env_file:
+      - ./worker/.env
+    environment:
+      - NODE_ENV=production
+    networks:
+      - app_network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - shared-tmp:/app/tmp
+    depends_on:
+      - app
+
 networks:
   app_network:
     driver: bridge
+
+volumes:
+  shared-tmp:
