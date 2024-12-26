@@ -6,33 +6,26 @@ import * as zip from '@zip.js/zip.js';
 import { motion } from 'framer-motion';
 import { Upload, Loader2, CheckCircle, XCircle } from 'lucide-react';
 import { plex } from '../fonts/plex';
-
-const MAX_FILE_SIZE = 1000 * 1024 * 1024;
-const ALLOWED_TYPES = ['.zip', '.js'];
-const TARGET_FILES = ['data/following.js', 'data/follower.js'];
-const REQUIRED_FILES = ['following.js', 'follower.js'];
-
-interface ExtractedFile {
-  name: string;
-  content: Uint8Array;
-}
+import {
+  ExtractedFile,
+  TwitterData,
+  validateFile,
+  validateFiles,
+  validateTwitterData,
+  sanitizeContent,
+  mergePartFiles,
+  normalizeFilePath,
+  MAX_FILE_SIZE,
+  ALLOWED_TYPES,
+  TARGET_FILES,
+  REQUIRED_FILES
+} from '@/lib/upload_utils';
 
 interface UnzipProgress {
   fileName: string;
   progress: number;
   status: 'pending' | 'extracting' | 'done' | 'error';
   message?: string;
-}
-
-interface TwitterData {
-  following?: {
-    accountId: string;
-    userLink: string;
-  };
-  follower?: {
-    accountId: string;
-    userLink: string;
-  };
 }
 
 interface UploadButtonProps {
@@ -42,264 +35,120 @@ interface UploadButtonProps {
   filesToProcess?: FileList | null;
 }
 
-const normalizeFilePath = (path: string): string => {
-  return path.replace(/\\/g, '/').replace(/^\.?\/+/, '').toLowerCase();
-};
+const processFiles = async (files: FileList): Promise<{ name: string; content: Uint8Array }[]> => {
+  console.log('🎯 Début du traitement des fichiers...', {
+    nbFiles: files.length,
+    fileNames: Array.from(files).map(f => f.name)
+  });
 
-export const validateTwitterData = (content: string, type: 'following' | 'follower'): string | null => {
-  const prefix = `window.YTD.${type}.part0 = `;
-  
-  if (!content.startsWith(prefix)) {
-    return `Format de fichier invalide : ${type}.js doit commencer par "${prefix}"`;
+  // Validation des fichiers
+  const validationError = validateFiles(files);
+  if (validationError) {
+    throw new Error(validationError);
   }
 
-  try {
-    // Remove the prefix and parse the JSON
-    const jsonStr = content.substring(prefix.length);
-    const data = JSON.parse(jsonStr) as TwitterData[];
+  // Convertir FileList en array pour manipulation
+  const fileArray = Array.from(files);
+  const fileNames = fileArray.map(f => f.name.toLowerCase());
 
-    // Validate each entry
-    for (const entry of data) {
-      const item = entry[type];
-      if (!item) {
-        return `Structure de données ${type} invalide`;
-      }
+  // Détecter les différents types de fichiers
+  const followerParts = fileArray.filter(f => /follower-part\d+\.js/.test(f.name.toLowerCase()));
+  const followingParts = fileArray.filter(f => /following-part\d+\.js/.test(f.name.toLowerCase()));
+  const standardFollowingFile = fileArray.find(f => f.name.toLowerCase() === 'following.js');
+  const standardFollowerFile = fileArray.find(f => f.name.toLowerCase() === 'follower.js');
 
-      const { accountId, userLink } = item;
-      if (!accountId || !userLink) {
-        return `Champs requis manquants dans les données ${type}`;
-      }
+  console.log('📄 Fichiers détectés:', {
+    followerParts: followerParts.map(f => f.name),
+    followingParts: followingParts.map(f => f.name),
+    standardFollowing: standardFollowingFile?.name || 'manquant',
+    standardFollower: standardFollowerFile?.name || 'manquant'
+  });
 
-      const expectedUserLink = `https://twitter.com/intent/user?user_id=${accountId}`;
-      if (userLink !== expectedUserLink) {
-        return `Format de lien utilisateur invalide dans les données ${type}`;
-      }
-    }
-
-    return null;
-  } catch (error) {
-    return `JSON invalide dans ${type}.js : ${error instanceof Error ? error.message : 'Erreur inconnue'}`;
-  }
-};
-
-const validateFile = (file: File): string | null => {
-  if (file.size > MAX_FILE_SIZE) {
-    return 'La taille du fichier dépasse la limite de 50MB';
-  }
-
-  const extension = '.' + file.name.split('.').pop()?.toLowerCase();
-  if (!ALLOWED_TYPES.includes(extension)) {
-    return 'Type de fichier invalide. Veuillez télécharger un fichier ZIP ou les fichiers following.js et follower.js';
+  // Traiter les fichiers follower
+  let followerData: any[] = [];
+  if (followerParts.length > 0) {
+    console.log('🔄 Traitement des parts follower...');
+    const extractedFiles: ExtractedFile[] = await Promise.all(
+      followerParts.map(async file => ({
+        name: file.name,
+        content: new Uint8Array(await file.arrayBuffer())
+      }))
+    );
+    const { content, count } = mergePartFiles(extractedFiles, 'follower');
+    followerData = JSON.parse(new TextDecoder().decode(content).split('=')[1]);
+  } else if (standardFollowerFile) {
+    console.log('📄 Lecture du follower.js standard...');
+    const content = await standardFollowerFile.text();
+    const validationError = validateTwitterData(content, 'follower');
+    if (validationError) throw new Error(validationError);
+    followerData = JSON.parse(content.split('=')[1]);
   }
 
-  // Si c'est un fichier zip, on vérifie qu'il correspond au format Twitter
-  if (extension === '.zip') {
-    const zipPattern = /^twitter-\d{4}-\d{2}-\d{2}-[a-f0-9]+\.zip$/i;
-    if (!zipPattern.test(file.name)) {
-      return 'Format du fichier zip invalide. Veuillez télécharger l\'archive Twitter originale.';
-    }
+  // Traiter les fichiers following
+  let followingData: any[] = [];
+  if (followingParts.length > 0) {
+    console.log('🔄 Traitement des parts following...');
+    const extractedFiles: ExtractedFile[] = await Promise.all(
+      followingParts.map(async file => ({
+        name: file.name,
+        content: new Uint8Array(await file.arrayBuffer())
+      }))
+    );
+    const { content, count } = mergePartFiles(extractedFiles, 'following');
+    followingData = JSON.parse(new TextDecoder().decode(content).split('=')[1]);
+  } else if (standardFollowingFile) {
+    console.log('📄 Lecture du following.js standard...');
+    const content = await standardFollowingFile.text();
+    const validationError = validateTwitterData(content, 'following');
+    if (validationError) throw new Error(validationError);
+    followingData = JSON.parse(content.split('=')[1]);
   }
 
-  return null;
-};
+  // Créer les fichiers finaux
+  const result: { name: string; content: Uint8Array }[] = [];
 
-const validateFiles = (files: FileList): string | null => {
-  if (files.length === 0) {
-    return 'Aucun fichier sélectionné';
+  if (followerData.length > 0) {
+    const followerContent = `window.YTD.follower.part0 = ${JSON.stringify(followerData)}`;
+    result.push({
+      name: 'follower.js',
+      content: sanitizeContent(new TextEncoder().encode(followerContent))
+    });
+    console.log('✅ follower.js généré:', { entries: followerData.length });
   }
 
-  // Check if it's a single ZIP file
-  if (files.length === 1 && files[0].name.toLowerCase().endsWith('.zip')) {
-    return validateFile(files[0]);
+  if (followingData.length > 0) {
+    const followingContent = `window.YTD.following.part0 = ${JSON.stringify(followingData)}`;
+    result.push({
+      name: 'following.js',
+      content: sanitizeContent(new TextEncoder().encode(followingContent))
+    });
+    console.log('✅ following.js généré:', { entries: followingData.length });
   }
 
-  // Check if they are JS files
-  if (files.length === 2) {
-    const fileNames = Array.from(files).map(f => f.name.toLowerCase());
-    
-    // Check if both files are .js
-    if (!fileNames.every(name => name.endsWith('.js'))) {
-      return 'Lorsque vous téléchargez des fichiers individuels, les deux doivent être des fichiers .js';
-    }
-
-    // Check if we have both following.js and follower.js
-    const hasFollowing = fileNames.some(name => name === 'following.js');
-    const hasFollower = fileNames.some(name => name === 'follower.js');
-
-    if (!hasFollowing || !hasFollower) {
-      return 'Veuillez télécharger les deux fichiers following.js et follower.js';
-    }
-
-    // Check file sizes
-    for (const file of files) {
-      const sizeError = validateFile(file);
-      if (sizeError) return sizeError;
-    }
-
-    return null;
-  }
-
-  return 'Veuillez télécharger soit un fichier ZIP, soit exactement les deux fichiers following.js et follower.js';
+  return result;
 };
 
 export const extractTargetFiles = async (file: File): Promise<ExtractedFile[]> => {
-  const extractedFiles: ExtractedFile[] = [];
-  const reader = new zip.ZipReader(new zip.BlobReader(file));
-  const entries = await reader.getEntries();
-
-  // Constantes de sécurité
-  const MAX_COMPRESSION_RATIO = 20; // Augmenté à 20 pour accommoder les fichiers Twitter qui sont très compressibles
-  const MAX_PATH_LENGTH = 255; // Longueur maximum d'un chemin de fichier
-
-  // Vérification de la taille décompressée totale
-  let totalUncompressedSize = 0;
-  for (const entry of entries) {
-    totalUncompressedSize += entry.uncompressedSize;
-    
-    // Vérification du ratio de compression pour chaque fichier
-    if (entry.uncompressedSize > 0 && entry.compressedSize > 0) {
-      const ratio = entry.uncompressedSize / entry.compressedSize;
-      if (ratio > MAX_COMPRESSION_RATIO) {
-        throw new Error(`Ratio de compression suspect détecté (${ratio.toFixed(2)}x) pour ${entry.filename}`);
-      }
-    }
-
-    // Vérification de la longueur du chemin
-    if (entry.filename.length > MAX_PATH_LENGTH) {
-      throw new Error(`Nom de fichier trop long : ${entry.filename}`);
-    }
-    
-    // Protection contre le path traversal
-    const normalizedPath = normalizeFilePath(entry.filename);
-    if (normalizedPath.includes('..') || normalizedPath.startsWith('/')) {
-      throw new Error(`Chemin de fichier non sécurisé détecté : ${entry.filename}`);
-    }
-  }
-
-  // Vérification de la taille totale décompressée
-  const maxUncompressedSize = MAX_FILE_SIZE * 2; // 2x la taille max du fichier compressé
-  if (totalUncompressedSize > maxUncompressedSize) {
-    throw new Error(`Taille décompressée totale trop importante : ${(totalUncompressedSize / 1024 / 1024).toFixed(2)}MB`);
-  }
-
-  const targetFileNames = ['following.js', 'follower.js'];
-
-  // Initialiser la progression pour les deux fichiers
-  const progressMap = new Map<string, number>();
-  targetFileNames.forEach(fileName => progressMap.set(fileName, 0));
-
-  // Fonction pour mettre à jour la progression
-  const updateProgress = () => {
-    const progressArray = Array.from(progressMap.entries()).map(([fileName, progress]) => ({
-      fileName,
-      progress,
-      status: progress === 100 ? 'done' : 'extracting' as UnzipProgress['status']
-    }));
-    window.dispatchEvent(new CustomEvent('unzipProgress', { detail: progressArray }));
-  };
-
-  // Initialiser l'affichage de la progression
-  updateProgress();
-
-  const processFile = async (entry: zip.Entry) => {
-    const fileName = entry.filename.split('/').pop();
-    if (!fileName || !targetFileNames.includes(fileName)) return null;
-
-    try {
-      const data = await entry.getData(new zip.Uint8ArrayWriter(), {
-        onprogress: (processed: number) => {
-          const progress = Math.round((processed / entry.uncompressedSize) * 100);
-          progressMap.set(fileName, progress);
-          updateProgress();
-        }
-      });
-
-      progressMap.set(fileName, 100);
-      updateProgress();
-
-      return {
-        name: fileName,
-        content: data
-      };
-    } catch (error) {
-      const errorProgress = {
-        fileName,
-        progress: 0,
-        status: 'error' as const,
-        message: error instanceof Error ? error.message : 'Erreur lors de l\'extraction'
-      };
-      window.dispatchEvent(new CustomEvent('unzipProgress', { 
-        detail: [errorProgress, ...Array.from(progressMap.entries())
-          .filter(([name]) => name !== fileName)
-          .map(([name, progress]) => ({
-            fileName: name,
-            progress,
-            status: progress === 100 ? 'done' : 'extracting' as UnzipProgress['status']
-          }))]
-      }));
-      return null;
-    }
-  };
-
-  // Traiter tous les fichiers en parallèle
-  const results = await Promise.all(
-    entries
-      .filter(entry => targetFileNames.includes(entry.filename.split('/').pop() || ''))
-      .map(processFile)
-  );
-
-  // Filtrer les résultats null (en cas d'erreur)
-  const validFiles = results.filter((result): result is ExtractedFile => result !== null);
-  extractedFiles.push(...validFiles);
-
-  await reader.close();
-
-  // Vérifier qu'on a bien les deux fichiers requis
-  const foundFiles = new Set(validFiles.map(f => f.name));
-  const missingFiles = targetFileNames.filter(name => !foundFiles.has(name));
+  const zipReader = new zip.ZipReader(new zip.BlobReader(file));
+  const entries = await zipReader.getEntries();
   
-  if (missingFiles.length > 0) {
-    throw new Error(`Fichiers manquants dans l'archive ZIP : ${missingFiles.join(', ')}`);
-  }
-
-  return extractedFiles;
-};
-
-export const processFiles = async (files: FileList): Promise<{ name: string; content: Uint8Array }[]> => {
-  const processedFiles: { name: string; content: Uint8Array }[] = [];
-
-  // If it's a ZIP file
-  if (files.length === 1 && files[0].name.toLowerCase().endsWith('.zip')) {
-    const extractedFiles = await extractTargetFiles(files[0]);
-    if (extractedFiles.length === 0) {
-      throw new Error('Aucun fichier valide trouvé dans l\'archive ZIP');
+  const targetFiles: ExtractedFile[] = [];
+  for (const entry of entries) {
+    const normalizedPath = normalizeFilePath(entry.filename);
+    if (TARGET_FILES.includes(normalizedPath)) {
+      const content = new Uint8Array(await entry.getData!(new zip.Uint8ArrayWriter()));
+      const name = normalizedPath.split('/').pop()!;
+      targetFiles.push({ name, content });
     }
-    return extractedFiles;
   }
-
-  // If it's direct file upload
-  const fileNames = Array.from(files).map(f => f.name.toLowerCase());
-  const missingFiles = REQUIRED_FILES.filter(required => 
-    !fileNames.some(name => name.toLowerCase() === required.toLowerCase())
-  );
-
-  if (missingFiles.length > 0) {
-    throw new Error(`Fichiers manquants : ${missingFiles.join(', ')}`);
-  }
-
-  // Process each file
-  for (const file of files) {
-    const arrayBuffer = await file.arrayBuffer();
-    processedFiles.push({
-      name: file.name,
-      content: new Uint8Array(arrayBuffer)
-    });
-  }
-
-  return processedFiles;
+  
+  await zipReader.close();
+  return targetFiles;
 };
 
-export default function UploadButton({ onUploadComplete, onError, onFilesSelected, filesToProcess }: UploadButtonProps) {
+export { validateTwitterData };
+
+const UploadButton = ({ onUploadComplete, onError, onFilesSelected, filesToProcess }: UploadButtonProps) => {
   const { data: session } = useSession();
   const [isUploading, setIsUploading] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
@@ -499,4 +348,6 @@ export default function UploadButton({ onUploadComplete, onError, onFilesSelecte
       )}
     </div>
   );
-}
+};
+
+export default UploadButton;

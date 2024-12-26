@@ -67,130 +67,71 @@ export default function UploadPage() {
   };
 
   const validateFiles = (files: FileList): string | null => {
+    console.log('🔍 Validating files...', {
+      numberOfFiles: files.length,
+      fileNames: Array.from(files).map(f => f.name)
+    });
+
     if (files.length === 0) {
       return 'No files selected';
     }
 
     // Check if it's a single ZIP file
     if (files.length === 1 && files[0].name.toLowerCase().endsWith('.zip')) {
+      console.log('📦 ZIP file detected');
       return validateFile(files[0]);
     }
 
-    // Check if they are JS files
-    if (files.length === 2) {
-      const fileNames = Array.from(files).map(f => f.name.toLowerCase());
+    const fileArray = Array.from(files);
+    const fileNames = fileArray.map(f => f.name.toLowerCase());
 
-      // Check if both files are .js
-      if (!fileNames.every(name => name.endsWith('.js'))) {
-        return 'When uploading individual files, both must be .js files';
-      }
+    // Check if all files are .js
+    if (!fileNames.every(name => name.endsWith('.js'))) {
+      return 'All files must be .js files';
+    }
 
-      // Check if we have both following.js and follower.js
-      const hasFollowing = fileNames.some(name => name === 'following.js');
-      const hasFollower = fileNames.some(name => name === 'follower.js');
+    console.log('📄 Analyzing JS files:', fileNames);
 
-      if (!hasFollowing || !hasFollower) {
-        return 'Please upload both following.js and follower.js files';
-      }
+    // Case 1: Standard case (following.js + follower.js)
+    const hasStandardFollowing = fileNames.includes('following.js');
+    const hasStandardFollower = fileNames.includes('follower.js');
+    
+    // Case 2: Split files case
+    const followerParts = fileArray.filter(f => /follower-part\d+\.js/.test(f.name.toLowerCase()));
+    const followingParts = fileArray.filter(f => /following-part\d+\.js/.test(f.name.toLowerCase()));
+    const hasSplitFollower = followerParts.length > 0;
+    const hasSplitFollowing = followingParts.length > 0;
 
-      // Check file sizes
-      for (const file of files) {
-        const sizeError = validateFile(file);
-        if (sizeError) return sizeError;
-      }
+    console.log('📊 Files status:', {
+      hasStandardFollowing,
+      hasStandardFollower,
+      followerParts: followerParts.length > 0 ? followerParts.map(f => f.name) : 'none',
+      followingParts: followingParts.length > 0 ? followingParts.map(f => f.name) : 'none'
+    });
 
+    // Check file sizes in all cases
+    for (const file of files) {
+      const sizeError = validateFile(file);
+      if (sizeError) return sizeError;
+    }
+
+    // Validate combinations
+    if (hasStandardFollowing && hasStandardFollower && files.length === 2) {
+      console.log('✅ Standard case validated');
+      return null;
+    } else if (hasSplitFollower && hasSplitFollowing) {
+      console.log('✅ Split files case validated (both)');
+      return null;
+    } else if (hasStandardFollowing && hasSplitFollower) {
+      console.log('✅ Split files case validated (follower only)');
+      return null;
+    } else if (hasSplitFollowing && hasStandardFollower) {
+      console.log('✅ Split files case validated (following only)');
       return null;
     }
 
-    return 'Please upload either a ZIP file or both following.js and follower.js files';
-  };
-
-  const validateJsonFormat = (content: string, type: 'follower' | 'following'): boolean => {
-    try {
-      console.log(`🔍 Validating ${type}.js content structure`);
-      
-      // Vérifier le préfixe attendu
-      const expectedPrefix = `window.YTD.${type}.part0 = `;
-      if (!content.trim().startsWith(expectedPrefix)) {
-        console.log(`❌ Invalid prefix for ${type}.js`);
-        console.log(`Expected: "${expectedPrefix}"`);
-        console.log(`Actual: "${content.trim().substring(0, 50)}..."`);
-        return false;
-      }
-      console.log(`✅ Valid prefix found for ${type}.js`);
-
-      // Nettoyer et parser le JSON
-      const cleanedContent = content.replace(expectedPrefix, '');
-      console.log(`🧹 Cleaned content length: ${cleanedContent.length} characters`);
-      console.log(`🧹 First 100 characters of cleaned content:`, cleanedContent.substring(0, 100));
-      
-      const data = JSON.parse(cleanedContent);
-      console.log(`📦 Parsed JSON data:`, {
-        type: typeof data,
-        isArray: Array.isArray(data),
-        length: Array.isArray(data) ? data.length : 'N/A',
-        firstItem: Array.isArray(data) && data.length > 0 ? data[0] : null
-      });
-      
-      if (!Array.isArray(data)) {
-        console.log(`❌ Content is not an array in ${type}.js`);
-        console.log(`Type received: ${typeof data}`);
-        return false;
-      }
-      
-      // Vérifier la structure des données
-      let invalidItems = [];
-      const isValid = data.every((item, index) => {
-        // Extraire les données imbriquées
-        const userData = item[type];
-        
-        // Log de la structure de l'item
-        console.log(`📝 Checking item ${index} structure:`, {
-          hasTypeKey: type in item,
-          userData,
-          actualKeys: userData ? Object.keys(userData) : []
-        });
-
-        const itemValid = (
-          typeof item === 'object' &&
-          item !== null &&
-          type in item &&
-          typeof userData === 'object' &&
-          userData !== null &&
-          typeof userData.accountId === 'string' &&
-          typeof userData.userLink === 'string'
-        );
-        
-        if (!itemValid) {
-          invalidItems.push({
-            index,
-            item,
-            issues: {
-              notObject: typeof item !== 'object',
-              isNull: item === null,
-              missingTypeKey: !(type in item),
-              invalidUserData: !userData || typeof userData !== 'object',
-              invalidAccountId: userData && typeof userData.accountId !== 'string',
-              invalidUserLink: userData && typeof userData.userLink !== 'string'
-            }
-          });
-        }
-        return itemValid;
-      });
-
-      if (!isValid) {
-        console.log(`❌ Invalid data structure in ${type}.js`);
-        console.log('Detailed issues with invalid items:', invalidItems);
-      } else {
-        console.log(`✅ All ${data.length} items in ${type}.js are valid`);
-      }
-
-      return isValid;
-    } catch (error) {
-      console.log(`❌ JSON parsing error in ${type}.js:`, error);
-      console.log('Content causing error:', content.substring(0, 200));
-      return false;
-    }
+    console.log('❌ Invalid file combination');
+    return 'Please upload either a ZIP file, following.js + follower.js, or their split versions (following-part*.js/follower-part*.js)';
   };
 
   const validateFileType = (file: File): boolean => {
@@ -207,103 +148,168 @@ export default function UploadPage() {
     return new TextEncoder().encode(sanitized);
   };
 
+  const mergePartFiles = (files: ExtractedFile[], type: 'follower' | 'following'): { content: Uint8Array; count: number } => {
+    console.log(`🔄 Fusion des fichiers ${type}:`, files.map(f => f.name));
+    
+    // Trier les fichiers par numéro de part
+    const sortedFiles = files.sort((a, b) => {
+      const numA = parseInt(a.name.match(/part(\d+)/)?.[1] || '0');
+      const numB = parseInt(b.name.match(/part(\d+)/)?.[1] || '0');
+      return numA - numB;
+    });
+
+    console.log('📋 Ordre de traitement:', sortedFiles.map(f => f.name));
+
+    // Extraire et fusionner les données
+    let mergedContent = '';
+    let totalCount = 0;
+
+    sortedFiles.forEach((file, index) => {
+      const isLast = index === sortedFiles.length - 1;
+      const text = new TextDecoder().decode(file.content);
+      console.log(`📖 Traitement de ${file.name}...`);
+      
+      // Trouver les indices de début et fin
+      const startBracket = text.indexOf('[');
+      if (startBracket === -1) {
+        throw new Error(`Format invalide dans ${file.name}: "[" non trouvé`);
+      }
+
+      // Extraire le contenu entre [ et ]
+      let content = text.substring(startBracket + 1);
+      if (!isLast) {
+        // Pour tous les fichiers sauf le dernier, on enlève le ] final
+        const endBracket = content.lastIndexOf(']');
+        if (endBracket === -1) {
+          throw new Error(`Format invalide dans ${file.name}: "]" non trouvé`);
+        }
+        content = content.substring(0, endBracket);
+      }
+
+      // Compter les objets dans ce fichier
+      const objectCount = (content.match(/"follower"\s*:/g) || []).length;
+      console.log(`📊 ${file.name}: ${objectCount} objets trouvés`);
+      totalCount += objectCount;
+
+      // Ajouter une virgule entre les fichiers (sauf pour le premier morceau)
+      if (index > 0 && content.trim()) {
+        mergedContent += ',';
+      }
+      
+      mergedContent += content;
+    });
+
+    console.log(`📊 Total ${type}: ${totalCount} entrées`);
+    
+    // Recréer le contenu avec le bon préfixe
+    const finalContent = `window.YTD.${type}.part0 = [${mergedContent}`;
+    return {
+      content: new TextEncoder().encode(finalContent),
+      count: totalCount
+    };
+  };
+
   const processFiles = async (files: FileList) => {
     try {
       console.log('🔄 Starting file processing', {
         numberOfFiles: files.length,
-        files: Array.from(files).map(f => ({
-          name: f.name,
-          type: f.type,
-          size: f.size
-        }))
+        files: Array.from(files).map(f => ({ name: f.name, size: f.size }))
       });
 
-      // 1. Validation initiale des fichiers
-      console.log('🔍 Validating files...');
+      // Validation initiale...
       const validationError = validateFiles(files);
-      if (validationError) {
-        console.log('❌ File validation failed:', validationError);
-        throw new Error(validationError);
-      }
-      console.log('✅ Initial file validation passed');
-
-      // 2. Vérification du type MIME
-      console.log('🔍 Checking MIME types...');
+      if (validationError) throw new Error(validationError);
+      
+      // Vérification MIME...
       for (const file of Array.from(files)) {
         if (!validateFileType(file)) {
-          console.log('❌ Invalid MIME type:', file.type, 'for file:', file.name);
-          throw new Error(`Invalid file type for ${file.name}. Only .js and .zip files are allowed.`);
+          throw new Error(`Invalid file type for ${file.name}`);
         }
       }
-      console.log('✅ MIME type validation passed');
 
       let processedFiles: ExtractedFile[] = [];
-      let fileCounts = {
-        follower: 0,
-        following: 0
-      };
-
-      // 3. Traitement des fichiers
+      const formData = new FormData();
+      const fileCounts = { follower: 0, following: 0 };
+      
+      // Traitement ZIP ou fichiers directs...
       if (files.length === 1 && files[0].name.toLowerCase().endsWith('.zip')) {
-        console.log('📦 Processing ZIP file:', files[0].name);
         processedFiles = await extractTargetFiles(files[0]);
-        console.log('📂 Extracted files:', processedFiles.map(f => f.name));
-        
         if (processedFiles.length === 0) {
-          console.log('❌ No valid files found in ZIP archive');
           throw new Error('No valid files found in ZIP archive');
         }
       } else {
-        console.log('📑 Processing direct JS files');
         processedFiles = await Promise.all(
-          Array.from(files).map(async (file) => {
-            console.log(`📄 Processing ${file.name}...`);
-            return {
-              name: file.name,
-              content: new Uint8Array(await file.arrayBuffer())
-            };
-          })
+          Array.from(files).map(async (file) => ({
+            name: file.name,
+            content: new Uint8Array(await file.arrayBuffer())
+          }))
         );
       }
 
-      // 4. Validation et sanitisation du contenu
-      console.log('🔍 Validating file contents...');
-      const formData = new FormData();
-      for (const { name, content } of processedFiles) {
-        console.log(`\n📄 Processing ${name}...`);
+      // Détecter les fichiers en parties
+      const followerParts = processedFiles.filter(f => f.name.toLowerCase().includes('follower-part'));
+      const followingParts = processedFiles.filter(f => f.name.toLowerCase().includes('following-part'));
+      
+      // Traiter les fichiers followers
+      if (followerParts.length > 0) {
+        console.log('🔄 Fusion des fichiers follower...');
+        const { content, count } = mergePartFiles(followerParts, 'follower');
+        
+        // Valider le contenu fusionné
         const textContent = new TextDecoder().decode(content);
-        const type = name.toLowerCase().includes('following') ? 'following' : 'follower';
-        
-        console.log(`🔍 Validating Twitter data format for ${name}`);
-        const validationError = validateTwitterData(textContent, type);
+        const validationError = validateTwitterData(textContent, 'follower');
         if (validationError) {
-          console.log('❌ Twitter data validation failed:', validationError);
-          throw new Error(`Invalid Twitter data in ${name}: ${validationError}`);
+          throw new Error(`Invalid follower data: ${validationError}`);
         }
-        console.log(`✅ Twitter data validation passed for ${name}`);
-
-        // Compter le nombre d'objets
-        const cleanedContent = textContent.replace(`window.YTD.${type}.part0 = `, '');
-        const data = JSON.parse(cleanedContent);
-        fileCounts[type] = data.length;
-        console.log(`📊 Found ${data.length} items in ${name}`);
-
-        console.log(`🧹 Sanitizing content for ${name}`);
-        const sanitizedContent = sanitizeContent(content);
-        console.log(`✅ Content sanitized for ${name}`);
-
-        const fileName = type === 'following' ? 'following.js' : 'follower.js';
-        formData.append('files', new Blob([sanitizedContent], { 
-          type: 'application/javascript' 
-        }), fileName);
         
-        // Ajouter les comptages au FormData
-        formData.append(`${type}Count`, data.length.toString());
-        console.log(`✅ File ${fileName} added to FormData with ${data.length} items`);
+        formData.append('files', new Blob([content], { type: 'application/javascript' }), 'follower.js');
+        fileCounts.follower = count;
+      } else {
+        // Chercher le fichier follower.js standard
+        const followerFile = processedFiles.find(f => f.name.toLowerCase() === 'follower.js');
+        if (followerFile) {
+          const textContent = new TextDecoder().decode(followerFile.content);
+          const validationError = validateTwitterData(textContent, 'follower');
+          if (validationError) {
+            throw new Error(`Invalid follower data: ${validationError}`);
+          }
+          formData.append('files', new Blob([followerFile.content], { type: 'application/javascript' }), 'follower.js');
+          fileCounts.follower = (textContent.match(/"follower"\s*:/g) || []).length;
+        }
       }
 
-      // 5. Envoi au serveur
-      console.log('📤 Sending files to server...');
+      // Traiter les fichiers following (même logique)
+      if (followingParts.length > 0) {
+        console.log('� Fusion des fichiers following...');
+        const { content, count } = mergePartFiles(followingParts, 'following');
+        
+        const textContent = new TextDecoder().decode(content);
+        const validationError = validateTwitterData(textContent, 'following');
+        if (validationError) {
+          throw new Error(`Invalid following data: ${validationError}`);
+        }
+        
+        formData.append('files', new Blob([content], { type: 'application/javascript' }), 'following.js');
+        fileCounts.following = count;
+      } else {
+        const followingFile = processedFiles.find(f => f.name.toLowerCase() === 'following.js');
+        if (followingFile) {
+          const textContent = new TextDecoder().decode(followingFile.content);
+          const validationError = validateTwitterData(textContent, 'following');
+          if (validationError) {
+            throw new Error(`Invalid following data: ${validationError}`);
+          }
+          formData.append('files', new Blob([followingFile.content], { type: 'application/javascript' }), 'following.js');
+          fileCounts.following = (textContent.match(/"following"\s*:/g) || []).length;
+        }
+      }
+
+      // Envoi au serveur...
+      console.log('📤 Envoi au serveur...', {
+        followerCount: fileCounts.follower,
+        followingCount: fileCounts.following
+      });
+
       const response = await fetch('/api/upload/large-files', {
         method: 'POST',
         body: formData
@@ -311,16 +317,13 @@ export default function UploadPage() {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        console.log('❌ Server response error:', errorData);
         throw new Error(errorData.error || 'Failed to upload files');
       }
 
       const { jobId } = await response.json();
-      console.log('✅ Upload successful, job ID:', jobId);
       router.push(`/upload/large-files?jobId=${jobId}&followerCount=${fileCounts.follower}&followingCount=${fileCounts.following}`);
 
     } catch (error) {
-      // console.error('❌ Error processing files:', error);
       handleUploadError(error instanceof Error ? error.message : 'Failed to process files');
     }
   };

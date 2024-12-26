@@ -20,6 +20,7 @@
 /tmp
 /logs
 /volumes
+/worker
 /worker/node_modules
 
 
@@ -50,3 +51,5 @@ next-env.d.ts
 nginx/certs/*.crt
 nginx/certs/*.key
 backup.sql
+
+worker
