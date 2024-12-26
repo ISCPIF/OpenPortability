@@ -15,8 +15,8 @@ const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const BATCH_SIZE = 1000;
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 3000;
-const LOCK_DIR = '/app/tmp/locks';
-const UPLOADS_DIR = '/app/tmp/uploads';
+const LOCK_DIR = '/tmp/locks';
+const UPLOADS_DIR = '/tmp/uploads';
 const LOCK_TIMEOUT = 5 * 60 * 1000;
 
 // S'assurer que les dossiers existent

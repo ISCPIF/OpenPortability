@@ -130,6 +130,7 @@ export default function LargeFilesPage() {
   }
 
   return (
+    <>
     <div className="min-h-screen bg-[#2a39a9] relative w-full max-w-[90rem] m-auto">
       <Header />
       
@@ -273,7 +274,8 @@ export default function LargeFilesPage() {
             )}
         </div>
       </div>
-      <Footer />
     </div>
+<Footer />
+</>
   );
 }
