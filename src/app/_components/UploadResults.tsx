@@ -27,6 +27,9 @@ interface UploadResultsProps {
   hasOnboarded?: boolean;
   userId?: string;
   twitterId?: string;
+  twitter_username?: string;
+  mastodon_username?: string;
+  bluesky_username?: string;
   isLoading?: boolean;
   setIsLoading?: (loading: boolean) => void;
   setIsModalOpen: (open: boolean) => void;
@@ -42,6 +45,9 @@ export default function UploadResults({
   hasOnboarded = false,
   userId,
   twitterId,
+  twitter_username,
+  mastodon_username,
+  bluesky_username,
   isLoading,
   setIsLoading,
   setIsModalOpen
@@ -74,7 +80,7 @@ export default function UploadResults({
             </div>
             <h2 className="text-2xl font-bold bg-gradient-to-r from-pink-400 to-rose-500 
                        bg-clip-text text-transparent">
-              Félicitations vous êtes inscrits pour le voyage !
+              Félicitations @{twitter_username || mastodon_username || bluesky_username || ''}, vous êtes inscrit.e pour le voyage !
             </h2>
           </div>
 {/* 
@@ -109,6 +115,9 @@ export default function UploadResults({
           </div>
         </div>
 
+        <p className="text-white/80 text-center">
+            Invitez vos abonné.e.s à partir avec vous !
+        </p>
         <div className={`flex items-center justify-center transition-opacity duration-300 ${isThreeQuartersComplete ? 'opacity-100' : 'opacity-70'}`}>
           <PartageButton onClick={() => setIsModalOpen(true)} />
         </div>

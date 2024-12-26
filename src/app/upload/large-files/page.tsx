@@ -12,6 +12,8 @@ import logoHQX from '../../../../public/logoxHQX/HQX-rose-FR.svg';
 import { motion, AnimatePresence } from 'framer-motion';
 import boat1 from '../../../../public/boats/boat-1.svg';
 import { Loader2 } from 'lucide-react';
+import Footer from "@/app/_components/Footer";
+
 
 interface JobStatus {
   status: 'pending' | 'processing' | 'completed' | 'failed';
@@ -271,6 +273,7 @@ export default function LargeFilesPage() {
             )}
         </div>
       </div>
+      <Footer />
     </div>
   );
 }
