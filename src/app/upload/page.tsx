@@ -15,6 +15,7 @@ import { plex } from '../fonts/plex';
 import logoHQX from '../../../public/logoxHQX/HQX-rose-FR.svg'
 import { motion } from 'framer-motion';
 import boat1 from '../../../public/boats/boat-1.svg'
+import Footer from "@/app/_components/Footer";
 
 const UploadButton = dynamic(() => import('../_components/UploadButton'), {
   loading: () => <div className="animate-pulse bg-gray-200 h-12 w-48 rounded-lg"></div>,
@@ -40,11 +41,11 @@ export default function UploadPage() {
 
   useEffect(() => {
     if (status === "unauthenticated") {
-      console.log("⛔️ No session found, redirecting to /auth/signin");
+      // console.log("⛔️ No session found, redirecting to /auth/signin");
       router.replace("/auth/signin");
     }
     if (session?.user?.has_onboarded) {
-      console.log("✅ User already onboarded, redirecting to /dashboard");
+      // console.log("✅ User already onboarded, redirecting to /dashboard");
       router.replace("/dashboard");
     }
     if (status !== "loading") {
@@ -480,6 +481,7 @@ export default function UploadPage() {
           </div>
         </div>
       )}
+     <Footer />
     </div>
   );
 }
