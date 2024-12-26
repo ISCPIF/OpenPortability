@@ -90,8 +90,8 @@ const Header = () => {
                                     console.error('Error signing out:', error);
                                   }
                                 }}
-                                className="w-full px-4 py-2 text-sm text-black/80 hover:text-black 
-                                         hover:bg-black/5 transition-colors text-left"
+                                className="w-full px-4 py-2 text-sm text-black font-medium 
+                                         bg-white hover:bg-white/90 transition-colors text-left"
                               >
                                 Déconnexion
                               </motion.button>

@@ -24,6 +24,7 @@ import { SiBluesky } from "react-icons/si";
 import { Share2, Mail, X } from 'lucide-react';
 import { AnimatePresence } from 'framer-motion';
 import logoHQX from '../../../public/logoxHQX/HQX-rose-FR.svg';
+import  Footer from '@/app/_components/Footer';
 
 // const supabase = createClient(
 //   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -285,11 +286,14 @@ export default function DashboardPage() {
                   stats={stats}
                   onShare={handleShare}
                   setIsModalOpen={setIsModalOpen}
+                  twitter_username={session?.user?.twitter_username ?? undefined}
+                  mastodon_username={session?.user?.mastodon_username ?? undefined}
+                  bluesky_username={session?.user?.bluesky_username ?? undefined}
                 />
               </div>
             )} 
             
-            {!((hasTwitter && hasMastodon) || (hasBluesky && hasMastodon) || (hasBluesky && hasTwitter)) && (
+            {/* {!((hasTwitter && hasMastodon) || (hasBluesky && hasMastodon) || (hasBluesky && hasTwitter)) && ( */}
               <div className="max-w-md mx-auto relative z-10">
                 <DashboardLoginButtons
                   connectedServices={{
@@ -301,7 +305,7 @@ export default function DashboardPage() {
                   onLoadingChange={setIsLoading}
                 />
               </div>
-            )}
+            {/* )} */}
 
             {!hasOnboarded && (
               <div className="text-center relative z-10">
@@ -374,6 +378,8 @@ export default function DashboardPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <Footer /> 
     </div>
   );
 }

@@ -11,13 +11,13 @@ export async function GET(request: NextRequest) {
   try {
     // Récupérer et attendre les paramètres
     const jobId = request.nextUrl.pathname.split('/').pop();
-    console.log(`📡 [Import Status API] Fetching status for job: ${jobId}`);
+    // console.log(`📡 [Import Status API] Fetching status for job: ${jobId}`);
 
     const session = await auth();
-    console.log('[Import Status] Session check:', { 
-      userId: session?.user?.id,
-      hasSession: !!session 
-    });
+    // console.log('[Import Status] Session check:', { 
+    //   userId: session?.user?.id,
+    //   hasSession: !!session 
+    // });
 
     if (!session?.user?.id) {
       console.log('❌ [Import Status API] Unauthorized access attempt');
@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Récupérer le statut du job
-    console.log('[Import Status] Fetching job details');
+    // console.log('[Import Status] Fetching job details');
     const { data: job, error: jobError } = await supabase
       .from('import_jobs')
       .select('*')

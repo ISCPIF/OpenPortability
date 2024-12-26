@@ -141,7 +141,7 @@ export default function BlueSkyLogin({ onLoginComplete }: BlueSkyLoginProps) {
               ref={identifierRef}
               type="text"
               id="identifier"
-              placeholder="vous@handle.bsky.social"
+              placeholder="nomdutilisateur.bsky.social"
               className={`${plex.className} w-full px-4 py-2 bg-white/10 border border-gray-300/20 rounded-lg 
                          focus:ring-2 focus:ring-sky-400 focus:border-transparent
                          placeholder-gray-400 text-white transition-all duration-200`}

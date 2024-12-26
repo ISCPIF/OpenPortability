@@ -10,6 +10,8 @@ import Link from "next/link"
 import LoginButtons from "@/app/_components/LoginButtons"
 import LoadingIndicator from "@/app/_components/LoadingIndicator"
 import LoginSea from "@/app/_components/LoginSea"
+import Footer from "@/app/_components/Footer";
+
 
 export default function SignIn() {
   const { data: session, status } = useSession()
@@ -80,6 +82,7 @@ export default function SignIn() {
             )}
           </div>
         </div>
+        <Footer />
       </div>
     </div>
   )
