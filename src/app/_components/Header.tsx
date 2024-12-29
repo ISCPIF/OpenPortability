@@ -7,11 +7,12 @@ import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import ConnectedAccounts from './ConnectedAccounts';
 import { ChevronDown } from 'lucide-react';
-// import logo from '../../../public/logo-2.svg'
+import { useTranslations } from 'next-intl';
 
 const Header = () => {
   const { data: session } = useSession();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const t = useTranslations('header');
 
   return (
     <header className="relative z-10">
@@ -44,7 +45,7 @@ const Header = () => {
                           {session.user?.name}
                         </p>
                         <p className="text-xs text-black/60">
-                          @{session.user?.twitter_username}
+                          {t('profile.username', { username: session.user?.twitter_username })}
                         </p>
                       </div>
                       <ChevronDown
@@ -93,7 +94,7 @@ const Header = () => {
                                 className="w-full px-4 py-2 text-sm text-black font-medium 
                                          bg-white hover:bg-white/90 transition-colors text-left"
                               >
-                                Déconnexion
+                                {t('logout')}
                               </motion.button>
                             </div>
                           </div>

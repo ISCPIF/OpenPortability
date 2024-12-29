@@ -1,36 +1,28 @@
 import { auth } from "./app/auth"
+import createMiddleware from 'next-intl/middleware';
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
+const locales = ['fr', 'en'];
+const defaultLocale = 'en';
+
+const intlMiddleware = createMiddleware({
+  locales,
+  defaultLocale,
+  localePrefix: 'always'
+});
+
 export default auth(async (req) => {
-  const isLoggedIn = !!req.auth
-  const isAuthPage = req.nextUrl.pathname.startsWith('/auth')
-  const isDashboard = req.nextUrl.pathname.startsWith('/dashboard')
-
-  // Si on est sur la page d'accueil, rediriger vers /auth/signin
+  // Pour la racine, rediriger vers la page de connexion avec la locale
   if (req.nextUrl.pathname === '/') {
-    return NextResponse.redirect(new URL('/auth/signin', req.nextUrl))
+    const locale = req.cookies.get('NEXT_LOCALE')?.value || defaultLocale;
+    return NextResponse.redirect(new URL(`/${locale}/auth/signin`, req.nextUrl));
   }
 
-  // Not logged in: only allow auth pages
-  if (!isLoggedIn && !isAuthPage) {
-    let redirectUrl = new URL('/auth/signin', req.nextUrl)
-    if (isDashboard) {
-      redirectUrl.searchParams.set('callbackUrl', '/dashboard')
-    }
-    return NextResponse.redirect(redirectUrl)
-  }
-
-  // Logged in: don't allow auth pages
-  if (isLoggedIn && isAuthPage) {
-    return NextResponse.redirect(new URL('/dashboard', req.nextUrl))
-  }
-
-  return NextResponse.next()
-})
+  // Pour tous les autres chemins, utiliser le middleware next-intl
+  return intlMiddleware(req);
+});
 
 export const config = {
-  matcher: [
-    '/((?!api|_next/static|_next/image|favicon.ico).*)',
-  ]
-}
+  matcher: ['/', '/(fr|en)/:path*']
+};

@@ -7,6 +7,8 @@ import BlueSkyLogin from "./BlueSkyLogin"
 import TwitterRateLimit from "./TwitterRateLimit"
 import { SiBluesky } from 'react-icons/si'
 import { plex } from "@/app/fonts/plex"
+import { useTranslations } from 'next-intl'
+
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -37,6 +39,7 @@ interface LoginButtonsProps {
 }
 
 export default function LoginButtons({ onLoadingChange }: LoginButtonsProps) {
+  const t = useTranslations('loginButtons');
   const [showBlueSkyForm, setShowBlueSkyForm] = useState(false)
   const [showAlternatives, setShowAlternatives] = useState(false)
   const [showMastodonMenu, setShowMastodonMenu] = useState(false)
@@ -123,7 +126,8 @@ export default function LoginButtons({ onLoadingChange }: LoginButtonsProps) {
                   <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z" />
                 </svg>
               </motion.div>
-              <span className={`${plex.className} relative z-10`}>Continuer avec Twitter</span>
+              <span className={`${plex.className} relative z-10`}>{t('twitter.continue')}
+              </span>
             </motion.button>
           )}
         </AnimatePresence>
@@ -141,7 +145,7 @@ export default function LoginButtons({ onLoadingChange }: LoginButtonsProps) {
               className="w-full flex justify-center items-center py-8"
             >
               <span className={`${plex.className} bg-[#2a39a9] px-6 py-2 text-sm text-gray-200 rounded-full backdrop-blur-sm bg-opacity-80 shadow-lg hover:bg-opacity-100 transition-all duration-300 cursor-pointer`}>
-                J'ai déjà supprimé mon compte Twitter
+              {t('deleteAccount')}
               </span>
             </motion.button>
           )}
@@ -218,7 +222,7 @@ export default function LoginButtons({ onLoadingChange }: LoginButtonsProps) {
                       >
                         <SiBluesky className="w-6 h-6" />
                       </motion.div>
-                      <span className={`${plex.className}`}>Se connecter avec BlueSky</span>
+                      <span className={`${plex.className}`}>{t('bluesky.connect')}</span>
                     </motion.button>
                   ) : (
                     <BlueSkyLogin onLoginComplete={() => onLoadingChange(true)} />
@@ -250,7 +254,7 @@ export default function LoginButtons({ onLoadingChange }: LoginButtonsProps) {
                         <path fill="currentColor" d="M11.19 12.195c2.016-.24 3.77-1.475 3.99-2.603.348-1.778.32-4.339.32-4.339 0-3.47-2.286-4.488-2.286-4.488C12.062.238 10.083.017 8.027 0h-.05C5.92.017 3.942.238 2.79.765c0 0-2.285 1.017-2.285 4.488l-.002.662c-.004.64-.007 1.35.011 2.091.083 3.394.626 6.74 3.78 7.57 1.454.383 2.703.463 3.709.408 1.823-.1 2.847-.647 2.847-.647l-.06-1.317s-1.303.41-2.767.36c-1.45-.05-2.98-.156-3.215-1.928a3.614 3.614 0 0 1-.033-.496s1.424.346 3.228.428c1.103.05 2.137-.064 3.188-.189zm1.613-2.47H11.13v-4.08c0-.859-.364-1.295-1.091-1.295-.804 0-1.207.517-1.207 1.541v2.233H7.168V5.89c0-1.024-.403-1.541-1.207-1.541-.727 0-1.091.436-1.091 1.296v4.079H3.197V5.522c0-.859.22-1.541.66-2.046.456-.505 1.052-.764 1.793-.764.856 0 1.504.328 1.933.983L8 4.39l.417-.695c.429-.655 1.077-.983 1.934-.983.74 0 1.336.259 1.791.764.442.505.661 1.187.661 2.046v4.203z"/>
                       </svg>
                     </motion.div>
-                    <span className={`${plex.className} relative z-10`}>Se connecter avec Mastodon</span>
+                    <span className={`${plex.className} relative z-10`}>{t('mastodon.connect')}</span>
                     <svg 
                       className={`w-4 h-4 ml-2 transition-transform duration-200 ${showMastodonMenu ? 'rotate-180' : ''}`} 
                       fill="none" 
@@ -282,7 +286,7 @@ export default function LoginButtons({ onLoadingChange }: LoginButtonsProps) {
                           >
                             <span className={`${plex.className} flex items-center gap-2`}>
                               <span className="w-2 h-2 bg-indigo-500 rounded-full"></span>
-                              Mastodon.social
+                              {t('mastodon.instances.mastodon')}
                             </span>
                           </button>
                           <button
@@ -294,7 +298,7 @@ export default function LoginButtons({ onLoadingChange }: LoginButtonsProps) {
                           >
                             <span className={`${plex.className} flex items-center gap-2`}>
                               <span className="w-2 h-2 bg-purple-500 rounded-full"></span>
-                              Piaille.fr
+                              {t('mastodon.instances.piaille')}
                             </span>
                           </button>
                         </motion.div>
@@ -327,7 +331,7 @@ export default function LoginButtons({ onLoadingChange }: LoginButtonsProps) {
                     <svg className="w-4 h-4 rotate-180" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                       <path d="M9 5l7 7-7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
-                    J'ai un compte Twitter
+                    {t('twitter.notDeleted')}
                   </span>
                 </motion.button>
               </motion.div>

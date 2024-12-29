@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { CheckCircle } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { supabase } from '@/lib/supabase';
+import { useTranslations } from 'next-intl';
 
 function ProgressStep({ 
   step, 
@@ -90,6 +91,7 @@ export default function ProgressSteps({
 }: ProgressStepsProps) {
   const { data: session } = useSession();
   const [hasSuccessfulShare, setHasSuccessfulShare] = useState(initialIsShared);
+  const t = useTranslations('progressSteps');
 
   useEffect(() => {
     async function checkShareStatus() {
@@ -174,33 +176,33 @@ export default function ProgressSteps({
       <div className="flex items-start gap-4">
         <ProgressStep
           step={1}
-          title="Dashboard"
-          description="Connexion réussie à la plateforme HelloQuitteX !"
+          title={t('dashboard.title')}
+          description={t('dashboard.description')}
           isCompleted={true}
         />
         
         <ProgressStep
           step={2}
-          title="Réseaux sociaux"
-          description={"Ajoutez un réseau social"}
+          title={t('socialNetworks.title')}
+          description={t('socialNetworks.description')}
           isCompleted={getConnectedAccountsCount() >= 2}
         />
         
         <ProgressStep
           step={3}
-          title="Import"
+          title={t('import.title')}
           description={
             hasOnboarded
-              ? `${stats.following} abos, ${stats.followers} abonnés`
-              : "Importez vos abonnements"
+              ? t('import.description.withStats', { following: stats.following, followers: stats.followers })
+              : t('import.description.noStats')
           }
           isCompleted={hasOnboarded}
         />
         
         <ProgressStep
           step={4}
-          title="Partage"
-          description="Aidez vos amis à migrer"
+          title={t('share.title')}
+          description={t('share.description')}
           isCompleted={hasSuccessfulShare}
           isLast={true}
           onClick={() => setIsModalOpen(true)}
