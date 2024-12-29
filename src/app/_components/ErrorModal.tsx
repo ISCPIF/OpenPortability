@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslations } from 'next-intl'
+
 interface ErrorModalProps {
   isOpen: boolean;
   message: string;
@@ -7,6 +9,8 @@ interface ErrorModalProps {
 }
 
 export default function ErrorModal({ isOpen, message, onClose }: ErrorModalProps) {
+  const t = useTranslations('errorModal')
+  
   if (!isOpen || !message) return null;
 
   return (
@@ -42,7 +46,7 @@ export default function ErrorModal({ isOpen, message, onClose }: ErrorModalProps
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
           </svg>
           <h3 className="text-xl font-semibold text-white">
-            Erreur lors de l'upload
+            {t('title')}
           </h3>
         </div>
 
@@ -55,7 +59,7 @@ export default function ErrorModal({ isOpen, message, onClose }: ErrorModalProps
             onClick={onClose}
             className="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors"
           >
-            Fermer
+            {t('close')}
           </button>
         </div>
       </div>

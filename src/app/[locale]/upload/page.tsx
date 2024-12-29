@@ -3,21 +3,23 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import dynamic from 'next/dynamic';
-import { useRouter } from 'next/navigation';
-import ErrorModal from "../_components/ErrorModal";
-import ConsentModal from "../_components/ConsentModal";
-import Header from '../_components/Header';
+import { useRouter, useParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
+
+import ErrorModal from "../../_components/ErrorModal";
+import ConsentModal from "../../_components/ConsentModal";
+import Header from '../../_components/Header';
 import * as zip from '@zip.js/zip.js';
-import { validateTwitterData, extractTargetFiles } from '../_components/UploadButton';
+import { validateTwitterData, extractTargetFiles } from '../../_components/UploadButton';
 import Image from 'next/image';
 import seaBackground from '../../../public/sea.svg'
-import { plex } from '../fonts/plex';
-import logoHQX from '../../../public/logoxHQX/HQX-rose-FR.svg'
+import { plex } from '../../fonts/plex';
+import logoHQX from '../../../../public/logoxHQX/HQX-rose-FR.svg'
 import { motion } from 'framer-motion';
 import boat1 from '../../../public/boats/boat-1.svg'
 import Footer from "@/app/_components/Footer";
 
-const UploadButton = dynamic(() => import('../_components/UploadButton'), {
+const UploadButton = dynamic(() => import('../../_components/UploadButton'), {
   loading: () => <div className="animate-pulse bg-gray-200 h-12 w-48 rounded-lg"></div>,
   ssr: false
 });
@@ -31,6 +33,7 @@ const MAX_FILE_SIZE = 1000 * 1024 * 1024; // 1GB
 
 export default function UploadPage() {
   const router = useRouter();
+  const params = useParams();
   const { data: session, status } = useSession();
   const [error, setError] = useState<string | null>(null);
   const [showConsent, setShowConsent] = useState(false);
@@ -38,6 +41,7 @@ export default function UploadPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [showHelpModal, setShowHelpModal] = useState(false);
+  const t = useTranslations('upload');
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -55,12 +59,12 @@ export default function UploadPage() {
 
   const validateFile = (file: File): string | null => {
     if (file.size > MAX_FILE_SIZE) {
-      return 'File size exceeds 1GB limit';
+      return t('errors.fileSize');
     }
 
     const extension = '.' + file.name.split('.').pop()?.toLowerCase();
     if (!extension || !['.zip', '.js'].includes(extension)) {
-      return 'Invalid file type. Please upload either a ZIP file or following.js and follower.js files';
+      return t('errors.fileType');
     }
 
     return null;
@@ -73,7 +77,7 @@ export default function UploadPage() {
     });
 
     if (files.length === 0) {
-      return 'No files selected';
+      return t('errors.noFiles');
     }
 
     // Check if it's a single ZIP file
@@ -131,11 +135,13 @@ export default function UploadPage() {
     }
 
     console.log('❌ Invalid file combination');
-    return 'Please upload either a ZIP file, following.js + follower.js, or their split versions (following-part*.js/follower-part*.js)';
+    return t('errors.invalidCombination');
   };
 
   const validateFileType = (file: File): boolean => {
-    const validTypes = ['application/javascript', 'text/javascript', 'application/zip'];
+
+    console.log("File Type =", file.type)
+    const validTypes = ['application/javascript', 'text/javascript', 'application/zip', 'application/x-javascript'];
     return validTypes.includes(file.type);
   };
 
@@ -321,8 +327,8 @@ export default function UploadPage() {
       }
 
       const { jobId } = await response.json();
-      router.push(`/upload/large-files?jobId=${jobId}&followerCount=${fileCounts.follower}&followingCount=${fileCounts.following}`);
-
+      const locale = params.locale as string || 'fr';
+      router.push(`/${locale}/upload/large-files?jobId=${jobId}&followerCount=${fileCounts.follower}&followingCount=${fileCounts.following}`);
     } catch (error) {
       handleUploadError(error instanceof Error ? error.message : 'Failed to process files');
     }
@@ -392,10 +398,10 @@ export default function UploadPage() {
   return (
     <div className="min-h-screen bg-[#2a39a9] relative w-full max-w-[90rem] m-auto">
       <Header />
-      <div className="flex justify-center mt-8 mb-8">
+      <div className="relative z-10 pt-12">
         <Image
           src={logoHQX}
-          alt="HelloQuitteX Logo"
+          alt={t('logo.alt')}
           width={306}
           height={125}
           className="mx-auto"
@@ -408,23 +414,22 @@ export default function UploadPage() {
             animate={{ opacity: 1, y: 0 }}
             className="bg-black/40 backdrop-blur-xl rounded-xl border border-black/10 shadow-xl p-8 max-w-2xl w-full mx-auto relative"
           >
-            {/* Bouton d'aide */}
             <button
               onClick={() => setShowHelpModal(true)}
               className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors duration-200"
-              aria-label="Aide pour obtenir votre archive Twitter"
+              aria-label={t('helpButton')}
             >
               ?
             </button>
             
             <div className="text-center text-white">
               <h2 className={`${plex.className} text-2xl font-bold mb-6`}>
-                Importez votre archive Twitter pour poursuivre votre 
+                {t('title')}
               </h2>
               
               <div className="space-y-4">
                 <p className="text-white/80">
-                Déposez votre fichier .zip (si sa taille ne dépasse pas 300 Mo) ou, si vous l'avez déjà décompressé, téléversez vos fichiers data/following.js et data/follower.js
+                  {t('description')}
                 </p>
                 
                 {!isUploading && (
@@ -436,7 +441,7 @@ export default function UploadPage() {
                 {isUploading && (
                   <div className="flex items-center justify-center space-x-2">
                     <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white"></div>
-                    <span>Vos fichiers sont en cours de traitement, veuillez rester sur la page jusqu'à la redirection.</span>
+                    <span>{t('loading')}</span>
                   </div>
                 )}
               </div>
@@ -466,20 +471,15 @@ export default function UploadPage() {
             >
               ✕
             </button>
-            <h3 className="text-2xl font-bold mb-4">Comment obtenir votre archive Twitter ?</h3>
+            <h3 className="text-2xl font-bold mb-4">{t('helpModal.title')}</h3>
             <div className="space-y-4 text-gray-600">
-              <p>Pour obtenir votre archive Twitter, suivez ces étapes :</p>
+              <p>{t('helpModal.description')}</p>
               <ol className="list-decimal list-inside space-y-2">
-                <li>Connectez-vous à votre compte Twitter</li>
-                <li>Allez dans "Plus" dans le menu de gauche</li>
-                <li>Cliquez sur "Paramètres et support" puis "Paramètres et confidentialité"</li>
-                <li>Dans "Votre compte", sélectionnez "Télécharger une archive de vos données"</li>
-                <li>Confirmez votre mot de passe si demandé</li>
-                <li>Cliquez sur "Demander l'archive"</li>
-                <li>Twitter vous enverra un e-mail lorsque votre archive sera prête à être téléchargée</li>
-                <li>Une fois téléchargée, vous pourrez importer le fichier .zip ici</li>
+                {t.raw('helpModal.steps').map((step: string, index: number) => (
+                  <li key={index}>{step}</li>
+                ))}
               </ol>
-              <p className="mt-4 text-sm text-gray-500">Note : La préparation de l'archive par Twitter peut prendre jusqu'à 24 heures.</p>
+              <p className="mt-4 text-sm text-gray-500">{t('helpModal.note')}</p>
             </div>
           </div>
         </div>

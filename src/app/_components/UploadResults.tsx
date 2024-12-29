@@ -6,11 +6,18 @@ import PartageButton from './PartageButton';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { plex } from '../fonts/plex';
+import { useTranslations } from 'next-intl';
 
-interface UploadStats {
-  totalUsers: number;
-  following: number;
-  followers: number;
+
+interface UploadResultsProps {
+  followerCount: number;
+  followingCount: number;
+}
+
+interface TotalStats {
+  total_followers: number;
+  total_following: number;
+  total_sources: number;
 }
 
 interface UploadResultsProps {
@@ -50,7 +57,9 @@ export default function UploadResults({
   bluesky_username,
   isLoading,
   setIsLoading,
-  setIsModalOpen
+  setIsModalOpen,
+  followerCount,
+  followingCount 
 }: UploadResultsProps) {
   const [totalUsers, setTotalUsers] = useState<number>(stats.totalUsers);
 
@@ -58,6 +67,11 @@ export default function UploadResults({
   const totalSteps = 4; 
   const completedSteps = [hasTwitter, hasBluesky, hasMastodon, hasOnboarded].filter(Boolean).length;
   const isThreeQuartersComplete = completedSteps >= (totalSteps * 0.75);
+  const t = useTranslations('uploadResults');
+  const username = twitter_username || mastodon_username || bluesky_username || '';
+  const [totalStats, setTotalStats] = useState<TotalStats | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
 
   useEffect(() => {
     if (setIsLoading) {
@@ -65,6 +79,30 @@ export default function UploadResults({
     }
   }, [setIsLoading]);
 
+  useEffect(() => {
+    const fetchTotalStats = async () => {
+      try {
+        const response = await fetch('/api/stats/total');
+        if (!response.ok) {
+          throw new Error('Failed to fetch total stats');
+        }
+        const data = await response.json();
+        setTotalStats(data);
+      } catch (err) {
+        console.error('Error fetching total stats:', err);
+        setError(t('errors.fetchStats'));
+      }
+    };
+
+    fetchTotalStats();
+  }, [t]);
+
+  const totalProcessed = stats.followers + stats.following;
+  const totalInDatabase = totalStats ? totalStats.total_followers + totalStats.total_following : 0;
+  const totalReady = totalStats ? totalStats.total_sources : 0;
+
+  // console.log('totalInDatabase', totalInDatabase);
+  // console.log('totalProcessed', totalProcessed);
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -80,17 +118,13 @@ export default function UploadResults({
             </div>
             <h2 className="text-2xl font-bold bg-gradient-to-r from-pink-400 to-rose-500 
                        bg-clip-text text-transparent">
-              Félicitations @{twitter_username || mastodon_username || bluesky_username || ''}, vous êtes inscrit.e pour le voyage !
+              {t('congratulations', { username })}
             </h2>
           </div>
-{/* 
-          <div className={`flex items-center justify-center transition-opacity duration-300 ${isThreeQuartersComplete ? 'opacity-100' : 'opacity-70'}`}>
-            <PartageButton onShare={onShare} />
-          </div> */}
         </div>
 
         <p className="text-white/80 text-center">
-          L'importation de vos fichiers a permis d'inscrire {stats.following + stats.followers} nouveaux passagers !
+          {t('importSuccess', { count: stats.following + stats.followers })}
         </p>
 
         <div className="flex justify-center gap-4">
@@ -99,8 +133,10 @@ export default function UploadResults({
               <Users className="w-5 h-5 text-pink-400" />
             </div>
             <div>
-              <p className="text-sm text-white/60">Comptes Twitters</p>
-              <p className="text-2xl font-bold text-white">{stats.following + stats.followers}</p>
+              <p className="text-sm text-white/60">{t('stats.twitterAccounts.label')}</p>
+              <p className="text-2xl font-bold text-white">
+                {totalProcessed}
+              </p>
             </div>
           </div>
 
@@ -109,40 +145,43 @@ export default function UploadResults({
               <Globe className="w-5 h-5 text-pink-400" />
             </div>
             <div>
-              <p className="text-sm text-white/60">Voyageurs prêts</p>
-              <p className="text-2xl font-bold text-white">20314</p>
+              <p className="text-sm text-white/60">{t('stats.totalImported.label')}</p>
+              <p className="text-2xl font-bold text-white">
+                {totalInDatabase}
+              </p>
+            </div>
+          </div>
+
+          <div className="bg-black/20 rounded-xl p-4 flex items-center gap-4">
+            <div className="bg-pink-500/20 p-2 rounded-full">
+              <Users className="w-5 h-5 text-pink-400" />
+            </div>
+            <div>
+              <p className="text-sm text-white/60">{t('stats.readyTravelers.label')}</p>
+              <p className="text-2xl font-bold text-white">
+                {totalReady}
+              </p>
             </div>
           </div>
         </div>
+        {/* </div> */}
 
         <p className="text-white/80 text-center">
-            Invitez vos abonné.e.s à partir avec vous !
+          {t('inviteFriends')}
         </p>
         <div className={`flex items-center justify-center transition-opacity duration-300 ${isThreeQuartersComplete ? 'opacity-100' : 'opacity-70'}`}>
           <PartageButton onClick={() => setIsModalOpen(true)} />
         </div>
 
-        {/* <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-black/20 rounded-xl p-4 flex items-center gap-4">
-            <div className="bg-emerald-500/20 p-2 rounded-full">
-              <Globe className="w-5 h-5 text-emerald-400" />
-            </div>
-            <div>
-              <p className="text-sm text-white/60">Migrations</p>
-              <p className="text-2xl font-bold text-white">{totalUsers}</p>
-            </div>
-          </div>
-        </div> */}
-
-        {/* {showRedirectMessage && (
+        {showRedirectMessage && (
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             className="text-sm text-white/60 text-center mt-4"
           >
-            Redirection vers le tableau de bord...
+            {t('redirecting')}
           </motion.p>
-        )} */}
+        )}
       </div>
     </motion.div>
   );

@@ -115,15 +115,21 @@ export const { auth, signIn, signOut, handlers } = NextAuth({
     },
 
     async redirect({ url, baseUrl }) {
-      // console.log(" Redirect Callback:", { url, baseUrl })
+      // Détecter le locale depuis l'URL de la requête
+      const locale = url.match(/\/([a-z]{2})\//) ? url.match(/\/([a-z]{2})\//)?.[1] : 'fr';
 
       if (url.includes('/auth/callback')) {
-        // console.log(" Auth callback detected, redirecting to /dashboard")
-        return `${baseUrl}/dashboard`
+        // Rediriger vers le dashboard avec le locale
+        return `${baseUrl}/${locale}/dashboard`
       }
 
-      // console.log(" Default redirect to:", url)
-      return url.startsWith(baseUrl) ? url : baseUrl
+      // Pour les autres redirections, conserver le locale s'il existe
+      if (url.startsWith(baseUrl)) {
+        return url;
+      }
+
+      // Pour les redirections vers la base URL, ajouter le locale par défaut
+      return `${baseUrl}/${locale}`;
     }
   }
 })

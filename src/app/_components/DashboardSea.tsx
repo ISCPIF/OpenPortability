@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import { plex } from '@/app/fonts/plex';
+import { useTranslations } from 'next-intl';
 
 import logoHQX from '../../../public/logoxHQX/HQX-rose-FR.svg';
 import seaBackground from '../../../public/sea.svg';
@@ -18,6 +19,7 @@ interface SeaProps {
 }
 
 export default function Sea({ progress }: SeaProps) {
+  const t = useTranslations('dashboardSea');
   const ProgressImage = ({ progress }: { progress: number }) => {
     let img;
     let scale = 1;
@@ -93,25 +95,25 @@ export default function Sea({ progress }: SeaProps) {
       );
   };
 
-  return (
-    <div className="absolute top-0 left-0 w-full h-[23rem]">
-      <Image src={seaBackground} fill alt="" className="object-cover"></Image>
-      <div className="relative z-10 pt-12">
-        <Image
-          src={logoHQX}
-          alt="HelloQuitteX Logo"
-          width={306}
-          height={125}
-          className="mx-auto"
-        />
-        <div className="container flex flex-col mx-auto text-center gap-y-4 px-6 lg:gap-y-8 relative mt-8">
-          <h1 className={`${plex.className} text-2xl lg:text-3xl font-light text-blue-500`}>
-            Bienvenue à bord d'HelloQuitteX !
-          </h1>
+    return (
+      <div className="absolute top-0 left-0 w-full h-[23rem]">
+        <Image src={seaBackground} fill alt="" className="object-cover"></Image>
+        <div className="relative z-10 pt-12">
+          <Image
+            src={logoHQX}
+            alt={t('logo.alt')}
+            width={306}
+            height={125}
+            className="mx-auto"
+          />
+          <div className="container flex flex-col mx-auto text-center gap-y-4 px-6 lg:gap-y-8 relative mt-8">
+            <h1 className={`${plex.className} text-2xl lg:text-3xl font-light text-blue-500`}>
+              {t('welcome')}
+            </h1>
+          </div>
         </div>
+        <Boats progress={progress} />
+        <ProgressImage progress={progress} />
       </div>
-      <Boats progress={progress} />
-      <ProgressImage progress={progress} />
-    </div>
-  );
-}
+    );
+  }

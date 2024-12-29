@@ -160,7 +160,7 @@ export const authConfig = {
   ],
 
   pages: {
-    signIn: '/auth/signin',
-    error: '/auth/error'
+    signIn: '/:locale/auth/signin',
+    error: '/:locale/auth/error'
   },
 } satisfies NextAuthConfig

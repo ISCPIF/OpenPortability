@@ -4,9 +4,12 @@ import { useSession } from 'next-auth/react'
 import ProfileCard from './ProfileCard'
 import { motion } from 'framer-motion'
 import { IoCheckmarkCircle } from 'react-icons/io5'
+import { useTranslations } from 'next-intl'
 
 export default function ConnectedAccounts() {
   const { data: session } = useSession()
+  const t = useTranslations('connectedAccounts')
+  
   if (!session?.user) return null
 
   const hasTwitter = !!session.user.twitter_id
@@ -16,15 +19,14 @@ export default function ConnectedAccounts() {
   if (!hasTwitter && !hasBluesky && !hasMastodon) return null
 
   const connectedServices = [
-    hasTwitter && 'Twitter',
-    hasBluesky && 'BlueSky',
-    hasMastodon && 'Mastodon'
-  ].filter(Boolean).join(', ')
+    hasTwitter && t('services.twitter'),
+    hasBluesky && t('services.bluesky'),
+    hasMastodon && t('services.mastodon')
+  ].filter(Boolean)
 
-  const lastCommaIndex = connectedServices.lastIndexOf(',')
-  const formattedServices = lastCommaIndex !== -1
-    ? connectedServices.substring(0, lastCommaIndex) + ' et' + connectedServices.substring(lastCommaIndex + 1)
-    : connectedServices
+  const formattedServices = connectedServices.length > 1
+    ? `${connectedServices.slice(0, -1).join(', ')} ${t('and')} ${connectedServices.slice(-1)}`
+    : connectedServices[0]
 
   return (
     <div className="relative w-full max-w-md mx-auto">
@@ -39,7 +41,7 @@ export default function ConnectedAccounts() {
         {/* Message de statut */}
         <div className="mb-4">
           <p className="text-center text-sm text-white/60">
-            Vous êtes connecté avec {formattedServices} ✨
+            {t('connectedWith', { services: formattedServices })}
           </p>
         </div>
 

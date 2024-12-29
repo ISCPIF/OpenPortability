@@ -4,13 +4,14 @@ import { useSession } from "next-auth/react"
 import { motion, AnimatePresence } from "framer-motion"
 import Image from "next/image"
 import { useEffect, useState } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useRouter, useSearchParams, useParams } from "next/navigation"
 import { plex } from "@/app/fonts/plex"
 import Link from "next/link"
 import LoginButtons from "@/app/_components/LoginButtons"
 import LoadingIndicator from "@/app/_components/LoadingIndicator"
 import LoginSea from "@/app/_components/LoginSea"
 import Footer from "@/app/_components/Footer";
+import { useTranslations } from 'next-intl'
 
 
 export default function SignIn() {
@@ -18,6 +19,10 @@ export default function SignIn() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [isLoading, setIsLoading] = useState(false)
+  const t = useTranslations('signin')
+  const params = useParams()
+
+
 
   // Log des paramètres d'URL pour débogage
   useEffect(() => {
@@ -50,9 +55,10 @@ export default function SignIn() {
     if (session) {
       console.log('[SignIn] Session detected, redirecting to dashboard')
       setIsLoading(true)
-      router.push("/dashboard")
+      const locale = params.locale as string || 'fr'
+      router.push(`/${locale}/dashboard`)
     }
-  }, [session, router])
+  }, [session, router, params.locale])
 
   const handleLoadingChange = (loading: boolean) => {
     console.log('[SignIn] Loading change:', loading)
@@ -68,13 +74,13 @@ export default function SignIn() {
             {(status === "loading" || isLoading) ? (
               <>
                 <div className="my-24 sm:my-36" />
-                <LoadingIndicator msg="Chargement des informations…" />
+                <LoadingIndicator msg={t('loading')} />
               </>
             ) : (
               <div className="relative z-10">
-                <h1 className={`${plex.className} text-2xl lg:text-3xl`}>Prêt à migrer vers de nouveaux rivages ?</h1>
+                <h1 className={`${plex.className} text-2xl lg:text-3xl`}>{t('title')}</h1>
                 <p className={`${plex.className} text-lg lg:text-xl my-8 lg:my-10`}>
-                  Commencez par vous connecter avec Twitter pour migrer vos données
+                  {t('subtitle')}
                 </p>
                 <div className="my-40 lg:my-28" />
                 <LoginButtons onLoadingChange={handleLoadingChange} />

@@ -3,12 +3,15 @@
 import { Share2 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { plex } from '../fonts/plex'
+import { useTranslations } from 'next-intl'
 
 interface PartageButtonProps {
   onClick: () => void
 }
 
 export default function PartageButton({ onClick }: PartageButtonProps) {
+  const t = useTranslations('partageButton')
+
   return (
     <div className="flex justify-center">
       <motion.button
@@ -20,7 +23,7 @@ export default function PartageButton({ onClick }: PartageButtonProps) {
                  text-white rounded-xl border border-pink-500/20 transition-all duration-200 ${plex.className}`}
       >
         <Share2 className="w-5 h-5 text-pink-400" />
-        Partager
+        {t('share')}
       </motion.button>
     </div>
   )

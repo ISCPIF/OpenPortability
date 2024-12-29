@@ -2,15 +2,16 @@
 
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import Header from '../../_components/Header';
-import ErrorModal from "../../_components/ErrorModal";
+import { useRouter, useSearchParams, useParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
+import Header from '../../../_components/Header';
+import ErrorModal from "../../../_components/ErrorModal";
 import Image from 'next/image';
 import seaBackground from '../../../../public/sea.svg';
-import { plex } from '../../fonts/plex';
-import logoHQX from '../../../../public/logoxHQX/HQX-rose-FR.svg';
+import { plex } from '../../../fonts/plex';
+import logoHQX from '../../../../../public/logoxHQX/HQX-rose-FR.svg';
 import { motion, AnimatePresence } from 'framer-motion';
-import boat1 from '../../../../public/boats/boat-1.svg';
+import boat1 from '../../../../../public/boats/boat-1.svg';
 import { Loader2 } from 'lucide-react';
 import Footer from "@/app/_components/Footer";
 
@@ -44,6 +45,9 @@ export default function LargeFilesPage() {
   const router = useRouter();
   const { data: session, status } = useSession();
   const searchParams = useSearchParams();
+  const params = useParams();
+  const t = useTranslations('largeFiles');
+
   const jobId = searchParams.get('jobId');
   const followerCount = parseInt(searchParams.get('followerCount') || '0', 10);
   const followingCount = parseInt(searchParams.get('followingCount') || '0', 10);
@@ -55,9 +59,10 @@ export default function LargeFilesPage() {
   // Vérifier l'authentification
   useEffect(() => {
     if (status === 'unauthenticated') {
-      router.push('/');
+      const locale = params.locale as string || 'fr';
+      router.push(`/${locale}`);
     }
-  }, [status, router]);
+  }, [status, router, params.locale]);
 
   // Vérifier le statut du job
   useEffect(() => {
@@ -137,7 +142,7 @@ export default function LargeFilesPage() {
       <div className="flex justify-center mt-8 mb-8">
         <Image
           src={logoHQX}
-          alt="HelloQuitteX Logo"
+          alt={t('logo.alt')}
           width={306}
           height={125}
           className="mx-auto"
@@ -149,14 +154,16 @@ export default function LargeFilesPage() {
         <div className="absolute inset-0 flex flex-col items-center justify-center p-8 mt-44">
             {jobStatus && (
               <div className="text-white">                
-                {/* Progress Bars */}
                 <div className="space-y-6">
                   {/* Global Progress */}
                   <div className="mb-6">
                     <div className="flex justify-between mb-2">
-                      <span className="font-semibold">Total Progress</span>
+                      <span className="font-semibold">{t('progress.total.title')}</span>
                       <span className="text-white/60">
-                        {totalProgress}% ({jobStatus.stats?.processed?.toLocaleString()} / {jobStatus.stats?.total?.toLocaleString()})
+                        {totalProgress}% ({t('progress.total.processed', {
+                          processed: jobStatus.stats?.processed?.toLocaleString(),
+                          total: jobStatus.stats?.total?.toLocaleString()
+                        })})
                       </span>
                     </div>
                     <div className="w-full bg-black/20 rounded-full h-2.5">
@@ -173,11 +180,12 @@ export default function LargeFilesPage() {
                   {followerCount > 0 && jobStatus?.stats?.followers?.processed !== undefined && (
                     <div className="mb-6">
                       <div className="flex justify-between mb-2">
-                        <span className="font-semibold">Followers</span>
+                        <span className="font-semibold">{t('progress.followers.title')}</span>
                         <span>
-                          {followerProgress}% (
-                          {jobStatus.stats.followers.processed.toLocaleString()} / 
-                          {followerCount.toLocaleString()})
+                          {followerProgress}% ({t('progress.followers.processed', {
+                            processed: jobStatus.stats.followers.processed.toLocaleString(),
+                            total: followerCount.toLocaleString()
+                          })})
                         </span>
                       </div>
                       <div className="w-full bg-black/20 rounded-full h-2.5">
@@ -195,11 +203,12 @@ export default function LargeFilesPage() {
                   {followingCount > 0 && jobStatus?.stats?.following?.processed !== undefined && (
                     <div className="mb-6">
                       <div className="flex justify-between mb-2">
-                        <span className="font-semibold">Following</span>
+                        <span className="font-semibold">{t('progress.following.title')}</span>
                         <span>
-                          {followingProgress}% (
-                          {jobStatus.stats.following.processed.toLocaleString()} / 
-                          {followingCount.toLocaleString()})
+                          {followingProgress}% ({t('progress.following.processed', {
+                            processed: jobStatus.stats.following.processed.toLocaleString(),
+                            total: followingCount.toLocaleString()
+                          })})
                         </span>
                       </div>
                       <div className="w-full bg-black/20 rounded-full h-2.5">
@@ -217,7 +226,7 @@ export default function LargeFilesPage() {
                 {/* Status and Stats */}
                 <div className="mt-8">
                   <div className="flex justify-between items-center mb-4">
-                    <span className="font-semibold">Status</span>
+                    <span className="font-semibold">{t('status.title')}</span>
                     <span className={`px-3 py-1 rounded-full text-sm 
                       ${jobStatus.status === 'completed' ? 'bg-green-500/20 text-green-300' :
                         jobStatus.status === 'processing' ? 'bg-blue-500/20 text-blue-300' :
@@ -227,7 +236,7 @@ export default function LargeFilesPage() {
                       {jobStatus.status === 'processing' && (
                         <Loader2 className="w-4 h-4 animate-spin inline-block mr-2" />
                       )}
-                      {jobStatus.status.charAt(0).toUpperCase() + jobStatus.status.slice(1)}
+                      {t(`status.${jobStatus.status}`)}
                     </span>
                   </div>
                   
@@ -237,13 +246,13 @@ export default function LargeFilesPage() {
                         <p className="text-3xl font-bold text-pink-400">
                           {followerCount.toLocaleString()}
                         </p>
-                        <p className="text-sm text-white/60 mt-1">Followers</p>
+                        <p className="text-sm text-white/60 mt-1">{t('stats.followers')}</p>
                       </div>
                       <div className="p-4 bg-black/20 rounded-xl">
                         <p className="text-3xl font-bold text-blue-400">
                           {followingCount.toLocaleString()}
                         </p>
-                        <p className="text-sm text-white/60 mt-1">Following</p>
+                        <p className="text-sm text-white/60 mt-1">{t('stats.following')}</p>
                       </div>
                     </div>
                   )}
@@ -258,12 +267,15 @@ export default function LargeFilesPage() {
                     <motion.button
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
-                      onClick={() => router.push('/dashboard')}
+                      onClick={() => {
+                        const locale = params.locale as string || 'fr';
+                        router.push(`/${locale}/dashboard`);
+                      }}
                       className="w-full mt-6 bg-gradient-to-r from-pink-500 to-blue-500 text-white py-3 px-4 rounded-xl 
                                hover:from-pink-600 hover:to-blue-600 transition-all duration-200 
                                flex items-center justify-center space-x-2"
                     >
-                      <span className={plex.className}>Retourner au dashboard</span>
+                      <span className={plex.className}>{t('button.dashboard')}</span>
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                         <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
                       </svg>
@@ -275,7 +287,7 @@ export default function LargeFilesPage() {
         </div>
       </div>
     </div>
-<Footer />
-</>
+    <Footer />
+    </>
   );
 }

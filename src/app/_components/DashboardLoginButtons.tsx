@@ -7,6 +7,7 @@ import BlueSkyLogin from "./BlueSkyLogin"
 import { SiBluesky, SiMastodon } from 'react-icons/si'
 import { plex } from "@/app/fonts/plex"
 import { CheckCircle, ChevronDown } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 
 const itemVariants = {
   hidden: { opacity: 0, y: -8, scale: 0.95 },
@@ -68,6 +69,7 @@ export default function DashboardLoginButtons({
   const [showLoginOptions, setShowLoginOptions] = useState(false)
   const [activeButton, setActiveButton] = useState<string | null>(null)
   const [showMastodonMenu, setShowMastodonMenu] = useState(false)
+  const t = useTranslations('dashboardLoginButtons')
 
   const handleSignIn = async (provider: string) => {
     onLoadingChange(true)
@@ -94,7 +96,7 @@ export default function DashboardLoginButtons({
         <div className="absolute inset-0 bg-gradient-to-br from-blue-400/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
         <CheckCircle className="w-6 h-6 relative z-10" />
         <span className={`${plex.className} relative z-10`}>
-          Importer mon archive Twitter pour continuer ma migration
+          {t('importTwitter')}
         </span>
       </motion.button>
     )
@@ -127,7 +129,7 @@ export default function DashboardLoginButtons({
       >
         <div className="absolute inset-0 bg-gradient-to-br from-indigo-400/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
         <span className={`${plex.className} relative z-10 text-lg`}>
-        Ajoutez un autre réseau social
+          {t('addSocialNetwork')}
         </span>
         <motion.div
           animate={{ rotate: showLoginOptions ? 180 : 0 }}
@@ -173,7 +175,7 @@ export default function DashboardLoginButtons({
                     <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z" />
                   </svg>
                 </motion.div>
-                <span className={`${plex.className} relative z-10 text-sm font-medium`}>Twitter</span>
+                <span className={`${plex.className} relative z-10 text-sm font-medium`}>{t('services.twitter')}</span>
               </motion.button>
             )}
 
@@ -208,7 +210,7 @@ export default function DashboardLoginButtons({
                       >
                         <SiMastodon className="w-5 h-5" />
                       </motion.div>
-                      <span className={`${plex.className} relative z-10 text-sm font-medium`}>Mastodon</span>
+                      <span className={`${plex.className} relative z-10 text-sm font-medium`}>{t('services.mastodon.title')}</span>
                       <ChevronDown className={`w-4 h-4 ml-2 transition-transform duration-200 relative z-10`} />
                     </motion.button>
                   ) : (
@@ -229,7 +231,7 @@ export default function DashboardLoginButtons({
                       >
                         <div className="absolute inset-0 bg-gradient-to-br from-purple-400/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                         <SiMastodon className="w-5 h-5 relative z-10" />
-                        <span className={`${plex.className} relative z-10 text-sm font-medium`}>piaille.fr</span>
+                        <span className={`${plex.className} relative z-10 text-sm font-medium`}>{t('services.mastodon.instances.piaille')}</span>
                       </motion.button>
 
                       <motion.button
@@ -248,7 +250,7 @@ export default function DashboardLoginButtons({
                       >
                         <div className="absolute inset-0 bg-gradient-to-br from-purple-400/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                         <SiMastodon className="w-5 h-5 relative z-10" />
-                        <span className={`${plex.className} relative z-10 text-sm font-medium`}>mastodon.social</span>
+                        <span className={`${plex.className} relative z-10 text-sm font-medium`}>{t('services.mastodon.instances.mastodon')}</span>
                       </motion.button>
                     </div>
                   )}
@@ -270,7 +272,7 @@ export default function DashboardLoginButtons({
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-sky-400/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 <SiBluesky className="w-5 h-5 relative z-10" />
-                <span className={`${plex.className} relative z-10 text-sm font-medium`}>BlueSky</span>
+                <span className={`${plex.className} relative z-10 text-sm font-medium`}>{t('services.bluesky')}</span>
               </motion.button>
             )}
 

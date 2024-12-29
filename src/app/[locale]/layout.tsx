@@ -1,19 +1,21 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { Inter, Space_Grotesk } from 'next/font/google'
-import "./globals.css";
-import { Providers } from "./providers";
+import "../globals.css";
+import { Providers } from "../providers";
 import { auth } from "@/app/auth";
 import { MotionConfig } from "framer-motion";
+import { NextIntlClientProvider } from 'next-intl';
+import { getMessages } from 'next-intl/server';
 
 const geistSans = localFont({
-  src: "./fonts/GeistVF.woff",
+  src: "../fonts/GeistVF.woff",
   variable: "--font-geist-sans",
   weight: "100 900",
 });
 
 const geistMono = localFont({
-  src: "./fonts/GeistMonoVF.woff",
+  src: "../fonts/GeistMonoVF.woff",
   variable: "--font-geist-mono",
   weight: "100 900",
 });
@@ -33,23 +35,28 @@ async function getSession() {
   return await auth();
 }
 
-export default async function RootLayout({
-  children,
-}: {
+type Props = {
   children: React.ReactNode;
-}) {
+  params: Promise<{ locale: string }>;
+};
+
+export default async function RootLayout({ children, params }: Props) {
+  const messages = await getMessages();
   const session = await getSession();
+  const { locale } = await params;
 
   return (
-    <html lang="en" className={`${inter.variable} ${spaceGrotesk.variable}`}>
+    <html lang={locale} className={`${inter.variable} ${spaceGrotesk.variable}`}>
       <body className={`${geistSans.variable} ${geistMono.variable} ${inter.className} antialiased bg-gray-800`}>
-        <Providers>
-          <main className="min-h-screen">
-            <MotionConfig reducedMotion="user">
-              {children}
-            </MotionConfig>
-          </main>
-        </Providers>
+        <NextIntlClientProvider messages={messages} locale={locale}>
+          <Providers>
+            <main className="min-h-screen">
+              <MotionConfig reducedMotion="user">
+                {children}
+              </MotionConfig>
+            </main>
+          </Providers>
+        </NextIntlClientProvider>
       </body>
     </html>
   );
