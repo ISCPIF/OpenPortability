@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import Header from '@/app/_components/Header';
 import Image from 'next/image'
 import { supabase } from '@/lib/supabase';
@@ -17,7 +17,7 @@ import { useSession, signIn } from 'next-auth/react';
 import { motion } from 'framer-motion';
 import { Ship, Link } from 'lucide-react';
 import { Loader2 } from 'lucide-react';
-import { plex } from '../fonts/plex';
+import { plex } from '../../fonts/plex';
 import DashboardLoginButtons from '@/app/_components/DashboardLoginButtons';
 import { FaTwitter, FaMastodon } from 'react-icons/fa';
 import { SiBluesky } from "react-icons/si";
@@ -25,6 +25,8 @@ import { Share2, Mail, X } from 'lucide-react';
 import { AnimatePresence } from 'framer-motion';
 import logoHQX from '../../../public/logoxHQX/HQX-rose-FR.svg';
 import  Footer from '@/app/_components/Footer';
+import { useTranslations } from 'next-intl';
+
 
 // const supabase = createClient(
 //   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -54,6 +56,10 @@ export default function DashboardPage() {
   const { data: session, status, update } = useSession(); // Ajoutez status
   console.log('session par ici:', session)
   const router = useRouter();
+  const params = useParams();
+
+  const t = useTranslations('dashboard');
+
   const [stats, setStats] = useState({
     matchedCount: 0,
     totalUsers: 0,
@@ -128,7 +134,7 @@ export default function DashboardPage() {
             className="flex flex-col items-center gap-4"
           >
             <Loader2 className="w-12 h-12 text-white animate-spin" />
-            <p className="text-white/60">Chargement de vos données...</p>
+            <p className="text-white/60">{t('loading')}</p>
           </motion.div>
         </div>
       );
@@ -181,7 +187,7 @@ export default function DashboardPage() {
     }
   };
 
-  const shareText = `🔥L'exode de X est massif ! Ne perdez pas un seul de vos followers. Grâce à #HelloQuitX j'ai inscrit ${stats.followers + stats.following} nouveaux passagers pour un voyage vers #BlueSky & #Mastodon. Embarquez vous aussi et retrouvez automatiquement vos communautés le #20Janvier ! https://app.beta.helloquitx.com `;
+  const shareText = t('shareModal.shareText', { count: stats.followers + stats.following });
 
   const shareOptions = [
     {
@@ -225,11 +231,14 @@ export default function DashboardPage() {
           className="flex flex-col items-center gap-4"
         >
           <Loader2 className="w-12 h-12 text-white animate-spin" />
-          <p className="text-white/60">Chargement de vos données...</p>
+          <p className="text-white/60">{t('loading')}</p>
         </motion.div>
       </div>
     )
   }
+
+  const daysLeft = Math.ceil((new Date('2025-01-20').getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+
 
   return (
     <div className="min-h-screen bg-[#2a39a9] relative w-full max-w-[90rem] m-auto">
@@ -238,30 +247,26 @@ export default function DashboardPage() {
         <DahsboardSea progress={progress} />
       </div>
 
-      {/* Conteneur principal avec padding vertical ajusté */}
       <div className="relative min-h-[calc(100vh-4rem)] pt-80">
-        {/* Section du haut avec le message et ProgressSteps */}
         <div className="container mx-auto px-4">
           <div className="max-w-2xl mx-auto">
-            {/* Message conditionnel */}
             <div className="text-center mb-20 relative z-10">
               {progress === 100 ? (
                 <div className="space-y-2 mt-12">
                   <h2 className={`${plex.className} text-xl font-semibold text-indigo-100`}>
-                    Vous avez réalisé la première étape de votre migration
+                    {t('migrationStep.completed')}
                   </h2>
                   <p className={`${plex.className} text-indigo-200`}>
-                    {Math.ceil((new Date('2025-01-20').getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))} jours restants avant le grand départ
+                    {t('migrationStep.daysLeft', { count: daysLeft })}
                   </p>
                 </div>
               ) : (
                 <h2 className={`${plex.className} text-xl font-semibold text-indigo-100`}>
-                  Effectuez les étapes suivantes pour voguer vers de nouveaux rivages !
+                  {t('migrationStep.nextSteps')}
                 </h2>
               )}
             </div>
 
-            {/* ProgressSteps avec marge importante */}
             <div className="mb-24 relative z-10">
               <ProgressSteps
                 hasTwitter={hasTwitter}
@@ -277,7 +282,6 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Section du bas avec les autres composants */}
         <div className="container mx-auto px-4 pb-20">
           <div className="max-w-2xl mx-auto space-y-16">
             {stats && session?.user?.has_onboarded && (
@@ -291,28 +295,29 @@ export default function DashboardPage() {
                   bluesky_username={session?.user?.bluesky_username ?? undefined}
                 />
               </div>
-            )} 
-            
-            {/* {!((hasTwitter && hasMastodon) || (hasBluesky && hasMastodon) || (hasBluesky && hasTwitter)) && ( */}
-              <div className="max-w-md mx-auto relative z-10">
-                <DashboardLoginButtons
-                  connectedServices={{
-                    twitter: !!session?.user?.twitter_id,
-                    bluesky: !!session?.user?.bluesky_id,
-                    mastodon: !!session?.user?.mastodon_id
-                  }}
-                  hasUploadedArchive={!!stats}
-                  onLoadingChange={setIsLoading}
-                />
-              </div>
-            {/* )} */}
+            )}
+
+            <div className="max-w-md mx-auto relative z-10">
+              <DashboardLoginButtons
+                connectedServices={{
+                  twitter: !!session?.user?.twitter_id,
+                  bluesky: !!session?.user?.bluesky_id,
+                  mastodon: !!session?.user?.mastodon_id
+                }}
+                hasUploadedArchive={!!stats}
+                onLoadingChange={setIsLoading}
+              />
+            </div>
 
             {!hasOnboarded && (
               <div className="text-center relative z-10">
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  onClick={() => router.push('/upload')}
+                  onClick={() => {
+                    const locale = params.locale as string || 'fr';
+                    router.push(`/${locale}/upload`);
+                  }}
                   className={`inline-flex items-center gap-3 px-8 py-4 
                            ${(hasTwitter && hasMastodon) || (hasBluesky && hasMastodon) || (hasBluesky && hasTwitter)
                       ? 'bg-gradient-to-r from-pink-400 to-rose-500 hover:from-pink-500 hover:to-rose-600'
@@ -321,7 +326,7 @@ export default function DashboardPage() {
                            transition-all duration-300 ${plex.className}`}
                 >
                   <Ship className="w-6 h-6" />
-                  Importer mon archive Twitter pour continuer mon voyage
+                  {t('importButton')}
                 </motion.button>
               </div>
             )}
@@ -329,7 +334,6 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Modale de partage */}
       <AnimatePresence>
         {isModalOpen && (
           <motion.div
@@ -353,7 +357,7 @@ export default function DashboardPage() {
                 <X className="w-6 h-6" />
               </button>
 
-              <h3 className="text-2xl font-bold mb-6">Partager votre voyage</h3>
+              <h3 className="text-2xl font-bold mb-6">{t('shareModal.title')}</h3>
               <div className="space-y-4">
                 {shareOptions.map((option, index) => (
                   option.isAvailable && (
@@ -369,7 +373,7 @@ export default function DashboardPage() {
                                 ${option.color} transition-all duration-200`}
                     >
                       {option.icon}
-                      <span>Partager sur {option.name}</span>
+                      <span>{t('shareModal.shareOn', { platform: option.name })}</span>
                     </motion.button>
                   )
                 ))}
@@ -379,7 +383,7 @@ export default function DashboardPage() {
         )}
       </AnimatePresence>
 
-      <Footer /> 
+      <Footer />
     </div>
   );
 }

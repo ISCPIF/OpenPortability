@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { signIn, useSession } from 'next-auth/react';
 import * as zip from '@zip.js/zip.js';
 import { motion } from 'framer-motion';
+import { useTranslations } from 'next-intl';
 import { Upload, Loader2, CheckCircle, XCircle } from 'lucide-react';
 import { plex } from '../fonts/plex';
 import {
@@ -157,6 +158,7 @@ const UploadButton = ({ onUploadComplete, onError, onFilesSelected, filesToProce
   const [isDragging, setIsDragging] = useState(false);
   const maxRetries = 3;
   const dropZoneRef = useRef<HTMLDivElement>(null);
+  const t = useTranslations('uploadButton');
 
   useEffect(() => {
     const handleUnzipProgress = (event: CustomEvent<UnzipProgress[]>) => {
@@ -294,13 +296,13 @@ const UploadButton = ({ onUploadComplete, onError, onFilesSelected, filesToProce
         ) : (
           <Upload className="w-5 h-5" />
         )}
-        {isUploading ? 'Nous analysons votre archive, veuillez patienter ...' : 'Cliquez ou glissez votre archive ici'}
+        {isUploading ? t('uploadInProgress') : t('clickOrDrop')}
       </motion.label>
 
       {/* Overlay de drop */}
       {isDragging && (
         <div className="absolute inset-0 bg-blue-600/20 backdrop-blur-sm rounded-xl border-2 border-white border-dashed flex items-center justify-center z-20">
-          <p className="text-white text-lg font-medium">Déposez votre fichier ici</p>
+          <p className="text-white text-lg font-medium">{t('dropHere')}</p>
         </div>
       )}
 

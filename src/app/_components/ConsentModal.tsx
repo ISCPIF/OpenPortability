@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
+
 interface ConsentModalProps {
   isOpen: boolean;
   onAccept: () => void;
@@ -7,6 +9,8 @@ interface ConsentModalProps {
 }
 
 export default function ConsentModal({ isOpen, onAccept, onDecline }: ConsentModalProps) {
+  const t = useTranslations('consentModal');
+
   if (!isOpen) return null;
 
   return (
@@ -23,18 +27,18 @@ export default function ConsentModal({ isOpen, onAccept, onDecline }: ConsentMod
             <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
           </svg>
           <h3 className="text-xl font-semibold text-white">
-            Confirmation d'upload
+            {t('title')}
           </h3>
         </div>
 
         <div className="mb-6">
           <p className="text-gray-300 mb-4">
-            En uploadant vos fichiers Twitter, vous confirmez que :
+            {t('description')}
           </p>
           <ul className="text-gray-300 list-disc list-inside space-y-2">
-            <li>Vous êtes le propriétaire légitime de ces données.</li>
-            <li>Vous acceptez que les donnees fournies soient utilisées par le Centre Nationale de la Recherche Scientifique (CNRS) dans le cadre de l'opération HelloQuitteX.</li>
-            <li>Vous comprenez que ces données seront utilisées pour créer votre profil sur HelloQuitteX.</li>
+            <li>{t('conditions.ownership')}</li>
+            <li>{t('conditions.cnrsUsage')}</li>
+            <li>{t('conditions.profileCreation')}</li>
           </ul>
         </div>
 
@@ -43,13 +47,13 @@ export default function ConsentModal({ isOpen, onAccept, onDecline }: ConsentMod
             onClick={onDecline}
             className="px-4 py-2 text-sm font-medium text-gray-300 hover:text-white transition-colors"
           >
-            Annuler
+            {t('buttons.cancel')}
           </button>
           <button
             onClick={onAccept}
             className="px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
-            Accepter et continuer
+            {t('buttons.accept')}
           </button>
         </div>
       </div>

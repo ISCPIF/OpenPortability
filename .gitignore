@@ -20,7 +20,6 @@
 /tmp
 /logs
 /volumes
-/worker
 /worker/node_modules
 
 

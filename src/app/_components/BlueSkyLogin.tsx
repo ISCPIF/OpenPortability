@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { plex } from '@/app/fonts/plex';
 import { SiBluesky } from "react-icons/si";
+import { useTranslations } from 'next-intl';
 
 interface BlueSkyLoginProps {
   onLoginComplete?: (agent: BskyAgent) => void;
@@ -17,6 +18,7 @@ export default function BlueSkyLogin({ onLoginComplete }: BlueSkyLoginProps) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const t = useTranslations('blueskyLogin');
   
   const identifierRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
@@ -37,7 +39,7 @@ export default function BlueSkyLogin({ onLoginComplete }: BlueSkyLoginProps) {
       const password = passwordRef.current?.value;
 
       if (!identifier || !password) {
-        throw new Error('Veuillez remplir tous les champs');
+        throw new Error(t('form.errors.missingFields'));
       }
 
       const response = await fetch('/api/auth/bluesky', {
@@ -56,7 +58,7 @@ export default function BlueSkyLogin({ onLoginComplete }: BlueSkyLoginProps) {
       console.log("Response from /api/auth/bluesky:", data);
       
       if (!response.ok) {
-        throw new Error(data.error || 'Une erreur est survenue');
+        throw new Error(data.error || t('form.errors.default'));
       }
 
       if (onLoginComplete) {
@@ -99,7 +101,7 @@ export default function BlueSkyLogin({ onLoginComplete }: BlueSkyLoginProps) {
         <div className="flex items-center gap-3">
           <SiBluesky className="w-10 h-10 text-sky-400" />
           <h2 className={`${plex.className} text-2xl font-bold bg-gradient-to-r from-sky-400 to-blue-500 text-transparent bg-clip-text`}>
-            Connectez-vous à BlueSky
+            {t('title')}
           </h2>
           <button
             type="button"
@@ -110,16 +112,16 @@ export default function BlueSkyLogin({ onLoginComplete }: BlueSkyLoginProps) {
               ?
             </div>
             <div className="invisible group-hover:visible absolute z-10 w-72 p-4 bg-gray-800 rounded-lg shadow-lg -right-2 mt-2 text-sm text-gray-300">
-              <p className="mb-2">Nous ne stockons jamais votre mot de passe. Nous utilisons uniquement les tokens d'authentification sécurisés fournis par BlueSky.</p>
+              <p className="mb-2">{t('tooltip.info')}</p>
               <p>
-                Pas encore de compte BlueSky ?{' '}
+                {t('tooltip.noAccount')}{' '}
                 <a
                   href="https://bsky.app/signup"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-sky-400 hover:text-sky-300"
                 >
-                  Créez-en un ici
+                  {t('tooltip.createAccount')}
                 </a>
               </p>
             </div>
@@ -127,7 +129,7 @@ export default function BlueSkyLogin({ onLoginComplete }: BlueSkyLoginProps) {
         </div>
 
         <p className={`${plex.className} text-gray-300 text-center max-w-md text-sm`}>
-          Connectez votre compte BlueSky pour synchroniser vos données et profiter d'une expérience complète.
+          {t('description')}
         </p>
       </div>
 
@@ -135,13 +137,13 @@ export default function BlueSkyLogin({ onLoginComplete }: BlueSkyLoginProps) {
         <div className="space-y-4">
           <div>
             <label htmlFor="identifier" className={`${plex.className} block text-sm font-medium text-gray-200 mb-1`}>
-              Identifiant BlueSky
+              {t('form.identifier.label')}
             </label>
             <input
               ref={identifierRef}
               type="text"
               id="identifier"
-              placeholder="nomdutilisateur.bsky.social"
+              placeholder={t('form.identifier.placeholder')}
               className={`${plex.className} w-full px-4 py-2 bg-white/10 border border-gray-300/20 rounded-lg 
                          focus:ring-2 focus:ring-sky-400 focus:border-transparent
                          placeholder-gray-400 text-white transition-all duration-200`}
@@ -150,20 +152,20 @@ export default function BlueSkyLogin({ onLoginComplete }: BlueSkyLoginProps) {
           </div>
           <div>
             <label htmlFor="password" className={`${plex.className} block text-sm font-medium text-gray-200 mb-1`}>
-              Mot de passe d'application
+              {t('form.password.label')}
             </label>
             <input
               ref={passwordRef}
               type="password"
               id="password"
-              placeholder="••••••••"
+              placeholder={t('form.password.placeholder')}
               className={`${plex.className} w-full px-4 py-2 bg-white/10 border border-gray-300/20 rounded-lg 
                          focus:ring-2 focus:ring-sky-400 focus:border-transparent
                          placeholder-gray-400 text-white transition-all duration-200`}
               disabled={isLoading}
             />
             <p className={`${plex.className} mt-1 text-xs text-gray-400`}>
-              Créez un mot de passe d'application sur 
+              {t('form.password.help')}{' '}
               <a 
                 href="https://bsky.app/settings/app-passwords" 
                 target="_blank" 
@@ -206,7 +208,7 @@ export default function BlueSkyLogin({ onLoginComplete }: BlueSkyLoginProps) {
           ) : (
             <SiBluesky className="w-5 h-5" />
           )}
-          Se connecter
+          {t('form.submit')}
         </motion.button>
       </form>
     </motion.div>
