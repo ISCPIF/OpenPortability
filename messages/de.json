@@ -1,1 +1,121 @@
-{}
+{
+    "consentModal": {
+        "conditions": {
+            "cnrsUsage": "Du bist damit einverstanden, dass die zur Verfügung gestellten Daten vom National Center for Scientific Research (CNRS) als Teil des Betriebs von HelloQuitX verwendet werden dürfen.",
+            "ownership": "Du bist legitime Eigentümer:in dieser Daten.",
+            "profileCreation": "Du verstehst, dass diese Daten verwendet werden, um dein Profil auf HelloQuitX anzulegen."
+        },
+        "buttons": {
+            "cancel": "Abbrechen",
+            "accept": "Akzeptieren und fortfahren"
+        }
+    },
+    "footer": {
+        "hosted": {
+            "text": "Diese Plattform wird von {cnrs} betrieben und zusammen mit {hqx} entwickelt",
+            "hqx": "HelloQuitteX",
+            "cnrs": "CNRS/ISC-PIF"
+        },
+        "copyright": "© {year} HelloQuitteX. Alle Rechte vorbehalten."
+    },
+    "blueskyLogin": {
+        "tooltip": {
+            "info": "Wir speichern niemals dein Passwort. Wir nutzen ausschließlich sichere Zugangstokens, die von BlueSky bereitgestellt werden.",
+            "noAccount": "Du hast noch keinen BlueSky account?",
+            "createAccount": "Erstelle hier einen"
+        },
+        "title": "Mit BlueSky verbinden",
+        "form": {
+            "submit": "Anmelden",
+            "errors": {
+                "missingFields": "Bitte fülle alle Felder aus",
+                "default": "Ein Fehler ist aufgetreten"
+            }
+        },
+        "description": "Verbinde deinen BlueSky-Konto, um deine Daten zu synchronisieren und die volle Erfahrung zu genießen."
+    },
+    "header": {
+        "logout": "Abmelden"
+    },
+    "connectedAccounts": {
+        "services": {
+            "twitter": "Twitter",
+            "bluesky": "BlueSky",
+            "mastodon": "Mastodon"
+        },
+        "and": "und"
+    },
+    "dashboardLoginButtons": {
+        "addSocialNetwork": "Ein weiteres soziales Netzwerk hinzufügen",
+        "services": {
+            "twitter": "Twitter",
+            "mastodon": {
+                "title": "Mastodon",
+                "instances": {
+                    "piaille": "piaille.fr",
+                    "mastodon": "mastodon.social"
+                }
+            },
+            "bluesky": "BlueSky"
+        },
+        "importTwitter": "Importiere mein Twitter-Archiv und fahre mit der Migration fort"
+    },
+    "errorModal": {
+        "title": "Fehler beim Hochladen",
+        "close": "Schließen"
+    },
+    "loginButtons": {
+        "twitter": {
+            "continue": "Mit Twitter fortfahren",
+            "notDeleted": "Ich habe ein Twitter-Konto"
+        },
+        "deleteAccount": "Ich habe mein Twitter-Konto bereits gelöscht",
+        "bluesky": {
+            "connect": "Verbunden mit BlueSky"
+        },
+        "mastodon": {
+            "connect": "Mit Mastodon verbinden",
+            "instances": {
+                "piaille": "Mit Piaille.fr verbinden",
+                "mastodon": "Mit Mastodon.social verbinden"
+            }
+        }
+    },
+    "migrationComplete": {
+        "error": {
+            "title": "Fehler bei der Migration",
+            "createAccount": "Konto anlegen",
+            "retry": "Nochmal versuchen"
+        },
+        "success": {
+            "title": "Migration erfolgreich!",
+            "displayName": "{{name}}",
+            "viewProfile": "Profil ansehen"
+        }
+    },
+    "partageButton": {
+        "share": "Teilen"
+    },
+    "progressSteps": {
+        "socialNetworks": {
+            "description": "Ein soziales Netzwerk hinzufügen"
+        },
+        "import": {
+            "title": "Importieren"
+        },
+        "share": {
+            "title": "Teilen"
+        }
+    },
+    "successModal": {
+        "title": "Import erfolgreich!",
+        "following": {
+            "title": "{{count}} gefolgt",
+            "username": "@{username}"
+        },
+        "followers": {
+            "username": "@{username}"
+        },
+        "close": "Schließen"
+    }
+}
