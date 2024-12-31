@@ -25,4 +25,18 @@ const nextConfig = {
   output: 'standalone'
 }
 
-module.exports = withNextIntl(nextConfig)
+module.exports = withNextIntl({
+  ...nextConfig,
+  generateEtags: false,
+  headers: async () => [
+    {
+      source: '/:path*',
+      headers: [
+        {
+          key: 'Cache-Control',
+          value: 'no-store, must-revalidate'
+        }
+      ]
+    }
+  ]
+});
