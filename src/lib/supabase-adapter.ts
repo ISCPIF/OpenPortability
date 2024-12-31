@@ -52,6 +52,17 @@ export interface BlueskyProfile extends Profile {
 
 export type ProviderProfile = TwitterData | MastodonProfile | BlueskyProfile
 
+export class UnlinkError extends Error {
+  constructor(
+    message: string,
+    public code: 'LAST_ACCOUNT' | 'NOT_FOUND' | 'NOT_LINKED' | 'DATABASE_ERROR',
+    public status: number = 400
+  ) {
+    super(message)
+    this.name = 'UnlinkError'
+  }
+}
+
 // Créer deux clients Supabase distincts
 const authClient = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -498,6 +509,89 @@ const getAccountsByUserId = async (userId: string) => {
   }
 }
 
+const unlinkAccount = async (
+  userId: string,
+  provider: 'twitter' | 'bluesky' | 'mastodon'
+): Promise<void> => {
+  console.log("\n=== [Adapter] unlinkAccount ===")
+  console.log("→ Unlinking account for user:", userId, "provider:", provider)
+
+  // Vérifier si l'utilisateur existe et a le compte lié
+  const user = await getUser(userId)
+  if (!user) {
+    throw new UnlinkError(
+      'User not found',
+      'NOT_FOUND',
+      404
+    )
+  }
+
+  const providerIdField = `${provider}_id` as keyof typeof user
+  if (!user[providerIdField]) {
+    throw new UnlinkError(
+      `No ${provider} account linked`,
+      'NOT_LINKED',
+      400
+    )
+  }
+
+  // Compter les comptes connectés
+  const connectedAccounts = [
+    user.twitter_id,
+    user.bluesky_id,
+    user.mastodon_id
+  ].filter(Boolean).length
+
+  if (connectedAccounts <= 1) {
+    throw new UnlinkError(
+      'Cannot unlink last connected account',
+      'LAST_ACCOUNT',
+      400
+    )
+  }
+
+  // Mettre à jour l'utilisateur directement
+  const updates = {
+    [`${provider}_id`]: null,
+    [`${provider}_username`]: null,
+    [`${provider}_image`]: null,
+    ...(provider === 'mastodon' && { mastodon_instance: null })
+  }
+
+  const { error: updateError } = await authClient
+    .from("users")
+    .update(updates)
+    .eq("id", userId)
+
+  if (updateError) {
+    console.error("❌ Error updating user:", updateError)
+    throw new UnlinkError(
+      'Failed to update user account',
+      'DATABASE_ERROR',
+      500
+    )
+  }
+
+  // Supprimer l'entrée dans la table accounts
+  const { error: deleteError } = await authClient
+    .from("accounts")
+    .delete()
+    .eq("provider", provider)
+    .eq("user_id", userId)
+
+  if (deleteError) {
+    console.error("❌ Error deleting account:", deleteError)
+    throw new UnlinkError(
+      'Failed to delete provider account',
+      'DATABASE_ERROR',
+      500
+    )
+  }
+
+  console.log("✅ Account unlinked successfully")
+}
+
+
 export const supabaseAdapter = {
   createUser,
   getUser,
@@ -505,6 +599,7 @@ export const supabaseAdapter = {
   getUserByAccount,
   updateUser,
   linkAccount,
+  unlinkAccount,
   createSession,
   getSessionAndUser,
   updateSession,

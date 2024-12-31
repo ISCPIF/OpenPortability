@@ -248,5 +248,20 @@
     "button": {
       "dashboard": "Retourner au dashboard"
     }
+  },
+  "profile": {
+    "unlinkConfirmation": "Êtes-vous sûr de vouloir délier votre compte {provider} ?",
+    "unlinkSuccess": "Votre compte {provider} a été délié avec succès",
+    "unlinkError": "Une erreur est survenue lors de la déliaison de votre compte {provider}",
+    "unlinkButton": "Délier le compte {provider}",
+    "providers": {
+      "twitter": "Twitter",
+      "bluesky": "Bluesky",
+      "mastodon": "Mastodon"
+    },
+    "errors": {
+      "lastAccount": "Impossible de délier votre dernier compte connecté",
+      "notLinked": "Aucun compte {provider} n'est lié"
+    }
   }
 }
