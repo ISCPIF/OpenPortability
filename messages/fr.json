@@ -388,5 +388,15 @@
         "button": {
             "dashboard": "Retourner au dashboard"
         }
+    },
+    "migrationComplete": {
+        "error": {
+            "title": "Erreur dans la migration",
+            "retry": "Merci d'essayer à nouveau",
+            "createAccount": "Créer un compte"
+        },
+        "success": {
+            "title": "Migration terminée !"
+        }
     }
 }
