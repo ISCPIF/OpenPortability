@@ -1,1 +1,20 @@
-{}
+{
+    "connectedAccounts": {
+        "services": {
+            "twitter": "Twitter",
+            "bluesky": "BlueSky",
+            "mastodon": "Mastodon"
+        },
+        "connectedWith": "Sei connesso con {services} ✨",
+        "and": "e"
+    },
+    "header": {
+        "profile": {
+            "username": "@{username}"
+        }
+    },
+    "blueskyLogin": {
+        "title": "Connetti a BlueSky",
+        "description": "Connettiti all'utenza BlueSky per sincronizzare i tuoi dati e godere di un'esperienza completa."
+    }
+}
