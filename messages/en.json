@@ -174,7 +174,7 @@
     "redirecting": "Redirecting to dashboard..."
   },
   "signin": {
-    "title": "Ready to migrate to new shores?",
+    "title": "Ready to travel to new shores ?",
     "subtitle": "Start by connecting with Twitter to migrate your data",
     "loading": "Loading information..."
   },
@@ -259,6 +259,21 @@
     },
     "button": {
       "dashboard": "Return to dashboard"
+    }
+  },
+  "profile": {
+    "unlinkConfirmation": "Are you sure you want to unlink your {provider} account?",
+    "unlinkSuccess": "Your {provider} account has been successfully unlinked",
+    "unlinkError": "An error occurred while unlinking your {provider} account",
+    "unlinkButton": "Unlink {provider} account",
+    "providers": {
+      "twitter": "Twitter",
+      "bluesky": "Bluesky",
+      "mastodon": "Mastodon"
+    },
+    "errors": {
+      "lastAccount": "Cannot unlink your last connected account",
+      "notLinked": "No {provider} account is linked"
     }
   }
 }

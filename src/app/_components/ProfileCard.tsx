@@ -4,13 +4,19 @@ import { useSession } from 'next-auth/react'
 import Image from 'next/image'
 import { FaTwitter, FaMastodon } from 'react-icons/fa'
 import { SiBluesky } from "react-icons/si"
+import { IoUnlinkOutline } from "react-icons/io5"
+import { useState } from 'react'
+import { useTranslations } from 'next-intl'
 
 type ProfileCardProps = {
   type: 'twitter' | 'bluesky' | 'mastodon'
 }
 
 export default function ProfileCard({ type }: ProfileCardProps) {
-  const { data: session } = useSession()
+  const { data: session, update: updateSession } = useSession()
+  const [isUnlinking, setIsUnlinking] = useState(false)
+  const t = useTranslations('profile')
+
   if (!session?.user) return null
 
   const profiles = {
@@ -38,8 +44,50 @@ export default function ProfileCard({ type }: ProfileCardProps) {
   }
 
   const profile = profiles[type]
-
   if (!profile.connected) return null
+
+  // Compter le nombre de comptes connectés
+  const connectedAccounts = [
+    session.user.twitter_id,
+    session.user.bluesky_id,
+    session.user.mastodon_id
+  ].filter(Boolean).length
+
+  const isLastAccount = connectedAccounts <= 1
+
+  const handleUnlink = async () => {
+    if (!confirm(t('unlinkConfirmation', { provider: t(`providers.${type}`) }))) {
+      return
+    }
+
+    try {
+      setIsUnlinking(true)
+      const response = await fetch('/api/auth/unlink', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ provider: type })
+      })
+
+      const data = await response.json()
+      if (!response.ok) {
+        const errorMessage = data.code === 'LAST_ACCOUNT' 
+          ? t('errors.lastAccount')
+          : data.code === 'NOT_LINKED'
+          ? t('errors.notLinked', { provider: t(`providers.${type}`) })
+          : data.error
+
+        throw new Error(errorMessage)
+      }
+
+      await updateSession()
+      alert(t('unlinkSuccess', { provider: t(`providers.${type}`) }))
+    } catch (error) {
+      console.error('Error unlinking account:', error)
+      alert(error instanceof Error ? error.message : t('unlinkError'))
+    } finally {
+      setIsUnlinking(false)
+    }
+  }
 
   return (
     <div className="group">
@@ -73,8 +121,15 @@ export default function ProfileCard({ type }: ProfileCardProps) {
           </p>
         </div>
 
-        {/* Indicateur de connexion */}
-        <div className="w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-emerald-500/20" />
+        {/* Bouton de déliaison */}
+        <button
+          onClick={handleUnlink}
+          disabled={isUnlinking || isLastAccount}
+          className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 p-2 hover:bg-white/10 rounded-lg text-white/60 hover:text-white/90 disabled:opacity-50 disabled:cursor-not-allowed"
+          title={isLastAccount ? t('errors.lastAccount') : t('unlinkButton', { provider: t(`providers.${type}`) })}
+        >
+          <IoUnlinkOutline className="text-xl" />
+        </button>
       </div>
     </div>
   )
