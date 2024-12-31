@@ -47,7 +47,7 @@ export const validateFile = (file: File): string | null => {
 };
 
 export const validateFileType = (file: File): boolean => {
-  const validTypes = ['application/javascript', 'text/javascript', 'application/zip'];
+  const validTypes = ['application/javascript', 'text/javascript', 'application/zip', 'application/x-javascript'];
   return validTypes.includes(file.type);
 };
 
