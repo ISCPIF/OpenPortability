@@ -1,22 +1,24 @@
 {
     "consentModal": {
         "conditions": {
-            "cnrsUsage": "Du bist damit einverstanden, dass die zur Verfügung gestellten Daten vom National Center for Scientific Research (CNRS) als Teil des Betriebs von HelloQuitX verwendet werden dürfen.",
-            "ownership": "Du bist legitime Eigentümer:in dieser Daten.",
+            "cnrsUsage": "Du damit einverstanden bist, dass die zur Verfügung gestellten Daten vom National Center for Scientific Research (CNRS) als Teil des Betriebs von HelloQuitX verwendet werden dürfen.",
+            "ownership": "Du legitime Eigentümer:in dieser Daten bist.",
             "profileCreation": "Du verstehst, dass diese Daten verwendet werden, um dein Profil auf HelloQuitX anzulegen."
         },
         "buttons": {
             "cancel": "Abbrechen",
             "accept": "Akzeptieren und fortfahren"
-        }
+        },
+        "title": "Upload-Bestätigung",
+        "description": "Indem du deine Twitter-Dateien hochlädst, bestätigst du dass:"
     },
     "footer": {
         "hosted": {
             "text": "Diese Plattform wird von {cnrs} betrieben und zusammen mit {hqx} entwickelt",
-            "hqx": "HelloQuitteX",
+            "hqx": "HelloQuitX",
             "cnrs": "CNRS/ISC-PIF"
         },
-        "copyright": "© {year} HelloQuitteX. Alle Rechte vorbehalten."
+        "copyright": "© {year} HelloQuitX. Alle Rechte vorbehalten."
     },
     "blueskyLogin": {
         "tooltip": {
@@ -30,12 +32,24 @@
             "errors": {
                 "missingFields": "Bitte fülle alle Felder aus",
                 "default": "Ein Fehler ist aufgetreten"
+            },
+            "identifier": {
+                "placeholder": "username.bsky.social",
+                "label": "BlueSky Benutzername"
+            },
+            "password": {
+                "label": "App-Passwort",
+                "placeholder": "••••••••",
+                "help": "Erstelle ein App-Passwort unter"
             }
         },
         "description": "Verbinde deinen BlueSky-Konto, um deine Daten zu synchronisieren und die volle Erfahrung zu genießen."
     },
     "header": {
-        "logout": "Abmelden"
+        "logout": "Abmelden",
+        "profile": {
+            "username": "@{username}"
+        }
     },
     "connectedAccounts": {
         "services": {
@@ -43,7 +57,8 @@
             "bluesky": "BlueSky",
             "mastodon": "Mastodon"
         },
-        "and": "und"
+        "and": "und",
+        "connectedWith": "Du bist mit {services} verbunden ✨"
     },
     "dashboardLoginButtons": {
         "addSocialNetwork": "Ein weiteres soziales Netzwerk hinzufügen",
@@ -90,7 +105,8 @@
         "success": {
             "title": "Migration erfolgreich!",
             "displayName": "{{name}}",
-            "viewProfile": "Profil ansehen"
+            "viewProfile": "Profil ansehen",
+            "description": "Dein Konto wurde erfolgreich zu BlueSky übertragen unter dem Benutzernamen {handle}"
         }
     },
     "partageButton": {
@@ -98,13 +114,23 @@
     },
     "progressSteps": {
         "socialNetworks": {
-            "description": "Ein soziales Netzwerk hinzufügen"
+            "description": "Ein soziales Netzwerk hinzufügen",
+            "title": "Soziale Netzwerke"
         },
         "import": {
-            "title": "Importieren"
+            "title": "Importieren",
+            "description": {
+                "withStats": "{following} gefolgt, {followers} Follower",
+                "noStats": "Abos importieren"
+            }
         },
         "share": {
-            "title": "Teilen"
+            "title": "Teilen",
+            "description": "Helfe deinen Freunden zu wechseln"
+        },
+        "dashboard": {
+            "title": "Übersichtsseite",
+            "description": "Erfolgreich mit der HelloQuitX-Plattform verbunden!"
         }
     },
     "successModal": {
@@ -114,8 +140,125 @@
             "username": "@{username}"
         },
         "followers": {
-            "username": "@{username}"
+            "username": "@{username}",
+            "title": "Follower ({count})"
         },
         "close": "Schließen"
+    },
+    "uploadButton": {
+        "dropHere": "Datei hier ablegen",
+        "uploadInProgress": "Wir analysieren dein Archive, bitte warten ...",
+        "clickOrDrop": "Klicken, oder Archiv hier ablegen",
+        "error": {
+            "uploadFailed": "Upload nach mehreren Versuchen fehlgeschlagen. Bitte versuche es erneut."
+        }
+    },
+    "largeFiles": {
+        "progress": {
+            "following": {
+                "title": "Folgend",
+                "processed": "{processed} / {total}"
+            },
+            "followers": {
+                "title": "Follower",
+                "processed": "{processed} / {total}"
+            },
+            "total": {
+                "title": "Vollständiger Fortschritt",
+                "processed": "{processed} / {total}"
+            }
+        },
+        "logo": {
+            "alt": "HelloQuitX-Logo"
+        },
+        "status": {
+            "title": "Status",
+            "pending": "Warte",
+            "processing": "Verarbeite",
+            "completed": "Erledigt",
+            "failed": "Fehlgeschlagen"
+        },
+        "stats": {
+            "followers": "Follower",
+            "following": "Folgend"
+        },
+        "button": {
+            "dashboard": "Zurück zur Übersichtsseite"
+        }
+    },
+    "dashboard": {
+        "shareModal": {
+            "shareOn": "Teilen auf {platform}",
+            "title": "Teile deine Reise",
+            "shareText": "🔥Der X-Exodus ist massiv! Verliere keine deiner Follower. Dank #HelloQuitX habe ich {count} neue Passagiere für die Reise zu #BlueSky & #Mastodon registriert. Schließe dich uns an und finde automatisch deine Communities am #January20!"
+        },
+        "loading": "Lade deine Daten ...",
+        "migrationStep": {
+            "completed": "Du hast den ersten Schritt deiner Migration abgeschlossen",
+            "daysLeft": "Noch {count} Tage bis zur großen Abfahrt",
+            "nextSteps": "Schließe die folgenden Schritte ab, um zu neuen Ufern zu segeln!"
+        },
+        "importButton": "Importiere mein Twitter-Archiv und fahre mit der Reise fort"
+    },
+    "uploadResults": {
+        "inviteFriends": "Lade deine Follower ein mitzumachen!",
+        "stats": {
+            "twitterAccounts": {
+                "value": "{count}",
+                "label": "Twitter-Konten"
+            },
+            "totalImported": {
+                "value": "{count} Konten importiert",
+                "label": "Gesamt importiert"
+            },
+            "readyTravelers": {
+                "label": "Bereit für die Reise",
+                "value": "{count} Konten bereit"
+            }
+        },
+        "congratulations": "Herzlichen Glückwunsch @{username}, du bist für die Reise angemeldet!",
+        "importSuccess": "Dein Dateiimport hat {count} neue Passagiere registriert!",
+        "redirecting": "Leite auf Übersichtsseite weiter ..."
+    },
+    "dashboardSea": {
+        "logo": {
+            "alt": "HelloQuitX-Logo"
+        },
+        "welcome": "Willkommen an Bord von HelloQuitX!"
+    },
+    "upload": {
+        "logo": {
+            "alt": "HelloQuitX-Logo"
+        },
+        "helpModal": {
+            "description": "Um an dein Twitter-Archiv zu gelangen, folge diesen Schritten:",
+            "steps": [
+                "Logge in dein Twitter-Konto ein",
+                "Gehe zu \"Mehr\" im linken Menü",
+                "Klicke auf \"Einstellungen und Support\", dann \"Einstellungen und Privatspäre\"",
+                "Unter \"Dein Account\", wähle \"Ein Archiv deiner Daten herunterladen\"",
+                "Bestätige dein Passwort, falls du dazu aufgefordert wirst",
+                "Klicke auf \"Archiv anfordern\"",
+                "Twitter sendet dir eine E-Mail, wenn dein Archiv zum Download bereitsteht",
+                "Nach dem Download kannst du die .zip-Datei hier importieren"
+            ],
+            "note": "Hinweis: Die Bereitstellung des Twitter-Archivs kann bis zu 24 Stunden dauern.",
+            "title": "Wie kommst du an dein Twitter-Archiv?"
+        },
+        "errors": {
+            "fileSize": "Die Dateigröße übersteigt die Grenze von 1 GB",
+            "noFiles": "Keine Dateien ausgewählt",
+            "invalidCombination": "Bite lade entweder eine ZIP-Datei hoch, oder following.js + follower.js, deren aufgeteilte Versionen (following-part*.js/follower-part*.js)",
+            "fileType": "Ungültiger Dateityp. Bitte lade entweder eine ZIP-Datei, oder following.js und follower.js, hoch"
+        },
+        "title": "Importiere dein Twitter-Archiv und setze deine Reise fort",
+        "description": "Drop deine ZIP-Datei (wenn sie 300 MB nicht überschreitet), oder lade data/following.js und data/follower.js hoch, wenn du sie bereits entpackt hast",
+        "loading": "Deine Dateien werden verarbeitet, bitte bleibe auf dieser Seite, bis du weitergeleitet wirst.",
+        "helpButton": "Hilfe, um an dein Twitter-Archive zu gelangen"
+    },
+    "signin": {
+        "title": "Bereit, um zu neuen Ufern aufzubrechen?",
+        "subtitle": "Beginne mit Twitter zu verbinden, um deine Daten zu migrieren",
+        "loading": "Lade Informationen ..."
     }
 }
