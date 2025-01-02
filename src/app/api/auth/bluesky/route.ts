@@ -92,27 +92,14 @@ export async function POST(req: Request) {
       });
     }
 
-    // Create session using Next-Auth's signIn
-    const signInResult = await signIn('credentials', {
-      redirect: false,
-      id: userId,
-      bluesky_id: bskySession.data.did,
-      bluesky_username: bskySession.data.handle,
-      bluesky_image: profile.data.avatar,
-      name: profile.data.displayName || bskySession.data.handle,
-      callbackUrl: '/dashboard'
-    });
-
-    if (signInResult?.error) {
-      throw new Error(signInResult.error);
-    }
-
-    return NextResponse.json({ 
+    return NextResponse.json({
       success: true,
-      redirect: signInResult?.url || '/dashboard',
       user: {
-        id: user.id,
-        bluesky_username: bskySession.data.handle
+        id: userId,
+        bluesky_id: bskySession.data.did,
+        bluesky_username: bskySession.data.handle,
+        bluesky_image: profile.data.avatar,
+        name: profile.data.displayName || bskySession.data.handle
       }
     });
 
@@ -125,7 +112,7 @@ export async function POST(req: Request) {
 export async function DELETE(req: Request) {
   const session = await auth();
 
-  if (!supabaseAdapter.deleteSession || !supabaseAdapter.updateUser || !supabaseAdapter.createUser || !supabaseAdapter.linkAccount) {
+  if (!supabaseAdapter.deleteSession) {
     throw new Error('Required adapter methods are not implemented');
   }
   
@@ -137,24 +124,34 @@ export async function DELETE(req: Request) {
   }
 
   try {
-    // Supprimer la session
+    // Get CSRF token from request headers
+    const csrfToken = req.headers.get('x-csrf-token');
+    if (!csrfToken) {
+      return NextResponse.json(
+        { error: 'CSRF token missing' },
+        { status: 403 }
+      );
+    }
+
+    // Delete the session from the database
     await supabaseAdapter.deleteSession(session.user.id);
 
-    // Effacer les cookies de session
-    const cookieStore = cookies();
-    await cookieStore.delete('next-auth.session-token');
-    await cookieStore.delete('next-auth.csrf-token');
-    await cookieStore.delete('next-auth.callback-url');
+    const cookieStore = await cookies();
+    
+    // Clear session cookies
+    cookieStore.delete('next-auth.session-token');
+    cookieStore.delete('next-auth.csrf-token');
+    cookieStore.delete('next-auth.callback-url');
 
     return NextResponse.json(
-      { ok: true },
+      { success: true },
       {
         headers: {
           'Set-Cookie': [
             'next-auth.session-token=; Path=/; HttpOnly; SameSite=Lax; Expires=Thu, 01 Jan 1970 00:00:00 GMT',
             'next-auth.csrf-token=; Path=/; HttpOnly; SameSite=Lax; Expires=Thu, 01 Jan 1970 00:00:00 GMT',
-            'next-auth.callback-url=; Path=/; HttpOnly; SameSite=Lax; Expires=Thu, 01 Jan 1970 00:00:00 GMT'
-          ]
+            'next-auth.callback-url=; Path=/; SameSite=Lax; Expires=Thu, 01 Jan 1970 00:00:00 GMT'
+          ].join(', ')
         }
       }
     );

@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { plex } from '@/app/fonts/plex';
 import { SiBluesky } from "react-icons/si";
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 
 interface BlueSkyLoginProps {
   onLoginComplete?: (agent: BskyAgent) => void;
@@ -19,6 +19,9 @@ export default function BlueSkyLogin({ onLoginComplete }: BlueSkyLoginProps) {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const t = useTranslations('blueskyLogin');
+
+  const locale = useLocale();
+
   
   const identifierRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
@@ -42,6 +45,7 @@ export default function BlueSkyLogin({ onLoginComplete }: BlueSkyLoginProps) {
         throw new Error(t('form.errors.missingFields'));
       }
 
+      // First authenticate with Bluesky
       const response = await fetch('/api/auth/bluesky', {
         method: 'POST',
         headers: {
@@ -49,47 +53,45 @@ export default function BlueSkyLogin({ onLoginComplete }: BlueSkyLoginProps) {
         },
         body: JSON.stringify({
           identifier,
-          password,
-        }),
+          password
+        })
       });
 
       const data = await response.json();
-
-      console.log("Response from /api/auth/bluesky:", data);
+      console.log('Bluesky API response:', data);
       
       if (!response.ok) {
         throw new Error(data.error || t('form.errors.default'));
       }
 
-      if (onLoginComplete) {
-        const agent = new BskyAgent({ service: 'https://bsky.social' });
-        await agent.login({ identifier, password });
-        onLoginComplete(agent);
-      }
-
-      clearSensitiveData();
-      
-      // Mettre à jour la session NextAuth
-      await signIn('credentials', {
-        redirect: false,
-        identifier: data.user.bluesky_handle,
-        id: data.user.id
+      // Then sign in with NextAuth using the returned user data
+      console.log('Signing in with credentials:', data.user);
+      const result = await signIn('bluesky', {
+        ...data.user,
+        redirect: false
       });
       
-      // Redirect to the dashboard
-      if (data.redirect) {
-        router.push(data.redirect);
-      } else {
-        router.push('/dashboard');
+      console.log('SignIn result:', result);
+
+      if (result?.error) {
+        throw new Error(result.error);
       }
-    } catch (err: any) {
-      setError(err.message);
-      clearSensitiveData();
+
+      if (result?.ok) {
+        console.log('Redirecting to dashboard...');
+        router.push(`/${locale}/dashboard`);
+      } else {
+        console.log('Sign in failed:', result);
+      }
+
+    } catch (err) {
+      console.error('Login error:', err);
+      setError(err instanceof Error ? err.message : t('form.errors.default'));
     } finally {
       setIsLoading(false);
+      clearSensitiveData();
     }
   };
-
   return (
     <motion.div
       initial={{ opacity: 0 }}
