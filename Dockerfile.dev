@@ -1,11 +1,10 @@
 FROM node:18-alpine
 WORKDIR /app
 
-# Copie de tous les fichiers nécessaires comme dans le Dockerfile original
+# Copier d'abord les fichiers de dépendances
 COPY package*.json ./
-COPY . .
 
-# Installation des dépendances en mode développement
+# Installer les dépendances
 RUN npm install
 
 # Set environment variables
@@ -14,5 +13,11 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-# Start the Next.js development server
-CMD ["npx", "next", "dev"]
+# Ne pas copier le code source ici car il sera monté comme volume
+# COPY . .
+
+# Exposer le port
+EXPOSE 3000
+
+# Utiliser npm run dev pour être cohérent avec docker-compose.dev.yml
+CMD ["npm", "run", "dev"]

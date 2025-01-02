@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { BskyAgent } from '@atproto/api'
 import { auth, signIn } from "@/app/auth"
-import { supabaseAdapter } from "@/lib/supabase-adapter"
+import { supabaseAdapter, BlueskyProfile } from "@/lib/supabase-adapter"
 import { cookies } from 'next/headers'
 import { encode } from 'next-auth/jwt'
 
@@ -18,6 +18,9 @@ export async function POST(req: Request) {
     let userId = session?.user?.id;
     let user;
 
+    if (!supabaseAdapter.getUserByAccount || !supabaseAdapter.updateUser || !supabaseAdapter.createUser || !supabaseAdapter.linkAccount) {
+      throw new Error('Required adapter methods are not implemented');
+    }
     // Check if user exists with this Bluesky ID
     const existingUser = await supabaseAdapter.getUserByAccount({
       provider: 'bluesky',
@@ -37,38 +40,41 @@ export async function POST(req: Request) {
       }
       // User exists, update their profile
       userId = existingUser.id;
+      const blueskyProfile: BlueskyProfile = {
+        did: bskySession.data.did,
+        handle: bskySession.data.handle,
+        displayName: profile.data.displayName,
+        avatar: profile.data.avatar
+      };
       user = await supabaseAdapter.updateUser(userId, {
         provider: 'bluesky',
-        profile: {
-          did: bskySession.data.did,
-          handle: bskySession.data.handle,
-          displayName: profile.data.displayName,
-          avatar: profile.data.avatar
-        }
+        profile: blueskyProfile
       });
     } else if (userId) {
-      console.log(`User $userId is logged in but not linked to this Bluesky account`);
+      console.log(`User ${userId} is logged in but not linked to this Bluesky account`);
       // User is logged in but not linked to this Bluesky account
+      const blueskyProfile: BlueskyProfile = {
+        did: bskySession.data.did,
+        handle: bskySession.data.handle,
+        displayName: profile.data.displayName,
+        avatar: profile.data.avatar
+      };
       user = await supabaseAdapter.updateUser(userId, {
         provider: 'bluesky',
-        profile: {
-          did: bskySession.data.did,
-          handle: bskySession.data.handle,
-          displayName: profile.data.displayName,
-          avatar: profile.data.avatar
-        }
+        profile: blueskyProfile
       });
     } else {
       // Create new user
       console.log('Creating new user with Bluesky data');
+      const blueskyProfile: BlueskyProfile = {
+        did: bskySession.data.did,
+        handle: bskySession.data.handle,
+        displayName: profile.data.displayName,
+        avatar: profile.data.avatar
+      };
       user = await supabaseAdapter.createUser({
         provider: 'bluesky',
-        profile: {
-          did: bskySession.data.did,
-          handle: bskySession.data.handle,
-          displayName: profile.data.displayName,
-          avatar: profile.data.avatar
-        }
+        profile: blueskyProfile
       });
       userId = user.id;
 
@@ -118,6 +124,10 @@ export async function POST(req: Request) {
 
 export async function DELETE(req: Request) {
   const session = await auth();
+
+  if (!supabaseAdapter.deleteSession || !supabaseAdapter.updateUser || !supabaseAdapter.createUser || !supabaseAdapter.linkAccount) {
+    throw new Error('Required adapter methods are not implemented');
+  }
   
   if (!session?.user?.id) {
     return NextResponse.json(
