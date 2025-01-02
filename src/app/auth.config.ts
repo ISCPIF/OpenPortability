@@ -7,6 +7,8 @@ import type { User, Account, Profile } from "next-auth"
 import type { AdapterUser } from "next-auth/adapters"
 import { isTwitterProfile, isMastodonProfile, isBlueskyProfile } from "./auth"
 import type { AdapterAccountType } from "next-auth/adapters"
+import type { CustomAdapterUser } from '@/lib/supabase-adapter'
+
 import { auth } from "./auth"
 
 export const authConfig = {
@@ -37,13 +39,12 @@ export const authConfig = {
       }
     },
     csrfToken: {
-      name: `__Host-next-auth.csrf-token`,
+      name: 'next-auth.csrf-token',
       options: {
         httpOnly: true,
         sameSite: 'lax',
         path: '/',
-        secure: true,
-        maxAge: 60 * 60 // 1 hour
+        secure: process.env.NODE_ENV === 'production'
       }
     },
     callbackUrl: {
@@ -72,105 +73,34 @@ export const authConfig = {
       console.log("SignIn callback - Account:", account);
       console.log("SignIn callback - user:", user);
 
-      if (!supabaseAdapter.getUser || !supabaseAdapter.getUserByAccount) {
-        throw new Error('Required adapter methods are not implemented');
-      }
+      if (!account) return false;
 
       try {
         // Vérifier si un utilisateur est déjà connecté
-        const session = await auth()
-        console.log("Current session:", session)
-
-        if (session?.user?.id) {
-          // Un utilisateur est déjà connecté, on récupère ses informations
-          const existingUser = await supabaseAdapter.getUser(session.user.id)
-          console.log("Found existing user:", existingUser)
-
-          if (existingUser && account && profile) {
-            // Vérifier si le compte social n'est pas déjà lié à un autre utilisateur
-            const existingAccount = await supabaseAdapter.getUserByAccount({
-              providerAccountId: account.providerAccountId,
-              provider: account.provider
-            })
-
-            if (existingAccount && existingAccount.id !== existingUser.id) {
-              console.error("This social account is already linked to another user")
-              return false
-            }
-
-            // Lier le nouveau compte au compte existant
-            await supabaseAdapter.linkAccount({
-              userId: existingUser.id,
-              type: account.type as AdapterAccountType,
-              provider: account.provider,
-              providerAccountId: account.providerAccountId,
-              refresh_token: account.refresh_token,
-              access_token: account.access_token,
-              expires_at: account.expires_at,
-              token_type: account.token_type,
-              scope: account.scope,
-              id_token: account.id_token,
-              session_state: account.session_state
-            })
-
-            // Mettre à jour l'utilisateur avec les nouvelles informations
-            if (account?.provider === 'mastodon' || account?.provider === 'piaille') {
-              await supabaseAdapter.updateUser(existingUser.id, {
-                provider: 'mastodon',
-                profile: profile as MastodonProfile
-              })
-            } else if (account?.provider === 'twitter' && 'data' in profile) {
-              await supabaseAdapter.updateUser(existingUser.id, {
-                provider: 'twitter',
-                profile: profile as TwitterData
-              })
-            }
-
-            return true
-          }
+        const session = await auth();
+        
+        // Si on essaie de lier un compte Bluesky
+        if (session?.user?.id && account.provider === 'bluesky') {
+          await supabaseAdapter.linkAccount({
+            userId: session.user.id,
+            type: account.type as AdapterAccountType,
+            provider: account.provider,
+            providerAccountId: account.providerAccountId,
+            refresh_token: account.refresh_token,
+            access_token: account.access_token,
+            expires_at: account.expires_at,
+            token_type: account.token_type,
+            scope: account.scope,
+            id_token: account.id_token,
+            session_state: account.session_state
+          });
         }
 
-        // Si on arrive ici, pas d'utilisateur connecté
-        // Vérifier si le compte social n'est pas déjà utilisé
-        if (!account?.provider || !account?.providerAccountId) {
-          console.error("Invalid account information", account)
-          return false
-        }
-        const existingAccount = await supabaseAdapter.getUserByAccount({
-          providerAccountId: account.providerAccountId,
-          provider: account.provider
-        })
-
-        if (existingAccount) {
-          console.error("This social account is already linked to another user")
-          return false
-        }
-
-        // Création d'un nouvel utilisateur
-        let provider: 'mastodon' | 'twitter' | 'bluesky'
-        if (account.provider === 'piaille' || account.provider === 'mastodon') {
-          provider = 'mastodon'
-        } else if (account.provider === 'twitter') {
-          provider = 'twitter'
-        } else if (account.provider === 'bluesky') {
-          provider = 'bluesky'
-        } else {
-          console.error("Unknown provider:", account.provider)
-          return false
-        }
-
-        const newUser = await supabaseAdapter.createUser({
-          id: user.id,
-          name: user.name,
-          provider,
-          profile: profile as MastodonProfile | TwitterData
-        })
-
-        console.log("Created new user:", newUser)
-        return true
+        // Autoriser la connexion dans tous les cas
+        return true;
       } catch (error) {
-        console.error("Error in signIn callback:", error)
-        return false
+        console.error("Error in signIn callback:", error);
+        return false;
       }
     },
 async jwt({ token, user, account, profile }) {
@@ -182,6 +112,10 @@ async jwt({ token, user, account, profile }) {
 
       if (account && profile) {
         try {
+          if (account?.provider === 'bluesky') {
+            // The user object should already be properly formatted from the credentials provider
+            return true;
+          }
           if (account.provider === 'twitter' && profile && isTwitterProfile(profile)) {
             await supabaseAdapter.updateUser(token.id || '', {
               provider: 'twitter',
@@ -203,21 +137,21 @@ async jwt({ token, user, account, profile }) {
             token.mastodon_instance = profile.url ? new URL(profile.url).origin : undefined
             token.name = profile.display_name
           }
-          else if (account.provider === 'bluesky' && profile && isBlueskyProfile(profile)) {
-            await supabaseAdapter.updateUser(token.id || '', {
-              provider: 'bluesky',
-              profile: profile
-            })
-            // Utiliser des valeurs par défaut pour les champs optionnels
-            const blueskyId = profile.did || profile.id || token.id || ''
-            const blueskyUsername = profile.handle || profile.username || profile.identifier || 'unknown'
-            const blueskyName = profile.displayName || profile.name || blueskyUsername
+          // else if (account.provider === 'bluesky' && profile && isBlueskyProfile(profile)) {
+          //   await supabaseAdapter.updateUser(token.id || '', {
+          //     provider: 'bluesky',
+          //     profile: profile
+          //   })
+          //   // Utiliser des valeurs par défaut pour les champs optionnels
+          //   const blueskyId = profile.did || profile.id || token.id || ''
+          //   const blueskyUsername = profile.handle || profile.username || profile.identifier || 'unknown'
+          //   const blueskyName = profile.displayName || profile.name || blueskyUsername
 
-            token.bluesky_id = blueskyId
-            token.bluesky_username = blueskyUsername
-            token.bluesky_image = profile.avatar || undefined
-            token.name = blueskyName
-          }
+          //   token.bluesky_id = blueskyId
+          //   token.bluesky_username = blueskyUsername
+          //   token.bluesky_image = profile.avatar || undefined
+          //   token.name = blueskyName
+          // }
         } catch (error) {
           console.error(`Error updating user profile for ${account.provider}:`, error)
         }
@@ -263,56 +197,40 @@ async jwt({ token, user, account, profile }) {
       return session
     },
     async redirect({ url, baseUrl }) {
-      // Détecter le locale depuis l'URL de la requête
-      const locale = url.match(/\/([a-z]{2})\//) ? url.match(/\/([a-z]{2})\//)?.[1] : 'fr';
-
-      if (url.includes('/auth/callback')) {
-        // Rediriger vers le dashboard avec le locale
-        return `${baseUrl}/${locale}/dashboard`
-      }
-
-      // Pour les autres redirections, conserver le locale s'il existe
+      // Always allow the full URL if it starts with the base URL
       if (url.startsWith(baseUrl)) {
         return url;
       }
-
-      // Pour les redirections vers la base URL, ajouter le locale par défaut
-      return `${baseUrl}/${locale}`;
+      // For relative URLs, just append them to the base URL
+      return `${baseUrl}${url.startsWith('/') ? url : `/${url}`}`;
     }
 
-
   },
-providers: [
-  {
-    id: "bluesky",
-    name: "Bluesky",
-    type: "credentials",
-    credentials: {},
-    async authorize(credentials: Partial<Record<string, unknown>>): Promise<User | null> {
-      if (!credentials) {
-        return null;
-      }
+  providers: [
+    {
+      id: "bluesky",
+      name: "Bluesky",
+      type: "credentials",
+      credentials: {},
+      async authorize(credentials): Promise<CustomAdapterUser | null> {
+        if (!credentials) {
+          console.error('Missing credentials');
+          return null;
+        }
 
-      try {
-        // On utilise toutes les informations passées lors du signIn
-        return {
-          id: credentials.id as string,
-          name: credentials.name as string,
-          has_onboarded: true,
-          bluesky_id: credentials.bluesky_id as string,
-          bluesky_username: credentials.bluesky_username as string,
-          bluesky_image: credentials.bluesky_image as string || null,
-        };
-      } catch (error) {
-        console.error('Bluesky auth error:', error);
-        return null;
+        try {
+          // The user object should already be properly formatted from the API
+          return credentials as unknown as CustomAdapterUser;
+        } catch (error) {
+          console.error('Bluesky auth error:', error);
+          return null;
+        }
       }
-    }
-  },
+    },
     TwitterProvider({
       clientId: process.env.TWITTER_CLIENT_ID!,
       clientSecret: process.env.TWITTER_CLIENT_SECRET!,
-      version: "2.0",
+      // version: "2.0",
       // checks: ["none"], // Désactiver la vérification du state pour Twitter
       async profile(profile, tokens) {
         console.log("Twitter profile response:", profile);

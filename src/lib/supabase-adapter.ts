@@ -8,7 +8,7 @@ import type {
 } from "next-auth/adapters"
 import type { Profile } from "next-auth"
 
-interface CustomAdapterUser extends Omit<AdapterUser, 'image'> {
+export interface CustomAdapterUser extends Omit<AdapterUser, 'image'> {
   has_onboarded: boolean
   twitter_id?: string | null
   twitter_username?: string | null
@@ -93,14 +93,15 @@ export async function createUser(
     const provider = userData.provider
     const profile = userData.profile
 
-    // Vérifier si l'utilisateur existe déjà avec ce provider ID
-    const providerIdField = `${provider}_id` as keyof CustomAdapterUser
+
+const providerIdField = `${provider}_id` as keyof CustomAdapterUser
     const providerId = provider === 'twitter' 
       ? (profile as TwitterData).data.id
       : provider === 'mastodon'
       ? (profile as MastodonProfile).id
-      : (profile as BlueskyProfile).did || (profile as BlueskyProfile).id
+      : (userData as any).bluesky_id || (userData as any).did // Try both fields
 
+    console.log('Looking for existing user with provider ID:', providerId)
     const { data: existingUser } = await authClient
       .from('users')
       .select('*')
@@ -112,13 +113,13 @@ export async function createUser(
       return existingUser as CustomAdapterUser
     }
 
-    // Créer les données utilisateur selon le provider
+ // Créer les données utilisateur selon le provider
     const userToCreate: Partial<CustomAdapterUser> = {
       name: provider === 'twitter' 
         ? (profile as TwitterData).data.name
         : provider === 'mastodon'
         ? (profile as MastodonProfile).display_name
-        : (profile as BlueskyProfile).displayName || (profile as BlueskyProfile).name,
+        : (userData as BlueskyProfile).displayName || (userData as BlueskyProfile).name,
       has_onboarded: false,
       email: undefined
     }
@@ -131,8 +132,7 @@ export async function createUser(
         twitter_username: twitterData.data.username,
         twitter_image: twitterData.data.profile_image_url
       })
-    }
-    else if (provider === 'mastodon') {
+    } else if (provider === 'mastodon') {
       const mastodonData = profile as MastodonProfile
       Object.assign(userToCreate, {
         mastodon_id: mastodonData.id,
@@ -140,13 +140,12 @@ export async function createUser(
         mastodon_image: mastodonData.avatar,
         mastodon_instance: mastodonData.url ? new URL(mastodonData.url).origin : null
       })
-    }
-    else if (provider === 'bluesky') {
-      const blueskyData = profile as BlueskyProfile
+    } else if (provider === 'bluesky') {
+      const blueskyData = userData as any
       Object.assign(userToCreate, {
-        bluesky_id: blueskyData.did || blueskyData.id,
-        bluesky_username: blueskyData.handle || blueskyData.username,
-        bluesky_image: blueskyData.avatar
+        bluesky_id: blueskyData.bluesky_id || blueskyData.did, // Use bluesky_id or did
+        bluesky_username: blueskyData.bluesky_username || blueskyData.handle,
+        bluesky_image: blueskyData.bluesky_image || blueskyData.avatar
       })
     }
 
@@ -527,6 +526,18 @@ async function unlinkAccountImpl(
       "LAST_ACCOUNT",
       400
     )
+  }
+
+    // Delete account entry
+    const { error: deleteError } = await authClient
+    .from('accounts')
+    .delete()
+    .eq('user_id', userId)
+    .eq('provider', provider)
+
+  if (deleteError) {
+    console.error("Error deleting account:", deleteError)
+    throw new UnlinkError("Database error", "DATABASE_ERROR", 500)
   }
 
   // Prepare update data
