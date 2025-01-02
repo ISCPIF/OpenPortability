@@ -6,6 +6,8 @@ import type { TwitterData, MastodonProfile, BlueskyProfile } from "@/lib/supabas
 import type { User, Account, Profile } from "next-auth"
 import type { AdapterUser } from "next-auth/adapters"
 import { isTwitterProfile, isMastodonProfile, isBlueskyProfile } from "./auth"
+import type { AdapterAccountType } from "next-auth/adapters"
+import { auth } from "./auth"
 
 export const authConfig = {
   adapter: supabaseAdapter,
@@ -64,58 +66,113 @@ export const authConfig = {
     }
   },
   callbacks: {
-  async signIn({ user, account, profile, error }: {
-      user: User | AdapterUser
-      account: Account | null
-      profile?: Profile
-      error?: string
-    }) {
+    async signIn({ user, account, profile, error }) {
       console.log("SignIn callback - Profile:", profile);
       console.log("SignIn callback - Error:", error);
       console.log("SignIn callback - Account:", account);
+      console.log("SignIn callback - user:", user);
 
-      // Si c'est une erreur liée à Twitter
-      // if (account?.provider === 'twitter' && error) {
-      //   return `/auth/error?error=${encodeURIComponent("Twitter est temporairement indisponible. Veuillez réessayer dans quelques minutes.")}&provider=twitter`;
-      // }
-      
-      // Si c'est une erreur de rate limit
-      // if (profile && 'error' in profile) {
-      //   console.log("Rate limit error detected in signIn");
-      //   const errorMessage = `Twitter - ${profile.error.title} (${profile.error.status}): ${profile.error.detail || 'Veuillez réessayer dans quelques minutes.'}`;
-      //   return `/auth/error?error=${encodeURIComponent(errorMessage)}&provider=twitter`;
-      // }
-
-      // // Si pas d'utilisateur à cause du rate limit
-      // if (!user && profile?.status === 429) {
-      //   return `/auth/error?error=${encodeURIComponent("Twitter est temporairement indisponible en raison d'un trop grand nombre de requêtes. Veuillez réessayer dans quelques minutes.")}&provider=twitter`;
-      // }
-
-      if (!user?.id) {
-        console.error("No user ID provided in signIn callback")
-        return false
+      if (!supabaseAdapter.getUser || !supabaseAdapter.getUserByAccount) {
+        throw new Error('Required adapter methods are not implemented');
       }
 
       try {
-        if (account?.provider === 'twitter' && profile && 'data' in profile) {
-          await supabaseAdapter.updateUser(user.id, {
-            provider: 'twitter',
-            profile: profile as TwitterData
-          })
+        // Vérifier si un utilisateur est déjà connecté
+        const session = await auth()
+        console.log("Current session:", session)
+
+        if (session?.user?.id) {
+          // Un utilisateur est déjà connecté, on récupère ses informations
+          const existingUser = await supabaseAdapter.getUser(session.user.id)
+          console.log("Found existing user:", existingUser)
+
+          if (existingUser && account && profile) {
+            // Vérifier si le compte social n'est pas déjà lié à un autre utilisateur
+            const existingAccount = await supabaseAdapter.getUserByAccount({
+              providerAccountId: account.providerAccountId,
+              provider: account.provider
+            })
+
+            if (existingAccount && existingAccount.id !== existingUser.id) {
+              console.error("This social account is already linked to another user")
+              return false
+            }
+
+            // Lier le nouveau compte au compte existant
+            await supabaseAdapter.linkAccount({
+              userId: existingUser.id,
+              type: account.type as AdapterAccountType,
+              provider: account.provider,
+              providerAccountId: account.providerAccountId,
+              refresh_token: account.refresh_token,
+              access_token: account.access_token,
+              expires_at: account.expires_at,
+              token_type: account.token_type,
+              scope: account.scope,
+              id_token: account.id_token,
+              session_state: account.session_state
+            })
+
+            // Mettre à jour l'utilisateur avec les nouvelles informations
+            if (account?.provider === 'mastodon' || account?.provider === 'piaille') {
+              await supabaseAdapter.updateUser(existingUser.id, {
+                provider: 'mastodon',
+                profile: profile as MastodonProfile
+              })
+            } else if (account?.provider === 'twitter' && 'data' in profile) {
+              await supabaseAdapter.updateUser(existingUser.id, {
+                provider: 'twitter',
+                profile: profile as TwitterData
+              })
+            }
+
+            return true
+          }
         }
-        else if ((account?.provider === 'mastodon' || account?.provider === 'piaille') && profile && 'url' in profile) {
-          await supabaseAdapter.updateUser(user.id, {
-            provider: 'mastodon',
-            profile: profile as MastodonProfile
-          })
+
+        // Si on arrive ici, pas d'utilisateur connecté
+        // Vérifier si le compte social n'est pas déjà utilisé
+        if (!account?.provider || !account?.providerAccountId) {
+          console.error("Invalid account information", account)
+          return false
         }
+        const existingAccount = await supabaseAdapter.getUserByAccount({
+          providerAccountId: account.providerAccountId,
+          provider: account.provider
+        })
+
+        if (existingAccount) {
+          console.error("This social account is already linked to another user")
+          return false
+        }
+
+        // Création d'un nouvel utilisateur
+        let provider: 'mastodon' | 'twitter' | 'bluesky'
+        if (account.provider === 'piaille' || account.provider === 'mastodon') {
+          provider = 'mastodon'
+        } else if (account.provider === 'twitter') {
+          provider = 'twitter'
+        } else if (account.provider === 'bluesky') {
+          provider = 'bluesky'
+        } else {
+          console.error("Unknown provider:", account.provider)
+          return false
+        }
+
+        const newUser = await supabaseAdapter.createUser({
+          id: user.id,
+          name: user.name,
+          provider,
+          profile: profile as MastodonProfile | TwitterData
+        })
+
+        console.log("Created new user:", newUser)
         return true
       } catch (error) {
         console.error("Error in signIn callback:", error)
         return false
       }
-    }
-,
+    },
 async jwt({ token, user, account, profile }) {
       // S'assurer que token.id existe et que user.id est une string
       if (!token.id && user?.id && typeof user.id === 'string') {
@@ -170,6 +227,9 @@ async jwt({ token, user, account, profile }) {
     },
 
     async session({ session, token }) {
+      if (!supabaseAdapter.getUser) {
+        throw new Error('Required adapter methods are not implemented');
+      }
       if (session.user && token.id) {
         try {
           const user = await supabaseAdapter.getUser(token.id)
@@ -223,23 +283,32 @@ async jwt({ token, user, account, profile }) {
 
   },
 providers: [
-    {
-      id: 'credentials',
-      name: 'Credentials',
-      type: 'credentials',
-      credentials: {},
-      async authorize(credentials) {
-        if (!credentials) return null;
-        
-        return {
-          id: credentials.id,
-          bluesky_id: credentials.bluesky_id,
-          bluesky_username: credentials.bluesky_username,
-          bluesky_image: credentials.bluesky_image,
-          name: credentials.name
-        };
+  {
+    id: "bluesky",
+    name: "Bluesky",
+    type: "credentials",
+    credentials: {},
+    async authorize(credentials: Partial<Record<string, unknown>>): Promise<User | null> {
+      if (!credentials) {
+        return null;
       }
-    },
+
+      try {
+        // On utilise toutes les informations passées lors du signIn
+        return {
+          id: credentials.id as string,
+          name: credentials.name as string,
+          has_onboarded: true,
+          bluesky_id: credentials.bluesky_id as string,
+          bluesky_username: credentials.bluesky_username as string,
+          bluesky_image: credentials.bluesky_image as string || null,
+        };
+      } catch (error) {
+        console.error('Bluesky auth error:', error);
+        return null;
+      }
+    }
+  },
     TwitterProvider({
       clientId: process.env.TWITTER_CLIENT_ID!,
       clientSecret: process.env.TWITTER_CLIENT_SECRET!,
@@ -305,7 +374,7 @@ providers: [
     })
   ],
   pages: {
-    signIn: '/:locale/auth/signin',
-    error: '/:locale/auth/error'
+    signIn: '/auth/signin',
+    error: '/auth/error'
   }
 } satisfies NextAuthConfig;
