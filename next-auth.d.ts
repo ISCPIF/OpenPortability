@@ -7,6 +7,8 @@ declare module "next-auth" {
     user: {
       id: string
       has_onboarded: boolean
+      hqx_newsletter: boolean
+      oep_accepted: boolean
       twitter_id?: string | null
       twitter_username?: string | null
       twitter_image?: string | null
@@ -23,6 +25,8 @@ declare module "next-auth" {
   interface User extends DefaultUser {
     id: string
     has_onboarded: boolean
+    hqx_newsletter: boolean
+    oep_accepted: boolean
     twitter_id?: string | null
     twitter_username?: string | null
     twitter_image?: string | null
@@ -40,6 +44,8 @@ declare module "next-auth/jwt" {
   interface JWT {
     id: string
     has_onboarded: boolean
+    hqx_newsletter: boolean
+    oep_accepted: boolean
     twitter_id?: string
     twitter_username?: string
     twitter_image?: string
