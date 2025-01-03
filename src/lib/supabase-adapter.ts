@@ -141,11 +141,11 @@ const providerIdField = `${provider}_id` as keyof CustomAdapterUser
         mastodon_instance: mastodonData.url ? new URL(mastodonData.url).origin : null
       })
     } else if (provider === 'bluesky') {
-      const blueskyData = userData as any
+      const blueskyData = profile as BlueskyProfile
       Object.assign(userToCreate, {
-        bluesky_id: blueskyData.bluesky_id || blueskyData.did, // Use bluesky_id or did
-        bluesky_username: blueskyData.bluesky_username || blueskyData.handle,
-        bluesky_image: blueskyData.bluesky_image || blueskyData.avatar
+        bluesky_id: blueskyData.did,
+        bluesky_username: blueskyData.handle,
+        bluesky_image: blueskyData.avatar
       })
     }
 

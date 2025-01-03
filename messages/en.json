@@ -275,5 +275,15 @@
       "lastAccount": "Cannot unlink your last connected account",
       "notLinked": "No {provider} account is linked"
     }
+  },
+  "settings": {
+    "logout": "Sign out",
+    "deleteAccount": "Delete my account",
+    "deleteConfirm": {
+      "title": "Delete Account",
+      "message": "Are you sure you want to delete your account? This action cannot be undone and will result in the deletion of:\n\n• All your imported data\n• All your linked accounts (Twitter, BlueSky, Mastodon)\n• Your HelloQuitteX profile",
+      "cancel": "Cancel",
+      "confirm": "Yes, delete my account"
+    }
   }
 }

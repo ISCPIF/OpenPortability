@@ -2,6 +2,7 @@
 
 import { useSession } from 'next-auth/react'
 import ProfileCard from './ProfileCard'
+import SettingsOptions from './SettingsOptions'
 import { motion } from 'framer-motion'
 import { IoCheckmarkCircle } from 'react-icons/io5'
 import { useTranslations } from 'next-intl'
@@ -39,6 +40,9 @@ export default function ConnectedAccounts() {
       {/* Container principal */}
       <div className="relative p-6 bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10">
         {/* Message de statut */}
+        <div className="absolute top-2 right-2">
+          <SettingsOptions />
+        </div>
         <div className="mb-4">
           <p className="text-center text-sm text-white/60">
             {t('connectedWith', { services: formattedServices })}
