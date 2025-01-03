@@ -110,7 +110,7 @@ export default function DashboardLoginButtons({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="relative w-full h-full">
       <motion.button
         variants={itemVariants}
         initial="hidden"
@@ -121,14 +121,14 @@ export default function DashboardLoginButtons({
           setShowLoginOptions(!showLoginOptions);
           setShowMastodonMenu(false);
         }}
-        className="w-full flex items-center justify-between gap-3 px-6 py-4 
+        className="w-full h-full flex flex-col items-center justify-center gap-3 px-6 py-4 
                  bg-gradient-to-br from-indigo-500/90 to-indigo-600/90 rounded-2xl
                  hover:from-indigo-500 hover:to-indigo-600
                  transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-indigo-500/20
                  backdrop-blur-sm relative overflow-hidden group"
       >
-        <div className="absolute inset-0 bg-gradient-to-br from-indigo-400/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-        <span className={`${plex.className} relative z-10 text-lg`}>
+ <div className="absolute inset-0 bg-gradient-to-br from-indigo-400/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+        <span className={`${plex.className} font-semibold relative z-10`}>
           {t('addSocialNetwork')}
         </span>
         <motion.div
@@ -147,7 +147,7 @@ export default function DashboardLoginButtons({
             initial="hidden"
             animate="visible"
             exit="exit"
-            className="space-y-3 pt-1"
+            className="absolute bottom-full left-0 right-0 mb-2 space-y-3 pb-1 bg-indigo-900/50 backdrop-blur-sm rounded-xl p-2 z-20"
           >
             {!connectedServices.twitter && (
               <motion.button

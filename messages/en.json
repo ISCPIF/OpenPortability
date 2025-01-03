@@ -53,7 +53,7 @@
       }
     },
     "dashboardLoginButtons": {
-      "importTwitter": "Import my Twitter archive to continue migration",
+      "importTwitter": "Import my Twitter archive",
       "addSocialNetwork": "Add another social network",
       "services": {
         "twitter": "Twitter",
@@ -185,13 +185,25 @@
       "daysLeft": "{count} days left before the big departure",
       "nextSteps": "Complete the following steps to sail to new shores!"
     },
-    "importButton": "Import my Twitter archive to continue my journey",
+    "importButton": "Import my Twitter archive",
     "shareModal": {
       "title": "Share your journey",
       "shareOn": "Share on {platform}",
       "shareText": "🔥The X exodus is massive! Don't lose any of your followers. Thanks to #HelloQuitX I've registered {count} new passengers for a journey to #BlueSky & #Mastodon. Join us and automatically find your communities on #January20!"
+    },
+    "newsletter": {
+      "title": "Stay Informed",
+      "description": "Sign up to follow the project's progress and be notified of new features.",
+      "subscribe": "Subscribe to newsletter",
+      "subscribed": "You are subscribed to the newsletter!",
+      "emailLabel": "Your email address",
+      "emailPlaceholder": "example@email.com",
+      "acceptHQX": "I want to receive updates from HelloQuitteX",
+      "acceptOEP": "I would like to be informed about other initiatives from [On est prêt](https://www.onestpret.com), who supports HelloQuitteX",
+      "subscribing": "Subscribing...",
+      "confirmSubscribe": "Confirm subscription"
     }
-  },
+},
   "dashboardSea": {
     "welcome": "Welcome aboard HelloQuitteX!",
     "logo": {
@@ -200,7 +212,8 @@
 },
 "upload": {
     "title": "Import your Twitter archive to continue your journey",
-    "description": "Drop your .zip file (if its size doesn't exceed 300MB) or, if you've already unzipped it, upload your data/following.js and data/follower.js files",
+    "action": "Drop or select your files here",
+    "description": "Three data formats are accepted:\n- your original X archive if <1GB (in Zip format)\n- following.js and followers.js files TOGETHER and unzipped,\n- split versions of these files for large archives (following-part*.js + followers-part*.js)",
     "loading": "Your files are being processed, please stay on the page until redirection.",
     "helpButton": "Help with getting your Twitter archive",
     "logo": {
@@ -284,6 +297,6 @@
       "message": "Are you sure you want to delete your account? This action cannot be undone and will result in the deletion of:\n\n• All your imported data\n• All your linked accounts (Twitter, BlueSky, Mastodon)\n• Your HelloQuitteX profile",
       "cancel": "Cancel",
       "confirm": "Yes, delete my account"
-    }
+    }    
   }
 }

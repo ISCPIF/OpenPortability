@@ -108,13 +108,15 @@ async jwt({ token, user, account, profile }) {
       if (!token.id && user?.id && typeof user.id === 'string') {
         token.id = user.id
         token.has_onboarded = !!user.has_onboarded // Conversion explicite en boolean
+        token.hqx_newsletter = !!user.hqx_newsletter
+        token.oep_accepted = !!user.oep_accepted
       }
 
       if (account && profile) {
         try {
           if (account?.provider === 'bluesky') {
             // The user object should already be properly formatted from the credentials provider
-            return true;
+            return token;
           }
           if (account.provider === 'twitter' && profile && isTwitterProfile(profile)) {
             await supabaseAdapter.updateUser(token.id || '', {
@@ -173,6 +175,8 @@ async jwt({ token, user, account, profile }) {
               ...session.user,
               id: token.id,
               has_onboarded: !!user.has_onboarded, // Conversion explicite en boolean
+              hqx_newsletter: !!user.hqx_newsletter,
+              oep_accepted: !!user.oep_accepted, // Conversion explicite en boolean
               name: token.name || user.name,
               
               twitter_id: token.twitter_id || user.twitter_id || undefined,
@@ -251,7 +255,9 @@ async jwt({ token, user, account, profile }) {
           email:null,
           provider: 'twitter',
           profile: profile,
-          has_onboarded: false
+          has_onboarded: false,
+          hqx_newsletter: false,
+          oep_accepted: false
         }
       },
       // userinfo: {
@@ -270,7 +276,9 @@ async jwt({ token, user, account, profile }) {
           name: profile.display_name,
           provider: 'mastodon',
           profile: profile,
-          has_onboarded: false
+          has_onboarded: false,
+          hqx_newsletter: false,
+          oep_accepted: false
         }
       }
     }),
@@ -286,7 +294,9 @@ async jwt({ token, user, account, profile }) {
           name: profile.display_name,
           provider: 'mastodon',
           profile: profile,
-          has_onboarded: false
+          has_onboarded: false,
+          hqx_newsletter: false,
+          oep_accepted: false
         }
       }
     })

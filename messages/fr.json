@@ -53,7 +53,7 @@
       }
     },
     "dashboardLoginButtons": {
-      "importTwitter": "Importer mon archive Twitter pour continuer ma migration",
+      "importTwitter": "Importer mon archive Twitter",
       "addSocialNetwork": "Ajoutez un autre réseau social",
       "services": {
         "twitter": "Twitter",
@@ -172,11 +172,23 @@
       "daysLeft": "{count} jours restants avant le grand départ",
       "nextSteps": "Effectuez les étapes suivantes pour voguer vers de nouveaux rivages !"
     },
-    "importButton": "Importer mon archive Twitter pour continuer mon voyage",
+    "importButton": "Importer mon archive Twitter",
     "shareModal": {
       "title": "Partager votre voyage",
       "shareOn": "Partager sur {platform}",
       "shareText": "🔥L'exode de X est massif ! Ne perdez pas un seul de vos followers. Grâce à #HelloQuitX j'ai inscrit {count} nouveaux passagers pour un voyage vers #BlueSky & #Mastodon. Embarquez vous aussi et retrouvez automatiquement vos communautés le #20Janvier !"
+    },
+    "newsletter": {
+      "title": "Restez informé",
+      "description": "Inscrivez-vous pour suivre l'évolution du projet et être notifié des nouvelles fonctionnalités.",
+      "subscribe": "S'inscrire à la newsletter",
+      "subscribed": "Vous êtes inscrit à la newsletter !",
+      "emailLabel": "Votre adresse email",
+      "emailPlaceholder": "exemple@email.com",
+      "acceptHQX": "Je veux recevoir des updates de HelloQuitteX",
+      "acceptOEP": "Je souhaite être informé.e des autres initiatives de [On est prêt](https://www.onestpret.com), qui accompagne HelloQuitteX",
+      "subscribing": "Inscription en cours...",
+      "confirmSubscribe": "Confirmer l'inscription"
     }
   },
   "dashboardSea": {
@@ -187,7 +199,8 @@
   },
   "upload": {
     "title": "Importez votre archive Twitter pour poursuivre votre voyage",
-    "description": "Déposez votre fichier .zip (si sa taille ne dépasse pas 300 Mo) ou, si vous l'avez déjà décompressé, téléversez vos fichiers data/following.js et data/follower.js",
+    "action" : "Déposez ou selectionnez votre archive Twitter ici",
+    "description": "Trois formats de données sont acceptés :\n- votre archive X originale si <1Go (au format Zip)\n- les fichiers following.js et followers.js ENSEMBLE et non zippés,\n- les versions fractionnées de ces fichiers pour les grosses archives (following-part*.js + followers-part*.js)",
     "loading": "Vos fichiers sont en cours de traitement, veuillez rester sur la page jusqu'à la redirection.",
     "helpButton": "Aide pour obtenir votre archive Twitter",
     "logo": {

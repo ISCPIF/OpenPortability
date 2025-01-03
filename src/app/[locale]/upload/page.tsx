@@ -426,10 +426,12 @@ export default function UploadPage() {
               <h2 className={`${plex.className} text-2xl font-bold mb-6`}>
                 {t('title')}
               </h2>
-              
+              <h2 className={`${plex.className} text-1xl font-bold mb-6`}>
+                {t('action')}
+              </h2>
               <div className="space-y-4">
-                <p className="text-white/80">
-                  {t('description')}
+              <p className="text-white/80 whitespace-pre-line text-left">
+              {t('description')}
                 </p>
                 
                 {!isUploading && (

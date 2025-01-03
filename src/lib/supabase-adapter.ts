@@ -10,6 +10,8 @@ import type { Profile } from "next-auth"
 
 export interface CustomAdapterUser extends Omit<AdapterUser, 'image'> {
   has_onboarded: boolean
+  hqx_newsletter: boolean
+  oep_accepted: boolean
   twitter_id?: string | null
   twitter_username?: string | null
   twitter_image?: string | null
@@ -121,6 +123,8 @@ const providerIdField = `${provider}_id` as keyof CustomAdapterUser
         ? (profile as MastodonProfile).display_name
         : (userData as BlueskyProfile).displayName || (userData as BlueskyProfile).name,
       has_onboarded: false,
+      hqx_newsletter: false,
+      oep_accepted: false,
       email: undefined
     }
 
@@ -168,6 +172,8 @@ const providerIdField = `${provider}_id` as keyof CustomAdapterUser
   const userToCreate: Partial<CustomAdapterUser> = {
     name: userData.name,
     has_onboarded: false,
+    hqx_newsletter: false,
+    oep_accepted: false,
     email: 'none'
   }
 
@@ -214,6 +220,8 @@ export async function getUser(id: string): Promise<CustomAdapterUser | null> {
     mastodon_image: user.mastodon_image,
     mastodon_instance: user.mastodon_instance,
     has_onboarded: user.has_onboarded,
+    hqx_newsletter: user.hqx_newsletter,
+    oep_accepted: user.oep_accepted,
     email: "none",
     emailVerified: null
   }
@@ -262,6 +270,8 @@ export async function getUserByAccount({ providerAccountId, provider }): Promise
     mastodon_image: user.mastodon_image,
     mastodon_instance: user.mastodon_instance,
     has_onboarded: user.has_onboarded,
+    hqx_newsletter: user.hqx_newsletter,
+    oep_accepted: user.oep_accepted,
     email: "none",
     emailVerified: null
   }
@@ -355,6 +365,8 @@ export async function updateUser(
     mastodon_image: user.mastodon_image,
     mastodon_instance: user.mastodon_instance,
     has_onboarded: user.has_onboarded,
+    hqx_newsletter: user.hqx_newsletter,
+    oep_accepted: user.oep_accepted,
     email: "none",
     emailVerified: null
   }
@@ -433,6 +445,8 @@ export async function getSessionAndUser(sessionToken: string): Promise<{ session
       mastodon_image: user.mastodon_image,
       mastodon_instance: user.mastodon_instance,
       has_onboarded: user.has_onboarded,
+      hqx_newsletter: user.hqx_newsletter,
+      oep_accepted: user.oep_accepted,
       email: "none",
       emailVerified: null
     }

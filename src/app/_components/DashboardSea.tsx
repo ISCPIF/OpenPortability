@@ -47,7 +47,7 @@ export default function Sea({ progress }: SeaProps) {
         height={82 * scale}
         alt=""
         className="absolute"
-        style={{ left: `${left}%`, top: `${top}%`, zIndex: 40 }}
+        style={{ left: `${left}%`, top: `${top}%`, zIndex: 0 }}
       ></Image>
     );
   };
