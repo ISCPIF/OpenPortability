@@ -331,7 +331,7 @@ export default function DashboardPage() {
                   />
                 </div>
 
-                {session?.user?.id && !session.user.hqx_newsletter && (
+                {session?.user?.id && (
                   <>
                     <motion.button
                       whileHover={{ scale: 1.05 }}

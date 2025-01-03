@@ -285,6 +285,11 @@
       "message": "Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible et entraînera la suppression de :\n\n• Toutes vos données importées\n• Tous vos comptes liés (Twitter, BlueSky, Mastodon)\n• Votre profil HelloQuitteX",
       "cancel": "Annuler",
       "confirm": "Oui, supprimer mon compte"
+    },
+    "notifications": {
+      "title": "Notifications",
+      "hqxNewsletter": "Recevoir les updates de HelloQuitteX",
+      "oepNewsletter": "Être informé.e des initiatives de On est prêt"
     }
   }
 }

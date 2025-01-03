@@ -8,11 +8,27 @@ import { motion, AnimatePresence } from 'framer-motion';
 import ConnectedAccounts from './ConnectedAccounts';
 import { ChevronDown } from 'lucide-react';
 import { useTranslations } from 'next-intl';
+import { usePathname } from 'next/navigation';
+import { plex } from '@/app/fonts/plex';
 
 const Header = () => {
   const { data: session } = useSession();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isLanguageOpen, setIsLanguageOpen] = useState(false);
   const t = useTranslations('header');
+  const pathname = usePathname();
+
+  const languages = [
+    { code: 'fr', name: 'Français', flag: '🇫🇷' },
+    { code: 'en', name: 'English', flag: '🇬🇧' }
+  ];
+
+  const currentLocale = pathname.split('/')[1];
+
+  const switchLanguage = (locale: string) => {
+    const newPath = pathname.replace(`/${currentLocale}`, `/${locale}`);
+    window.location.href = newPath;
+  };
 
   return (
     <header className="relative z-10">
@@ -21,6 +37,50 @@ const Header = () => {
       <div className="relative">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-right justify-end">
+            {/* Language Selector */}
+            <div className="relative mr-6">
+              <button
+                onClick={() => setIsLanguageOpen(!isLanguageOpen)}
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-black/5 transition-colors"
+              >
+                <span className="text-lg">
+                  {languages.find(lang => lang.code === currentLocale)?.flag}
+                </span>
+                <ChevronDown
+                  className={`w-4 h-4 text-black/60 transition-transform duration-200 
+                    ${isLanguageOpen ? 'rotate-180' : ''}`}
+                />
+              </button>
+
+              <AnimatePresence>
+                {isLanguageOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="absolute right-0 mt-2 w-40 origin-top-right"
+                  >
+                    <div className="bg-black/40 backdrop-blur-xl rounded-xl border border-black/10 shadow-xl overflow-hidden">
+                      {languages.map((lang) => (
+                        <button
+                          key={lang.code}
+                          onClick={() => {
+                            switchLanguage(lang.code);
+                            setIsLanguageOpen(false);
+                          }}
+                          className={`w-full px-4 py-2 text-xs ${plex.className} text-white hover:bg-white/10 transition-colors text-left flex items-center gap-2
+                            ${currentLocale === lang.code ? 'bg-white/5' : ''}`}
+                        >
+                          <span className="text-base">{lang.flag}</span>
+                          <span>{lang.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
             {/* Actions */}
             <div className="flex items-center gap-6">
               {session && (

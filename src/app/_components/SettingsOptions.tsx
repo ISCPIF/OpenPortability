@@ -5,6 +5,8 @@ import { Menu, Transition, Dialog } from '@headlessui/react'
 import { signOut } from 'next-auth/react'
 import { IoEllipsisVertical } from 'react-icons/io5'
 import { useTranslations } from 'next-intl'
+import { Trash2 } from 'lucide-react'
+import { plex } from '@/app/fonts/plex'
 
 export default function SettingsOptions() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
@@ -24,11 +26,9 @@ export default function SettingsOptions() {
         throw new Error('Failed to delete account')
       }
 
-      // Si la suppression réussit, déconnectez l'utilisateur
       signOut({ callbackUrl: '/' })
     } catch (error) {
       console.error('Error deleting account:', error)
-      // Vous pouvez ajouter ici une notification d'erreur pour l'utilisateur
     } finally {
       setShowDeleteConfirm(false)
     }
@@ -49,16 +49,17 @@ export default function SettingsOptions() {
           leaveFrom="transform opacity-100 scale-100"
           leaveTo="transform opacity-0 scale-95"
         >
-          <Menu.Items className="absolute right-0 mt-2 w-48 origin-top-right rounded-xl bg-white backdrop-blur-xl border border-white/10 shadow-lg focus:outline-none z-50">
+          <Menu.Items className="absolute right-0 mt-2 w-48 origin-top-right rounded-xl bg-gradient-to-br from-gray-900/90 to-gray-800/90 backdrop-blur-xl border border-white/10 shadow-lg focus:outline-none z-50">
             <div className="px-1 py-1">
               <Menu.Item>
                 {({ active }) => (
                   <button
                     onClick={handleDeleteAccount}
                     className={`${
-                      active ? 'bg-gray-100' : ''
-                    } group flex w-full items-center rounded-lg px-2 py-2 text-sm text-red-600`}
+                      active ? 'bg-red-500/10' : ''
+                    } group flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-red-400 hover:text-red-300 transition-colors`}
                   >
+                    <Trash2 className="w-3.5 h-3.5" />
                     {t('deleteAccount')}
                   </button>
                 )}
@@ -79,7 +80,7 @@ export default function SettingsOptions() {
             leaveFrom="opacity-100"
             leaveTo="opacity-0"
           >
-            <div className="fixed inset-0 bg-black bg-opacity-25 backdrop-blur-sm" />
+            <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" />
           </Transition.Child>
 
           <div className="fixed inset-0 overflow-y-auto">
@@ -93,30 +94,27 @@ export default function SettingsOptions() {
                 leaveFrom="opacity-100 scale-100"
                 leaveTo="opacity-0 scale-95"
               >
-                <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
-                  <Dialog.Title
-                    as="h3"
-                    className="text-lg font-medium leading-6 text-gray-900"
-                  >
+                <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-gradient-to-br from-gray-900 to-gray-800 p-6 text-left align-middle shadow-xl transition-all border border-white/10">
+                  <Dialog.Title as="h3" className={`${plex.className} text-sm font-medium leading-6 text-white mb-2`}>
                     {t('deleteConfirm.title')}
                   </Dialog.Title>
                   <div className="mt-2">
-                    <p className="text-sm text-gray-500 whitespace-pre-line">
+                    <p className="text-xs text-gray-300 whitespace-pre-line">
                       {t('deleteConfirm.message')}
                     </p>
                   </div>
 
-                  <div className="mt-4 flex justify-end space-x-3">
+                  <div className="mt-6 flex justify-end gap-3">
                     <button
                       type="button"
-                      className="inline-flex justify-center rounded-md border border-transparent bg-gray-100 px-4 py-2 text-sm font-medium text-gray-900 hover:bg-gray-200 focus:outline-none"
+                      className="px-4 py-2 text-xs font-medium text-gray-300 hover:text-white transition-colors"
                       onClick={() => setShowDeleteConfirm(false)}
                     >
                       {t('deleteConfirm.cancel')}
                     </button>
                     <button
                       type="button"
-                      className="inline-flex justify-center rounded-md border border-transparent bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 focus:outline-none"
+                      className="inline-flex items-center justify-center px-4 py-2 text-xs font-medium text-white bg-gradient-to-r from-red-500 to-red-600 rounded-lg hover:from-red-600 hover:to-red-700 transition-all"
                       onClick={confirmDelete}
                     >
                       {t('deleteConfirm.confirm')}

@@ -4,7 +4,6 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Mail, CheckCircle2 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
-import { useParams } from 'next/navigation'
 import { plex } from '@/app/fonts/plex'
 import Link from 'next/link'
 
@@ -21,20 +20,19 @@ export default function NewsletterRequest({ userId, onSubscribe }: NewsletterReq
   const [acceptOEP, setAcceptOEP] = useState(false)
   const [error, setError] = useState('')
   const t = useTranslations('dashboard.newsletter')
-  const params = useParams()
 
   const handleSubscribe = async () => {
     try {
       setIsLoading(true)
       setError('')
-        const response = await fetch(`/api/newsletter`, {
+      
+      const response = await fetch(`/api/newsletter`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           email,
-          userId,
           acceptHQX,
           acceptOEP
         }),
@@ -92,6 +90,9 @@ export default function NewsletterRequest({ userId, onSubscribe }: NewsletterReq
       </motion.div>
     )
   }
+
+  const isAtLeastOneChecked = acceptHQX || acceptOEP
+  const isEmailValid = email.trim().length > 0
 
   return (
     <div className="bg-gradient-to-br from-indigo-400/10 via-purple-400/10 to-pink-400/10 backdrop-blur-sm rounded-xl p-8 max-w-md w-full shadow-xl">
@@ -181,7 +182,7 @@ export default function NewsletterRequest({ userId, onSubscribe }: NewsletterReq
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           onClick={handleSubscribe}
-          disabled={isLoading || !email || !acceptHQX}
+          disabled={isLoading || !isEmailValid || !isAtLeastOneChecked}
           className="w-full py-3 px-4 bg-gradient-to-r from-indigo-400 to-purple-500 
                    hover:from-indigo-500 hover:to-purple-600
                    text-white font-semibold rounded-lg shadow-lg

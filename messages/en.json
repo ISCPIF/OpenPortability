@@ -297,6 +297,11 @@
       "message": "Are you sure you want to delete your account? This action cannot be undone and will result in the deletion of:\n\n• All your imported data\n• All your linked accounts (Twitter, BlueSky, Mastodon)\n• Your HelloQuitteX profile",
       "cancel": "Cancel",
       "confirm": "Yes, delete my account"
-    }    
+    },
+    "notifications": {
+      "title": "Notifications",
+      "hqxNewsletter": "Receive updates from HelloQuitteX",
+      "oepNewsletter": "Be informed about On est prêt initiatives"
+    }  
   }
 }
