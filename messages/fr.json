@@ -263,5 +263,15 @@
       "lastAccount": "Impossible de délier votre dernier compte connecté",
       "notLinked": "Aucun compte {provider} n'est lié"
     }
+  },
+"settings": {
+    "logout": "Déconnexion",
+    "deleteAccount": "Supprimer mon compte",
+    "deleteConfirm": {
+      "title": "Supprimer le compte",
+      "message": "Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible et entraînera la suppression de :\n\n• Toutes vos données importées\n• Tous vos comptes liés (Twitter, BlueSky, Mastodon)\n• Votre profil HelloQuitteX",
+      "cancel": "Annuler",
+      "confirm": "Oui, supprimer mon compte"
+    }
   }
 }
