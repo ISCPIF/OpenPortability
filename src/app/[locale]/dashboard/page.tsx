@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Header from '@/app/_components/Header';
+import NewsletterRequest from '@/app/_components/NewsletterRequest';
 import Image from 'next/image'
 import { supabase } from '@/lib/supabase';
 import BlueSkyLogin from '@/app/_components/BlueSkyLogin';
@@ -71,6 +72,7 @@ export default function DashboardPage() {
   const [isShared, setIsShared] = useState(false);
   const [progress, setProgress] = useState(0);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showNewsletterModal, setShowNewsletterModal] = useState(false);
 
   // Déterminer quels comptes sont connectés
   const hasMastodon = session?.user?.mastodon_id;
@@ -297,7 +299,87 @@ export default function DashboardPage() {
               </div>
             )}
 
-            <div className="max-w-md mx-auto relative z-10">
+{!hasOnboarded && (
+              <div className="flex items-center justify-center gap-4 relative z-10">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => {
+                    const locale = params.locale as string || 'fr';
+                    router.push(`/${locale}/upload`);
+                  }}
+                  className={`flex flex-col items-center justify-center gap-3 px-6 py-4 w-[250px] h-[120px]
+                           ${(hasTwitter && hasMastodon) || (hasBluesky && hasMastodon) || (hasBluesky && hasTwitter)
+                      ? 'bg-gradient-to-r from-pink-400 to-rose-500 hover:from-pink-500 hover:to-rose-600'
+                      : 'bg-gradient-to-r from-sky-400 to-blue-500 hover:from-sky-500 hover:to-blue-600'}
+                           text-white font-semibold rounded-xl shadow-lg 
+                           transition-all duration-300 ${plex.className}`}
+                >
+                  <span>{t('importButton')}</span>
+                  <Ship className="w-6 h-6" />
+                </motion.button>
+
+                <div className="w-[250px] h-[120px]">
+                  <DashboardLoginButtons
+                    connectedServices={{
+                      twitter: !!session?.user?.twitter_id,
+                      bluesky: !!session?.user?.bluesky_id,
+                      mastodon: !!session?.user?.mastodon_id
+                    }}
+                    hasUploadedArchive={!!stats}
+                    onLoadingChange={setIsLoading}
+                  />
+                </div>
+
+                {session?.user?.id && !session.user.hqx_newsletter && (
+                  <>
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => setShowNewsletterModal(true)}
+                      className="flex flex-col items-center justify-center gap-3 px-6 py-4 w-[250px] h-[120px]
+                               bg-gradient-to-r from-indigo-400 to-purple-500 hover:from-indigo-500 hover:to-purple-600
+                               text-white font-semibold rounded-xl shadow-lg 
+                               transition-all duration-300"
+                    >
+                      <span>{t('newsletter.subscribe')}</span>
+                      <Mail className="w-6 h-6" />
+                    </motion.button>
+
+                    <AnimatePresence>
+                      {showNewsletterModal && (
+                        <motion.div
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          exit={{ opacity: 0 }}
+                          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+                          onClick={(e) => {
+                            if (e.target === e.currentTarget) setShowNewsletterModal(false)
+                          }}
+                        >
+                          <motion.div
+                            initial={{ scale: 0.95, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.95, opacity: 0 }}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <NewsletterRequest
+                              userId={session.user.id}
+                              onSubscribe={() => {
+                                setShowNewsletterModal(false);
+                                update();
+                              }}
+                            />
+                          </motion.div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* <div className="max-w-md mx-auto relative z-10">
               <DashboardLoginButtons
                 connectedServices={{
                   twitter: !!session?.user?.twitter_id,
@@ -329,7 +411,7 @@ export default function DashboardPage() {
                   {t('importButton')}
                 </motion.button>
               </div>
-            )}
+            )} */}
           </div>
         </div>
       </div>
