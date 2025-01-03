@@ -98,7 +98,7 @@ export default function Sea({ progress }: SeaProps) {
     return (
       <div className="absolute top-0 left-0 w-full h-[23rem]">
         <Image src={seaBackground} fill alt="" className="object-cover"></Image>
-        <div className="relative z-10 pt-12">
+        <div className="relative z-[5] pt-12">
           <Image
             src={logoHQX}
             alt={t('logo.alt')}
