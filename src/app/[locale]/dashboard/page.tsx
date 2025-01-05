@@ -20,6 +20,7 @@ import { Ship, Link } from 'lucide-react';
 import { Loader2 } from 'lucide-react';
 import { plex } from '../../fonts/plex';
 import DashboardLoginButtons from '@/app/_components/DashboardLoginButtons';
+import LoadingIndicator from '@/app/_components/LoadingIndicator';
 import { FaTwitter, FaMastodon } from 'react-icons/fa';
 import { SiBluesky } from "react-icons/si";
 import { Share2, Mail, X } from 'lucide-react';
@@ -55,7 +56,7 @@ const LoginButton = ({ provider, onClick, children }: { provider: string, onClic
 
 export default function DashboardPage() {
   const { data: session, status, update } = useSession(); // Ajoutez status
-  console.log('session par ici:', session)
+  // console.log('session par ici:', session)
   const router = useRouter();
   const params = useParams();
 
@@ -73,6 +74,7 @@ export default function DashboardPage() {
   const [progress, setProgress] = useState(0);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showNewsletterModal, setShowNewsletterModal] = useState(false);
+  const [showLoginButtonsModal, setShowLoginButtonsModal] = useState(false);
 
   // Déterminer quels comptes sont connectés
   const hasMastodon = session?.user?.mastodon_id;
@@ -92,13 +94,6 @@ export default function DashboardPage() {
       }
     }, [status, router]);
 
-    // useEffect(() => {
-    //   if (session?.user && !session.user.twitter_id && !session.user.mastodon_id && !session.user.bluesky_id) {
-    //     // Si la session est incomplète, forcer une mise à jour
-    //     update();
-    //   }
-    // }, [session, update]);
-
     useEffect(() => {
       update()
     }, []);
@@ -107,7 +102,6 @@ export default function DashboardPage() {
       const fetchStats = async () => {
         try {
           setIsLoading(true);
-          // await new Promise(resolve => setTimeout(resolve, 2000))
           const response = await fetch('/api/stats');
           if (!response.ok) {
             throw new Error('Failed to fetch stats');
@@ -129,15 +123,14 @@ export default function DashboardPage() {
     // Si en chargement ou pas de session, afficher le loader
     if (status === "loading" || isLoading) {
       return (
-        <div className="min-h-screen flex items-center justify-center">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="flex flex-col items-center gap-4"
-          >
-            <Loader2 className="w-12 h-12 text-white animate-spin" />
-            <p className="text-white/60">{t('loading')}</p>
-          </motion.div>
+        <div className="min-h-screen bg-[#2a39a9] relative w-full max-w-[90rem] m-auto">
+          <div className="container mx-auto py-12">
+            <div className="container flex flex-col m-auto text-center text-[#E2E4DF]">
+              <div className="m-auto relative my-32 lg:my-40">
+                <LoadingIndicator msg={t('loading')} />
+              </div>
+            </div>
+          </div>
         </div>
       );
     }
@@ -175,7 +168,6 @@ export default function DashboardPage() {
     } catch (error) {
       console.error('❌ Error during share process:', error);
 
-      // Enregistrer l'échec via l'API
       await fetch('/api/share', {
         method: 'POST',
         headers: {
@@ -226,15 +218,14 @@ export default function DashboardPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="flex flex-col items-center gap-4"
-        >
-          <Loader2 className="w-12 h-12 text-white animate-spin" />
-          <p className="text-white/60">{t('loading')}</p>
-        </motion.div>
+      <div className="min-h-screen bg-[#2a39a9] relative w-full max-w-[90rem] m-auto">
+        <div className="container mx-auto py-12">
+          <div className="container flex flex-col m-auto text-center text-[#E2E4DF]">
+            <div className="m-auto relative my-32 lg:my-40">
+              <LoadingIndicator msg={t('loading')} />
+            </div>
+          </div>
+        </div>
       </div>
     )
   }
@@ -243,7 +234,7 @@ export default function DashboardPage() {
 
 
   return (
-    <div className="min-h-screen bg-[#2a39a9] relative w-full max-w-[90rem] m-auto">
+    <div className="min-h-screen bg-[#2a39a9] mt-4 relative w-full max-w-[90rem] m-auto">
       <Header />
       <div className="absolute inset-0 w-full h-full pointer-events-none">
         <DahsboardSea progress={progress} />
@@ -269,7 +260,7 @@ export default function DashboardPage() {
               )}
             </div>
 
-            <div className="mb-24 relative z-10">
+            <div className="mb-8 relative z-10">
               <ProgressSteps
                 hasTwitter={hasTwitter}
                 hasBluesky={hasBluesky}
@@ -281,11 +272,7 @@ export default function DashboardPage() {
                 setIsModalOpen={setIsModalOpen}
               />
             </div>
-          </div>
-        </div>
 
-        <div className="container mx-auto px-4 pb-20">
-          <div className="max-w-2xl mx-auto space-y-16">
             {stats && session?.user?.has_onboarded && (
               <div className="relative z-10">
                 <UploadResults
@@ -300,51 +287,56 @@ export default function DashboardPage() {
             )}
 
 {!hasOnboarded && (
-              <div className="flex items-center justify-center gap-4 relative z-10">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => {
-                    const locale = params.locale as string || 'fr';
-                    router.push(`/${locale}/upload`);
-                  }}
-                  className={`flex flex-col items-center justify-center gap-3 px-6 py-4 w-[250px] h-[120px]
-                           ${(hasTwitter && hasMastodon) || (hasBluesky && hasMastodon) || (hasBluesky && hasTwitter)
-                      ? 'bg-gradient-to-r from-pink-400 to-rose-500 hover:from-pink-500 hover:to-rose-600'
-                      : 'bg-gradient-to-r from-sky-400 to-blue-500 hover:from-sky-500 hover:to-blue-600'}
-                           text-white font-semibold rounded-xl shadow-lg 
-                           transition-all duration-300 ${plex.className}`}
-                >
-                  <span>{t('importButton')}</span>
-                  <Ship className="w-6 h-6" />
-                </motion.button>
+              <>
+ <div className="flex justify-center relative z-10">
+                  <div className="w-full max-w-2xl flex gap-4">
+                  <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => setIsModalOpen(true)}
+                      className={`flex-1 flex flex-col items-center justify-center gap-3 px-6 py-4 h-[120px]
+                               bg-gradient-to-br from-blue-500 to-indigo-500 hover:bg-gradient-to-r hover:from-pink-500 hover:to-purple-500
+                               text-white rounded-2xl shadow-lg 
+                               transition-all duration-300 ${plex.className}`}
+                    >
+                      <span className="text-lg font-semibold">{t('addSocialNetwork')}</span>
+                      <Link className="w-6 h-6 opacity-90" />
+                    </motion.button>
 
-                <div className="w-[250px] h-[120px]">
-                  <DashboardLoginButtons
-                    connectedServices={{
-                      twitter: !!session?.user?.twitter_id,
-                      bluesky: !!session?.user?.bluesky_id,
-                      mastodon: !!session?.user?.mastodon_id
-                    }}
-                    hasUploadedArchive={!!stats}
-                    onLoadingChange={setIsLoading}
-                  />
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => {
+                        const locale = params.locale as string || 'fr';
+                        router.push(`/${locale}/upload`);
+                      }}
+                      className={`flex-1 flex flex-col items-center justify-center gap-3 px-6 py-4 h-[120px]
+                               bg-gradient-to-br from-blue-500 to-indigo-500 hover:bg-gradient-to-r hover:from-pink-500 hover:to-purple-500
+                               text-white rounded-2xl shadow-lg 
+                               transition-all duration-300 ${plex.className}`}
+                    >
+                      <span className="text-lg font-semibold">{t('importButton')}</span>
+                      <Ship className="w-6 h-6 opacity-90" />
+                    </motion.button>
+                  </div>
                 </div>
 
                 {session?.user?.id && (
                   <>
+                    <div className="flex justify-center mt-4 relative z-10 mb-4">
                     <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={() => setShowNewsletterModal(true)}
-                      className="flex flex-col items-center justify-center gap-3 px-6 py-4 w-[250px] h-[120px]
-                               bg-gradient-to-r from-indigo-400 to-purple-500 hover:from-indigo-500 hover:to-purple-600
-                               text-white font-semibold rounded-xl shadow-lg 
-                               transition-all duration-300"
-                    >
-                      <span>{t('newsletter.subscribe')}</span>
-                      <Mail className="w-6 h-6" />
-                    </motion.button>
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => setShowNewsletterModal(true)}
+                        className={`flex flex-col items-center justify-center gap-3 px-6 py-4 w-full max-w-2xl h-[120px]
+                          bg-gradient-to-br from-blue-500 to-indigo-500 hover:bg-gradient-to-r hover:from-pink-500 hover:to-purple-500
+                          text-white rounded-2xl shadow-lg 
+                          transition-all duration-300 ${plex.className}`}
+               >
+                 <span className="text-lg font-semibold">{t('newsletter.subscribe')}</span>
+                 <Mail className="w-6 h-6 opacity-90" />
+                      </motion.button>
+                    </div>
 
                     <AnimatePresence>
                       {showNewsletterModal && (
@@ -365,6 +357,7 @@ export default function DashboardPage() {
                           >
                             <NewsletterRequest
                               userId={session.user.id}
+                              onClose={() => setShowNewsletterModal(false)}
                               onSubscribe={() => {
                                 setShowNewsletterModal(false);
                                 update();
@@ -376,42 +369,8 @@ export default function DashboardPage() {
                     </AnimatePresence>
                   </>
                 )}
-              </div>
+              </>
             )}
-
-            {/* <div className="max-w-md mx-auto relative z-10">
-              <DashboardLoginButtons
-                connectedServices={{
-                  twitter: !!session?.user?.twitter_id,
-                  bluesky: !!session?.user?.bluesky_id,
-                  mastodon: !!session?.user?.mastodon_id
-                }}
-                hasUploadedArchive={!!stats}
-                onLoadingChange={setIsLoading}
-              />
-            </div>
-
-            {!hasOnboarded && (
-              <div className="text-center relative z-10">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => {
-                    const locale = params.locale as string || 'fr';
-                    router.push(`/${locale}/upload`);
-                  }}
-                  className={`inline-flex items-center gap-3 px-8 py-4 
-                           ${(hasTwitter && hasMastodon) || (hasBluesky && hasMastodon) || (hasBluesky && hasTwitter)
-                      ? 'bg-gradient-to-r from-pink-400 to-rose-500 hover:from-pink-500 hover:to-rose-600'
-                      : 'bg-gradient-to-r from-sky-400 to-blue-500 hover:from-sky-500 hover:to-blue-600'}
-                           text-white font-semibold rounded-xl shadow-lg 
-                           transition-all duration-300 ${plex.className}`}
-                >
-                  <Ship className="w-6 h-6" />
-                  {t('importButton')}
-                </motion.button>
-              </div>
-            )} */}
           </div>
         </div>
       </div>
@@ -422,43 +381,45 @@ export default function DashboardPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50"
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
             onClick={() => setIsModalOpen(false)}
           >
             <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
+              initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white rounded-xl p-8 max-w-lg w-full mx-4 relative"
+              exit={{ scale: 0.95, opacity: 0 }}
               onClick={e => e.stopPropagation()}
+              className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl p-8 max-w-lg w-full mx-4 relative
+                        shadow-xl border border-slate-700/50"
             >
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
+                className="absolute top-4 right-4 p-2 rounded-full hover:bg-slate-700/50 text-slate-400 hover:text-white
+                          transition-all duration-200"
               >
-                <X className="w-6 h-6" />
+                <X className="w-5 h-5" />
               </button>
 
-              <h3 className="text-2xl font-bold mb-6">{t('shareModal.title')}</h3>
-              <div className="space-y-4">
-                {shareOptions.map((option, index) => (
-                  option.isAvailable && (
-                    <motion.button
-                      key={option.name}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => {
-                        handleShare(option.shareUrl, option.name.toLowerCase());
-                        setIsModalOpen(false);
-                      }}
-                      className={`w-full py-3 px-4 rounded-xl text-white flex items-center gap-3 
-                                ${option.color} transition-all duration-200`}
-                    >
-                      {option.icon}
-                      <span>{t('shareModal.shareOn', { platform: option.name })}</span>
-                    </motion.button>
-                  )
-                ))}
+              <div className="flex flex-col items-center text-center mb-8">
+                <div className="bg-gradient-to-br from-blue-500 to-indigo-500 p-3 rounded-xl mb-4">
+                  <Link className="w-6 h-6 text-white" />
+                </div>
+                <h3 className="text-2xl font-bold text-white mb-2">{t('addSocialNetwork')}</h3>
+                <p className="text-slate-400 text-sm max-w-sm">
+                  {t('addSocialNetworkDescription')}
+                </p>
+              </div>
+
+              <div className="bg-slate-800/50 rounded-xl p-4">
+                <DashboardLoginButtons
+                  connectedServices={{
+                    twitter: !!session?.user?.twitter_id,
+                    bluesky: !!session?.user?.bluesky_id,
+                    mastodon: !!session?.user?.mastodon_id
+                  }}
+                  hasUploadedArchive={!!stats}
+                  onLoadingChange={setIsLoading}
+                />
               </div>
             </motion.div>
           </motion.div>

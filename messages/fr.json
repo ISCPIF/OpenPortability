@@ -167,6 +167,8 @@
   },
   "dashboard": {
     "loading": "Chargement de vos données...",
+    "addSocialNetwork": "Ajouter un réseau social",
+    "addSocialNetworkDescription": "Connectez-vous à d'autres réseaux sociaux pour enrichir votre expérience",
     "migrationStep": {
       "completed": "Vous avez réalisé la première étape de votre migration",
       "daysLeft": "{count} jours restants avant le grand départ",
@@ -176,17 +178,17 @@
     "shareModal": {
       "title": "Partager votre voyage",
       "shareOn": "Partager sur {platform}",
-      "shareText": "🔥L'exode de X est massif ! Ne perdez pas un seul de vos followers. Grâce à #HelloQuitX j'ai inscrit {count} nouveaux passagers pour un voyage vers #BlueSky & #Mastodon. Embarquez vous aussi et retrouvez automatiquement vos communautés le #20Janvier !"
+      "shareText": "🔥 Je viens de faire mon #eXit L’exode de X est massif ! Ne perdez pas un seul de vos followers. Grâce à #HelloQuitX j’ai inscrit {count} nouveaux passagers pour un voyage vers #BlueSky & #Mastodon. Embarquez vous aussi et retrouvez automatiquement vos communautés le #20Janvier !"
     },
     "newsletter": {
-      "title": "Restez informé",
-      "description": "Inscrivez-vous pour suivre l'évolution du projet et être notifié des nouvelles fonctionnalités.",
-      "subscribe": "S'inscrire à la newsletter",
-      "subscribed": "Vous êtes inscrit à la newsletter !",
+      "title": "Restez informé.e",
+      "description": "Resté.e informé.e de la dernière étape et des nouvelles fonctionnalités.",
+      "subscribe": "Rester informé.e des prochaines étapes",
+      "subscribed": "Vous êtes inscrit.e à la newsletter !",
       "emailLabel": "Votre adresse email",
       "emailPlaceholder": "exemple@email.com",
       "acceptHQX": "Je veux recevoir des updates de HelloQuitteX",
-      "acceptOEP": "Je souhaite être informé.e des autres initiatives de [On est prêt](https://www.onestpret.com), qui accompagne HelloQuitteX",
+      "acceptOEP": "Je souhaite aussi être informé.e des prochaines initiatives de [On est prêt](https://www.onestpret.com), qui accompagne HelloQuitteX",
       "subscribing": "Inscription en cours...",
       "confirmSubscribe": "Confirmer l'inscription"
     }

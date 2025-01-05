@@ -44,8 +44,8 @@
       "description": "By uploading your Twitter files, you confirm that:",
       "conditions": {
         "ownership": "You are the legitimate owner of this data.",
-        "cnrsUsage": "You agree that the provided data will be used by the National Center for Scientific Research (CNRS) as part of the HelloQuitteX operation.",
-        "profileCreation": "You understand that this data will be used to create your profile on HelloQuitteX."
+        "cnrsUsage": "You agree that the provided data will be used by the National Center for Scientific Research (CNRS) as part of the HelloQuitX operation.",
+        "profileCreation": "You understand that this data will be used to create your profile on HelloQuitX."
       },
       "buttons": {
         "cancel": "Cancel",
@@ -75,9 +75,9 @@
         "hosted": {
           "text": "This platform is hosted by {cnrs} and developed in partnership with {hqx}",
           "cnrs": "CNRS/ISC-PIF",
-          "hqx": "HelloQuitteX"
+          "hqx": "HelloQuitX"
         },
-        "copyright": "© {year} HelloQuitteX. All rights reserved."
+        "copyright": "© {year} HelloQuitX. All rights reserved."
       },
     "loginButtons": {
     "twitter": {
@@ -115,7 +115,7 @@
   "progressSteps": {
     "dashboard": {
       "title": "Dashboard",
-      "description": "Successfully connected to HelloQuitteX platform!"
+      "description": "Successfully connected to HelloQuitX platform!"
     },
     "socialNetworks": {
       "title": "Social Networks",
@@ -180,6 +180,8 @@
   },
   "dashboard": {
     "loading": "Loading your data...",
+    "addSocialNetwork": "Add social network",
+    "addSocialNetworkDescription": "Connect to other social networks to enhance your experience",
     "migrationStep": {
       "completed": "You have completed the first step of your migration",
       "daysLeft": "{count} days left before the big departure",
@@ -194,20 +196,20 @@
     "newsletter": {
       "title": "Stay Informed",
       "description": "Sign up to follow the project's progress and be notified of new features.",
-      "subscribe": "Subscribe to newsletter",
+      "subscribe": "Stay informed of the next steps of the HelloQuitX project",
       "subscribed": "You are subscribed to the newsletter!",
       "emailLabel": "Your email address",
       "emailPlaceholder": "example@email.com",
-      "acceptHQX": "I want to receive updates from HelloQuitteX",
-      "acceptOEP": "I would like to be informed about other initiatives from [On est prêt](https://www.onestpret.com), who supports HelloQuitteX",
+      "acceptHQX": "I want to receive updates from HelloQuitX",
+      "acceptOEP": "I would like to be informed about other initiatives from [On est prêt](https://www.onestpret.com), who supports HelloQuitX",
       "subscribing": "Subscribing...",
       "confirmSubscribe": "Confirm subscription"
     }
 },
   "dashboardSea": {
-    "welcome": "Welcome aboard HelloQuitteX!",
+    "welcome": "Welcome aboard HelloQuitX!",
     "logo": {
-      "alt": "HelloQuitteX Logo"
+      "alt": "HelloQuitX Logo"
     }
 },
 "upload": {
@@ -217,7 +219,7 @@
     "loading": "Your files are being processed, please stay on the page until redirection.",
     "helpButton": "Help with getting your Twitter archive",
     "logo": {
-      "alt": "HelloQuitteX Logo"
+      "alt": "HelloQuitX Logo"
     },
     "helpModal": {
       "title": "How to get your Twitter archive?",
@@ -243,7 +245,7 @@
   },
   "largeFiles": {
     "logo": {
-      "alt": "HelloQuitteX Logo"
+      "alt": "HelloQuitX Logo"
     },
     "progress": {
       "total": {
@@ -294,13 +296,13 @@
     "deleteAccount": "Delete my account",
     "deleteConfirm": {
       "title": "Delete Account",
-      "message": "Are you sure you want to delete your account? This action cannot be undone and will result in the deletion of:\n\n• All your imported data\n• All your linked accounts (Twitter, BlueSky, Mastodon)\n• Your HelloQuitteX profile",
+      "message": "Are you sure you want to delete your account? This action cannot be undone and will result in the deletion of:\n\n• All your imported data\n• All your linked accounts (Twitter, BlueSky, Mastodon)\n• Your HelloQuitX profile",
       "cancel": "Cancel",
       "confirm": "Yes, delete my account"
     },
     "notifications": {
       "title": "Notifications",
-      "hqxNewsletter": "Receive updates from HelloQuitteX",
+      "hqxNewsletter": "Receive updates from HelloQuitX",
       "oepNewsletter": "Be informed about On est prêt initiatives"
     }  
   }
