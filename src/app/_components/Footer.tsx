@@ -8,7 +8,7 @@ const FooterLink = memo(({ href, children }: { href: string; children: React.Rea
     href={href}
     target="_blank"
     rel="noopener noreferrer"
-    className="text-blue-600 hover:text-blue-800 underline"
+    className="text-indigo-300 hover:text-pink-400 transition-colors duration-200"
   >
     {children}
   </a>
@@ -44,13 +44,13 @@ const Footer = memo(() => {
   });
 
   return (
-    <footer className="w-full py-6 mt-auto bg-[#2a39a9] border-t border-gray-200">
+    <footer className="w-full py-8 mt-auto bg-gradient-to-br from-[#2a39a9] to-[#1f2d8a] border-t border-indigo-500/20">
       <div className="container mx-auto px-4">
-        <div className="flex flex-col items-center text-center">
-          <div className="text-sm text-foreground font-space-grotesk mb-2">
+        <div className="flex flex-col items-center text-center gap-3">
+          <div className="text-sm text-slate-300 font-space-grotesk">
             {content}
           </div>
-          <div className="text-xs text-gray-500 font-space-grotesk">
+          <div className="text-xs text-slate-400 font-space-grotesk">
             {t('copyright', { year })}
           </div>
         </div>
