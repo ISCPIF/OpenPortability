@@ -11,55 +11,44 @@ function ProgressStep({
   title, 
   description, 
   isCompleted, 
-  isLast = false,
-  onClick
+  isLast = false
 }: { 
   step: number;
   title: string;
   description: string;
   isCompleted: boolean;
   isLast?: boolean;
-  onClick?: () => void;
 }) {
   return (
-    <div className="flex-1 relative">
-      {/* Ligne de connexion */}
-      {!isLast && (
+    <div className="flex-1 relative flex flex-col items-center">
+      {/* Ligne horizontale pour desktop */}
+      {/* {!isLast && (
         <div 
-          className={`absolute left-[50%] top-6 h-0.5 w-full
+          className={`absolute left-[50%] top-6 h-0.5 w-full hidden md:block
             ${isCompleted ? 'bg-gradient-to-r from-pink-500 to-purple-500' : 'bg-white/10'}`} 
         />
-      )}
+      )} */}
       
-      {/* Contenu de l'étape */}
+      {/* Cercle avec numéro ou check */}
       <div 
-        className={`relative flex flex-col items-center text-center px-4
-          ${onClick ? 'cursor-pointer group' : ''}`}
-        onClick={onClick}
+        className={`w-8 h-8 rounded-full flex items-center justify-center mb-3
+          ${isCompleted 
+            ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-lg shadow-pink-500/20' 
+            : 'bg-white/5 text-white/40 border border-white/10'}`}
       >
-        {/* Cercle avec numéro ou check */}
-        <div 
-          className={`w-12 h-12 rounded-full flex items-center justify-center mb-3 z-10
-            transition-all duration-300 ease-out
-            ${isCompleted 
-              ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-lg shadow-pink-500/20' 
-              : 'bg-white/5 text-white/40 border border-white/10'}
-            ${onClick ? 'group-hover:scale-110' : ''}`}
-        >
-          {isCompleted ? <CheckCircle className="w-6 h-6" /> : step}
-        </div>
-        
-        {/* Texte */}
-        <div className="max-w-[150px]">
-          <h3 className={`font-medium mb-1 text-sm
-            ${isCompleted ? 'text-white' : 'text-white/60'}`}>
-            {title}
-          </h3>
-          <p className={`text-xs leading-tight
-            ${isCompleted ? 'text-white/80' : 'text-white/40'}`}>
-            {description}
-          </p>
-        </div>
+        {isCompleted ? <CheckCircle className="w-8 h-8" /> : step}
+      </div>
+      
+      {/* Texte */}
+      <div className="text-center px-2">
+        <h3 className={`font-medium mb-1 text-sm
+          ${isCompleted ? 'text-white' : 'text-white/60'}`}>
+          {title}
+        </h3>
+        <p className={`text-xs leading-tight
+          ${isCompleted ? 'text-white/80' : 'text-white/40'}`}>
+          {description}
+        </p>
       </div>
     </div>
   );
@@ -74,7 +63,6 @@ interface ProgressStepsProps {
     following: number;
     followers: number;
   };
-  setIsModalOpen: (open: boolean) => void;
   isShared: boolean;
   onProgressChange?: (progress: number) => void;
 }
@@ -85,7 +73,6 @@ export default function ProgressSteps({
   hasMastodon,
   hasOnboarded,
   stats,
-  setIsModalOpen,
   isShared: initialIsShared,
   onProgressChange
 }: ProgressStepsProps) {
@@ -95,22 +82,13 @@ export default function ProgressSteps({
 
   useEffect(() => {
     async function checkShareStatus() {
-      // console.log('🔍 Checking share status...');
       if (!session?.user?.id) {
         console.log('❌ No user session found');
         return;
       }
       const userId = session.user.id;
-      // console.log('👤 User ID type:', typeof userId);
-      // console.log('👤 User ID value:', userId);
-      // console.log('👤 User session:', {
-      //   id: session.user.id,
-      //   email: session.user.email,
-      // });
 
       try {
-        // console.log('📊 Fetching share events...');
-        
         const response = await fetch('/api/share', {
           method: 'GET',
           headers: {
@@ -125,7 +103,6 @@ export default function ProgressSteps({
         const { data } = await response.json();
         console.log('📦 Share events:', data);
 
-        // Vérifier qu'au moins un partage est réussi
         const hasShared = Array.isArray(data) && data.length > 0 && data.some(event => event.success);
         console.log('✅ Share status:', hasShared ? 'Has shared' : 'Has not shared');
         setHasSuccessfulShare(hasShared);
@@ -173,7 +150,7 @@ export default function ProgressSteps({
 
   return (
     <div className="bg-black/20 backdrop-blur-lg rounded-2xl p-8">
-      <div className="flex items-start gap-4">
+      <div className="grid grid-cols-2 md:flex md:flex-row items-start gap-4">
         <ProgressStep
           step={1}
           title={t('dashboard.title')}
@@ -205,7 +182,6 @@ export default function ProgressSteps({
           description={t('share.description')}
           isCompleted={hasSuccessfulShare}
           isLast={true}
-          onClick={() => setIsModalOpen(true)}
         />
       </div>
     </div>

@@ -18,6 +18,8 @@ import logoHQX from '../../../../public/logoxHQX/HQX-rose-FR.svg'
 import { motion } from 'framer-motion';
 import boat1 from '../../../public/boats/boat-1.svg'
 import Footer from "@/app/_components/Footer";
+import LoadingIndicator from '@/app/_components/LoadingIndicator';
+
 
 const UploadButton = dynamic(() => import('../../_components/UploadButton'), {
   loading: () => <div className="animate-pulse bg-gray-200 h-12 w-48 rounded-lg"></div>,
@@ -389,10 +391,16 @@ export default function UploadPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-pink-50 to-white dark:from-gray-900 dark:to-gray-800 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-pink-500"></div>
+      <div className="min-h-screen bg-[#2a39a9] relative w-full max-w-[90rem] m-auto">
+        <div className="container mx-auto py-12">
+          <div className="container flex flex-col m-auto text-center text-[#E2E4DF]">
+            <div className="m-auto relative my-32 lg:my-40">
+              <LoadingIndicator msg={t('loading-indic')} />
+            </div>
+          </div>
+        </div>
       </div>
-    );
+    )
   }
 
   return (

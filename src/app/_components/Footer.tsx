@@ -2,6 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import { memo } from 'react';
+import { Github, Mail } from 'lucide-react';
 
 const FooterLink = memo(({ href, children }: { href: string; children: React.ReactNode }) => (
   <a 
@@ -52,6 +53,14 @@ const Footer = memo(() => {
           </div>
           <div className="text-xs text-slate-400 font-space-grotesk">
             {t('copyright', { year })}
+          </div>
+          <div className="flex gap-4 mt-2">
+            <FooterLink href="https://github.com/FannyCaulfield/helloquittex">
+              <Github className="w-5 h-5" />
+            </FooterLink>
+            <FooterLink href="mailto:support@helloquitx.com">
+              <Mail className="w-5 h-5" />
+            </FooterLink>
           </div>
         </div>
       </div>
