@@ -51,10 +51,13 @@ let cachedValue = instances.find(r => r.instance == instance)
 }
 
 // https://authjs.dev/reference/nextjs#lazy-initialization
-export const { auth, signIn, signOut, handlers } = NextAuth(async req => {
+export const { auth, signIn, signOut, handlers } = NextAuth(async req => { 
     if (req?.url.endsWith("api/auth/signin/mastodon")) {
+    if (req?.url.includes("api/auth/signin/mastodon")) {
         console.log(req) // do something with the request
-        const instance = "mamot.fr"
+        const { searchParams } = new URL(req.url)
+        const instance = searchParams.get('instance') || "mastodon.social"
+        console.log("instance", instance)
         const res = await createMastodonApp(instance)
         console.log(res)
         const mastodonProvider = authConfig.providers.find(prov => prov.id === "mastodon")
@@ -65,7 +68,6 @@ export const { auth, signIn, signOut, handlers } = NextAuth(async req => {
         mastodonProvider.token = `${mastodonProvider.issuer}/oauth/token`;
         mastodonProvider.userinfo = `${mastodonProvider.issuer}/api/v1/accounts/verify_credentials`;
         console.log(authConfig)
-
     }
     return authConfig;
 })
