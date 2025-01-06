@@ -198,7 +198,17 @@
             "daysLeft": "Noch {count} Tage bis zur großen Abfahrt",
             "nextSteps": "Schließe die folgenden Schritte ab, um zu neuen Ufern zu segeln!"
         },
-        "importButton": "Importiere mein Twitter-Archiv und fahre mit der Reise fort"
+        "importButton": "Importiere mein Twitter-Archiv und fahre mit der Reise fort",
+        "newsletter": {
+            "acceptHQX": "Ich möchte Updates von HelloQuitX erhalten",
+            "subscribing": "Unterzeichnend...",
+            "subscribed": "Sie sind Abonnent der newsletter!",
+            "subscribe": "Bleiben Sie über die nächsten Schritte des HelloQuitX-Projekts informiert",
+            "emailLabel": "Ihre email-Adresse",
+            "description": "Melden Sie sich an, um den Fortschritt des Projekts zu verfolgen und über neue Funktionen informiert zu werden.",
+            "acceptOEP": "Ich möchte über weitere Initiativen von (https://www.onestpret.com) informiert werden, die HelloQuitX unterstützt",
+            "confirmSubscribe": "Abonnement bestätigen"
+        }
     },
     "uploadResults": {
         "inviteFriends": "Lade deine Follower ein mitzumachen!",
@@ -254,11 +264,37 @@
         "title": "Importiere dein Twitter-Archiv und setze deine Reise fort",
         "description": "Drop deine ZIP-Datei (wenn sie 300 MB nicht überschreitet), oder lade data/following.js und data/follower.js hoch, wenn du sie bereits entpackt hast",
         "loading": "Deine Dateien werden verarbeitet, bitte bleibe auf dieser Seite, bis du weitergeleitet wirst.",
-        "helpButton": "Hilfe, um an dein Twitter-Archive zu gelangen"
+        "helpButton": "Hilfe, um an dein Twitter-Archive zu gelangen",
+        "loading-indic": "Ihre Daten werden geladen..."
     },
     "signin": {
         "title": "Bereit, um zu neuen Ufern aufzubrechen?",
         "subtitle": "Beginne mit Twitter zu verbinden, um deine Daten zu migrieren",
         "loading": "Lade Informationen ..."
+    },
+    "settings": {
+        "notifications": {
+            "oepNewsletter": "Erfahren Sie mehr über On est prêt initiatives",
+            "title": "Benachrichtigungen",
+            "hqxNewsletter": "Erhalten Sie Updates von HelloQuitX"
+        },
+        "deleteConfirm": {
+            "message": "Sind Sie sicher, dass Sie Ihr Konto löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden und führt zum Löschen von:\n\n• Alle Ihre importierten Daten\n• Alle Ihre verknüpften Konten (Twitter, BlueSky, Mastodon)\n• Ihr HelloQuitX-Profil",
+            "cancel": "Abbrechen",
+            "title": "Mein Konto löschen",
+            "confirm": "Ja, mein Konto löschen"
+        },
+        "deleteAccount": "Mein Konto löschen",
+        "logout": "Abmelden"
+    },
+    "profile": {
+        "unlinkConfirmation": "Sind Sie sicher, dass Sie die Verknüpfung Ihres {provider}-Kontos aufheben wollen?",
+        "unlinkButton": "Verknüpfung des {provider}-Kontos aufheben",
+        "unlinkSuccess": "Die Verknüpfung Ihres {provider}-Kontos wurde erfolgreich aufgehoben",
+        "errors": {
+            "notLinked": "Es ist kein {provider}-Konto verknüpft",
+            "lastAccount": "Die Verknüpfung Ihres zuletzt verbundenen Kontos kann nicht aufgehoben werden"
+        },
+        "unlinkError": "Beim Aufheben der Verknüpfung Ihres {provider}-Kontos ist ein Fehler aufgetreten"
     }
 }
