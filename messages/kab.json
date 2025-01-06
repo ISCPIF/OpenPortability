@@ -13,16 +13,27 @@
             "password": {
                 "placeholder": "••••••••",
                 "label": "Awal n uɛeddi n wesnas"
+            },
+            "errors": {
+                "default": "Teḍra-d tuccḍa"
             }
+        },
+        "title": "Qqen ɣer BlueSky",
+        "tooltip": {
+            "createAccount": "Snulfu-d yiwen da"
         }
     },
     "settings": {
         "deleteConfirm": {
-            "cancel": "Semmet"
+            "cancel": "Semmet",
+            "title": "Kkes amḍan",
+            "confirm": "Ih, kkes amiḍan-iw"
         },
         "notifications": {
             "title": "Ilɣa"
-        }
+        },
+        "logout": "Senser tuqqna",
+        "deleteAccount": "Kkes amiḍan-iw"
     },
     "dashboardLoginButtons": {
         "services": {
@@ -35,7 +46,8 @@
             },
             "twitter": "Twitter",
             "bluesky": "BlueSky"
-        }
+        },
+        "addSocialNetwork": "Rnu aẓeṭṭa inmetti nniḍen"
     },
     "errorModal": {
         "close": "Mdel"
@@ -58,7 +70,12 @@
     },
     "migrationComplete": {
         "success": {
-            "displayName": "({name})"
+            "displayName": "({name})",
+            "viewProfile": "Wali amaɣnu"
+        },
+        "error": {
+            "retry": "Ɛreḍ tikkelt-nniḍen",
+            "createAccount": "Snulfu-d amiḍan"
         }
     },
     "footer": {
@@ -72,13 +89,27 @@
             "completed": "Yemmed",
             "failed": "Yerreẓ",
             "pending": "Yettṛaǧu"
+        },
+        "progress": {
+            "following": {
+                "processed": "{processed} / {total}"
+            },
+            "total": {
+                "processed": "{processed} / {total}"
+            },
+            "followers": {
+                "processed": "{processed} / {total}"
+            }
         }
     },
     "connectedAccounts": {
         "services": {
             "bluesky": "BlueSky",
-            "mastodon": "Mastodon"
-        }
+            "mastodon": "Mastodon",
+            "twitter": "Twitter"
+        },
+        "and": "d",
+        "connectedWith": "Aql-ik·em teqqneḍ s {services} ✨"
     },
     "partageButton": {
         "share": "Bḍu"
@@ -95,6 +126,9 @@
         },
         "import": {
             "title": "Kter"
+        },
+        "socialNetworks": {
+            "description": "Rnu aẓeṭṭa inmetti"
         }
     },
     "uploadResults": {
@@ -106,7 +140,43 @@
     },
     "dashboard": {
         "newsletter": {
-            "emailPlaceholder": "amedya@email.com"
+            "emailPlaceholder": "amedya@email.com",
+            "emailLabel": "Tansa-k·m imayl"
+        },
+        "shareModal": {
+            "shareOn": "Bḍu-t deg {platform}"
+        },
+        "loading": "Yettɛebbi-d isefka-k·m…",
+        "addSocialNetwork": "Rnu aẓeṭṭa inmetti"
+    },
+    "loginButtons": {
+        "bluesky": {
+            "connect": "Qqen s BlueSky"
+        },
+        "mastodon": {
+            "connect": "Qqen s Mastodon",
+            "instances": {
+                "mastodon": "Qqen s Mastodon.social",
+                "piaille": "Qqen s Piaille.fr"
+            }
+        },
+        "twitter": {
+            "notDeleted": "Ɣuri amiḍan deg Twitter"
+        },
+        "deleteAccount": "Kkseɣ yakan amiḍan-iw Twitter"
+    },
+    "upload": {
+        "loading-indic": "Yettɛebbi-d isefka-k·m…",
+        "helpModal": {
+            "steps": [
+                "Qqen ɣer umiḍan-inek·inem n Twitter"
+            ]
         }
+    },
+    "uploadButton": {
+        "dropHere": "Sers afaylu-k·m da"
+    },
+    "dashboardSea": {
+        "welcome": "Ansuf yis-k·m ɣer HelloQuitX!"
     }
 }
