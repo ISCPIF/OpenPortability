@@ -1,56 +1,56 @@
 {
     "header": {
-        "logout": "Déconnexion",
-        "profile": {
-            "username": "@{username}"
-        }
+      "logout": "Déconnexion",
+      "profile": {
+        "username": "@{username}"
+      }
     },
     "connectedAccounts": {
-        "connectedWith": "Vous êtes connecté avec {services} ✨",
-        "and": "et",
-        "services": {
-            "twitter": "Twitter",
-            "bluesky": "BlueSky",
-            "mastodon": "Mastodon"
-        }
+      "connectedWith": "Vous êtes connecté avec {services} ✨",
+      "and": "et",
+      "services": {
+        "twitter": "Twitter",
+        "bluesky": "BlueSky",
+        "mastodon": "Mastodon"
+      }
     },
     "blueskyLogin": {
-        "title": "Connectez-vous à BlueSky",
-        "description": "Connectez votre compte BlueSky pour synchroniser vos données et profiter d'une expérience complète.",
-        "tooltip": {
-            "info": "Nous ne stockons jamais votre mot de passe. Nous utilisons uniquement les tokens d'authentification sécurisés fournis par BlueSky.",
-            "noAccount": "Pas encore de compte BlueSky ?",
-            "createAccount": "Créez-en un ici"
+      "title": "Connectez-vous à BlueSky",
+      "description": "Connectez votre compte BlueSky pour synchroniser vos données et profiter d'une expérience complète.",
+      "tooltip": {
+        "info": "Nous ne stockons jamais votre mot de passe. Nous utilisons uniquement les tokens d'authentification sécurisés fournis par BlueSky.",
+        "noAccount": "Pas encore de compte BlueSky ?",
+        "createAccount": "Créez-en un ici"
+      },
+      "form": {
+        "identifier": {
+          "label": "Identifiant BlueSky",
+          "placeholder": "nomdutilisateur.bsky.social"
         },
-        "form": {
-            "identifier": {
-                "label": "Identifiant BlueSky",
-                "placeholder": "nomdutilisateur.bsky.social"
-            },
-            "password": {
-                "label": "Mot de passe d'application",
-                "placeholder": "••••••••",
-                "help": "Créez un mot de passe d'application sur"
-            },
-            "submit": "Se connecter",
-            "errors": {
-                "missingFields": "Veuillez remplir tous les champs",
-                "default": "Une erreur est survenue"
-            }
+        "password": {
+          "label": "Mot de passe d'application",
+          "placeholder": "••••••••",
+          "help": "Créez un mot de passe d'application sur"
+        },
+        "submit": "Se connecter",
+        "errors": {
+          "missingFields": "Veuillez remplir tous les champs",
+          "default": "Une erreur est survenue"
         }
+      }
     },
     "consentModal": {
-        "title": "Confirmation d'upload",
-        "description": "En uploadant vos fichiers Twitter, vous confirmez que :",
-        "conditions": {
-            "ownership": "Vous êtes le propriétaire légitime de ces données.",
-            "cnrsUsage": "Vous acceptez que les donnees fournies soient utilisées par le Centre Nationale de la Recherche Scientifique (CNRS) dans le cadre de l'opération HelloQuitteX.",
-            "profileCreation": "Vous comprenez que ces données seront utilisées pour créer votre profil sur HelloQuitteX."
-        },
-        "buttons": {
-            "cancel": "Annuler",
-            "accept": "Accepter et continuer"
-        }
+      "title": "Confirmation d'upload",
+      "description": "En uploadant vos fichiers Twitter, vous confirmez que :",
+      "conditions": {
+        "ownership": "Vous êtes le propriétaire légitime de ces données.",
+        "cnrsUsage": "Vous acceptez que les donnees fournies soient utilisées par le Centre Nationale de la Recherche Scientifique (CNRS) dans le cadre de l'opération HelloQuitteX.",
+        "profileCreation": "Vous comprenez que ces données seront utilisées pour créer votre profil sur HelloQuitteX."
+      },
+      "buttons": {
+        "cancel": "Annuler",
+        "accept": "Accepter et continuer"
+      }
     },
     "dashboardLoginButtons": {
       "importTwitter": "Importer mon archive Twitter",
@@ -68,51 +68,93 @@
       }
     },
     "errorModal": {
-        "title": "Erreur lors du téléversement",
+        "title": "Erreur lors de l'upload",
         "close": "Fermer"
     },
     "footer": {
         "hosted": {
-            "text": "Cette plateforme est hébergée par le {cnrs} et développée en partenariat avec le collectif {hqx}",
-            "cnrs": "CNRS/ISC-PIF",
-            "hqx": "HelloQuitteX"
+          "text": "Cette plateforme est hébergée par le {cnrs} et développée en partenariat avec le collectif {hqx}",
+          "cnrs": "CNRS/ISC-PIF",
+          "hqx": "HelloQuitteX"
         },
         "copyright": "© {year} HelloQuitteX. Tous droits réservés."
-    },
+      },
     "loginButtons": {
-        "twitter": {
-            "continue": "Continuer avec Twitter",
-            "notDeleted": "J'ai un compte Twitter"
-        },
-        "deleteAccount": "J'ai déjà supprimé mon compte Twitter",
-        "bluesky": {
-            "connect": "Se connecter avec BlueSky"
-        },
-        "mastodon": {
-            "connect": "Se connecter avec Mastodon",
-            "instances": {
-                "piaille": "Se connecter via Piaille.fr",
-                "mastodon": "Se connecter via Mastodon.social"
-            }
-        }
+    "twitter": {
+      "continue": "Continuer avec Twitter",
+       "notDeleted" : "J'ai un compte Twitter"
     },
-    "partageButton": {
-        "share": "Partager"
+    "deleteAccount": "J'ai déjà supprimé mon compte Twitter",
+    "bluesky": {
+      "connect": "Se connecter avec BlueSky"
     },
-    "progressSteps": {
-        "dashboard": {
-            "title": "Dashboard",
-            "description": "Connexion réussie à la plateforme HelloQuitteX !"
-        },
-        "socialNetworks": {
-            "title": "Réseaux sociaux",
-            "description": "Ajoutez un réseau social"
-        },
-        "import": {
-            "title": "Import",
-            "description": {
-                "withStats": "{following} abos, {followers} abonnés",
-                "noStats": "Importez vos abonnements"
+    "mastodon": {
+      "connect": "Se connecter avec Mastodon",
+      "instances": {
+        "piaille": "Se connecter via Piaille.fr",
+        "mastodon": "Se connecter via Mastodon.social"
+      }
+    }
+  },
+  "partageButton": {
+    "share": "Partager"
+  },
+  "progressSteps": {
+    "dashboard": {
+      "title": "Dashboard",
+      "description": "Connexion réussie à la plateforme HelloQuitteX !"
+    },
+    "socialNetworks": {
+      "title": "Réseaux sociaux",
+      "description": "Ajoutez un réseau social"
+    },
+    "import": {
+      "title": "Import",
+      "description": {
+        "withStats": "{following} abos, {followers} abonnés",
+        "noStats": "Importez vos abonnements"
+      }
+    },
+    "share": {
+      "title": "Partage",
+      "description": "Aidez vos amis à migrer"
+    }
+  },
+  "successModal": {
+    "title": "Import réussi !",
+    "following": {
+      "title": "Abonnements ({count})",
+      "username": "@{username}"
+    },
+    "followers": {
+      "title": "Abonnés ({count})",
+      "username": "@{username}"
+    },
+    "close": "Fermer"
+  },
+  "uploadButton": {
+    "dropHere": "Déposez votre fichier ici",
+    "uploadInProgress": "Nous analysons votre archive, veuillez patienter ...",
+    "clickOrDrop": "Cliquez ou glissez votre archive ici",
+    "error": {
+      "uploadFailed": "Le téléchargement a échoué après plusieurs tentatives. Veuillez réessayer."
+    }
+  },
+  "uploadResults": {
+    "congratulations": "Félicitations @{username}, vous êtes inscrit.e pour le voyage !",
+    "importSuccess": "L'importation de vos fichiers a permis d'inscrire {count} nouveaux passagers !",
+    "stats": {
+            "twitterAccounts": {
+            "label": "Comptes Twitter",
+            "value": "{count}"
+            },
+            "totalImported": {
+            "label": "Total importé",
+            "value": "{count} comptes importés"
+            },
+            "readyTravelers": {
+            "label": "Prêts au voyage",
+            "value": "{count} comptes prêts"
             }
         },
     "inviteFriends": "Invitez vos abonné.e.s à partir avec vous !",
@@ -253,150 +295,4 @@
       "oepNewsletter": "Être informé.e des initiatives de On est prêt"
     }
   }
-}
-=======
-        "share": {
-            "title": "Partage",
-            "description": "Aidez vos amis à migrer"
-        }
-    },
-    "successModal": {
-        "title": "Import réussi !",
-        "following": {
-            "title": "Abonnements ({count})",
-            "username": "@{username}"
-        },
-        "followers": {
-            "title": "Abonnés ({count})",
-            "username": "@{username}"
-        },
-        "close": "Fermer"
-    },
-    "uploadButton": {
-        "dropHere": "Déposez votre fichier ici",
-        "uploadInProgress": "Nous analysons votre archive, veuillez patienter ...",
-        "clickOrDrop": "Cliquez ou glissez votre archive ici",
-        "error": {
-            "uploadFailed": "Le téléchargement a échoué après plusieurs tentatives. Veuillez réessayer."
-        }
-    },
-    "uploadResults": {
-        "congratulations": "Félicitations @{username}, vous êtes inscrit.e pour le voyage !",
-        "importSuccess": "L'importation de vos fichiers a permis d'inscrire {count} nouveaux passagers !",
-        "stats": {
-            "twitterAccounts": {
-                "label": "Comptes Twitter",
-                "value": "{count}"
-            },
-            "totalImported": {
-                "label": "Total importé",
-                "value": "{count} comptes importés"
-            },
-            "readyTravelers": {
-                "label": "Prêts au voyage",
-                "value": "{count} comptes prêts"
-            }
-        },
-        "inviteFriends": "Invitez vos abonné.e.s à partir avec vous !",
-        "redirecting": "Redirection vers le tableau de bord..."
-    },
-    "signin": {
-        "title": "Prêt à migrer vers de nouveaux rivages ?",
-        "subtitle": "Commencez par vous connecter avec Twitter pour migrer vos données",
-        "loading": "Chargement des informations…"
-    },
-    "dashboard": {
-        "loading": "Chargement de vos données...",
-        "migrationStep": {
-            "completed": "Vous avez réalisé la première étape de votre migration",
-            "daysLeft": "{count} jours restants avant le grand départ",
-            "nextSteps": "Effectuez les étapes suivantes pour voguer vers de nouveaux rivages !"
-        },
-        "importButton": "Importer mon archive Twitter pour continuer mon voyage",
-        "shareModal": {
-            "title": "Partager votre voyage",
-            "shareOn": "Partager sur {platform}",
-            "shareText": "🔥L'exode de X est massif ! Ne perdez pas un seul de vos followers. Grâce à #HelloQuitX j'ai inscrit {count} nouveaux passagers pour un voyage vers #BlueSky & #Mastodon. Embarquez vous aussi et retrouvez automatiquement vos communautés le #20Janvier !"
-        }
-    },
-    "dashboardSea": {
-        "welcome": "Bienvenue à bord d'HelloQuitteX !",
-        "logo": {
-            "alt": "HelloQuitteX Logo"
-        }
-    },
-    "upload": {
-        "title": "Importez votre archive Twitter pour poursuivre votre voyage",
-        "description": "Déposez votre fichier .zip (si sa taille ne dépasse pas 300 Mo) ou, si vous l'avez déjà décompressé, téléversez vos fichiers data/following.js et data/follower.js",
-        "loading": "Vos fichiers sont en cours de traitement, veuillez rester sur la page jusqu'à la redirection.",
-        "helpButton": "Aide pour obtenir votre archive Twitter",
-        "logo": {
-            "alt": "HelloQuitteX Logo"
-        },
-        "helpModal": {
-            "title": "Comment obtenir votre archive Twitter ?",
-            "description": "Pour obtenir votre archive Twitter, suivez ces étapes :",
-            "steps": [
-                "Connectez-vous à votre compte Twitter",
-                "Allez dans \"Plus\" dans le menu de gauche",
-                "Cliquez sur \"Paramètres et support\" puis \"Paramètres et confidentialité\"",
-                "Dans \"Votre compte\", sélectionnez \"Télécharger une archive de vos données\"",
-                "Confirmez votre mot de passe si demandé",
-                "Cliquez sur \"Demander l'archive\"",
-                "Twitter vous enverra un e-mail lorsque votre archive sera prête à être téléchargée",
-                "Une fois téléchargée, vous pourrez importer le fichier .zip ici"
-            ],
-            "note": "Note : La préparation de l'archive par Twitter peut prendre jusqu'à 24 heures."
-        },
-        "errors": {
-            "fileSize": "La taille du fichier dépasse la limite de 1 Go",
-            "fileType": "Type de fichier invalide. Veuillez téléverser un fichier ZIP ou les fichiers following.js et follower.js",
-            "noFiles": "Aucun fichier sélectionné",
-            "invalidCombination": "Veuillez téléverser soit un fichier ZIP, following.js + follower.js, ou leurs versions fractionnées (following-part*.js/follower-part*.js)",
-            "fetchStats": "Impossible de récupérer les statistiques totales"
-        }
-    },
-    "largeFiles": {
-        "logo": {
-            "alt": "HelloQuitteX Logo"
-        },
-        "progress": {
-            "total": {
-                "title": "Progression totale",
-                "processed": "{processed} / {total}"
-            },
-            "followers": {
-                "title": "Abonnés",
-                "processed": "{processed} / {total}"
-            },
-            "following": {
-                "title": "Abonnements",
-                "processed": "{processed} / {total}"
-            }
-        },
-        "status": {
-            "title": "Statut",
-            "pending": "En attente",
-            "processing": "En cours",
-            "completed": "Terminé",
-            "failed": "Échec"
-        },
-        "stats": {
-            "followers": "Abonnés",
-            "following": "Abonnements"
-        },
-        "button": {
-            "dashboard": "Retourner au dashboard"
-        }
-    },
-    "migrationComplete": {
-        "error": {
-            "title": "Erreur dans la migration",
-            "retry": "Merci d'essayer à nouveau",
-            "createAccount": "Créer un compte"
-        },
-        "success": {
-            "title": "Migration terminée !"
-        }
-    }
 }
