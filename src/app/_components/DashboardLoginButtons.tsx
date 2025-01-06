@@ -70,12 +70,12 @@ export default function DashboardLoginButtons({
   const [showMastodonMenu, setShowMastodonMenu] = useState(false)
   const t = useTranslations('dashboardLoginButtons')
 
-  const handleSignIn = async (provider: string) => {
+  const handleSignIn = async (provider: string, instance?: string) => {
+
     onLoadingChange(true)
     await signIn(provider, {
       callbackUrl: '/dashboard?linking=true',
-
-    })
+    }, { instance })
   }
 
   if (!hasUploadedArchive) {
@@ -178,12 +178,12 @@ export default function DashboardLoginButtons({
       {!connectedServices.mastodon && (
         <div className="relative w-full">
           <AnimatePresence mode="wait">
-            {
+            {<motion.div>
               <motion.button
                 variants={itemVariants}
                 whileHover={{ scale: 1.01, y: -2 }}
                 whileTap={{ scale: 0.99 }}
-                onClick={() => handleSignIn("mastodon")}
+                onClick={() => handleSignIn("mastodon", "mastodon.social")}
                 className="w-full flex items-center justify-center gap-3 px-4 py-4 
                            bg-gradient-to-br from-purple-500/80 to-purple-600/80 rounded-xl
                            hover:from-purple-500 hover:to-purple-600
@@ -192,8 +192,39 @@ export default function DashboardLoginButtons({
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-purple-400/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 <SiMastodon className="w-5 h-5 relative z-10" />
-                <span className={`${plex.className} relative z-10 text-xs font-medium`}>{t('services.mastodon.instances.mastodon')}</span>
+                <span className={`${plex.className} relative z-10 text-xs font-medium`}>mastodon.social</span>
               </motion.button>
+              <motion.button
+                variants={itemVariants}
+                whileHover={{ scale: 1.01, y: -2 }}
+                whileTap={{ scale: 0.99 }}
+                onClick={() => handleSignIn("mastodon", "piaille.fr")}
+                className="w-full flex items-center justify-center gap-3 px-4 py-4 
+                          bg-gradient-to-br from-purple-500/80 to-purple-600/80 rounded-xl
+                          hover:from-purple-500 hover:to-purple-600
+                          transition-all duration-300 shadow-md hover:shadow-lg hover:shadow-purple-500/20
+                          backdrop-blur-sm relative overflow-hidden group"
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-purple-400/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <SiMastodon className="w-5 h-5 relative z-10" />
+                <span className={`${plex.className} relative z-10 text-xs font-medium`}>piaille.fr</span>
+              </motion.button>
+              <motion.button
+                variants={itemVariants}
+                whileHover={{ scale: 1.01, y: -2 }}
+                whileTap={{ scale: 0.99 }}
+                onClick={() => handleSignIn("mastodon", "mapstodon.space")}
+                className="w-full flex items-center justify-center gap-3 px-4 py-4 
+                          bg-gradient-to-br from-purple-500/80 to-purple-600/80 rounded-xl
+                          hover:from-purple-500 hover:to-purple-600
+                          transition-all duration-300 shadow-md hover:shadow-lg hover:shadow-purple-500/20
+                          backdrop-blur-sm relative overflow-hidden group"
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-purple-400/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <SiMastodon className="w-5 h-5 relative z-10" />
+                <span className={`${plex.className} relative z-10 text-xs font-medium`}>mapstodon.space</span>
+              </motion.button>
+            </motion.div>
             }
           </AnimatePresence>
         </div>
