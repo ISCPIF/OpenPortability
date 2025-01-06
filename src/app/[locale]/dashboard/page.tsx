@@ -243,7 +243,7 @@ export default function DashboardPage() {
       <div className="relative min-h-[calc(100vh-4rem)] pt-80">
         <div className="container mx-auto px-4">
           <div className="max-w-2xl mx-auto">
-            <div className="text-center mb-20 relative z-10">
+            <div className="text-center mb-8 md:mb-20 relative z-10">
               {progress === 100 ? (
                 <div className="space-y-2 mt-12">
                   <h2 className={`${plex.className} text-xl font-semibold text-indigo-100`}>
@@ -260,7 +260,7 @@ export default function DashboardPage() {
               )}
             </div>
 
-            <div className="mb-8 relative z-10">
+            <div className="mb-4 md:mb-8 relative z-10">
               <ProgressSteps
                 hasTwitter={hasTwitter}
                 hasBluesky={hasBluesky}

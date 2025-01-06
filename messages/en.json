@@ -215,9 +215,10 @@
 "upload": {
     "title": "Import your Twitter archive to continue your journey",
     "action": "Drop or select your files here",
-    "description": "Three data formats are accepted:\n- your original X archive if <1GB (in Zip format)\n- following.js and followers.js files TOGETHER and unzipped,\n- split versions of these files for large archives (following-part*.js + followers-part*.js)",
+    "description": "Three data formats are accepted:\n- your original X archive if <1GB (in Zip format)\n- following.js and follower.js files TOGETHER and unzipped,\n- split versions of these files for large archives (following-part*.js + follower-part*.js)",
     "loading": "Your files are being processed, please stay on the page until redirection.",
     "helpButton": "Help with getting your Twitter archive",
+    "loading-indic" : "Loading your data...",
     "logo": {
       "alt": "HelloQuitX Logo"
     },
