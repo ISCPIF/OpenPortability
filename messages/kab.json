@@ -1,1 +1,112 @@
-{}
+{
+    "consentModal": {
+        "buttons": {
+            "cancel": "Semmet"
+        }
+    },
+    "blueskyLogin": {
+        "form": {
+            "submit": "Qqen",
+            "identifier": {
+                "placeholder": "isem_n_useqdac.bsky.social"
+            },
+            "password": {
+                "placeholder": "••••••••",
+                "label": "Awal n uɛeddi n wesnas"
+            }
+        }
+    },
+    "settings": {
+        "deleteConfirm": {
+            "cancel": "Semmet"
+        },
+        "notifications": {
+            "title": "Ilɣa"
+        }
+    },
+    "dashboardLoginButtons": {
+        "services": {
+            "mastodon": {
+                "title": "Mastodon",
+                "instances": {
+                    "piaille": "piaille.fr",
+                    "mastodon": "mastodon.social"
+                }
+            },
+            "twitter": "Twitter",
+            "bluesky": "BlueSky"
+        }
+    },
+    "errorModal": {
+        "close": "Mdel"
+    },
+    "successModal": {
+        "following": {
+            "username": "@{username}"
+        },
+        "close": "Mdel",
+        "followers": {
+            "username": "@{username}"
+        }
+    },
+    "profile": {
+        "providers": {
+            "twitter": "Twitter",
+            "mastodon": "Mastodon",
+            "bluesky": "Bluesky"
+        }
+    },
+    "migrationComplete": {
+        "success": {
+            "displayName": "({name})"
+        }
+    },
+    "footer": {
+        "hosted": {
+            "cnrs": "CNRS/ISC-PIF",
+            "hqx": "HelloQuitX"
+        }
+    },
+    "largeFiles": {
+        "status": {
+            "completed": "Yemmed",
+            "failed": "Yerreẓ",
+            "pending": "Yettṛaǧu"
+        }
+    },
+    "connectedAccounts": {
+        "services": {
+            "bluesky": "BlueSky",
+            "mastodon": "Mastodon"
+        }
+    },
+    "partageButton": {
+        "share": "Bḍu"
+    },
+    "header": {
+        "profile": {
+            "username": "@{username}"
+        },
+        "logout": "Senser tuqqna"
+    },
+    "progressSteps": {
+        "share": {
+            "title": "Beṭṭu"
+        },
+        "import": {
+            "title": "Kter"
+        }
+    },
+    "uploadResults": {
+        "stats": {
+            "twitterAccounts": {
+                "value": "{count}"
+            }
+        }
+    },
+    "dashboard": {
+        "newsletter": {
+            "emailPlaceholder": "amedya@email.com"
+        }
+    }
+}
