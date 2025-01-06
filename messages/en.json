@@ -306,5 +306,31 @@
       "hqxNewsletter": "Receive updates from HelloQuitX",
       "oepNewsletter": "Be informed about On est prêt initiatives"
     }  
+  },
+"support": {
+    "modal": {
+      "title": "A problem occured ?",
+      "description": "Send us a message and we'll get back to you as soon as possible.",
+      "error": {
+        "send": "Error sending message",
+        "unknown": "An unexpected error occurred"
+      },
+      "form": {
+        "email": {
+          "label": "Your email address",
+          "placeholder": "example@email.com"
+        },
+        "subject": {
+          "label": "Subject",
+          "placeholder": "Your subject"
+        },
+        "message": {
+          "label": "Message",
+          "placeholder": "Your message"
+        },
+        "submit": "Send",
+        "submitting": "Sending..."
+      }
+    }
   }
 }

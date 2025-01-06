@@ -294,5 +294,31 @@
       "hqxNewsletter": "Recevoir les updates de HelloQuitteX",
       "oepNewsletter": "Être informé.e des initiatives de On est prêt"
     }
+  },
+"support": {
+    "modal": {
+      "title": "Un problème ?",
+      "description": "Envoyez-nous un message et nous vous répondrons dans les plus brefs délais.",
+      "error": {
+        "send": "Erreur lors de l'envoi du message",
+        "unknown": "Une erreur inattendue s'est produite"
+      },
+      "form": {
+        "email": {
+          "label": "Votre adresse email",
+          "placeholder": "exemple@email.com"
+        },
+        "subject": {
+          "label": "Sujet",
+          "placeholder": "Votre sujet"
+        },
+        "message": {
+          "label": "Message",
+          "placeholder": "Votre message"
+        },
+        "submit": "Envoyer",
+        "submitting": "Envoi en cours..."
+      }
+    }
   }
 }

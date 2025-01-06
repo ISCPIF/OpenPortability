@@ -1,14 +1,13 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { memo } from 'react';
+import { memo, useState } from 'react';
 import { Github, Mail } from 'lucide-react';
+import SupportModal from './SupportModale';
 
 const FooterLink = memo(({ href, children }: { href: string; children: React.ReactNode }) => (
   <a 
     href={href}
-    target="_blank"
-    rel="noopener noreferrer"
     className="text-indigo-300 hover:text-pink-400 transition-colors duration-200"
   >
     {children}
@@ -20,6 +19,7 @@ FooterLink.displayName = 'FooterLink';
 const Footer = memo(() => {
   const t = useTranslations('footer');
   const year = new Date().getFullYear();
+  const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
 
   const hostedText = t.raw('hosted.text');
   const cnrsText = t.raw('hosted.cnrs');
@@ -58,12 +58,19 @@ const Footer = memo(() => {
             <FooterLink href="https://github.com/FannyCaulfield/helloquittex">
               <Github className="w-5 h-5" />
             </FooterLink>
-            <FooterLink href="mailto:support@helloquitx.com">
+            <button 
+              onClick={() => setIsSupportModalOpen(true)}
+              className="text-indigo-300 hover:text-pink-400 transition-colors duration-200"
+            >
               <Mail className="w-5 h-5" />
-            </FooterLink>
+            </button>
           </div>
         </div>
       </div>
+      <SupportModal 
+        isOpen={isSupportModalOpen}
+        onClose={() => setIsSupportModalOpen(false)}
+      />
     </footer>
   );
 });
