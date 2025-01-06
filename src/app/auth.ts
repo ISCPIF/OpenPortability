@@ -52,7 +52,6 @@ let cachedValue = instances.find(r => r.instance == instance)
 
 // https://authjs.dev/reference/nextjs#lazy-initialization
 export const { auth, signIn, signOut, handlers } = NextAuth(async req => { 
-    if (req?.url.endsWith("api/auth/signin/mastodon")) {
     if (req?.url.includes("api/auth/signin/mastodon")) {
         console.log(req) // do something with the request
         const { searchParams } = new URL(req.url)
