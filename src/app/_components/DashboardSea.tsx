@@ -3,8 +3,10 @@
 import Image from 'next/image';
 import { plex } from '@/app/fonts/plex';
 import { useTranslations } from 'next-intl';
+import { useParams } from 'next/navigation';
 
-import logoHQX from '../../../public/logoxHQX/HQX-rose-FR.svg';
+import logoHQXFR from '../../../public/logoxHQX/HQX-rose-FR.svg';
+import logoHQXEN from '../../../public/logoxHQX/HQX-pink-UK.svg';
 import seaBackground from '../../../public/sea.svg';
 import Boat from './Boat';
 
@@ -20,6 +22,9 @@ interface SeaProps {
 
 export default function Sea({ progress }: SeaProps) {
   const t = useTranslations('dashboardSea');
+  const params = useParams();
+  const locale = params.locale as string;
+  const logoHQX = locale === 'fr' ? logoHQXFR : logoHQXEN;
   const ProgressImage = ({ progress }: { progress: number }) => {
     let img;
     let scale = 1;
