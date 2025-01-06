@@ -15,6 +15,61 @@
     },
     "blueskyLogin": {
         "title": "Connetti a BlueSky",
-        "description": "Connettiti all'utenza BlueSky per sincronizzare i tuoi dati e godere di un'esperienza completa."
+        "description": "Connettiti all'utenza BlueSky per sincronizzare i tuoi dati e godere di un'esperienza completa.",
+        "tooltip": {
+            "noAccount": "Non hai ancora un account BlueSky?",
+            "createAccount": "Creane uno qui"
+        },
+        "form": {
+            "password": {
+                "placeholder": "••••••••"
+            }
+        }
+    },
+    "footer": {
+        "hosted": {
+            "hqx": "HelloQuitX",
+            "cnrs": "CNRS/ISC-PIF",
+            "text": "Questa piattaforma è ospitata da {cnrs} e sviluppata in collaborazione con {hqx}"
+        },
+        "copyright": "© {year} HelloQuitX. Tutti i diritti riservati."
+    },
+    "consentModal": {
+        "title": "Conferma dell'upload",
+        "buttons": {
+            "cancel": "Annulla",
+            "accept": "Accetta e continua"
+        },
+        "conditions": {
+            "ownership": "Sei lə proprietariə legittimə di questi dati.",
+            "profileCreation": "Comprendi che questi dati saranno usati per creare il tuo profilo su HelloQuitX.",
+            "cnrsUsage": "Accetti che i dati forniti vengano usati dal Centro Nazionale per la Ricerca Scientifica (CNRS) nell'ambito dell'operazione HelloQuitX."
+        },
+        "description": "Caricando i tuoi file di Twitter, confermi che:"
+    },
+    "errorModal": {
+        "title": "Errore di caricamento",
+        "close": "Chiudi"
+    },
+    "dashboardLoginButtons": {
+        "services": {
+            "twitter": "Twitter",
+            "mastodon": {
+                "title": "Mastodon",
+                "instances": {
+                    "piaille": "piaille.fr",
+                    "mastodon": "mastodon.social"
+                }
+            },
+            "bluesky": "BlueSky"
+        },
+        "addSocialNetwork": "Aggiungi un altro social network",
+        "importTwitter": "Importa il mio archivio Twitter"
+    },
+    "loginButtons": {
+        "twitter": {
+            "notDeleted": "Ho un account Twitter",
+            "continue": "Continua con Twitter"
+        }
     }
 }
