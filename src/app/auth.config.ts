@@ -11,6 +11,9 @@ import type { CustomAdapterUser } from '@/lib/supabase-adapter'
 
 import { auth } from "./auth"
 
+
+
+
 export const authConfig = {
   adapter: supabaseAdapter,
   secret: process.env.NEXTAUTH_SECRET,
@@ -265,42 +268,23 @@ async jwt({ token, user, account, profile }) {
       //   params: { "user.fields": "profile_image_url,description" }
       // }
     }),
-
     MastodonProvider({
-      clientId: process.env.AUTH_MASTODON_ID!,
-      clientSecret: process.env.AUTH_MASTODON_SECRET!,
-      issuer: process.env.AUTH_MASTODON_ISSUER!,
-      profile(profile: MastodonProfile) {
-        return {
-          id: profile.id,
-          name: profile.display_name,
-          provider: 'mastodon',
-          profile: profile,
-          has_onboarded: false,
-          hqx_newsletter: false,
-          oep_accepted: false
-        }
-      }
-    }),
-    MastodonProvider({
-      id: "piaille",
-      name: "Piaille",
-      clientId: process.env.AUTH_PIALLE_MASTONDON_ID!,
-      clientSecret: process.env.AUTH_PIAILLE_MASTODON_SECRET!,
-      issuer: process.env.AUTH_PIAILLE_MASTODON_ISSUER!,
-      profile(profile: MastodonProfile) {
-        return {
-          id: profile.id,
-          name: profile.display_name,
-          provider: 'mastodon',
-          profile: profile,
-          has_onboarded: false,
-          hqx_newsletter: false,
-          oep_accepted: false
-        }
-      }
-    })
-  ],
+        id: "mastodon",
+        // This will be rewrited on the fly later on
+        issuer: "https://example.com",
+        profile(profile: MastodonProfile) {
+          return {
+            id: profile.id,
+            name: profile.display_name,
+            provider: 'mastodon',
+            profile: profile,
+            has_onboarded: false,
+            hqx_newsletter: false,
+            oep_accepted: false, 
+  
+          }
+        } } )
+      ],
   pages: {
     signIn: '/auth/signin',
     error: '/auth/error'

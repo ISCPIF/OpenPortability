@@ -7,7 +7,9 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   images: {
-    domains: ['pbs.twimg.com', 'abs.twimg.com', 'cdn.bsky.app', 'mastodon.social', 'piaille.fr']
+    // TODO: ça va être embetant à générer automatiquement, peut-être qu’il faudra se contenter d’une image
+    // statique pour Masto
+    domains: ['pbs.twimg.com', 'abs.twimg.com', 'cdn.bsky.app', 'mastodon.social', 'piaille.fr', 'cdn.masto.host']
   },
   headers: async () => {
     return [

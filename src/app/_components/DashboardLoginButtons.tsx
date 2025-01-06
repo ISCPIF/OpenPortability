@@ -60,8 +60,8 @@ interface DashboardLoginButtonsProps {
   hasUploadedArchive?: boolean;
 }
 
-export default function DashboardLoginButtons({ 
-  onLoadingChange = () => {}, 
+export default function DashboardLoginButtons({
+  onLoadingChange = () => { },
   connectedServices,
   hasUploadedArchive
 }: DashboardLoginButtonsProps) {
@@ -73,7 +73,8 @@ export default function DashboardLoginButtons({
   const handleSignIn = async (provider: string) => {
     onLoadingChange(true)
     await signIn(provider, {
-      callbackUrl: '/dashboard?linking=true'
+      callbackUrl: '/dashboard?linking=true',
+
     })
   }
 
@@ -103,7 +104,7 @@ export default function DashboardLoginButtons({
 
   // Vérifier s'il reste des services à connecter
   const hasRemainingServices = !connectedServices.twitter || !connectedServices.bluesky || !connectedServices.mastodon;
-  
+
   if (!hasRemainingServices) {
     return null;
   }
@@ -177,90 +178,23 @@ export default function DashboardLoginButtons({
       {!connectedServices.mastodon && (
         <div className="relative w-full">
           <AnimatePresence mode="wait">
-            {!showMastodonMenu ? (
+            {
               <motion.button
-                key="mastodon-main"
                 variants={itemVariants}
                 whileHover={{ scale: 1.01, y: -2 }}
                 whileTap={{ scale: 0.99 }}
-                onClick={() => setShowMastodonMenu(true)}
-                onMouseEnter={() => setActiveButton("mastodon")}
-                onMouseLeave={() => setActiveButton(null)}
+                onClick={() => handleSignIn("mastodon")}
                 className="w-full flex items-center justify-center gap-3 px-4 py-4 
-                         bg-gradient-to-br from-purple-500/80 to-purple-600/80 rounded-xl
-                         hover:from-purple-500 hover:to-purple-600
-                         transition-all duration-300 shadow-md hover:shadow-lg hover:shadow-purple-500/20
-                         backdrop-blur-sm relative overflow-hidden group"
+                           bg-gradient-to-br from-purple-500/80 to-purple-600/80 rounded-xl
+                           hover:from-purple-500 hover:to-purple-600
+                           transition-all duration-300 shadow-md hover:shadow-lg hover:shadow-purple-500/20
+                           backdrop-blur-sm relative overflow-hidden group"
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-purple-400/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                <motion.div
-                  animate={{
-                    scale: activeButton === "mastodon" ? [1, 1.1, 1] : 1,
-                  }}
-                  transition={{ duration: 0.2 }}
-                  className="relative z-10"
-                >
-                  <SiMastodon className="w-5 h-5" />
-                </motion.div>
-                <span className={`${plex.className} relative z-10 text-xs font-medium`}>{t('services.mastodon.title')}</span>
-                <ChevronDown className="w-4 h-4 relative z-10" />
+                <SiMastodon className="w-5 h-5 relative z-10" />
+                <span className={`${plex.className} relative z-10 text-xs font-medium`}>{t('services.mastodon.instances.mastodon')}</span>
               </motion.button>
-            ) : (
-              <motion.div
-                key="mastodon-menu"
-                variants={containerVariants}
-                initial="hidden"
-                animate="visible"
-                exit="exit"
-                className="space-y-2"
-              >
-                <motion.button
-                  variants={itemVariants}
-                  whileHover={{ scale: 1.01, y: -2 }}
-                  whileTap={{ scale: 0.99 }}
-                  onClick={() => handleSignIn("mastodon-piaille")}
-                  className="w-full flex items-center justify-center gap-3 px-4 py-4 
-                           bg-gradient-to-br from-purple-500/80 to-purple-600/80 rounded-xl
-                           hover:from-purple-500 hover:to-purple-600
-                           transition-all duration-300 shadow-md hover:shadow-lg hover:shadow-purple-500/20
-                           backdrop-blur-sm relative overflow-hidden group"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-br from-purple-400/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                  <SiMastodon className="w-5 h-5 relative z-10" />
-                  <span className={`${plex.className} relative z-10 text-xs font-medium`}>{t('services.mastodon.instances.piaille')}</span>
-                </motion.button>
-
-                <motion.button
-                  variants={itemVariants}
-                  whileHover={{ scale: 1.01, y: -2 }}
-                  whileTap={{ scale: 0.99 }}
-                  onClick={() => handleSignIn("mastodon")}
-                  className="w-full flex items-center justify-center gap-3 px-4 py-4 
-                           bg-gradient-to-br from-purple-500/80 to-purple-600/80 rounded-xl
-                           hover:from-purple-500 hover:to-purple-600
-                           transition-all duration-300 shadow-md hover:shadow-lg hover:shadow-purple-500/20
-                           backdrop-blur-sm relative overflow-hidden group"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-br from-purple-400/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                  <SiMastodon className="w-5 h-5 relative z-10" />
-                  <span className={`${plex.className} relative z-10 text-xs font-medium`}>{t('services.mastodon.instances.mastodon')}</span>
-                </motion.button>
-
-                <motion.button
-                  variants={itemVariants}
-                  whileHover={{ scale: 1.01, y: -2 }}
-                  whileTap={{ scale: 0.99 }}
-                  onClick={() => setShowMastodonMenu(false)}
-                  className="w-full flex items-center justify-center gap-3 px-4 py-2 
-                           bg-gradient-to-br from-gray-500/80 to-gray-600/80 rounded-xl
-                           hover:from-gray-500 hover:to-gray-600
-                           transition-all duration-300 shadow-md hover:shadow-lg hover:shadow-gray-500/20
-                           backdrop-blur-sm relative overflow-hidden group"
-                >
-                  <ChevronDown className="w-4 h-4 rotate-180" />
-                </motion.button>
-              </motion.div>
-            )}
+            }
           </AnimatePresence>
         </div>
       )}
