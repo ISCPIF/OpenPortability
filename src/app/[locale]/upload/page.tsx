@@ -159,7 +159,11 @@ export default function UploadPage() {
         'text/x-javascript',
         'text/jsx',
         'text/plain',
-        'module'
+        'module',
+        'application/x-zip',
+       'application/x-zip-compressed',
+       'application/octet-stream',
+       'multipart/x-zip'
     ];
     return validTypes.includes(file.type);
  };
@@ -367,14 +371,67 @@ export default function UploadPage() {
   };
 
   const handleFilesSelected = (files: FileList) => {
+    // Convertir FileList en Array pour un meilleur logging
+    const filesArray = Array.from(files);
+    
     console.log('📁 Files selected:', {
       numberOfFiles: files.length,
       firstFileName: files[0]?.name,
       firstFileType: files[0]?.type,
-      firstFileSize: files[0]?.size
+      firstFileSize: `${(files[0]?.size / (1024 * 1024)).toFixed(2)}MB`,
+      allFiles: filesArray.map(f => ({
+        name: f.name,
+        type: f.type,
+        size: `${(f.size / (1024 * 1024)).toFixed(2)}MB`,
+        rawSize: f.size
+      }))
     });
 
-    // Stocker les fichiers et afficher la modale de consentement
+    // Vérifications préalables
+    if (!files || files.length === 0) {
+      console.log('❌ Erreur: Aucun fichier sélectionné');
+      setError('Aucun fichier sélectionné');
+      return;
+    }
+
+    // Vérifier la taille de chaque fichier individuellement
+    for (const file of filesArray) {
+      console.log('📊 Vérification taille fichier:', {
+        fileName: file.name,
+        fileType: file.type,
+        size: `${(file.size / (1024 * 1024)).toFixed(2)}MB`,
+        maxSize: `${(MAX_FILE_SIZE / (1024 * 1024))}MB`,
+        isOverLimit: file.size > MAX_FILE_SIZE
+      });
+
+      if (file.size > MAX_FILE_SIZE) {
+        console.log('❌ Erreur: Fichier trop volumineux');
+        setError(`Le fichier ${file.name} dépasse la limite de ${MAX_FILE_SIZE / (1024 * 1024)}MB`);
+        return;
+      }
+    }
+
+    // Vérifier les types de fichiers
+    const fileTypes = filesArray.map(f => ({
+      name: f.name,
+      type: f.type,
+      isValid: f.type.startsWith('image/') || f.type.includes('zip')
+    }));
+    console.log('🔍 Vérification des types:', fileTypes);
+
+    for (const file of filesArray) {
+      if (!file.type.startsWith('image/') && !file.type.includes('zip')) {
+        console.log('❌ Erreur: Type de fichier invalide', {
+          fileName: file.name,
+          fileType: file.type
+        });
+        setError(`Le fichier ${file.name} n'est pas une image ou une archive ZIP`);
+        return;
+      }
+    }
+
+    console.log('✅ Toutes les vérifications sont passées, affichage de la modale de consentement');
+    // Si toutes les vérifications sont passées, stocker les fichiers et afficher la modale
     setPendingFiles(files);
     setShowConsent(true);
   };
