@@ -60,7 +60,7 @@ export const { auth, signIn, signOut, handlers } = NextAuth(async req => {
       mastodonProvider.authorization = `${issuer}/oauth/authorize?scope=read`;
       mastodonProvider.token = `${issuer}/oauth/token`;
       mastodonProvider.userinfo = `${issuer}/api/v1/accounts/verify_credentials`;
-    }
+    }3
   }
   return authConfig;
 });
