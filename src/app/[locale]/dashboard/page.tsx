@@ -7,7 +7,6 @@ import NewsletterRequest from '@/app/_components/NewsletterRequest';
 import Image from 'next/image'
 import { supabase } from '@/lib/supabase';
 import BlueSkyLogin from '@/app/_components/BlueSkyLogin';
-import MastodonLogin from '@/app/_components/MastodonLogin';
 import ConnectedAccounts from '@/app/_components/ConnectedAccounts';
 import MatchedBlueSkyProfiles from '@/app/_components/MatchedBlueSkyProfiles';
 import UploadResults from '@/app/_components/UploadResults';
@@ -90,52 +89,52 @@ export default function DashboardPage() {
         router.replace("/auth/signin");
         return;
       }
-      
-      if (status !== "loading") {
+
+    if (status !== "loading") {
+      setIsLoading(false);
+    }
+  }, [status, router]);
+
+  useEffect(() => {
+    update()
+  }, []);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        setIsLoading(true);
+        const response = await fetch('/api/stats');
+        if (!response.ok) {
+          throw new Error('Failed to fetch stats');
+        }
+        const data = await response.json();
+        setStats(data);
+      } catch (error) {
+        console.error('Error fetching stats:', error);
+      } finally {
         setIsLoading(false);
       }
-    }, [status, router]);
+    };
 
-    useEffect(() => {
-      update()
-    }, []);
-  
-    useEffect(() => {
-      const fetchStats = async () => {
-        try {
-          setIsLoading(true);
-          const response = await fetch('/api/stats');
-          if (!response.ok) {
-            throw new Error('Failed to fetch stats');
-          }
-          const data = await response.json();
-          setStats(data);
-        } catch (error) {
-          console.error('Error fetching stats:', error);
-        } finally {
-          setIsLoading(false);
-        }
-      };
-  
-      if (session?.user?.id) {
-        fetchStats();
-      }
-    }, [session]);
-  
-    // Si en chargement ou pas de session, afficher le loader
-    if (status === "loading" || isLoading) {
-      return (
-        <div className="min-h-screen bg-[#2a39a9] relative w-full max-w-[90rem] m-auto">
-          <div className="container mx-auto py-12">
-            <div className="container flex flex-col m-auto text-center text-[#E2E4DF]">
-              <div className="m-auto relative my-32 lg:my-40">
-                <LoadingIndicator msg={t('loading')} />
-              </div>
+    if (session?.user?.id) {
+      fetchStats();
+    }
+  }, [session]);
+
+  // Si en chargement ou pas de session, afficher le loader
+  if (status === "loading" || isLoading) {
+    return (
+      <div className="min-h-screen bg-[#2a39a9] relative w-full max-w-[90rem] m-auto">
+        <div className="container mx-auto py-12">
+          <div className="container flex flex-col m-auto text-center text-[#E2E4DF]">
+            <div className="m-auto relative my-32 lg:my-40">
+              <LoadingIndicator msg={t('loading')} />
             </div>
           </div>
         </div>
-      );
-    }
+      </div>
+    );
+  }
 
 
   const handleShare = async (url: string, platform: string) => {
@@ -288,22 +287,22 @@ export default function DashboardPage() {
               </div>
             )}
 
-              <>
- <div className="flex justify-center relative z-10">
-                  <div className="w-full max-w-2xl flex gap-4">
+            <>
+              <div className="flex justify-center relative z-10">
+                <div className="w-full max-w-2xl flex gap-4">
                   <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={() => setIsModalOpen(true)}
-                      className={`flex-1 flex flex-col items-center justify-center gap-3 px-6 py-4 h-[120px]
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setIsModalOpen(true)}
+                    className={`flex-1 flex flex-col items-center justify-center gap-3 px-6 py-4 h-[120px]
                                bg-gradient-to-br from-blue-500 to-indigo-500 hover:bg-gradient-to-r hover:from-pink-500 hover:to-purple-500
                                text-white rounded-2xl shadow-lg 
                                transition-all duration-300 ${plex.className}`}
-                    >
-                      <span className="text-lg font-semibold">{t('addSocialNetwork')}</span>
-                      <Link className="w-6 h-6 opacity-90" />
-                    </motion.button>
-                    {!hasOnboarded && (
+                  >
+                    <span className="text-lg font-semibold">{t('addSocialNetwork')}</span>
+                    <Link className="w-6 h-6 opacity-90" />
+                  </motion.button>
+                  {!hasOnboarded && (
                     <motion.button
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
@@ -319,59 +318,59 @@ export default function DashboardPage() {
                       <span className="text-lg font-semibold">{t('importButton')}</span>
                       <Ship className="w-6 h-6 opacity-90" />
                     </motion.button>
-                    )}
-                  </div>
+                  )}
                 </div>
+              </div>
 
-                {session?.user?.id && (
-                  <>
-                    <div className="flex justify-center mt-4 relative z-10 mb-4">
+              {session?.user?.id && (
+                <>
+                  <div className="flex justify-center mt-4 relative z-10 mb-4">
                     <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => setShowNewsletterModal(true)}
-                        className={`flex flex-col items-center justify-center gap-3 px-6 py-4 w-full max-w-2xl h-[120px]
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => setShowNewsletterModal(true)}
+                      className={`flex flex-col items-center justify-center gap-3 px-6 py-4 w-full max-w-2xl h-[120px]
                           bg-gradient-to-br from-blue-500 to-indigo-500 hover:bg-gradient-to-r hover:from-pink-500 hover:to-purple-500
                           text-white rounded-2xl shadow-lg 
                           transition-all duration-300 ${plex.className}`}
-               >
-                 <span className="text-lg font-semibold">{t('newsletter.subscribe')}</span>
-                 <Mail className="w-6 h-6 opacity-90" />
-                      </motion.button>
-                    </div>
+                    >
+                      <span className="text-lg font-semibold">{t('newsletter.subscribe')}</span>
+                      <Mail className="w-6 h-6 opacity-90" />
+                    </motion.button>
+                  </div>
 
-                    <AnimatePresence>
-                      {showNewsletterModal && (
+                  <AnimatePresence>
+                    {showNewsletterModal && (
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+                        onClick={(e) => {
+                          if (e.target === e.currentTarget) setShowNewsletterModal(false)
+                        }}
+                      >
                         <motion.div
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          exit={{ opacity: 0 }}
-                          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-                          onClick={(e) => {
-                            if (e.target === e.currentTarget) setShowNewsletterModal(false)
-                          }}
+                          initial={{ scale: 0.95, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          exit={{ scale: 0.95, opacity: 0 }}
+                          onClick={(e) => e.stopPropagation()}
                         >
-                          <motion.div
-                            initial={{ scale: 0.95, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            exit={{ scale: 0.95, opacity: 0 }}
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <NewsletterRequest
-                              userId={session.user.id}
-                              onClose={() => setShowNewsletterModal(false)}
-                              onSubscribe={() => {
-                                setShowNewsletterModal(false);
-                                update();
-                              }}
-                            />
-                          </motion.div>
+                          <NewsletterRequest
+                            userId={session.user.id}
+                            onClose={() => setShowNewsletterModal(false)}
+                            onSubscribe={() => {
+                              setShowNewsletterModal(false);
+                              update();
+                            }}
+                          />
                         </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </>
-                )}
-              </>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </>
+              )}
+            </>
           </div>
         </div>
       </div>
