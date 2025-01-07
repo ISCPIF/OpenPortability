@@ -58,11 +58,7 @@
       "services": {
         "twitter": "Twitter",
         "mastodon": {
-          "title": "Mastodon",
-          "instances": {
-            "piaille": "piaille.fr",
-            "mastodon": "mastodon.social"
-          }
+          "title": "Mastodon"
         },
         "bluesky": "BlueSky"
       }
@@ -85,11 +81,7 @@
       "connect": "Se connecter avec BlueSky"
     },
     "mastodon": {
-      "connect": "Se connecter avec Mastodon",
-      "instances": {
-        "piaille": "Se connecter via Piaille.fr",
-        "mastodon": "Se connecter via Mastodon.social"
-      }
+      "connect": "Se connecter avec Mastodon"
     }
   },
   "partageButton": {
