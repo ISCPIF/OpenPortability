@@ -36,7 +36,10 @@ export default function ProfileCard({ type }: ProfileCardProps) {
     },
     mastodon: {
       username: session.user.mastodon_username,
-      image: session.user.mastodon_image,
+      // On ignore l’image de profil mastodon pour l’instant
+      // à voir si on la remplace par une image générique, 
+      // ou si on autorise un accès wildcard 
+      image: null, //session.user.mastodon_image,
       id: session.user.mastodon_id,
       icon: <FaMastodon className="text-[#6364FF] text-2xl" />,
       connected: !!session.user.mastodon_id
@@ -70,11 +73,11 @@ export default function ProfileCard({ type }: ProfileCardProps) {
 
       const data = await response.json()
       if (!response.ok) {
-        const errorMessage = data.code === 'LAST_ACCOUNT' 
+        const errorMessage = data.code === 'LAST_ACCOUNT'
           ? t('errors.lastAccount')
           : data.code === 'NOT_LINKED'
-          ? t('errors.notLinked', { provider: t(`providers.${type}`) })
-          : data.error
+            ? t('errors.notLinked', { provider: t(`providers.${type}`) })
+            : data.error
 
         throw new Error(errorMessage)
       }
@@ -110,7 +113,7 @@ export default function ProfileCard({ type }: ProfileCardProps) {
             {profile.icon}
           </div>
         </div>
-        
+
         {/* Infos utilisateur */}
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium text-white truncate">
