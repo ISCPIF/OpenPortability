@@ -85,11 +85,7 @@
       "connect": "Connect with BlueSky"
     },
     "mastodon": {
-      "connect": "Connect with Mastodon",
-      "instances": {
-        "piaille": "Connect via Piaille.fr",
-        "mastodon": "Connect via Mastodon.social"
-      }
+      "connect": "Connect with Mastodon"
     }
   },
 "migrationComplete": {
