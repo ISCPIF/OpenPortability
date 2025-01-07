@@ -51,4 +51,6 @@ nginx/certs/*.crt
 nginx/certs/*.key
 backup.sql
 
-worker
+docker-compose.yml
+/tests
+/volumescleanup/
