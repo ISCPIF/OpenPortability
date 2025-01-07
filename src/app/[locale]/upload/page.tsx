@@ -14,12 +14,14 @@ import { validateTwitterData, extractTargetFiles } from '../../_components/Uploa
 import Image from 'next/image';
 import seaBackground from '../../../public/sea.svg'
 import { plex } from '../../fonts/plex';
-import logoHQX from '../../../../public/logoxHQX/HQX-rose-FR.svg'
 import { motion } from 'framer-motion';
+import { AlertCircle } from 'lucide-react';
 import boat1 from '../../../public/boats/boat-1.svg'
 import Footer from "@/app/_components/Footer";
 import LoadingIndicator from '@/app/_components/LoadingIndicator';
-
+import SupportModal from '../../_components/SupportModale';
+import logoHQXFR from '../../../../public/logoxHQX/HQX-rose-FR.svg';
+import logoHQXEN from '../../../../public/logoxHQX/HQX-pink-UK.svg';
 
 const UploadButton = dynamic(() => import('../../_components/UploadButton'), {
   loading: () => <div className="animate-pulse bg-gray-200 h-12 w-48 rounded-lg"></div>,
@@ -43,7 +45,11 @@ export default function UploadPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [showHelpModal, setShowHelpModal] = useState(false);
+  const [showSupportModal, setShowSupportModal] = useState(false);
   const t = useTranslations('upload');
+  const tSupport = useTranslations('support');
+  const locale = params.locale as string;
+  const logoHQX = locale === 'fr' ? logoHQXFR : logoHQXEN;
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -141,11 +147,22 @@ export default function UploadPage() {
   };
 
   const validateFileType = (file: File): boolean => {
-
     console.log("File Type =", file.type)
-    const validTypes = ['application/javascript', 'text/javascript', 'application/zip', 'application/x-javascript'];
+    const validTypes = [
+        'application/javascript',
+        'text/javascript', 
+        'application/zip',
+        'application/x-javascript',
+        'text/ecmascript',
+        'application/ecmascript',
+        'application/x-ecmascript',
+        'text/x-javascript',
+        'text/jsx',
+        'text/plain',
+        'module'
+    ];
     return validTypes.includes(file.type);
-  };
+ };
 
   const sanitizeContent = (content: Uint8Array): Uint8Array => {
     const text = new TextDecoder().decode(content);
@@ -404,8 +421,7 @@ export default function UploadPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#2a39a9] relative w-full max-w-[90rem] m-auto">
-      <Header />
+    <div className="min-h-screen bg-[#2a39a9] relative w-full max-w-[90rem] m-auto">      <Header />
       <div className="relative z-10 pt-12">
         <Image
           src={logoHQX}
@@ -416,6 +432,7 @@ export default function UploadPage() {
           priority
         />
       </div>
+      
       <div className="flex justify-center items-center min-h-[60vh]">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -443,20 +460,54 @@ export default function UploadPage() {
                 </p>
                 
                 {!isUploading && (
-                  <div className="mt-8">
+                  <div className="space-y-4">
                     <UploadButton onFilesSelected={handleFilesSelected} onError={handleUploadError} />
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => setShowSupportModal(true)}
+                      className="w-full flex items-center justify-center gap-2 py-3 px-6 bg-white/10 hover:bg-white/20 backdrop-blur-lg rounded-xl text-white"
+                    >
+                      <AlertCircle className="w-5 h-5" />
+                      <span>{tSupport('modal.title')}</span>
+                    </motion.button>
                   </div>
                 )}
                 
                 {isUploading && (
                   <div className="flex items-center justify-center space-x-2">
                     <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white"></div>
-                    <span>{t('loading')}</span>
+                    <p className="text-white">{t('uploading')}</p>
                   </div>
                 )}
               </div>
             </div>
+            
           </motion.div>
+
+      {/* Modal de Support */}
+      <SupportModal 
+        isOpen={showSupportModal}
+        onClose={() => setShowSupportModal(false)}
+      />
+            
+          {/* </motion.div> */}
+
+          {/* <motion.button
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        onClick={() => setShowSupportModal(true)}
+        className="fixed bottom-4 right-4 bg-white/10 hover:bg-white/20 backdrop-blur-lg rounded-full p-3 text-white shadow-lg flex items-center gap-2"
+      >
+        <AlertCircle className="w-5 h-5" />
+        <span>{tSupport('button')}</span>
+      </motion.button> */}
+
+      {/* Modal de Support */}
+      <SupportModal 
+        isOpen={showSupportModal}
+        onClose={() => setShowSupportModal(false)}
+      />
       </div> 
 
       {/* Modals */}

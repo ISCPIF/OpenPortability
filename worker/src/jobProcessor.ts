@@ -417,11 +417,6 @@ export async function processJob(job: ImportJob, workerId: string) {
       }
     }
 
-    // Cleanup temp files
-    if (job.file_paths) {
-      await cleanupTempFiles(job.file_paths, workerId);
-    }
-
     // Mark job as completed with final progress
     await updateJobProgress(
       job.id,
@@ -448,11 +443,16 @@ export async function processJob(job: ImportJob, workerId: string) {
     }
     
     console.log(`✅ [Worker ${workerId}] Job completed successfully`);
+
+    if (job.file_paths) {
+      await cleanupTempFiles(job.file_paths, workerId);
+    }
   } catch (error) {
     console.error(`❌ [Worker ${workerId}] Job processing failed:`, error);
-    
-    // Update job status to failed
+    console.log(error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+
+    console.error(`❌ [Worker ${workerId}] Job processing failed:`, errorMessage);
     await supabase
       .from('import_jobs')
       .update({

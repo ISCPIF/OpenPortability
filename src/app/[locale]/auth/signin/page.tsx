@@ -13,9 +13,6 @@ import LoginSea from "@/app/_components/LoginSea"
 import Footer from "@/app/_components/Footer";
 import { useTranslations } from 'next-intl'
 
-// import logoHQXFR from '../../../../../public/logoxHQX/HQX-rose-FR.svg';
-// import logoHQXEN from '../../../../../public/logoxHQX/HQX-pink-UK.svg';
-
 export default function SignIn() {
   const { data: session, status } = useSession()
   const router = useRouter()
