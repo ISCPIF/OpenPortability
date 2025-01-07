@@ -266,11 +266,10 @@ async jwt({ token, user, account, profile }) {
       //   params: { "user.fields": "profile_image_url,description" }
       // }
     }),
-
     MastodonProvider({
-      clientId: process.env.AUTH_MASTODON_ID!,
-      clientSecret: process.env.AUTH_MASTODON_SECRET!,
-      issuer: process.env.AUTH_MASTODON_ISSUER!,
+      id: "mastodon",
+      // This will be rewrited on the fly later on
+      issuer: "https://mastodon.space",
       profile(profile: MastodonProfile) {
         return {
           id: profile.id,
@@ -279,28 +278,9 @@ async jwt({ token, user, account, profile }) {
           profile: profile,
           has_onboarded: false,
           hqx_newsletter: false,
-          oep_accepted: false
+          oep_accepted: false, 
         }
-      }
-    }),
-    MastodonProvider({
-      id: "piaille",
-      name: "Piaille",
-      clientId: process.env.AUTH_PIALLE_MASTONDON_ID!,
-      clientSecret: process.env.AUTH_PIAILLE_MASTODON_SECRET!,
-      issuer: process.env.AUTH_PIAILLE_MASTODON_ISSUER!,
-      profile(profile: MastodonProfile) {
-        return {
-          id: profile.id,
-          name: profile.display_name,
-          provider: 'mastodon',
-          profile: profile,
-          has_onboarded: false,
-          hqx_newsletter: false,
-          oep_accepted: false
-        }
-      }
-    })
+    }})
   ],
   pages: {
     signIn: '/auth/signin',
