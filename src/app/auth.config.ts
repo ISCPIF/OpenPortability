@@ -11,9 +11,6 @@ import type { CustomAdapterUser } from '@/lib/supabase-adapter'
 
 import { auth } from "./auth"
 
-
-
-
 export const authConfig = {
   adapter: supabaseAdapter,
   secret: process.env.NEXTAUTH_SECRET,
@@ -270,22 +267,21 @@ async jwt({ token, user, account, profile }) {
       // }
     }),
     MastodonProvider({
-        id: "mastodon",
-        // This will be rewrited on the fly later on
-        issuer: "https://example.com",
-        profile(profile: MastodonProfile) {
-          return {
-            id: profile.id,
-            name: profile.display_name,
-            provider: 'mastodon',
-            profile: profile,
-            has_onboarded: false,
-            hqx_newsletter: false,
-            oep_accepted: false, 
-  
-          }
-        } } )
-      ],
+      id: "mastodon",
+      // This will be rewrited on the fly later on
+      issuer: "https://mastodon.space",
+      profile(profile: MastodonProfile) {
+        return {
+          id: profile.id,
+          name: profile.display_name,
+          provider: 'mastodon',
+          profile: profile,
+          has_onboarded: false,
+          hqx_newsletter: false,
+          oep_accepted: false, 
+        }
+    }})
+  ],
   pages: {
     signIn: '/auth/signin',
     error: '/auth/error'
