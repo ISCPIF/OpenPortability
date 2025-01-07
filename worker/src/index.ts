@@ -168,12 +168,14 @@ function randomSleep(min: number, max: number) {
 }
 
 async function startWorker() {
+  const startupDelay = Math.floor(Math.random() * 4000) + 1000;
+  console.log(`🚀 [Worker ${WORKER_CONFIG.id}] Starting with delay of ${startupDelay}ms...`);
+  await sleep(startupDelay);
+
   console.log(`🚀 [Worker ${WORKER_CONFIG.id}] Starting import worker...`);
   console.log(`📋 [Worker ${WORKER_CONFIG.id}] Configuration:`, WORKER_CONFIG);
   
-  // Démarrer la vérification des jobs bloqués en arrière-plan
   const stalledJobsInterval = setInterval(async () => {
-    // console.log(`🔍 [Worker ${WORKER_CONFIG.id}] Checking for stalled jobs...`);
     try {
       await recoverStalledJobs();
     } catch (error) {
@@ -181,7 +183,6 @@ async function startWorker() {
     }
   }, WORKER_CONFIG.stalledJobTimeout);
 
-  // S'assurer que l'intervalle est nettoyé à la sortie
   process.on('SIGTERM', () => clearInterval(stalledJobsInterval));
   process.on('SIGINT', () => clearInterval(stalledJobsInterval));
   

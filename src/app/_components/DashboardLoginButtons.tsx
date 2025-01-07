@@ -71,11 +71,37 @@ export default function DashboardLoginButtons({
   const t = useTranslations('dashboardLoginButtons')
 
   const handleSignIn = async (provider: string, instance?: string) => {
+    try {
+      onLoadingChange(true)
+      const result = await signIn(provider, { 
+        redirect: false,
+        callbackUrl: '/dashboard?linking=true'
+        }, { instance })
+      
+      if (result?.error) {
+        // Redirect to error page with appropriate error code
+        if (result.error.includes("temporairement indisponible")) {
+          window.location.href = `/auth/error?error=RateLimit`;
+        } else if (result.error.includes("Configuration")) {
+          window.location.href = `/auth/error?error=Configuration`;
+        } else if (result.error.includes("OAuthSignin")) {
+          window.location.href = `/auth/error?error=OAuthSignin`;
+        } else if (result.error.includes("OAuthCallback")) {
+          window.location.href = `/auth/error?error=OAuthCallback`;
+        } else if (result.error.includes("AccessDenied")) {
+          window.location.href = `/auth/error?error=AccessDenied`;
+        } else {
+          window.location.href = `/auth/error?error=Default&message=${encodeURIComponent(result.error)}`;
+        }
+      } else if (result?.ok && result.url) {
+        window.location.href = result.url;
+      }
+    } catch (err: any) {
+      window.location.href = `/auth/error?error=Default&message=${encodeURIComponent(err.message || "Une erreur inattendue s'est produite")}`;
+    } finally {
+      onLoadingChange(false)
+    }
 
-    onLoadingChange(true)
-    await signIn(provider, {
-      callbackUrl: '/dashboard?linking=true',
-    }, { instance })
   }
 
   if (!hasUploadedArchive) {
@@ -185,6 +211,39 @@ export default function DashboardLoginButtons({
                 whileTap={{ scale: 0.99 }}
                 onClick={() => handleSignIn("mastodon", "mastodon.social")}
                 className="w-full flex items-center justify-center gap-3 px-4 py-4 
+                         bg-gradient-to-br from-purple-500/80 to-purple-600/80 rounded-xl
+                         hover:from-purple-500 hover:to-purple-600
+                         transition-all duration-300 shadow-md hover:shadow-lg hover:shadow-purple-500/20
+                         backdrop-blur-sm relative overflow-hidden group"
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-purple-400/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <motion.div
+                  animate={{
+                    scale: activeButton === "mastodon" ? [1, 1.1, 1] : 1,
+                  }}
+                  transition={{ duration: 0.2 }}
+                  className="relative z-10"
+                >
+                  <SiMastodon className="w-5 h-5" />
+                </motion.div>
+                <span className={`${plex.className} relative z-10 text-xs font-medium`}>{t('services.mastodon.title')}</span>
+                <ChevronDown className="w-4 h-4 relative z-10" />
+              </motion.button>
+            ) : (
+              <motion.div
+                key="mastodon-menu"
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+                className="space-y-2"
+              >
+                <motion.button
+                  variants={itemVariants}
+                  whileHover={{ scale: 1.01, y: -2 }}
+                  whileTap={{ scale: 0.99 }}
+                  onClick={() => handleSignIn("piaille")}
+                  className="w-full flex items-center justify-center gap-3 px-4 py-4 
                            bg-gradient-to-br from-purple-500/80 to-purple-600/80 rounded-xl
                            hover:from-purple-500 hover:to-purple-600
                            transition-all duration-300 shadow-md hover:shadow-lg hover:shadow-purple-500/20
