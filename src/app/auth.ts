@@ -10,37 +10,37 @@ export type { BlueskyProfile }
 
 
 async function createMastodonApp(instance: string){
-const { data: instances } = await supabase.from("mastodon_instances").select();
-let cachedAppData = instances?.find(r => r.instance == instance);
-if (!cachedAppData) {
-  const url = `https://${instance}/api/v1/apps`;
-  const formData = {
-    "client_name": "HelloQuitX",
-    "redirect_uris": [`${process.env.NEXTAUTH_URL}/api/auth/callback/mastodon`],
-    // TODO: limiter au strict nécessaire
-    // https://docs.joinmastodon.org/api/oauth-scopes/#granular
-    "scopes": "read",
-    "website": "https://app.helloquitx.com"
-  };
-  try {
-    const response = await fetch(url, {
-      method: 'POST',
-      body: JSON.stringify(formData),
-      headers: {"Content-Type": "application/json"}
-    });
-    if (!response.ok) {
-      throw new Error(`❌ Error while creating the Mastodon OAuth app: ${response.status}`);
-    }
-    const json = await response.json();
-    cachedAppData = {
-      instance,
-      client_id: json.client_id,
-      client_secret: json.client_secret
+  const { data: instances } = await supabase.from("mastodon_instances").select();
+  let cachedAppData = instances?.find(r => r.instance == instance);
+  if (!cachedAppData) {
+    const url = `https://${instance}/api/v1/apps`;
+    const formData = {
+      "client_name": "HelloQuitX",
+      "redirect_uris": [`${process.env.NEXTAUTH_URL}/api/auth/callback/mastodon`],
+      // TODO: limiter au strict nécessaire
+      // https://docs.joinmastodon.org/api/oauth-scopes/#granular
+      "scopes": "read",
+      "website": "https://app.helloquitx.com"
     };
-    await supabase.from("mastodon_instances").insert(cachedAppData);
-  } catch (error) {
-      console.error('❌ Error while creating the Mastodon OAuth app:', error);
-  }
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        body: JSON.stringify(formData),
+        headers: {"Content-Type": "application/json"}
+      });
+      if (!response.ok) {
+        throw new Error(`❌ Error while creating the Mastodon OAuth app: ${response.status}`);
+      }
+      const json = await response.json();
+      cachedAppData = {
+        instance,
+        client_id: json.client_id,
+        client_secret: json.client_secret
+      };
+      await supabase.from("mastodon_instances").insert(cachedAppData);
+    } catch (error) {
+        console.error('❌ Error while creating the Mastodon OAuth app:', error);
+    }
   }
   return cachedAppData
 }
