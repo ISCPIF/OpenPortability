@@ -82,6 +82,8 @@ export default function DashboardPage() {
   const hasTwitter = session?.user?.twitter_id;
   const hasOnboarded = session?.user?.has_onboarded;
 
+  const connectedServicesCount = [hasMastodon, hasBluesky, hasTwitter].filter(Boolean).length;
+
     // Ajoutez cette vérification
     useEffect(() => {
       if (status === "unauthenticated" ) {
@@ -286,7 +288,6 @@ export default function DashboardPage() {
               </div>
             )}
 
-{!hasOnboarded && (
               <>
  <div className="flex justify-center relative z-10">
                   <div className="w-full max-w-2xl flex gap-4">
@@ -302,7 +303,7 @@ export default function DashboardPage() {
                       <span className="text-lg font-semibold">{t('addSocialNetwork')}</span>
                       <Link className="w-6 h-6 opacity-90" />
                     </motion.button>
-
+                    {!hasOnboarded && (
                     <motion.button
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
@@ -318,6 +319,7 @@ export default function DashboardPage() {
                       <span className="text-lg font-semibold">{t('importButton')}</span>
                       <Ship className="w-6 h-6 opacity-90" />
                     </motion.button>
+                    )}
                   </div>
                 </div>
 
@@ -370,7 +372,6 @@ export default function DashboardPage() {
                   </>
                 )}
               </>
-            )}
           </div>
         </div>
       </div>

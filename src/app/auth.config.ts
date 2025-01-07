@@ -164,7 +164,6 @@ async jwt({ token, user, account, profile }) {
 
       return token
     },
-
     async session({ session, token }) {
       if (!supabaseAdapter.getUser) {
         throw new Error('Required adapter methods are not implemented');
@@ -177,19 +176,21 @@ async jwt({ token, user, account, profile }) {
             session.user = {
               ...session.user,
               id: token.id,
-              has_onboarded: !!user.has_onboarded, // Conversion explicite en boolean
+              has_onboarded: !!user.has_onboarded,
               hqx_newsletter: !!user.hqx_newsletter,
-              oep_accepted: !!user.oep_accepted, // Conversion explicite en boolean
+              oep_accepted: !!user.oep_accepted,
               name: token.name || user.name,
               
+              // For Twitter and Bluesky, use token values first
               twitter_id: token.twitter_id || user.twitter_id || undefined,
               twitter_username: token.twitter_username || user.twitter_username || undefined,
               twitter_image: token.twitter_image || user.twitter_image || undefined,
               
-              mastodon_id: token.mastodon_id || user.mastodon_id || undefined,
-              mastodon_username: token.mastodon_username || user.mastodon_username || undefined,
-              mastodon_image: token.mastodon_image || user.mastodon_image || undefined,
-              mastodon_instance: token.mastodon_instance || user.mastodon_instance || undefined,
+              // For Mastodon/Piaille, ALWAYS use database values
+              mastodon_id: user.mastodon_id || undefined,
+              mastodon_username: user.mastodon_username || undefined,
+              mastodon_image: user.mastodon_image || undefined,
+              mastodon_instance: user.mastodon_instance || undefined,
               
               bluesky_id: token.bluesky_id || user.bluesky_id || undefined,
               bluesky_username: token.bluesky_username || user.bluesky_username || undefined,
