@@ -67,10 +67,6 @@
         "bluesky": "BlueSky"
       }
     },
-    "errorModal": {
-        "title": "Erreur lors de l'upload",
-        "close": "Fermer"
-    },
     "footer": {
         "hosted": {
           "text": "Cette plateforme est hébergée par le {cnrs} et développée en partenariat avec le collectif {hqx}",
@@ -318,6 +314,33 @@
         },
         "submit": "Envoyer",
         "submitting": "Envoi en cours..."
+      }
+    }
+  },
+"errorModal": {
+    "title": "Erreur",
+    "close": "Fermer",
+    "extractArchive": {
+      "title": "Comment extraire votre archive Twitter",
+      "windows": "Windows",
+      "mac": "Mac",
+      "linux": "Linux",
+      "steps": {
+        "windows": {
+          "step1": "Clic droit sur le fichier .zip",
+          "step2": "Sélectionnez \"Extraire tout...\"",
+          "step3": "Choisissez un dossier de destination",
+          "step4": "Cliquez sur \"Extraire\""
+        },
+        "mac": {
+          "step1": "Double-cliquez sur le fichier .zip",
+          "step2": "L'archive sera automatiquement extraite"
+        },
+        "linux": {
+          "step1": "Ouvrez un terminal",
+          "step2": "Naviguez vers le dossier contenant le .zip",
+          "step3": "Tapez : unzip nom-du-fichier.zip"
+        }
       }
     }
   }

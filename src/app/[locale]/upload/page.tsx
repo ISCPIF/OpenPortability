@@ -406,7 +406,7 @@ export default function UploadPage() {
 
       if (file.size > MAX_FILE_SIZE) {
         console.log('❌ Erreur: Fichier trop volumineux');
-        setError(`Le fichier ${file.name} dépasse la limite de ${MAX_FILE_SIZE / (1024 * 1024)}MB`);
+        setError(t('errors.fileSize'));
         return;
       }
     }
@@ -572,6 +572,7 @@ export default function UploadPage() {
         message={error || ''}
         onClose={handleCloseError}
         isOpen={!!error}
+        showExtractInstructions={error?.toLowerCase().includes('1 go') || error?.toLowerCase().includes('1gb')}
       />
       
       <ConsentModal

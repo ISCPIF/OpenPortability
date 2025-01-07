@@ -67,10 +67,6 @@
         "bluesky": "BlueSky"
       }
     },
-    "errorModal": {
-        "title": "Upload Error",
-        "close": "Close"
-    },
     "footer": {
         "hosted": {
           "text": "This platform is hosted by {cnrs} and developed in partnership with {hqx}",
@@ -331,6 +327,33 @@
         "submit": "Send",
         "submitting": "Sending..."
       }
+    }
+  },
+  "errorModal": {
+    "title": "Error",
+    "close": "Close",
+    "extractArchive": {
+      "title": "How to extract your archive",
+      "windows": "Windows",
+      "steps": {
+        "windows": {
+          "step1": "Right-click on the ZIP file",
+          "step2": "Select 'Extract All...'",
+          "step3": "Choose a destination folder",
+          "step4": "Click 'Extract'"
+        },
+        "mac": {
+          "step1": "Double-click on the ZIP file",
+          "step2": "The files will be automatically extracted"
+        },
+        "linux": {
+          "step1": "Right-click on the ZIP file",
+          "step2": "Select 'Extract Here' or 'Extract To...'",
+          "step3": "Choose a destination folder if prompted"
+        }
+      },
+      "mac": "Mac",
+      "linux": "Linux"
     }
   }
 }
