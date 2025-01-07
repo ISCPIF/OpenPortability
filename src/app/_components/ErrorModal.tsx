@@ -1,23 +1,31 @@
 'use client';
 
 import { useTranslations } from 'next-intl'
+import { useRouter } from 'next/navigation';
 
 interface ErrorModalProps {
   isOpen: boolean;
   message: string;
   onClose: () => void;
+  showExtractInstructions?: boolean;  // Nouvelle prop
 }
 
-export default function ErrorModal({ isOpen, message, onClose }: ErrorModalProps) {
-  const t = useTranslations('errorModal')
+export default function ErrorModal({ isOpen, message, onClose, showExtractInstructions = false }: ErrorModalProps) {
+  const t = useTranslations('errorModal');
+  const router = useRouter();
   
   if (!isOpen || !message) return null;
 
+  const handleClose = () => {
+    onClose();
+    router.refresh();
+  };
+
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-8 max-w-md mx-4 relative">
+      <div className="bg-gray-900 border border-gray-800 rounded-xl p-8 max-w-3xl mx-4 relative">
         <button
-          onClick={onClose}
+          onClick={handleClose}
           className="absolute top-4 right-4 text-gray-400 hover:text-white"
         >
           <svg
@@ -50,13 +58,60 @@ export default function ErrorModal({ isOpen, message, onClose }: ErrorModalProps
           </h3>
         </div>
 
-        <p className="text-gray-300 mb-6">
-          {message}
-        </p>
+        <p className="text-gray-300 mb-6">{message}</p>
 
-        <div className="flex justify-end">
+        {showExtractInstructions && (
+          <div className="space-y-6">
+            <div className="aspect-video w-full">
+              <iframe
+                className="w-full h-full rounded-lg"
+                src="https://www.youtube.com/embed/zN5JRZOgMY8"
+                title="Comment télécharger votre archive Twitter"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            </div>
+
+            <div className="bg-gray-800 rounded-lg p-6">
+              <h4 className="text-lg font-semibold text-white mb-4">
+                {t('extractArchive.title')}
+              </h4>
+              
+              <div className="space-y-4">
+                <div>
+                  <h5 className="text-white font-medium mb-2">{t('extractArchive.windows')} :</h5>
+                  <ol className="text-gray-300 list-decimal list-inside">
+                    <li>{t('extractArchive.steps.windows.step1')}</li>
+                    <li>{t('extractArchive.steps.windows.step2')}</li>
+                    <li>{t('extractArchive.steps.windows.step3')}</li>
+                    <li>{t('extractArchive.steps.windows.step4')}</li>
+                  </ol>
+                </div>
+
+                <div>
+                  <h5 className="text-white font-medium mb-2">{t('extractArchive.mac')} :</h5>
+                  <ol className="text-gray-300 list-decimal list-inside">
+                    <li>{t('extractArchive.steps.mac.step1')}</li>
+                    <li>{t('extractArchive.steps.mac.step2')}</li>
+                  </ol>
+                </div>
+
+                <div>
+                  <h5 className="text-white font-medium mb-2">{t('extractArchive.linux')} :</h5>
+                  <ol className="text-gray-300 list-decimal list-inside">
+                    <li>{t('extractArchive.steps.linux.step1')}</li>
+                    <li>{t('extractArchive.steps.linux.step2')}</li>
+                    <li>{t('extractArchive.steps.linux.step3')}</li>
+                  </ol>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="mt-6 flex justify-end">
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors"
           >
             {t('close')}
