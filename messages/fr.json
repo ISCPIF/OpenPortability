@@ -294,5 +294,18 @@
             "hqxNewsletter": "Recevoir les updates de HelloQuitteX",
             "oepNewsletter": "Être informé.e des initiatives de On est prêt"
         }
+    },
+    "migrationComplete": {
+        "success": {
+            "viewProfile": "Voir le profil",
+            "description": "Votre compte a été migré avec succès vers BlueSky avec l'identifiant {handle}",
+            "displayName": "({name})",
+            "title": "Migration terminée !"
+        },
+        "error": {
+            "retry": "Réessayer",
+            "createAccount": "Créer un compte",
+            "title": "Erreur lors de la migration"
+        }
     }
 }
