@@ -8,6 +8,9 @@ import { supabase } from '@/lib/supabase';
 import { plex } from '../fonts/plex';
 import { useTranslations } from 'next-intl';
 
+const formatNumber = (num: number): string => {
+  return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+};
 
 interface UploadResultsProps {
   followerCount: number;
@@ -72,7 +75,6 @@ export default function UploadResults({
   const [totalStats, setTotalStats] = useState<TotalStats | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-
   useEffect(() => {
     if (setIsLoading) {
       setIsLoading(false);
@@ -101,8 +103,6 @@ export default function UploadResults({
   const totalInDatabase = totalStats ? totalStats.total_followers + totalStats.total_following : 0;
   const totalReady = totalStats ? totalStats.total_sources : 0;
 
-  // console.log('totalInDatabase', totalInDatabase);
-  // console.log('totalProcessed', totalProcessed);
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -124,7 +124,7 @@ export default function UploadResults({
         </div>
 
         <p className="text-white/80 text-center">
-          {t('importSuccess', { count: stats.following + stats.followers })}
+          {t('importSuccess', { count: formatNumber(stats.following + stats.followers) })}
         </p>
 
         <div className="flex justify-center gap-4">
@@ -135,7 +135,7 @@ export default function UploadResults({
             <div>
               <p className="text-sm text-white/60">{t('stats.twitterAccounts.label')}</p>
               <p className="text-2xl font-bold text-white">
-                {totalProcessed}
+                {formatNumber(totalProcessed)}
               </p>
             </div>
           </div>
@@ -147,24 +147,23 @@ export default function UploadResults({
             <div>
               <p className="text-sm text-white/60">{t('stats.totalImported.label')}</p>
               <p className="text-2xl font-bold text-white">
-                {totalInDatabase}
+                {formatNumber(totalInDatabase)}
               </p>
             </div>
           </div>
 
-          <div className="bg-black/20 rounded-xl p-4 flex items-center gap-4">
+          {/* <div className="bg-black/20 rounded-xl p-4 flex items-center gap-4">
             <div className="bg-pink-500/20 p-2 rounded-full">
               <Users className="w-5 h-5 text-pink-400" />
             </div>
             <div>
               <p className="text-sm text-white/60">{t('stats.readyTravelers.label')}</p>
               <p className="text-2xl font-bold text-white">
-                {totalReady}
+                {formatNumber(totalReady)}
               </p>
             </div>
-          </div>
+          </div> */}
         </div>
-        {/* </div> */}
 
         <p className="text-white/80 text-center">
           {t('inviteFriends')}
