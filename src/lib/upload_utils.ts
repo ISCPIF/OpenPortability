@@ -58,7 +58,11 @@ export const validateFileType = (file: File): boolean => {
     'text/x-javascript',
     'text/jsx',
     'text/plain',
-    'module'
+    'module',
+    'application/x-zip',
+       'application/x-zip-compressed',
+       'application/octet-stream',
+       'multipart/x-zip'
 ];  return validTypes.includes(file.type);
 };
 
