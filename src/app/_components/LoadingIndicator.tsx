@@ -13,7 +13,12 @@ function randomRange(min: number, max: number) {
   return min + Math.random() * (max - min);
 }
 
-export default function LoadingIndicator({ msg }: { msg: string }) {
+interface LoadingIndicatorProps {
+  msg: string;
+  textSize?: 'sm' | 'base';
+}
+
+export default function LoadingIndicator({ msg, textSize = 'sm' }: LoadingIndicatorProps) {
   const [nextAngle, setNextAngle] = useState(0);
   return (
     <div className="w-60 h-56 p-10 text-center bg-white rounded-[30px] flex flex-col z-10 relative">
@@ -52,18 +57,14 @@ export default function LoadingIndicator({ msg }: { msg: string }) {
             alt=""
             width={42}
             height={19}
-            style={{
-
-            }}
+            style={{}}
             className="relative"
           />
         </motion.div>
       </div>
-      <p className={`${plex.className} text-[#2A39A9] font-bold text-sm`}
-      >
+      <p className={`${plex.className} text-[#2A39A9] font-bold text-${textSize} ${textSize === 'base' ? 'max-w-[200px] mx-auto' : ''}`}>
         {msg}
       </p>
     </div>
-
   );
 }

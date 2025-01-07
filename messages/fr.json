@@ -191,9 +191,13 @@
     "title": "Importez votre archive Twitter pour poursuivre votre voyage",
     "action" : "Déposez ou selectionnez votre archive Twitter ici",
     "description": "Trois formats de données sont acceptés :\n- votre archive X originale si <1Go (au format Zip)\n- les fichiers following.js et follower.js ENSEMBLE et non zippés,\n- les versions fractionnées de ces fichiers pour les grosses archives (following-part*.js + follower-part*.js)",
-    "loading": "Vos fichiers sont en cours de traitement, veuillez rester sur la page jusqu'à la redirection.",
+    "loading": {
+      "default": "Chargement...",
+      "uploading": "Ne quittez pas la page, votre importation est en cours"
+    },
     "helpButton": "Aide pour obtenir votre archive Twitter",
     "loading-indic" : "Chargement de vos données...",
+    "loading-uploading": "Restez sur la page, importation en cours",
     "logo": {
         "alt": "HelloQuitteX Logo"
       },
