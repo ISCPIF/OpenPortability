@@ -53,4 +53,5 @@ backup.sql
 
 docker-compose.yml
 /tests
-/volumescleanup/
+/volumes
+/cleanup
