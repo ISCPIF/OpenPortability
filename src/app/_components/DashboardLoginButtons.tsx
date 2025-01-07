@@ -68,15 +68,18 @@ export default function DashboardLoginButtons({
   const [showBlueSkyForm, setShowBlueSkyForm] = useState(false)
   const [activeButton, setActiveButton] = useState<string | null>(null)
   const [showMastodonMenu, setShowMastodonMenu] = useState(false)
+  const [mastodonInstanceText, onChangeMastodonInstanceText] = useState('');
+
+
   const t = useTranslations('dashboardLoginButtons')
 
-  const handleSignIn = async (provider: string, instance?: string) => {
+  const handleSignIn = async (provider: string) => {
     try {
       onLoadingChange(true)
       const result = await signIn(provider, {
         redirect: false,
         callbackUrl: '/dashboard?linking=true'
-      }, { instance })
+      }, { instance: provider === "mastodon" ? mastodonInstanceText : undefined })
 
       if (result?.error) {
         // Redirect to error page with appropriate error code
@@ -240,37 +243,24 @@ export default function DashboardLoginButtons({
                 exit="exit"
                 className="space-y-2"
               >
-                <motion.button
-                  variants={itemVariants}
-                  whileHover={{ scale: 1.01, y: -2 }}
-                  whileTap={{ scale: 0.99 }}
-                  onClick={() => handleSignIn("mastodon", "piaille.fr")}
+                <p className="text-white">Où est hébergé votre compte ?</p>
+                <input type="text"
+                  value={mastodonInstanceText}
+                  onChange={e => onChangeMastodonInstanceText(e.target.value)}
+                  className="w-full "
+                  placeholder="Domaine de votre serveurs, ex. mastodon.social" />
+                <button
+                  onClick={() => handleSignIn("mastodon")}
                   className="w-full flex items-center justify-center gap-3 px-4 py-4 
                            bg-gradient-to-br from-purple-500/80 to-purple-600/80 rounded-xl
                            hover:from-purple-500 hover:to-purple-600
-                           transition-all duration-300 shadow-md hover:shadow-lg hover:shadow-purple-500/20
+                           shadow-md hover:shadow-lg hover:shadow-purple-500/20
                            backdrop-blur-sm relative overflow-hidden group"
                 >
                   <div className="absolute inset-0 bg-gradient-to-br from-purple-400/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                   <SiMastodon className="w-5 h-5 relative z-10" />
-                  <span className={`${plex.className} relative z-10 text-xs font-medium`}>piaille.fr</span>
-                </motion.button>
-
-                <motion.button
-                  variants={itemVariants}
-                  whileHover={{ scale: 1.01, y: -2 }}
-                  whileTap={{ scale: 0.99 }}
-                  onClick={() => handleSignIn("mastodon", "mastodon.social")}
-                  className="w-full flex items-center justify-center gap-3 px-4 py-4 
-                           bg-gradient-to-br from-purple-500/80 to-purple-600/80 rounded-xl
-                           hover:from-purple-500 hover:to-purple-600
-                           transition-all duration-300 shadow-md hover:shadow-lg hover:shadow-purple-500/20
-                           backdrop-blur-sm relative overflow-hidden group"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-br from-purple-400/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                  <SiMastodon className="w-5 h-5 relative z-10" />
-                  <span className={`${plex.className} relative z-10 text-xs font-medium`}>mastodon.social</span>
-                </motion.button>
+                  <span className={`${plex.className} relative z-10 text-xs font-medium`}>Aller à mon serveur</span>
+                </button>
 
                 <motion.button
                   variants={itemVariants}
