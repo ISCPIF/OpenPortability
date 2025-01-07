@@ -21,6 +21,8 @@ services:
         - shared-tmp:/app/tmp
         - /app/node_modules
         - ./.env.local:/app/.env.local
+        - ./messages:/app/messages
+
 
   worker:
     build:

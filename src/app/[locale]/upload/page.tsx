@@ -419,16 +419,16 @@ export default function UploadPage() {
     }));
     console.log('🔍 Vérification des types:', fileTypes);
 
-    for (const file of filesArray) {
-      if (!file.type.startsWith('image/') && !file.type.includes('zip')) {
-        console.log('❌ Erreur: Type de fichier invalide', {
-          fileName: file.name,
-          fileType: file.type
-        });
-        setError(`Le fichier ${file.name} n'est pas une image ou une archive ZIP`);
-        return;
-      }
-    }
+    // for (const file of filesArray) {
+    //   if (!file.type.startsWith('image/') && !file.type.includes('zip')) {
+    //     console.log('❌ Erreur: Type de fichier invalide', {
+    //       fileName: file.name,
+    //       fileType: file.type
+    //     });
+    //     setError(`Le fichier ${file.name} n'est pas une image ou une archive ZIP`);
+    //     return;
+    //   }
+    // }
 
     console.log('✅ Toutes les vérifications sont passées, affichage de la modale de consentement');
     // Si toutes les vérifications sont passées, stocker les fichiers et afficher la modale
@@ -458,18 +458,19 @@ export default function UploadPage() {
       await processFiles(pendingFiles);
     } catch (error) {
       handleUploadError(error instanceof Error ? error.message : 'Failed to process files');
-    } finally {
-      setIsUploading(false);
-    }
+    } 
   };
 
-  if (isLoading) {
+  if (isLoading || isUploading) {
     return (
       <div className="min-h-screen bg-[#2a39a9] relative w-full max-w-[90rem] m-auto">
         <div className="container mx-auto py-12">
           <div className="container flex flex-col m-auto text-center text-[#E2E4DF]">
             <div className="m-auto relative my-32 lg:my-40">
-              <LoadingIndicator msg={t('loading-indic')} />
+              <LoadingIndicator 
+                msg={isUploading ? t('loading-uploading') : t('loading-indic')}
+                 textSize="base"
+              />
             </div>
           </div>
         </div>
