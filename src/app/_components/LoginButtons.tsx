@@ -47,16 +47,16 @@ export default function LoginButtons({ onLoadingChange }: LoginButtonsProps) {
   const [isRateLimited, setIsRateLimited] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const handleSignIn = async (provider: string) => {
+  const handleSignIn = async (provider: string, instance?: string) => {
     try {
       setError(null)
       setIsRateLimited(false)
       onLoadingChange(true)
-      const result = await signIn(provider, { 
+      const result = await signIn(provider, {
         redirect: false,
         callbackUrl: '/dashboard'
-      })
-      
+      }, { instance })
+
       if (result?.error) {
         // Rediriger vers la page d'erreur avec le code d'erreur approprié
         if (result.error.includes("temporairement indisponible")) {
@@ -145,7 +145,7 @@ export default function LoginButtons({ onLoadingChange }: LoginButtonsProps) {
               className="w-full flex justify-center items-center py-8"
             >
               <span className={`${plex.className} bg-[#2a39a9] px-6 py-2 text-sm text-gray-200 rounded-full backdrop-blur-sm bg-opacity-80 shadow-lg hover:bg-opacity-100 transition-all duration-300 cursor-pointer`}>
-              {t('deleteAccount')}
+                {t('deleteAccount')}
               </span>
             </motion.button>
           )}
@@ -154,10 +154,10 @@ export default function LoginButtons({ onLoadingChange }: LoginButtonsProps) {
         {/* Alternative Buttons Container */}
         <AnimatePresence mode="wait">
           {showAlternatives && (
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, height: 0 }}
-              animate={{ 
-                opacity: 1, 
+              animate={{
+                opacity: 1,
                 height: "auto",
                 transition: {
                   height: {
@@ -170,7 +170,7 @@ export default function LoginButtons({ onLoadingChange }: LoginButtonsProps) {
                   }
                 }
               }}
-              exit={{ 
+              exit={{
                 opacity: 0,
                 height: 0,
                 transition: {
@@ -187,11 +187,11 @@ export default function LoginButtons({ onLoadingChange }: LoginButtonsProps) {
             >
               <div className="overflow-visible space-y-6">
                 {/* BlueSky Button and Form */}
-                <motion.div 
+                <motion.div
                   variants={itemVariants}
                   initial={{ opacity: 0, y: 20 }}
-                  animate={{ 
-                    opacity: 1, 
+                  animate={{
+                    opacity: 1,
                     y: 0,
                     transition: {
                       duration: 0.3,
@@ -255,10 +255,10 @@ export default function LoginButtons({ onLoadingChange }: LoginButtonsProps) {
                       </svg>
                     </motion.div>
                     <span className={`${plex.className} relative z-10`}>{t('mastodon.connect')}</span>
-                    <svg 
-                      className={`w-4 h-4 ml-2 transition-transform duration-200 ${showMastodonMenu ? 'rotate-180' : ''}`} 
-                      fill="none" 
-                      viewBox="0 0 24 24" 
+                    <svg
+                      className={`w-4 h-4 ml-2 transition-transform duration-200 ${showMastodonMenu ? 'rotate-180' : ''}`}
+                      fill="none"
+                      viewBox="0 0 24 24"
                       stroke="currentColor"
                     >
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -274,31 +274,31 @@ export default function LoginButtons({ onLoadingChange }: LoginButtonsProps) {
                           initial={{ opacity: 0, y: -10 }}
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, y: -10 }}
-                          className="absolute z-50 w-full mt-2 overflow-hidden bg-white rounded-xl shadow-lg dark:bg-gray-800"
+                          className="absolute z-50 w-full mt-2 overflow-hidden  rounded-xl shadow-lg bg-gray-800"
                           style={{ transform: 'translateZ(0)' }}
                         >
                           <button
                             onClick={() => {
-                              handleSignIn("mastodon")
+                              handleSignIn("mastodon", "mastodon.social")
                               setShowMastodonMenu(false)
                             }}
-                            className="w-full px-4 py-3 text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
+                            className="w-full px-4 py-3 text-left hover:bg-gray-700 transition-colors duration-200"
                           >
                             <span className={`${plex.className} flex items-center gap-2`}>
                               <span className="w-2 h-2 bg-indigo-500 rounded-full"></span>
-                              {t('mastodon.instances.mastodon')}
+                              mastodon.social
                             </span>
                           </button>
                           <button
                             onClick={() => {
-                              handleSignIn("piaille")
+                              handleSignIn("mastodon", "piaille.fr")
                               setShowMastodonMenu(false)
                             }}
-                            className="w-full px-4 py-3 text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
+                            className="w-full px-4 py-3 text-left hover:bg-gray-700 transition-colors duration-200"
                           >
                             <span className={`${plex.className} flex items-center gap-2`}>
                               <span className="w-2 h-2 bg-purple-500 rounded-full"></span>
-                              {t('mastodon.instances.piaille')}
+                              piaille.fr
                             </span>
                           </button>
                         </motion.div>
@@ -311,8 +311,8 @@ export default function LoginButtons({ onLoadingChange }: LoginButtonsProps) {
               {/* Return to Twitter Button */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
-                animate={{ 
-                  opacity: 1, 
+                animate={{
+                  opacity: 1,
                   y: 0,
                   transition: {
                     duration: 0.3,
