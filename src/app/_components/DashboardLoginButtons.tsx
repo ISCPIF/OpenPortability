@@ -101,7 +101,6 @@ export default function DashboardLoginButtons({
     } finally {
       onLoadingChange(false)
     }
-
   }
 
   if (!hasUploadedArchive) {
