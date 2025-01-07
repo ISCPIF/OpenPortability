@@ -1,8 +1,8 @@
 FROM node:18-alpine
 WORKDIR /app
 
-# Copier d'abord les fichiers de dépendances
-COPY package*.json ./
+# Copier tous les fichiers du projet
+COPY . .
 
 # Installer les dépendances
 RUN npm install
@@ -13,11 +13,8 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-# Ne pas copier le code source ici car il sera monté comme volume
-# COPY . .
-
 # Exposer le port
 EXPOSE 3000
 
-# Utiliser npm run dev pour être cohérent avec docker-compose.dev.yml
+# Utiliser npm run dev pour le hot reload
 CMD ["npm", "run", "dev"]
