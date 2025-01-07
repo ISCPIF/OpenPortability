@@ -58,11 +58,7 @@
       "services": {
         "twitter": "Twitter",
         "mastodon": {
-          "title": "Mastodon",
-          "instances": {
-            "piaille": "piaille.fr",
-            "mastodon": "mastodon.social"
-          }
+          "title": "Mastodon"
         },
         "bluesky": "BlueSky"
       }
