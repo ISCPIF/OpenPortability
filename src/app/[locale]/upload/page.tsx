@@ -20,8 +20,8 @@ import boat1 from '../../../public/boats/boat-1.svg'
 import Footer from "@/app/_components/Footer";
 import LoadingIndicator from '@/app/_components/LoadingIndicator';
 import SupportModal from '../../_components/SupportModale';
-import logoHQXFR from '../../../../public/logoxHQX/HQX-rose-FR.svg';
-import logoHQXEN from '../../../../public/logoxHQX/HQX-pink-UK.svg';
+import logoHQXFR from '../../../../public/logoxHQX/HQX-blanc-FR.svg';
+import logoHQXEN from '../../../../public/logoxHQX/HQX-white-UK.svg';
 
 const UploadButton = dynamic(() => import('../../_components/UploadButton'), {
   loading: () => <div className="animate-pulse bg-gray-200 h-12 w-48 rounded-lg"></div>,

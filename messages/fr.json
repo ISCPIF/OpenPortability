@@ -9,7 +9,7 @@
       "connectedWith": "Vous êtes connecté avec {services} ✨",
       "and": "et",
       "services": {
-        "twitter": "Twitter",
+        "twitter": "Twitter/X",
         "bluesky": "BlueSky",
         "mastodon": "Mastodon"
       }
@@ -41,7 +41,7 @@
     },
     "consentModal": {
       "title": "Confirmation d'upload",
-      "description": "En uploadant vos fichiers Twitter, vous confirmez que :",
+      "description": "En uploadant vos fichiers Twitter/X, vous confirmez que :",
       "conditions": {
         "ownership": "Vous êtes le propriétaire légitime de ces données.",
         "cnrsUsage": "Vous acceptez que les donnees fournies soient utilisées par le Centre Nationale de la Recherche Scientifique (CNRS) dans le cadre de l'opération HelloQuitteX.",
@@ -53,14 +53,24 @@
       }
     },
     "dashboardLoginButtons": {
-      "importTwitter": "Importer mon archive Twitter",
+      "importTwitter": "Importer mon archive Twitter/X",
       "addSocialNetwork": "Ajoutez un autre réseau social",
       "services": {
-        "twitter": "Twitter",
+        "twitter": "Twitter/X",
         "mastodon": {
-          "title": "Mastodon"
+          "title": "Mastodon",
+          "instance": "Selectionnez votre instance Mastodon",
+          "connect": "Se connecter",
+          "write_instance" : "Entrez votre instance",
+          "instance_not_yet" : "Rajoutez votre instance si elle n'est pas encore ajoutée",
+          "return" : "← Retour à la liste des instances"
         },
         "bluesky": "BlueSky"
+      },
+      "connectedDashboard" : {
+        "twitter" : "J'associe mon compte Twitter/X",
+        "bluesky" : "J'associe mon compte Bluesky",
+        "mastodon" : "J'associe mon compte Mastodon"
       }
     },
     "footer": {
@@ -73,10 +83,10 @@
       },
     "loginButtons": {
     "twitter": {
-      "continue": "Continuer avec Twitter",
-       "notDeleted" : "J'ai un compte Twitter"
+      "continue": "Continuer avec Twitter/X",
+       "notDeleted" : "J'ai un compte Twitter/X"
     },
-    "deleteAccount": "J'ai déjà supprimé mon compte Twitter",
+    "deleteAccount": "J'ai déjà supprimé mon compte Twitter/X",
     "bluesky": {
       "connect": "Se connecter avec BlueSky"
     },
@@ -85,7 +95,8 @@
     }
   },
   "partageButton": {
-    "share": "Partager"
+    "share": "Partager",
+    "shareOn": "Je partage sur {platform}"
   },
   "progressSteps": {
     "dashboard": {
@@ -133,7 +144,7 @@
     "importSuccess": "L'importation de vos fichiers a permis d'inscrire {count} nouveaux passagers !",
     "stats": {
             "twitterAccounts": {
-            "label": "Comptes Twitter",
+            "label": "Comptes Twitter/X",
             "value": "{count}"
             },
             "totalImported": {
@@ -150,7 +161,7 @@
   },
   "signin": {
     "title": "Prêt à migrer vers de nouveaux rivages ?",
-    "subtitle": "Commencez par vous connecter avec Twitter pour migrer vos données",
+    "subtitle": "Commencez par vous connecter avec Twitter/X pour migrer vos données",
     "loading": "Chargement des informations…"
   },
   "dashboard": {
@@ -162,7 +173,7 @@
       "daysLeft": "{count} jours restants avant le grand départ",
       "nextSteps": "Effectuez les étapes suivantes pour voguer vers de nouveaux rivages !"
     },
-    "importButton": "Importer mon archive Twitter",
+    "importButton": "Importer mon archive Twitter/X",
     "shareModal": {
       "title": "Partager votre voyage",
       "shareOn": "Partager sur {platform}",
@@ -179,6 +190,11 @@
       "acceptOEP": "Je souhaite aussi être informé.e des prochaines initiatives de [On est prêt](https://www.onestpret.com), qui accompagne HelloQuitteX",
       "subscribing": "Inscription en cours...",
       "confirmSubscribe": "Confirmer l'inscription"
+    },
+    "tutorial": {
+      "title": "Explication des étapes dans notre tutoriel",
+      "description": "Découvrez comment migrer facilement de Twitter/X vers Mastodon et Bluesky",
+      "watchVideo": "Regarder la vidéo"
     }
   },
   "dashboardSea": {
@@ -188,33 +204,33 @@
     }
   },
   "upload": {
-    "title": "Importez votre archive Twitter pour poursuivre votre voyage",
-    "action" : "Déposez ou selectionnez votre archive Twitter ici",
+    "title": "Importez votre archive Twitter/X pour poursuivre votre voyage",
+    "action" : "Déposez ou selectionnez votre archive Twitter/X ici",
     "description": "Trois formats de données sont acceptés :\n- votre archive X originale si <1Go (au format Zip)\n- les fichiers following.js et follower.js ENSEMBLE et non zippés,\n- les versions fractionnées de ces fichiers pour les grosses archives (following-part*.js + follower-part*.js)",
     "loading": {
       "default": "Chargement...",
       "uploading": "Ne quittez pas la page, votre importation est en cours"
     },
-    "helpButton": "Aide pour obtenir votre archive Twitter",
+    "helpButton": "Aide pour obtenir votre archive Twitter/X",
     "loading-indic" : "Chargement de vos données...",
     "loading-uploading": "Restez sur la page, importation en cours",
     "logo": {
         "alt": "HelloQuitteX Logo"
       },
     "helpModal": {
-      "title": "Comment obtenir votre archive Twitter ?",
-      "description": "Pour obtenir votre archive Twitter, suivez ces étapes :",
+      "title": "Comment obtenir votre archive Twitter/X ?",
+      "description": "Pour obtenir votre archive Twitter/X, suivez ces étapes :",
       "steps": [
-        "Connectez-vous à votre compte Twitter",
+        "Connectez-vous à votre compte Twitter/X",
         "Allez dans \"Plus\" dans le menu de gauche",
         "Cliquez sur \"Paramètres et support\" puis \"Paramètres et confidentialité\"",
         "Dans \"Votre compte\", sélectionnez \"Télécharger une archive de vos données\"",
         "Confirmez votre mot de passe si demandé",
         "Cliquez sur \"Demander l'archive\"",
-        "Twitter vous enverra un e-mail lorsque votre archive sera prête à être téléchargée",
+        "Twitter/X vous enverra un e-mail lorsque votre archive sera prête à être téléchargée",
         "Une fois téléchargée, vous pourrez importer le fichier .zip ici"
       ],
-      "note": "Note : La préparation de l'archive par Twitter peut prendre jusqu'à 24 heures."
+      "note": "Note : La préparation de l'archive par Twitter/X peut prendre jusqu'à 24 heures."
     },
     "errors": {
       "fileSize": "La taille du fichier dépasse la limite de 1 Go",
@@ -263,7 +279,7 @@
     "unlinkError": "Une erreur est survenue lors de la déliaison de votre compte {provider}",
     "unlinkButton": "Délier le compte {provider}",
     "providers": {
-      "twitter": "Twitter",
+      "twitter": "Twitter/X",
       "bluesky": "Bluesky",
       "mastodon": "Mastodon"
     },
@@ -277,7 +293,7 @@
     "deleteAccount": "Supprimer mon compte",
     "deleteConfirm": {
       "title": "Supprimer le compte",
-      "message": "Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible et entraînera la suppression de :\n\n• Toutes vos données importées\n• Tous vos comptes liés (Twitter, BlueSky, Mastodon)\n• Votre profil HelloQuitteX",
+      "message": "Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible et entraînera la suppression de :\n\n• Toutes vos données importées\n• Tous vos comptes liés (Twitter/X, BlueSky, Mastodon)\n• Votre profil HelloQuitteX",
       "cancel": "Annuler",
       "confirm": "Oui, supprimer mon compte"
     },
@@ -317,7 +333,7 @@
     "title": "Erreur",
     "close": "Fermer",
     "extractArchive": {
-      "title": "Comment extraire votre archive Twitter",
+      "title": "Comment extraire votre archive Twitter/X",
       "windows": "Windows",
       "mac": "Mac",
       "linux": "Linux",
