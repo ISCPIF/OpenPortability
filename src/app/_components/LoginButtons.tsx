@@ -20,19 +20,32 @@ const containerVariants = {
   }
 }
 
-interface LoginButtonsProps {
-  onLoadingChange: (isLoading: boolean) => void;
-}
-
 type ActiveService = 'bluesky' | 'mastodon' | 'twitter' | null;
 
-export default function LoginButtons({ onLoadingChange }: LoginButtonsProps) {
+interface LoginButtonsProps {
+  onLoadingChange: (isLoading: boolean) => void;
+  onError?: (error: string | null) => void;
+}
+
+export default function LoginButtons({ onLoadingChange, onError }: LoginButtonsProps) {
   const [showAlternatives, setShowAlternatives] = useState(false)
   const [isRateLimited, setIsRateLimited] = useState(false)
   const [activeService, setActiveService] = useState<ActiveService>(null)
+  const [error, setError] = useState<string | null>(null)
 
   const handleServiceSelect = (service: ActiveService) => {
     setActiveService(service === activeService ? null : service)
+    setError(null)
+    onError?.(null)
+  }
+
+  const handleError = (error: string) => {
+    if (error.includes('temporairement indisponible')) {
+      setIsRateLimited(true)
+    } else {
+      setError(error)
+      onError?.(error)
+    }
   }
 
   return (
@@ -40,6 +53,8 @@ export default function LoginButtons({ onLoadingChange }: LoginButtonsProps) {
       {isRateLimited && (
         <TwitterRateLimit onShowAlternatives={() => setShowAlternatives(true)} />
       )}
+
+      
       
       <motion.div
         variants={containerVariants}
