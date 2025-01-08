@@ -6,9 +6,12 @@ import type {
   AdapterSession,
   VerificationToken
 } from "next-auth/adapters"
+import type { Profile } from "next-auth"
 
-interface CustomAdapterUser extends Omit<AdapterUser, 'email' | 'emailVerified' | 'image'> {
+export interface CustomAdapterUser extends Omit<AdapterUser, 'image'> {
   has_onboarded: boolean
+  hqx_newsletter: boolean
+  oep_accepted: boolean
   twitter_id?: string | null
   twitter_username?: string | null
   twitter_image?: string | null
@@ -21,7 +24,7 @@ interface CustomAdapterUser extends Omit<AdapterUser, 'email' | 'emailVerified' 
   mastodon_instance?: string | null
 }
 
-interface TwitterData {
+export interface TwitterData extends Profile {
   data: {
     id: string
     name: string
@@ -30,7 +33,7 @@ interface TwitterData {
   }
 }
 
-interface MastodonProfile {
+export interface MastodonProfile extends Profile {
   id: string
   username: string
   display_name: string
@@ -38,7 +41,31 @@ interface MastodonProfile {
   url: string
 }
 
-// Créer deux clients Supabase distincts
+export interface BlueskyProfile extends Profile {
+  did?: string
+  id?: string
+  handle?: string
+  username?: string
+  displayName?: string
+  name?: string
+  avatar?: string
+  identifier?: string
+}
+
+export type ProviderProfile = TwitterData | MastodonProfile | BlueskyProfile
+
+export class UnlinkError extends Error {
+  constructor(
+    message: string,
+    public code: 'LAST_ACCOUNT' | 'NOT_FOUND' | 'NOT_LINKED' | 'DATABASE_ERROR',
+    public status: number = 400
+  ) {
+    super(message)
+    this.name = 'UnlinkError'
+  }
+}
+
+// Create Supabase clients
 const authClient = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
@@ -53,93 +80,103 @@ const authClient = createClient(
   }
 )
 
-const publicClient = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false
-    }
-  }
-)
-
-const createUser = async (
-  userData: Partial<CustomAdapterUser> & {
+export async function createUser(user: Partial<AdapterUser>): Promise<CustomAdapterUser>;
+export async function createUser(
+  userData: Partial<AdapterUser> | (Partial<CustomAdapterUser> & {
     provider?: 'twitter' | 'bluesky' | 'mastodon',
-    profile?: any
-  }
-): Promise<CustomAdapterUser> => {
+    profile?: ProviderProfile
+  })
+): Promise<CustomAdapterUser> {
   console.log("\n=== [Adapter] Starting user creation ===")
   console.log("→ Input user data:", JSON.stringify(userData, null, 2))
 
+  // Type guard for provider data
+  if ('provider' in userData && userData.provider && 'profile' in userData) {
+    const provider = userData.provider
+    const profile = userData.profile
+
+
+const providerIdField = `${provider}_id` as keyof CustomAdapterUser
+    const providerId = provider === 'twitter' 
+      ? (profile as TwitterData).data.id
+      : provider === 'mastodon'
+      ? (profile as MastodonProfile).id
+      : (userData as any).bluesky_id || (userData as any).did // Try both fields
+
+    console.log('Looking for existing user with provider ID:', providerId)
+    const { data: existingUser } = await authClient
+      .from('users')
+      .select('*')
+      .eq(providerIdField, providerId)
+      .single()
+
+    if (existingUser) {
+      console.log(`→ Found existing user with ${provider} ID:`, existingUser.id)
+      return existingUser as CustomAdapterUser
+    }
+
+ // Créer les données utilisateur selon le provider
+    const userToCreate: Partial<CustomAdapterUser> = {
+      name: provider === 'twitter' 
+        ? (profile as TwitterData).data.name
+        : provider === 'mastodon'
+        ? (profile as MastodonProfile).display_name
+        : (userData as BlueskyProfile).displayName || (userData as BlueskyProfile).name,
+      has_onboarded: false,
+      hqx_newsletter: false,
+      oep_accepted: false,
+      email: undefined
+    }
+
+    // Ajouter les champs spécifiques au provider
+    if (provider === 'twitter') {
+      const twitterData = profile as TwitterData
+      Object.assign(userToCreate, {
+        twitter_id: twitterData.data.id,
+        twitter_username: twitterData.data.username,
+        twitter_image: twitterData.data.profile_image_url
+      })
+    } else if (provider === 'mastodon') {
+      const mastodonData = profile as MastodonProfile
+      Object.assign(userToCreate, {
+        mastodon_id: mastodonData.id,
+        mastodon_username: mastodonData.username,
+        mastodon_image: mastodonData.avatar,
+        mastodon_instance: mastodonData.url ? new URL(mastodonData.url).origin : null
+      })
+    } else if (provider === 'bluesky') {
+      const blueskyData = profile as BlueskyProfile
+      Object.assign(userToCreate, {
+        bluesky_id: blueskyData.did,
+        bluesky_username: blueskyData.handle,
+        bluesky_image: blueskyData.avatar
+      })
+    }
+
+    console.log(`→ Creating new ${provider} user with data:`, userToCreate)
+    const { data: newUser, error: createError } = await authClient
+      .from('users')
+      .insert([userToCreate])
+      .select()
+      .single()
+
+    if (createError) {
+      console.error("Error creating user:", createError)
+      throw new Error(createError.message)
+    }
+
+    return newUser as CustomAdapterUser
+  }
+
+  // Fallback pour la création d'utilisateur sans provider
   const userToCreate: Partial<CustomAdapterUser> = {
     name: userData.name,
-    has_onboarded: false
+    has_onboarded: false,
+    hqx_newsletter: false,
+    oep_accepted: false,
+    email: 'none'
   }
 
-  // Remplir les champs spécifiques au provider avec les données brutes
-  if (userData.provider === 'twitter' && userData.profile?.data) {
-    const twitterData = userData.profile.data
-    userToCreate.twitter_id = twitterData.id
-    userToCreate.twitter_username = twitterData.username
-    userToCreate.twitter_image = twitterData.profile_image_url
-    userToCreate.name = twitterData.name // Utiliser le nom Twitter comme nom principal
-
-    // Chercher d'abord un utilisateur existant avec ce twitter_id
-    const { data: existingUser } = await authClient
-      .from('users')
-      .select('*')
-      .eq('twitter_id', twitterData.id)
-      .single()
-
-    if (existingUser) {
-      console.log("→ Found existing user with Twitter ID:", existingUser.id)
-      return existingUser as CustomAdapterUser
-    }
-  } 
-  else if (userData.provider === 'mastodon' && userData.profile) {
-    const mastodonData = userData.profile
-    console.log("Mastodon data:", mastodonData)
-    userToCreate.mastodon_id = mastodonData.id
-    userToCreate.mastodon_username = mastodonData.username
-    userToCreate.mastodon_image = mastodonData.avatar
-    userToCreate.mastodon_instance = mastodonData.url ? new URL(mastodonData.url).origin : null
-    userToCreate.name = mastodonData.display_name // Utiliser le display_name Mastodon comme nom principal
-
-    // Chercher d'abord un utilisateur existant avec ce mastodon_id
-    const { data: existingUser } = await authClient
-      .from('users')
-      .select('*')
-      .eq('mastodon_id', mastodonData.id)
-      .single()
-
-    if (existingUser) {
-      console.log("→ Found existing user with Mastodon ID:", existingUser.id)
-      return existingUser as CustomAdapterUser
-    }
-  }
-  else if (userData.provider === 'bluesky' && userData.profile) {
-    const blueskyData = userData.profile
-    userToCreate.bluesky_id = blueskyData.did || blueskyData.id
-    userToCreate.bluesky_username = blueskyData.handle || blueskyData.username
-    userToCreate.bluesky_image = blueskyData.avatar
-    userToCreate.name = blueskyData.displayName || blueskyData.name // Utiliser le displayName Bluesky comme nom principal
-
-    // Chercher d'abord un utilisateur existant avec ce bluesky_id
-    const { data: existingUser } = await authClient
-      .from('users')
-      .select('*')
-      .eq('bluesky_id', userToCreate.bluesky_id)
-      .single()
-
-    if (existingUser) {
-      console.log("→ Found existing user with Bluesky ID:", existingUser.id)
-      return existingUser as CustomAdapterUser
-    }
-  }
-
-  // Si aucun utilisateur existant n'a été trouvé, créer un nouveau
   console.log("→ Creating new user with data:", userToCreate)
   const { data: newUser, error: createError } = await authClient
     .from('users')
@@ -155,14 +192,18 @@ const createUser = async (
   return newUser as CustomAdapterUser
 }
 
-const getUser = async (id: string): Promise<CustomAdapterUser | null> => {
+export async function getUser(id: string): Promise<CustomAdapterUser | null> {
   const { data: user, error: userError } = await authClient
-    .from("users")
-    .select("*")
-    .eq("id", id)
+    .from('users')
+    .select('*')
+    .eq('id', id)
     .single()
 
-  if (userError) return null
+  if (userError) {
+    console.error("Error fetching user:", userError)
+    return null
+  }
+
   if (!user) return null
 
   return {
@@ -178,158 +219,161 @@ const getUser = async (id: string): Promise<CustomAdapterUser | null> => {
     mastodon_username: user.mastodon_username,
     mastodon_image: user.mastodon_image,
     mastodon_instance: user.mastodon_instance,
-    has_onboarded: user.has_onboarded
+    has_onboarded: user.has_onboarded,
+    hqx_newsletter: user.hqx_newsletter,
+    oep_accepted: user.oep_accepted,
+    email: "none",
+    emailVerified: null
   }
 }
 
-const getUserByEmail = async (email) => {
-  try {
-    console.log("\n=== [Adapter] getUserByEmail ===")
-    console.log("→ Looking for user with email:", email)
+export async function getUserByEmail(email: string): Promise<CustomAdapterUser | null> {
+  return null
+}
 
-    const { data, error } = await authClient
-      .from("users")
-      .select()
-      .eq("email", email)
-      .single()
-
-    if (error) {
-      console.log("❌ User not found:", error.message)
-      return null
-    }
-
-    console.log("✅ User found:", data)
-    return data as CustomAdapterUser
-  } catch (error) {
-    console.error(" [Adapter] Error getting user by email:", error)
+export async function getUserByAccount({ providerAccountId, provider }): Promise<CustomAdapterUser | null> {
+  let column: string
+  if (provider === 'twitter') {
+    column = 'twitter_id'
+  } else if (provider === 'mastodon') {
+    column = 'mastodon_id'
+  } else if (provider === 'bluesky') {
+    column = 'bluesky_id'
+  } else {
     return null
   }
-}
 
-const getUserByAccount = async ({ providerAccountId, provider }): Promise<CustomAdapterUser | null> => {
-  try {
-    console.log("\n=== [Adapter] getUserByAccount ===")
-    console.log("→ Looking for account with:", { provider, providerAccountId })
+  const { data: user, error: userError } = await authClient
+    .from('users')
+    .select('*')
+    .eq(column, providerAccountId)
+    .single()
 
-    const { data: account, error: accountError } = await authClient
-      .from("accounts")
-      .select("user_id")
-      .eq("provider", provider)
-      .eq("provider_account_id", providerAccountId)
-      .single()
-
-    if (accountError) {
-      console.log("❌ Account not found:", accountError.message)
-      return null
-    }
-    if (!account) {
-      console.log("❌ No account found")
-      return null
-    }
-
-    console.log("✅ Account found:", account)
-
-    const { data: user, error: userError } = await authClient
-      .from("users")
-      .select("*")
-      .eq("id", account.user_id)
-      .single()
-
-    if (userError) {
-      console.log("❌ User not found:", userError.message)
-      return null
-    }
-    if (!user) {
-      console.log("❌ No user found")
-      return null
-    }
-
-    console.log("✅ User found:", user)
-    return {
-      id: user.id,
-      name: user.name,
-      twitter_id: user.twitter_id,
-      twitter_username: user.twitter_username,
-      twitter_image: user.twitter_image,
-      bluesky_id: user.bluesky_id,
-      bluesky_username: user.bluesky_username,
-      bluesky_image: user.bluesky_image,
-      mastodon_id: user.mastodon_id,
-      mastodon_username: user.mastodon_username,
-      mastodon_image: user.mastodon_image,
-      mastodon_instance: user.mastodon_instance,
-      has_onboarded: user.has_onboarded
-    }
-  } catch (error) {
-    console.error("❌ [Adapter] Error getting user by account:", error)
+  if (userError) {
+    console.error("Error fetching user by account:", userError)
     return null
+  }
+
+  if (!user) return null
+
+  return {
+    id: user.id,
+    name: user.name,
+    twitter_id: user.twitter_id,
+    twitter_username: user.twitter_username,
+    twitter_image: user.twitter_image,
+    bluesky_id: user.bluesky_id,
+    bluesky_username: user.bluesky_username,
+    bluesky_image: user.bluesky_image,
+    mastodon_id: user.mastodon_id,
+    mastodon_username: user.mastodon_username,
+    mastodon_image: user.mastodon_image,
+    mastodon_instance: user.mastodon_instance,
+    has_onboarded: user.has_onboarded,
+    hqx_newsletter: user.hqx_newsletter,
+    oep_accepted: user.oep_accepted,
+    email: "none",
+    emailVerified: null
   }
 }
 
-const updateUser = async (
+export async function updateUser(user: Partial<AdapterUser> & Pick<AdapterUser, "id">): Promise<CustomAdapterUser>;
+export async function updateUser(
   userId: string,
   providerData?: {
     provider: 'twitter' | 'bluesky' | 'mastodon',
-    profile: TwitterData | MastodonProfile | any
+    profile: ProviderProfile
   }
-): Promise<CustomAdapterUser> => {
-  console.log("\n=== [Adapter] updateUser ===")
-  console.log("→ Updating user with provider data:", JSON.stringify(providerData, null, 2))
+): Promise<CustomAdapterUser>;
+export async function updateUser(
+  userOrId: (Partial<AdapterUser> & Pick<AdapterUser, "id">) | string,
+  providerData?: {
+    provider: 'twitter' | 'bluesky' | 'mastodon',
+    profile: ProviderProfile
+  }
+): Promise<CustomAdapterUser> {
+  const userId = typeof userOrId === 'string' ? userOrId : userOrId.id;
+  console.log("\n=== [Adapter] Starting user update ===")
+  console.log("→ User ID:", userId)
+  console.log("→ Provider data:", JSON.stringify(providerData, null, 2))
+
+  if (!userId) {
+    throw new Error("User ID is required")
+  }
 
   const updates: Partial<CustomAdapterUser> = {}
-  
-  if (providerData) {
-    switch (providerData.provider) {
-      case 'twitter':
-        const twitterProfile = providerData.profile as TwitterData
-        updates.twitter_id = twitterProfile.data.id
-        updates.twitter_username = twitterProfile.data.username
-        updates.twitter_image = twitterProfile.data.profile_image_url
-        updates.name = twitterProfile.data.name
-        break
 
-      case 'mastodon':
-        const mastodonProfile = providerData.profile as MastodonProfile
-        updates.mastodon_id = mastodonProfile.id
-        updates.mastodon_username = mastodonProfile.username
-        updates.mastodon_image = mastodonProfile.avatar
-        updates.name = mastodonProfile.display_name
-        updates.mastodon_instance = new URL(mastodonProfile.url).origin
-        break
+  if (providerData?.provider === 'twitter' && providerData.profile && 'data' in providerData.profile) {
+    const twitterData = providerData.profile as TwitterData
+    if (twitterData.data) {
+      updates.twitter_id = twitterData.data.id
+      updates.twitter_username = twitterData.data.username
+      updates.twitter_image = twitterData.data.profile_image_url
+      updates.name = twitterData.data.name
     }
   }
-
-  const { data: updatedUser, error } = await authClient
+  else if (providerData?.provider === 'mastodon' && providerData.profile) {
+    const mastodonData = providerData.profile as MastodonProfile
+    updates.mastodon_id = mastodonData.id
+    updates.mastodon_username = mastodonData.username
+    updates.mastodon_image = mastodonData.avatar
+    updates.mastodon_instance = new URL(mastodonData.url).origin
+    updates.name = mastodonData.display_name || mastodonData.username
+  }
+  else if (providerData?.provider === 'bluesky' && providerData.profile) {
+    const blueskyData = providerData.profile as BlueskyProfile
+    updates.bluesky_id = blueskyData.did || blueskyData.id
+    updates.bluesky_username = blueskyData.handle || blueskyData.username
+    updates.bluesky_image = blueskyData.avatar
+    updates.name = blueskyData.displayName || blueskyData.name
+  }
+  const { data: user, error: updateError } = await authClient
     .from("users")
     .update(updates)
     .eq("id", userId)
     .select()
     .single()
 
-  if (error) {
-    console.log("❌ Error updating user:", error.message)
-    throw error
+  if (updateError) {
+    console.error("Error updating user:", updateError)
+    // Check if user exists
+    const { data: existingUser, error: checkError } = await authClient
+      .from("users")
+      .select()
+      .eq("id", userId)
+      .single()
+    
+    if (checkError) {
+      console.error("Error checking user existence:", checkError)
+    } else {
+      console.log("Existing user:", existingUser)
+    }
+    throw updateError
   }
 
-  console.log("✅ User updated:", updatedUser)
   return {
-    id: updatedUser.id,
-    name: updatedUser.name,
-    twitter_id: updatedUser.twitter_id,
-    twitter_username: updatedUser.twitter_username,
-    twitter_image: updatedUser.twitter_image,
-    bluesky_id: updatedUser.bluesky_id,
-    bluesky_username: updatedUser.bluesky_username,
-    bluesky_image: updatedUser.bluesky_image,
-    mastodon_id: updatedUser.mastodon_id,
-    mastodon_username: updatedUser.mastodon_username,
-    mastodon_image: updatedUser.mastodon_image,
-    mastodon_instance: updatedUser.mastodon_instance,
-    has_onboarded: updatedUser.has_onboarded
+    id: user.id,
+    name: user.name,
+    twitter_id: user.twitter_id,
+    twitter_username: user.twitter_username,
+    twitter_image: user.twitter_image,
+    bluesky_id: user.bluesky_id,
+    bluesky_username: user.bluesky_username,
+    bluesky_image: user.bluesky_image,
+    mastodon_id: user.mastodon_id,
+    mastodon_username: user.mastodon_username,
+    mastodon_image: user.mastodon_image,
+    mastodon_instance: user.mastodon_instance,
+    has_onboarded: user.has_onboarded,
+    hqx_newsletter: user.hqx_newsletter,
+    oep_accepted: user.oep_accepted,
+    email: "none",
+    emailVerified: null
   }
 }
 
-const linkAccount = async (account: AdapterAccount): Promise<void> => {
+export async function linkAccount(account: AdapterAccount): Promise<void>
+{
   console.log("\n=== [Adapter] linkAccount ===")
   console.log("→ Linking account:", JSON.stringify(account, null, 2))
   
@@ -357,60 +401,36 @@ const linkAccount = async (account: AdapterAccount): Promise<void> => {
   console.log("✅ Account linked successfully")
 }
 
-const createSession = async (session) => {
-  try {
-    console.log("\n=== [Adapter] createSession ===")
-    console.log("→ Creating session:", session)
-
-    const { data, error } = await authClient
-      .from("sessions")
-      .insert([session])
-      .select()
-      .single()
-
-    if (error) {
-      console.log("❌ Error creating session:", error)
-      throw error
-    }
-
-    console.log("✅ Session created:", data)
-    return data
-  } catch (error) {
-    console.error("❌ [Adapter] Error creating session:", error)
-    throw error
-  }
-}
-
-const getSessionAndUser = async (sessionToken: string): Promise<{ session: AdapterSession; user: CustomAdapterUser } | null> => {
-  console.log("\n=== [Adapter] getSessionAndUser ===")
-  console.log("→ Looking for session with token:", sessionToken)
-
-  const { data: session, error: sessionError } = await authClient
-    .from("sessions")
-    .select("*, user:user_id(*)")
-    .eq("session_token", sessionToken)
+export async function createSession(session: {
+  sessionToken: string
+  userId: string
+  expires: Date
+}): Promise<AdapterSession> {
+  const { data: newSession, error: createError } = await authClient
+    .from('sessions')
+    .insert([session])
+    .select()
     .single()
 
-  if (sessionError) {
-    console.log("❌ Session not found:", sessionError.message)
-    return null
-  }
-  if (!session) {
-    console.log("❌ No session found")
-    return null
-  }
+  if (createError) throw createError
 
-  console.log("✅ Session found:", session)
+  return newSession
+}
 
-  const user = session.user as any
+export async function getSessionAndUser(sessionToken: string): Promise<{ session: AdapterSession; user: CustomAdapterUser } | null> {
+  const { data: session, error: sessionError } = await authClient
+    .from('sessions')
+    .select('*, user:users(*)')
+    .eq('sessionToken', sessionToken)
+    .single()
 
-  console.log("✅ User found:", user)
+  if (sessionError) return null
+  if (!session) return null
+
+  const { user, ...sessionData } = session
+
   return {
-    session: {
-      sessionToken: session.session_token,
-      userId: session.user_id,
-      expires: session.expires
-    },
+    session: sessionData,
     user: {
       id: user.id,
       name: user.name,
@@ -424,75 +444,177 @@ const getSessionAndUser = async (sessionToken: string): Promise<{ session: Adapt
       mastodon_username: user.mastodon_username,
       mastodon_image: user.mastodon_image,
       mastodon_instance: user.mastodon_instance,
-      has_onboarded: user.has_onboarded
+      has_onboarded: user.has_onboarded,
+      hqx_newsletter: user.hqx_newsletter,
+      oep_accepted: user.oep_accepted,
+      email: "none",
+      emailVerified: null
     }
   }
 }
 
-const updateSession = async (session) => {
-  console.log("\n=== [Adapter] updateSession ===")
-  console.log("→ Updating session with token:", session.session_token)
+export async function updateSession(
+  session: Partial<AdapterSession> & Pick<AdapterSession, "sessionToken">
+): Promise<AdapterSession | null | undefined> {
+  const { data: updatedSession, error: updateError } = await authClient
+    .from('sessions')
+    .update(session)
+    .eq('sessionToken', session.sessionToken)
+    .select()
+    .single()
 
-  try {
-    const { data, error } = await authClient
-      .from("sessions")
-      .update(session)
-      .eq("session_token", session.session_token)
-      .select()
-      .single()
+  if (updateError) throw updateError
 
-    if (error) {
-      console.log("❌ Error updating session:", error)
-      throw error
-    }
-
-    console.log("✅ Session updated:", data)
-    return data
-  } catch (error) {
-    console.error("❌ [Adapter] Error updating session:", error)
-    throw error
-  }
+  return updatedSession
 }
 
-const deleteSession = async (sessionToken) => {
-  console.log("\n=== [Adapter] deleteSession ===")
-  console.log("→ Deleting session with token:", sessionToken)
+export async function deleteSession(sessionToken: string): Promise<void> {
+  const { error: deleteError } = await authClient
+    .from('sessions')
+    .delete()
+    .eq('sessionToken', sessionToken)
 
-  try {
-    await authClient
-      .from("sessions")
-      .delete()
-      .eq("session_token", sessionToken)
-  } catch (error) {
-    console.error("❌ [Adapter] Error deleting session:", error)
-    throw error
-  }
+  if (deleteError) throw deleteError
 }
 
-const getAccountsByUserId = async (userId: string) => {
-  console.log("\n=== [Adapter] getAccountsByUserId ===")
-  console.log("→ Looking for accounts with user ID:", userId)
+export async function getAccountsByUserId(userId: string): Promise<AdapterAccount[]> {
+  const accounts: AdapterAccount[] = []
+  const user = await getUser(userId)
 
-  try {
-    const { data: accounts, error } = await authClient
-      .from("accounts")
-      .select("*")
-      .eq("user_id", userId)
+  if (!user) return accounts
 
-    if (error) {
-      console.log("❌ Error getting accounts:", error.message)
-      throw error
-    }
-
-    console.log("✅ Accounts found:", accounts)
-    return accounts
-  } catch (error) {
-    console.error("❌ [Adapter] Error getting accounts by user ID:", error)
-    return []
+  if (user.twitter_id) {
+    accounts.push({
+      provider: 'twitter',
+      type: 'oauth',
+      providerAccountId: user.twitter_id,
+      userId: user.id
+    })
   }
+
+  return accounts
 }
 
-export const supabaseAdapter = {
+
+// Internal implementation with your existing logic
+async function unlinkAccountImpl(
+  userId: string,
+  provider: 'twitter' | 'bluesky' | 'mastodon'
+): Promise<void> {
+  console.log("\n=== [Adapter] Starting account unlinking ===")
+  console.log("→ User ID:", userId)
+  console.log("→ Provider:", provider)
+
+  // Get current user
+  const { data: user, error: userError } = await authClient
+    .from('users')
+    .select('*')
+    .eq('id', userId)
+    .single()
+
+  if (userError) {
+    console.error("Error fetching user:", userError)
+    throw new UnlinkError("User not found", "NOT_FOUND", 404)
+  }
+
+  if (!user) {
+    throw new UnlinkError("User not found", "NOT_FOUND", 404)
+  }
+
+  // Check if the account is actually linked
+  const providerIdField = `${provider}_id`
+  if (!user[providerIdField]) {
+    throw new UnlinkError("Account not linked", "NOT_LINKED", 400)
+  }
+
+  // Count linked accounts
+  let linkedAccounts = 0
+  if (user.twitter_id) linkedAccounts++
+  if (user.bluesky_id) linkedAccounts++
+  if (user.mastodon_id) linkedAccounts++
+
+  // Prevent unlinking the last account
+  if (linkedAccounts === 1) {
+    throw new UnlinkError(
+      "Cannot unlink the last account. Add another account first.",
+      "LAST_ACCOUNT",
+      400
+    )
+  }
+
+    // Delete account entry
+    const { error: deleteError } = await authClient
+    .from('accounts')
+    .delete()
+    .eq('user_id', userId)
+    .eq('provider', provider)
+
+  if (deleteError) {
+    console.error("Error deleting account:", deleteError)
+    throw new UnlinkError("Database error", "DATABASE_ERROR", 500)
+  }
+
+  // Prepare update data
+  const updates: any = {
+    [`${provider}_id`]: null,
+    [`${provider}_username`]: null,
+    [`${provider}_image`]: null
+  }
+  if (provider === 'mastodon') {
+    updates.mastodon_instance = null
+  }
+
+  // Update user
+  const { error: updateError } = await authClient
+    .from('users')
+    .update(updates)
+    .eq('id', userId)
+
+  if (updateError) {
+    console.error("Error updating user:", updateError)
+    throw new UnlinkError("Database error", "DATABASE_ERROR", 500)
+  }
+
+  console.log("→ Account unlinked successfully")
+}
+
+export async function unlinkAccount(
+  userId: string,
+  provider: 'twitter' | 'bluesky' | 'mastodon'
+): Promise<void> {
+  console.log("\n=== [Adapter] Starting account unlinking ===")
+  console.log("User ID:", userId)
+  console.log("Provider:", provider)
+
+  const user = await getUser(userId)
+  if (!user) {
+    throw new UnlinkError("User not found", "NOT_FOUND", 404)
+  }
+
+  await unlinkAccountImpl(userId, provider)
+}
+
+type CustomSupabaseAdapter = Omit<Adapter, 'getUserByAccount' | 'updateUser' | 'createUser' | 'linkAccount'> & {
+  getUserByAccount: NonNullable<Adapter['getUserByAccount']>;
+  updateUser: {
+    (user: Partial<AdapterUser> & Pick<AdapterUser, "id">): Promise<CustomAdapterUser>;
+    (userId: string, providerData?: {
+      provider: 'twitter' | 'bluesky' | 'mastodon',
+      profile: ProviderProfile
+    }): Promise<CustomAdapterUser>;
+  };
+  createUser: {
+    (user: Partial<AdapterUser>): Promise<CustomAdapterUser>;
+    (userData: Partial<AdapterUser> | (Partial<CustomAdapterUser> & {
+      provider?: 'twitter' | 'bluesky' | 'mastodon',
+      profile?: ProviderProfile
+    })): Promise<CustomAdapterUser>;
+  };
+  linkAccount: NonNullable<Adapter['linkAccount']>;
+}
+
+
+export const supabaseAdapter: CustomSupabaseAdapter = {
   createUser,
   getUser,
   getUserByEmail,
@@ -503,5 +625,5 @@ export const supabaseAdapter = {
   getSessionAndUser,
   updateSession,
   deleteSession,
-  getAccountsByUserId
+  unlinkAccount
 }

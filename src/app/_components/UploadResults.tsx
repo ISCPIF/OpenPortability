@@ -1,15 +1,23 @@
 'use client'
 
 import { motion } from 'framer-motion';
-import { CheckCircle, Users, UserPlus, Globe } from 'lucide-react';
+import { Ship, Users, Globe } from 'lucide-react';
 import PartageButton from './PartageButton';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import { plex } from '../fonts/plex';
+import { useTranslations } from 'next-intl';
 
-interface UploadStats {
-  totalUsers: number;
-  following: number;
-  followers: number;
+
+interface UploadResultsProps {
+  followerCount: number;
+  followingCount: number;
+}
+
+interface TotalStats {
+  total_followers: number;
+  total_following: number;
+  total_sources: number;
 }
 
 interface UploadResultsProps {
@@ -26,8 +34,12 @@ interface UploadResultsProps {
   hasOnboarded?: boolean;
   userId?: string;
   twitterId?: string;
+  twitter_username?: string;
+  mastodon_username?: string;
+  bluesky_username?: string;
   isLoading?: boolean;
   setIsLoading?: (loading: boolean) => void;
+  setIsModalOpen: (open: boolean) => void;
 }
 
 export default function UploadResults({ 
@@ -40,8 +52,14 @@ export default function UploadResults({
   hasOnboarded = false,
   userId,
   twitterId,
+  twitter_username,
+  mastodon_username,
+  bluesky_username,
   isLoading,
-  setIsLoading
+  setIsLoading,
+  setIsModalOpen,
+  followerCount,
+  followingCount 
 }: UploadResultsProps) {
   const [totalUsers, setTotalUsers] = useState<number>(stats.totalUsers);
 
@@ -49,6 +67,11 @@ export default function UploadResults({
   const totalSteps = 4; 
   const completedSteps = [hasTwitter, hasBluesky, hasMastodon, hasOnboarded].filter(Boolean).length;
   const isThreeQuartersComplete = completedSteps >= (totalSteps * 0.75);
+  const t = useTranslations('uploadResults');
+  const username = twitter_username || mastodon_username || bluesky_username || '';
+  const [totalStats, setTotalStats] = useState<TotalStats | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
 
   useEffect(() => {
     if (setIsLoading) {
@@ -56,64 +79,98 @@ export default function UploadResults({
     }
   }, [setIsLoading]);
 
+  useEffect(() => {
+    const fetchTotalStats = async () => {
+      try {
+        const response = await fetch('/api/stats/total');
+        if (!response.ok) {
+          throw new Error('Failed to fetch total stats');
+        }
+        const data = await response.json();
+        setTotalStats(data);
+      } catch (err) {
+        console.error('Error fetching total stats:', err);
+        setError(t('errors.fetchStats'));
+      }
+    };
+
+    fetchTotalStats();
+  }, [t]);
+
+  const totalProcessed = stats.followers + stats.following;
+  const totalInDatabase = totalStats ? totalStats.total_followers + totalStats.total_following : 0;
+  const totalReady = totalStats ? totalStats.total_sources : 0;
+
+  // console.log('totalInDatabase', totalInDatabase);
+  // console.log('totalProcessed', totalProcessed);
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="w-full max-w-2xl mx-auto mb-8"
+      className={`w-full max-w-2xl mx-auto mb-8 ${plex.className}`}
     >
       <div className="bg-gradient-to-br from-green-500/10 via-emerald-500/10 to-teal-500/10 
                     backdrop-blur-xl rounded-2xl border border-white/10 shadow-xl p-6 space-y-6">
         <div className="space-y-4">
           <div className="flex items-center gap-4">
-            <div className="bg-green-500/20 p-3 rounded-full">
-              <CheckCircle className="w-6 h-6 text-green-500" />
+            <div className="bg-pink-500/20 p-3 rounded-full">
+              <Ship className="w-6 h-6 text-pink-400" />
             </div>
-            <h2 className="text-2xl font-bold bg-gradient-to-r from-green-400 to-emerald-500 
+            <h2 className="text-2xl font-bold bg-gradient-to-r from-pink-400 to-rose-500 
                        bg-clip-text text-transparent">
-              Félicitations !
+              {t('congratulations', { username })}
             </h2>
-          </div>
-
-          <div className={`flex items-center justify-center transition-opacity duration-300 ${isThreeQuartersComplete ? 'opacity-100' : 'opacity-70'}`}>
-            <PartageButton onShare={onShare} />
           </div>
         </div>
 
-        <p className="text-white/80">
-          Vous avez commencé votre migration avec succès. Voici un résumé de vos données importées :
+        <p className="text-white/80 text-center">
+          {t('importSuccess', { count: stats.following + stats.followers })}
         </p>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="flex justify-center gap-4">
           <div className="bg-black/20 rounded-xl p-4 flex items-center gap-4">
-            <div className="bg-blue-500/20 p-2 rounded-full">
-              <UserPlus className="w-5 h-5 text-blue-400" />
+            <div className="bg-pink-500/20 p-2 rounded-full">
+              <Users className="w-5 h-5 text-pink-400" />
             </div>
             <div>
-              <p className="text-sm text-white/60">Following</p>
-              <p className="text-2xl font-bold text-white">{stats.following}</p>
+              <p className="text-sm text-white/60">{t('stats.twitterAccounts.label')}</p>
+              <p className="text-2xl font-bold text-white">
+                {totalProcessed}
+              </p>
             </div>
           </div>
 
           <div className="bg-black/20 rounded-xl p-4 flex items-center gap-4">
-            <div className="bg-purple-500/20 p-2 rounded-full">
-              <Users className="w-5 h-5 text-purple-400" />
+            <div className="bg-pink-500/20 p-2 rounded-full">
+              <Globe className="w-5 h-5 text-pink-400" />
             </div>
             <div>
-              <p className="text-sm text-white/60">Followers</p>
-              <p className="text-2xl font-bold text-white">{stats.followers}</p>
+              <p className="text-sm text-white/60">{t('stats.totalImported.label')}</p>
+              <p className="text-2xl font-bold text-white">
+                {totalInDatabase}
+              </p>
             </div>
           </div>
 
           <div className="bg-black/20 rounded-xl p-4 flex items-center gap-4">
-            <div className="bg-emerald-500/20 p-2 rounded-full">
-              <Globe className="w-5 h-5 text-emerald-400" />
+            <div className="bg-pink-500/20 p-2 rounded-full">
+              <Users className="w-5 h-5 text-pink-400" />
             </div>
             <div>
-              <p className="text-sm text-white/60">Migrations</p>
-              <p className="text-2xl font-bold text-white">{totalUsers}</p>
+              <p className="text-sm text-white/60">{t('stats.readyTravelers.label')}</p>
+              <p className="text-2xl font-bold text-white">
+                {totalReady}
+              </p>
             </div>
           </div>
+        </div>
+        {/* </div> */}
+
+        <p className="text-white/80 text-center">
+          {t('inviteFriends')}
+        </p>
+        <div className={`flex items-center justify-center transition-opacity duration-300 ${isThreeQuartersComplete ? 'opacity-100' : 'opacity-70'}`}>
+          <PartageButton onClick={() => setIsModalOpen(true)} />
         </div>
 
         {showRedirectMessage && (
@@ -122,7 +179,7 @@ export default function UploadResults({
             animate={{ opacity: 1 }}
             className="text-sm text-white/60 text-center mt-4"
           >
-            Redirection vers le tableau de bord...
+            {t('redirecting')}
           </motion.p>
         )}
       </div>

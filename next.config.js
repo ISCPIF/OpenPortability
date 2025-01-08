@@ -1,3 +1,5 @@
+const withNextIntl = require('next-intl/plugin')('./src/i18n/request.ts');
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   typescript: {
@@ -5,7 +7,7 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
   images: {
-    domains: ['pbs.twimg.com', 'abs.twimg.com', 'cdn.bsky.app', 'mastodon.social']
+    domains: ['pbs.twimg.com', 'abs.twimg.com', 'cdn.bsky.app', 'mastodon.social', 'piaille.fr']
   },
   headers: async () => {
     return [
@@ -23,4 +25,18 @@ const nextConfig = {
   output: 'standalone'
 }
 
-module.exports = nextConfig
+module.exports = withNextIntl({
+  ...nextConfig,
+  generateEtags: false,
+  headers: async () => [
+    {
+      source: '/:path*',
+      headers: [
+        {
+          key: 'Cache-Control',
+          value: 'no-store, must-revalidate'
+        }
+      ]
+    }
+  ]
+});
