@@ -9,7 +9,7 @@
       "connectedWith": "You are connected with {services} ✨",
       "and": "and",
       "services": {
-        "twitter": "Twitter",
+        "twitter": "Twitter/X",
         "bluesky": "BlueSky",
         "mastodon": "Mastodon"
       }
@@ -41,7 +41,7 @@
     },
     "consentModal": {
       "title": "Upload Confirmation",
-      "description": "By uploading your Twitter files, you confirm that:",
+      "description": "By uploading your Twitter/X files, you confirm that:",
       "conditions": {
         "ownership": "You are the legitimate owner of this data.",
         "cnrsUsage": "You agree that the provided data will be used by the National Center for Scientific Research (CNRS) as part of the HelloQuitX operation.",
@@ -53,14 +53,25 @@
       }
     },
     "dashboardLoginButtons": {
-      "importTwitter": "Import my Twitter archive",
+      "importTwitter": "Import my Twitter/X archive",
       "addSocialNetwork": "Add another social network",
       "services": {
-        "twitter": "Twitter",
+        "twitter": "Twitter/X",
         "mastodon": {
-          "title": "Mastodon"
+          "title": "Mastodon",
+          "instance": "Select your Mastodon instance",
+          "connect" : "Connect",
+          "write_instance" : "Enter your instance",
+          "instance_not_yet" : "Add your instance if it's not yet added",
+          "return" : "← Go back to instances list"
+
         },
         "bluesky": "BlueSky"
+      },
+      "connectedDashboard" : {
+        "twitter" : "Connect to Twitter/X",
+        "bluesky" : "Connect to Bluesky",
+        "mastodon" : "Connect to Mastodon"
       }
     },
     "footer": {
@@ -73,10 +84,10 @@
       },
     "loginButtons": {
     "twitter": {
-      "continue": "Continue with Twitter",
-      "notDeleted" : "I have a Twitter account"
+      "continue": "Continue with Twitter/X",
+      "notDeleted" : "I have a Twitter/X account"
     },
-    "deleteAccount": "I've already deleted my Twitter account",
+    "deleteAccount": "I've already deleted my Twitter/X account",
     "bluesky": {
       "connect": "Connect with BlueSky"
     },
@@ -98,7 +109,8 @@
     }
   },
   "partageButton": {
-    "share": "Share"
+    "share": "Share",
+    "shareOn": "Share on {platform}"
   },
   "progressSteps": {
     "dashboard": {
@@ -146,7 +158,7 @@
     "importSuccess": "Your file import has registered {count} new passengers!",
     "stats": {
         "twitterAccounts": {
-          "label": "Twitter Accounts",
+          "label": "Twitter/X Accounts",
           "value": "{count}"
         },
         "totalImported": {
@@ -163,7 +175,7 @@
   },
   "signin": {
     "title": "Ready to travel to new shores ?",
-    "subtitle": "Start by connecting with Twitter to migrate your data",
+    "subtitle": "Start by connecting with Twitter/X to migrate your data",
     "loading": "Loading information..."
   },
   "dashboard": {
@@ -175,7 +187,7 @@
       "daysLeft": "{count} days left before the big departure",
       "nextSteps": "Complete the following steps to sail to new shores!"
     },
-    "importButton": "Import my Twitter archive",
+    "importButton": "Import my Twitter/X archive",
     "shareModal": {
       "title": "Share your journey",
       "shareOn": "Share on {platform}",
@@ -192,6 +204,11 @@
       "acceptOEP": "I would like to be informed about other initiatives from [On est prêt](https://www.onestpret.com), who supports HelloQuitX",
       "subscribing": "Subscribing...",
       "confirmSubscribe": "Confirm subscription"
+    },
+    "tutorial": {
+      "title": "Step by step tutorial explanation",
+      "description": "Learn how to easily migrate from Twitter/X to Mastodon and Bluesky",
+      "watchVideo": "Watch the video"
     }
 },
   "dashboardSea": {
@@ -201,33 +218,33 @@
     }
 },
 "upload": {
-    "title": "Import your Twitter archive to continue your journey",
+    "title": "Import your Twitter/X archive to continue your journey",
     "action": "Drop or select your files here",
     "description": "Three data formats are accepted:\n- your original X archive if <1GB (in Zip format)\n- following.js and follower.js files TOGETHER and unzipped,\n- split versions of these files for large archives (following-part*.js + follower-part*.js)",
     "loading": {
       "default": "Loading...",
       "uploading": "Please stay on the page, your import is in progress"
     },
-    "helpButton": "Help with getting your Twitter archive",
+    "helpButton": "Help with getting your Twitter/X archive",
     "loading-indic" : "Loading your data...",
     "loading-uploading": "Stay on the page, import in progress",
     "logo": {
       "alt": "HelloQuitX Logo"
     },
     "helpModal": {
-      "title": "How to get your Twitter archive?",
-      "description": "To get your Twitter archive, follow these steps:",
+      "title": "How to get your Twitter/X archive?",
+      "description": "To get your Twitter/X archive, follow these steps:",
       "steps": [
-        "Log in to your Twitter account",
+        "Log in to your Twitter/X account",
         "Go to \"More\" in the left menu",
         "Click on \"Settings and Support\" then \"Settings and Privacy\"",
         "In \"Your Account\", select \"Download an archive of your data\"",
         "Confirm your password if requested",
         "Click on \"Request archive\"",
-        "Twitter will send you an email when your archive is ready to download",
+        "Twitter/X will send you an email when your archive is ready to download",
         "Once downloaded, you can import the .zip file here"
       ],
-      "note": "Note: Twitter archive preparation can take up to 24 hours."
+      "note": "Note: Twitter/X archive preparation can take up to 24 hours."
     },
     "errors": {
       "fileSize": "File size exceeds 1GB limit",
@@ -275,7 +292,7 @@
     "unlinkError": "An error occurred while unlinking your {provider} account",
     "unlinkButton": "Unlink {provider} account",
     "providers": {
-      "twitter": "Twitter",
+      "twitter": "Twitter/X",
       "bluesky": "Bluesky",
       "mastodon": "Mastodon"
     },
@@ -289,7 +306,7 @@
     "deleteAccount": "Delete my account",
     "deleteConfirm": {
       "title": "Delete Account",
-      "message": "Are you sure you want to delete your account? This action cannot be undone and will result in the deletion of:\n\n• All your imported data\n• All your linked accounts (Twitter, BlueSky, Mastodon)\n• Your HelloQuitX profile",
+      "message": "Are you sure you want to delete your account? This action cannot be undone and will result in the deletion of:\n\n• All your imported data\n• All your linked accounts (Twitter/X, BlueSky, Mastodon)\n• Your HelloQuitX profile",
       "cancel": "Cancel",
       "confirm": "Yes, delete my account"
     },
