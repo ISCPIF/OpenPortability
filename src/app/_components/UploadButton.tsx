@@ -4,35 +4,29 @@ import { useState, useRef, useEffect } from 'react';
 import { signIn, useSession } from 'next-auth/react';
 import * as zip from '@zip.js/zip.js';
 import { motion } from 'framer-motion';
+import { useTranslations } from 'next-intl';
 import { Upload, Loader2, CheckCircle, XCircle } from 'lucide-react';
 import { plex } from '../fonts/plex';
-
-const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
-const ALLOWED_TYPES = ['.zip', '.js'];
-const TARGET_FILES = ['data/following.js', 'data/follower.js'];
-const REQUIRED_FILES = ['following.js', 'follower.js'];
-
-interface ExtractedFile {
-  name: string;
-  content: Uint8Array;
-}
+import {
+  ExtractedFile,
+  TwitterData,
+  validateFile,
+  validateFiles,
+  validateTwitterData,
+  sanitizeContent,
+  mergePartFiles,
+  normalizeFilePath,
+  MAX_FILE_SIZE,
+  ALLOWED_TYPES,
+  TARGET_FILES,
+  REQUIRED_FILES
+} from '@/lib/upload_utils';
 
 interface UnzipProgress {
   fileName: string;
   progress: number;
   status: 'pending' | 'extracting' | 'done' | 'error';
   message?: string;
-}
-
-interface TwitterData {
-  following?: {
-    accountId: string;
-    userLink: string;
-  };
-  follower?: {
-    accountId: string;
-    userLink: string;
-  };
 }
 
 interface UploadButtonProps {
@@ -42,213 +36,129 @@ interface UploadButtonProps {
   filesToProcess?: FileList | null;
 }
 
-const normalizeFilePath = (path: string): string => {
-  return path.replace(/\\/g, '/').replace(/^\.?\/+/, '').toLowerCase();
-};
+const processFiles = async (files: FileList): Promise<{ name: string; content: Uint8Array }[]> => {
+  console.log('🎯 Début du traitement des fichiers...', {
+    nbFiles: files.length,
+    fileNames: Array.from(files).map(f => f.name)
+  });
 
-export const validateTwitterData = (content: string, type: 'following' | 'follower'): string | null => {
-  const prefix = `window.YTD.${type}.part0 = `;
-  
-  if (!content.startsWith(prefix)) {
-    return `Invalid file format: ${type}.js must start with "${prefix}"`;
+  // Validation des fichiers
+  const validationError = validateFiles(files);
+  if (validationError) {
+    throw new Error(validationError);
   }
 
-  try {
-    // Remove the prefix and parse the JSON
-    const jsonStr = content.substring(prefix.length);
-    const data = JSON.parse(jsonStr) as TwitterData[];
+  // Convertir FileList en array pour manipulation
+  const fileArray = Array.from(files);
+  const fileNames = fileArray.map(f => f.name.toLowerCase());
 
-    // Validate each entry
-    for (const entry of data) {
-      const item = entry[type];
-      if (!item) {
-        return `Invalid ${type} data structure`;
-      }
+  // Détecter les différents types de fichiers
+  const followerParts = fileArray.filter(f => /follower-part\d+\.js/.test(f.name.toLowerCase()));
+  const followingParts = fileArray.filter(f => /following-part\d+\.js/.test(f.name.toLowerCase()));
+  const standardFollowingFile = fileArray.find(f => f.name.toLowerCase() === 'following.js');
+  const standardFollowerFile = fileArray.find(f => f.name.toLowerCase() === 'follower.js');
 
-      const { accountId, userLink } = item;
-      if (!accountId || !userLink) {
-        return `Missing required fields in ${type} data`;
-      }
+  console.log('📄 Fichiers détectés:', {
+    followerParts: followerParts.map(f => f.name),
+    followingParts: followingParts.map(f => f.name),
+    standardFollowing: standardFollowingFile?.name || 'manquant',
+    standardFollower: standardFollowerFile?.name || 'manquant'
+  });
 
-      const expectedUserLink = `https://twitter.com/intent/user?user_id=${accountId}`;
-      if (userLink !== expectedUserLink) {
-        return `Invalid userLink format in ${type} data`;
-      }
-    }
-
-    return null;
-  } catch (error) {
-    return `Invalid JSON in ${type}.js: ${error instanceof Error ? error.message : 'Unknown error'}`;
-  }
-};
-
-const validateFile = (file: File): string | null => {
-  if (file.size > MAX_FILE_SIZE) {
-    return 'File size exceeds 50MB limit';
-  }
-
-  const extension = '.' + file.name.split('.').pop()?.toLowerCase();
-  if (!ALLOWED_TYPES.includes(extension)) {
-    return 'Invalid file type. Please upload either a ZIP file or following.js and follower.js files';
+  // Traiter les fichiers follower
+  let followerData: any[] = [];
+  if (followerParts.length > 0) {
+    console.log('🔄 Traitement des parts follower...');
+    const extractedFiles: ExtractedFile[] = await Promise.all(
+      followerParts.map(async file => ({
+        name: file.name,
+        content: new Uint8Array(await file.arrayBuffer())
+      }))
+    );
+    const { content, count } = mergePartFiles(extractedFiles, 'follower');
+    followerData = JSON.parse(new TextDecoder().decode(content).split('=')[1]);
+  } else if (standardFollowerFile) {
+    console.log('📄 Lecture du follower.js standard...');
+    const content = await standardFollowerFile.text();
+    const validationError = validateTwitterData(content, 'follower');
+    if (validationError) throw new Error(validationError);
+    followerData = JSON.parse(content.split('=')[1]);
   }
 
-  return null;
-};
-
-const validateFiles = (files: FileList): string | null => {
-  if (files.length === 0) {
-    return 'No files selected';
+  // Traiter les fichiers following
+  let followingData: any[] = [];
+  if (followingParts.length > 0) {
+    console.log('🔄 Traitement des parts following...');
+    const extractedFiles: ExtractedFile[] = await Promise.all(
+      followingParts.map(async file => ({
+        name: file.name,
+        content: new Uint8Array(await file.arrayBuffer())
+      }))
+    );
+    const { content, count } = mergePartFiles(extractedFiles, 'following');
+    followingData = JSON.parse(new TextDecoder().decode(content).split('=')[1]);
+  } else if (standardFollowingFile) {
+    console.log('📄 Lecture du following.js standard...');
+    const content = await standardFollowingFile.text();
+    const validationError = validateTwitterData(content, 'following');
+    if (validationError) throw new Error(validationError);
+    followingData = JSON.parse(content.split('=')[1]);
   }
 
-  // Check if it's a single ZIP file
-  if (files.length === 1 && files[0].name.toLowerCase().endsWith('.zip')) {
-    return validateFile(files[0]);
+  // Créer les fichiers finaux
+  const result: { name: string; content: Uint8Array }[] = [];
+
+  if (followerData.length > 0) {
+    const followerContent = `window.YTD.follower.part0 = ${JSON.stringify(followerData)}`;
+    result.push({
+      name: 'follower.js',
+      content: sanitizeContent(new TextEncoder().encode(followerContent))
+    });
+    console.log('✅ follower.js généré:', { entries: followerData.length });
   }
 
-  // Check if they are JS files
-  if (files.length === 2) {
-    const fileNames = Array.from(files).map(f => f.name.toLowerCase());
-    
-    // Check if both files are .js
-    if (!fileNames.every(name => name.endsWith('.js'))) {
-      return 'When uploading individual files, both must be .js files';
-    }
-
-    // Check if we have both following.js and follower.js
-    const hasFollowing = fileNames.some(name => name === 'following.js');
-    const hasFollower = fileNames.some(name => name === 'follower.js');
-
-    if (!hasFollowing || !hasFollower) {
-      return 'Please upload both following.js and follower.js files';
-    }
-
-    // Check file sizes
-    for (const file of files) {
-      const sizeError = validateFile(file);
-      if (sizeError) return sizeError;
-    }
-
-    return null;
+  if (followingData.length > 0) {
+    const followingContent = `window.YTD.following.part0 = ${JSON.stringify(followingData)}`;
+    result.push({
+      name: 'following.js',
+      content: sanitizeContent(new TextEncoder().encode(followingContent))
+    });
+    console.log('✅ following.js généré:', { entries: followingData.length });
   }
 
-  return 'Please upload either a ZIP file or both following.js and follower.js files';
+  return result;
 };
 
 export const extractTargetFiles = async (file: File): Promise<ExtractedFile[]> => {
-  const reader = new zip.ZipReader(new zip.BlobReader(file));
-  const entries = await reader.getEntries();
-  const extractedFiles: ExtractedFile[] = [];
-  const progressMap = new Map<string, UnzipProgress>();
-
-  // Initialiser le statut pour chaque fichier cible
-  TARGET_FILES.forEach(targetFile => {
-    progressMap.set(targetFile, {
-      fileName: targetFile,
-      progress: 0,
-      status: 'pending'
-    });
-  });
-
-  try {
-    for (const entry of entries) {
-      const normalizedPath = normalizeFilePath(entry.filename);
-      if (TARGET_FILES.includes(normalizedPath)) {
-        progressMap.set(normalizedPath, {
-          fileName: normalizedPath,
-          progress: 0,
-          status: 'extracting'
-        });
-
-        try {
-          const uint8Array = await entry.getData!(new zip.Uint8ArrayWriter(), {
-            onprogress: (current, total) => {
-              const progress = Math.round((current / total) * 100);
-              progressMap.set(normalizedPath, {
-                fileName: normalizedPath,
-                progress,
-                status: 'extracting'
-              });
-              // Mettre à jour l'UI avec la progression
-              window.dispatchEvent(new CustomEvent('unzipProgress', {
-                detail: Array.from(progressMap.values())
-              }));
-            }
-          });
-
-          extractedFiles.push({
-            name: normalizedPath,
-            content: uint8Array
-          });
-
-          progressMap.set(normalizedPath, {
-            fileName: normalizedPath,
-            progress: 100,
-            status: 'done'
-          });
-        } catch (error) {
-          console.error(`Error extracting ${normalizedPath}:`, error);
-          progressMap.set(normalizedPath, {
-            fileName: normalizedPath,
-            progress: 0,
-            status: 'error',
-            message: error instanceof Error ? error.message : 'Unknown error'
-          });
-          throw error;
-        }
-      }
+  const zipReader = new zip.ZipReader(new zip.BlobReader(file));
+  const entries = await zipReader.getEntries();
+  
+  const targetFiles: ExtractedFile[] = [];
+  for (const entry of entries) {
+    const normalizedPath = normalizeFilePath(entry.filename);
+    if (TARGET_FILES.includes(normalizedPath)) {
+      const content = new Uint8Array(await entry.getData!(new zip.Uint8ArrayWriter()));
+      const name = normalizedPath.split('/').pop()!;
+      targetFiles.push({ name, content });
     }
-  } finally {
-    await reader.close();
   }
-
-  if (extractedFiles.length < TARGET_FILES.length) {
-    throw new Error('Some required files were not found in the zip');
-  }
-
-  return extractedFiles;
+  
+  await zipReader.close();
+  return targetFiles;
 };
 
-export const processFiles = async (files: FileList): Promise<{ name: string; content: Uint8Array }[]> => {
-  const processedFiles: { name: string; content: Uint8Array }[] = [];
+export { validateTwitterData };
 
-  // If it's a ZIP file
-  if (files.length === 1 && files[0].name.toLowerCase().endsWith('.zip')) {
-    const extractedFiles = await extractTargetFiles(files[0]);
-    if (extractedFiles.length === 0) {
-      throw new Error('No valid files found in ZIP');
-    }
-    return extractedFiles;
-  }
-
-  // If it's direct file upload
-  const fileNames = Array.from(files).map(f => f.name.toLowerCase());
-  const missingFiles = REQUIRED_FILES.filter(required => 
-    !fileNames.some(name => name.toLowerCase() === required.toLowerCase())
-  );
-
-  if (missingFiles.length > 0) {
-    throw new Error(`Missing required files: ${missingFiles.join(', ')}`);
-  }
-
-  // Process each file
-  for (const file of files) {
-    const arrayBuffer = await file.arrayBuffer();
-    processedFiles.push({
-      name: file.name,
-      content: new Uint8Array(arrayBuffer)
-    });
-  }
-
-  return processedFiles;
-};
-
-export default function UploadButton({ onUploadComplete, onError, onFilesSelected, filesToProcess }: UploadButtonProps) {
+const UploadButton = ({ onUploadComplete, onError, onFilesSelected, filesToProcess }: UploadButtonProps) => {
   const { data: session } = useSession();
   const [isUploading, setIsUploading] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const [unzipProgress, setUnzipProgress] = useState<UnzipProgress[]>([]);
   const [selectedFiles, setSelectedFiles] = useState<FileList | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const maxRetries = 3;
+  const dropZoneRef = useRef<HTMLDivElement>(null);
+  const t = useTranslations('uploadButton');
 
   useEffect(() => {
     const handleUnzipProgress = (event: CustomEvent<UnzipProgress[]>) => {
@@ -267,6 +177,48 @@ export default function UploadButton({ onUploadComplete, onError, onFilesSelecte
     }
   }, [filesToProcess]);
 
+  const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Vérifie si on quitte vraiment la zone de drop
+    const rect = dropZoneRef.current?.getBoundingClientRect();
+    if (rect) {
+      const { clientX, clientY } = e;
+      if (
+        clientX <= rect.left ||
+        clientX >= rect.right ||
+        clientY <= rect.top ||
+        clientY >= rect.bottom
+      ) {
+        setIsDragging(false);
+      }
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      setSelectedFiles(files);
+      onFilesSelected(files);
+    }
+  };
+
   const handleUpload = async (files: FileList) => {
     setIsUploading(true);
     setRetryCount(0);
@@ -280,7 +232,7 @@ export default function UploadButton({ onUploadComplete, onError, onFilesSelecte
           followers: extractedFiles.length
         });
       } catch (error) {
-        console.error('Upload error:', error);
+        console.error('Erreur de téléchargement :', error);
         
         if (retryCount < maxRetries) {
           const delay = Math.pow(2, retryCount) * 1000;
@@ -290,7 +242,7 @@ export default function UploadButton({ onUploadComplete, onError, onFilesSelecte
           return tryProcess();
         } else {
           setIsUploading(false);
-          onError('Upload failed after multiple attempts. Please try again.');
+          onError('Le téléchargement a échoué après plusieurs tentatives. Veuillez réessayer.');
         }
       }
     };
@@ -299,7 +251,14 @@ export default function UploadButton({ onUploadComplete, onError, onFilesSelecte
   };
 
   return (
-    <div className={`w-full max-w-md mx-auto ${plex.className}`}>
+    <div 
+      ref={dropZoneRef}
+      className={`w-full max-w-md mx-auto ${plex.className} relative`}
+      onDragEnter={handleDragEnter}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
       <input
         type="file"
         onChange={(e) => {
@@ -320,7 +279,7 @@ export default function UploadButton({ onUploadComplete, onError, onFilesSelecte
         whileTap={{ scale: 0.98 }}
         className={`
           w-full px-6 py-4 flex items-center justify-center gap-3
-          text-white font-semibold rounded-xl cursor-pointer
+          text-white cursor-pointer text-sm
           bg-gradient-to-r from-blue-600 to-blue-800
           hover:from-blue-700 hover:to-blue-900
           shadow-lg hover:shadow-xl
@@ -328,6 +287,8 @@ export default function UploadButton({ onUploadComplete, onError, onFilesSelecte
           disabled:from-gray-400 disabled:to-gray-500 
           disabled:cursor-not-allowed
           ${isUploading ? 'pointer-events-none' : ''}
+          ${isDragging ? 'ring-2 ring-white ring-opacity-50' : ''}
+          relative z-10
         `}
       >
         {isUploading ? (
@@ -335,8 +296,15 @@ export default function UploadButton({ onUploadComplete, onError, onFilesSelecte
         ) : (
           <Upload className="w-5 h-5" />
         )}
-        {isUploading ? 'Processing...' : 'Select Twitter Archive'}
+        {isUploading ? t('uploadInProgress') : t('clickOrDrop')}
       </motion.label>
+
+      {/* Overlay de drop */}
+      {isDragging && (
+        <div className="absolute inset-0 bg-blue-600/20 backdrop-blur-sm rounded-xl border-2 border-white border-dashed flex items-center justify-center z-20">
+          <p className="text-white text-lg font-medium">{t('dropHere')}</p>
+        </div>
+      )}
 
       {unzipProgress.length > 0 && (
         <motion.div 
@@ -354,15 +322,7 @@ export default function UploadButton({ onUploadComplete, onError, onFilesSelecte
             >
               <div className="flex justify-between items-center mb-2">
                 <span className="text-sm font-medium text-gray-100">{progress.fileName}</span>
-                <span className="text-sm font-medium">
-                  {progress.status === 'done' ? (
-                    <CheckCircle className="w-5 h-5 text-green-400" />
-                  ) : progress.status === 'error' ? (
-                    <XCircle className="w-5 h-5 text-red-400" />
-                  ) : (
-                    `${Math.round(progress.progress)}%`
-                  )}
-                </span>
+                <span className="text-sm font-medium text-gray-100">{progress.progress}%</span>
               </div>
               <div className="w-full bg-gray-700/50 rounded-full h-2 overflow-hidden">
                 <motion.div
@@ -371,7 +331,7 @@ export default function UploadButton({ onUploadComplete, onError, onFilesSelecte
                   transition={{ duration: 0.5 }}
                   className={`h-full rounded-full ${
                     progress.status === 'error' ? 'bg-red-500' :
-                    progress.status === 'done' ? 'bg-green-400' : 'bg-blue-500'
+                    'bg-gradient-to-r from-pink-400 to-rose-500'
                   }`}
                 />
               </div>
@@ -390,4 +350,6 @@ export default function UploadButton({ onUploadComplete, onError, onFilesSelecte
       )}
     </div>
   );
-}
+};
+
+export default UploadButton;

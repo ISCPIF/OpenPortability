@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 // import { getServerSession } from 'next-auth';
 import { auth } from "@/app/auth";
 
-console.log(' Initializing Supabase client with URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
+// console.log(' Initializing Supabase client with URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -20,21 +20,21 @@ export async function POST(request: Request) {
   console.log(' Share API called');
   
   const session = await auth();
-  console.log(' Session:', {
-    userId: session?.user?.id,
-    email: session?.user?.email
-  });
+  // console.log(' Session:', {
+  //   userId: session?.user?.id,
+  //   email: session?.user?.email
+  // });
 
   if (!session?.user?.id) {
-    console.log(' No session found');
+    // console.log(' No session found');
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   try {
     const body = await request.json();
-    console.log(' Request body:', body);
+    // console.log(' Request body:', body);
 
-    console.log(' Inserting share event into Supabase...');
+    // console.log(' Inserting share event into Supabase...');
     const { error } = await supabase
       .from('share_events')
       .insert({
@@ -54,7 +54,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    console.log(' Share event recorded successfully');
+    // console.log(' Share event recorded successfully');
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error(' Server error:', error);
@@ -63,21 +63,21 @@ export async function POST(request: Request) {
 }
 
 export async function GET() {
-  console.log('🔍 Share events GET API called');
+  // console.log('🔍 Share events GET API called');
   
   const session = await auth();
-  console.log('👤 Session:', {
-    userId: session?.user?.id,
-    email: session?.user?.email
-  });
+  // console.log('👤 Session:', {
+  //   userId: session?.user?.id,
+  //   email: session?.user?.email
+  // });
 
   if (!session?.user?.id) {
-    console.log('❌ No session found');
+    // console.log('❌ No session found');
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   try {
-    console.log('📊 Fetching share events for user:', session.user.id);
+    // console.log('📊 Fetching share events for user:', session.user.id);
     const { data, error } = await supabase
       .from('share_events')
       .select('*')
@@ -88,7 +88,7 @@ export async function GET() {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    console.log('✅ Share events fetched:', data);
+    // console.log('✅ Share events fetched:', data);
     return NextResponse.json({ data });
   } catch (error) {
     console.error('❌ Failed to fetch share events:', error);

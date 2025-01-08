@@ -1,26 +1,26 @@
-import { auth } from "./app/auth"
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
+import createMiddleware from 'next-intl/middleware';
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
 
-export default auth(async (req) => {
-  const isLoggedIn = !!req.auth
-  const isAuthPage = req.nextUrl.pathname.startsWith('/auth')
+const locales = ['fr', 'en'];
+const defaultLocale = 'en';
 
-  // Si on est sur la page d'accueil, rediriger vers /auth/signin
-  if (req.nextUrl.pathname === '/') {
-    return NextResponse.redirect(new URL('/auth/signin', req.nextUrl))
-  }
+// Create the i18n middleware
+const intlMiddleware = createMiddleware({
+  locales,
+  defaultLocale,
+  localePrefix: 'always'
+});
 
-  // Not logged in: only allow auth pages
-  if (!isLoggedIn && !isAuthPage) {
-    return NextResponse.redirect(new URL('/auth/signin', req.nextUrl))
-  }
+// Middleware handler
+export default function middleware(request: NextRequest) {
+  return intlMiddleware(request);
+}
 
-  return NextResponse.next()
-})
-
+// Add matcher configuration to limit middleware execution
 export const config = {
   matcher: [
+    // Skip all internal paths (_next), API routes, and static files
     '/((?!api|_next/static|_next/image|favicon.ico).*)',
-  ]
-}
+  ],
+};

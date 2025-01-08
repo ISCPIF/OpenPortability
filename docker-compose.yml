@@ -14,6 +14,27 @@ services:
       - app_network
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    volumes:
+      - shared-tmp:/app/tmp
+
+  worker:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    volumes:
+      - ./worker:/app
+      - /app/node_modules
+      - shared-tmp:/app/tmp
+    env_file:
+      - ./worker/.env
+    environment:
+      - NODE_ENV=development
+    networks:
+      - app_network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - app
 
   nginx:
     image: nginx:alpine
@@ -29,6 +50,29 @@ services:
       - app_network
     command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
 
+  watcher:
+    build: 
+      context: ./watcher
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ENV=production
+    env_file:
+      - ./watcher/.env
+    restart: unless-stopped
+    networks:
+      - app_network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "host.docker.internal:54321"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
 networks:
   app_network:
     driver: bridge
+
+volumes:
+  shared-tmp:
