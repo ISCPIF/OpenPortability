@@ -7,15 +7,11 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { plex } from '../fonts/plex';
 import { useTranslations } from 'next-intl';
+import { useSession } from "next-auth/react"
 
 const formatNumber = (num: number): string => {
   return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 };
-
-interface UploadResultsProps {
-  followerCount: number;
-  followingCount: number;
-}
 
 interface TotalStats {
   total_followers: number;
@@ -24,25 +20,24 @@ interface TotalStats {
 }
 
 interface UploadResultsProps {
-  showRedirectMessage?: boolean;
-  onShare: (url: string, platform: string) => void;
   stats: {
     totalUsers: number;
     following: number;
     followers: number;
   };
+  onShare: (url: string, platform: string) => void;
+  setIsModalOpen: (isOpen: boolean) => void;
   hasTwitter?: boolean;
   hasBluesky?: boolean;
   hasMastodon?: boolean;
   hasOnboarded?: boolean;
   userId?: string;
-  twitterId?: string;
   twitter_username?: string;
   mastodon_username?: string;
   bluesky_username?: string;
   isLoading?: boolean;
   setIsLoading?: (loading: boolean) => void;
-  setIsModalOpen: (open: boolean) => void;
+  showRedirectMessage?: boolean;
 }
 
 export default function UploadResults({ 
@@ -54,18 +49,19 @@ export default function UploadResults({
   hasMastodon = false,
   hasOnboarded = false,
   userId,
-  twitterId,
   twitter_username,
   mastodon_username,
   bluesky_username,
   isLoading,
   setIsLoading,
   setIsModalOpen,
-  followerCount,
-  followingCount 
 }: UploadResultsProps) {
   const [totalUsers, setTotalUsers] = useState<number>(stats.totalUsers);
+  const session = useSession();
 
+  if (!session) {
+    return null;
+  }
   // Calculate completion status
   const totalSteps = 4; 
   const completedSteps = [hasTwitter, hasBluesky, hasMastodon, hasOnboarded].filter(Boolean).length;
@@ -74,6 +70,7 @@ export default function UploadResults({
   const username = twitter_username || mastodon_username || bluesky_username || '';
   const [totalStats, setTotalStats] = useState<TotalStats | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const tShare = useTranslations();
 
   useEffect(() => {
     if (setIsLoading) {
@@ -151,25 +148,45 @@ export default function UploadResults({
               </p>
             </div>
           </div>
-
-          {/* <div className="bg-black/20 rounded-xl p-4 flex items-center gap-4">
-            <div className="bg-pink-500/20 p-2 rounded-full">
-              <Users className="w-5 h-5 text-pink-400" />
-            </div>
-            <div>
-              <p className="text-sm text-white/60">{t('stats.readyTravelers.label')}</p>
-              <p className="text-2xl font-bold text-white">
-                {formatNumber(totalReady)}
-              </p>
-            </div>
-          </div> */}
         </div>
 
         <p className="text-white/80 text-center">
           {t('inviteFriends')}
         </p>
         <div className={`flex items-center justify-center transition-opacity duration-300 ${isThreeQuartersComplete ? 'opacity-100' : 'opacity-70'}`}>
-          <PartageButton onClick={() => setIsModalOpen(true)} />
+          <PartageButton 
+            providers={{
+              twitter: hasTwitter,
+              bluesky: hasBluesky,
+              mastodon: hasMastodon
+            }}
+            onShare={async (platform) => {
+              let shareText = tShare('dashboard.shareModal.shareText', { count: stats.followers + stats.following });
+              let shareUrl = '';
+              
+              switch (platform) {
+                case 'mastodon':
+                  shareUrl = `${session.data.user.mastodon_instance}/share?text=${encodeURIComponent(shareText)}`;
+                  break;
+                case 'bluesky':
+                  shareUrl = `https://bsky.app/intent/compose?text=${encodeURIComponent(shareText)}`;
+                  break;
+                case 'twitter':
+                  shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`;
+                  break;
+              }
+
+              // Ouvrir directement l'URL
+              if (shareUrl) {
+                window.open(shareUrl, '_blank');
+              }
+
+              // Appeler la fonction onShare du parent si elle existe
+              if (onShare) {
+                onShare(shareUrl, platform);
+              }
+            }} 
+          />
         </div>
 
         {showRedirectMessage && (
