@@ -21,6 +21,8 @@ export default function SignIn() {
   const t = useTranslations('signin')
   const params = useParams()
   const locale = params.locale as string;
+  const [error, setError] = useState<string | null>(null)
+
   // const logoHQX = locale === 'fr' ? logoHQXFR : logoHQXEN;
 
 
@@ -89,6 +91,15 @@ export default function SignIn() {
               </div>
             )}
           </div>
+          {error && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="text-center text-sm text-red-600"
+            >
+              {t(`errors.${error}`)}
+            </motion.div>
+          )}
         </div>
         <Footer />
       </div>

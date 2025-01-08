@@ -1,9 +1,7 @@
 import { NextResponse } from "next/server"
 import { BskyAgent } from '@atproto/api'
-import { auth, signIn } from "@/app/auth"
+import { auth } from "@/app/auth"
 import { supabaseAdapter, BlueskyProfile } from "@/lib/supabase-adapter"
-import { cookies } from 'next/headers'
-import { encode } from 'next-auth/jwt'
 
 export async function POST(req: Request) {
   try {
@@ -12,100 +10,133 @@ export async function POST(req: Request) {
 
     // Bluesky Authentication
     const agent = new BskyAgent({ service: 'https://bsky.social' });
-    const bskySession = await agent.login({ identifier, password });
-    const profile = await agent.getProfile({ actor: bskySession.data.handle });
+    
+    let bskySession;
+    let profile;
+    
+    try {
+      bskySession = await agent.login({ identifier, password });
+      profile = await agent.getProfile({ actor: bskySession.data.handle });
+    } catch (error: any) {
+      console.error('Bluesky authentication error:', error);
+      // Gestion spécifique des erreurs Bluesky
+      if (error.message.includes('Invalid identifier or password')) {
+        return NextResponse.json(
+          { success: false, error: 'Invalid identifier or password' },
+          { status: 401 }
+        );
+      } else if (error.message.includes('Network Error')) {
+        return NextResponse.json(
+          { success: false, error: 'Unable to connect to Bluesky. Please check your internet connection.' },
+          { status: 503 }
+        );
+      } else {
+        return NextResponse.json(
+          { success: false, error: error.message || 'Error in Bluesky authentication' },
+          { status: 401 }
+        );
+      }
+    }
 
     let userId = session?.user?.id;
     let user;
 
-    if (!supabaseAdapter.getUserByAccount || !supabaseAdapter.updateUser || !supabaseAdapter.createUser || !supabaseAdapter.linkAccount) {
+    if (!supabaseAdapter.getUserByAccount || !supabaseAdapter.updateUser || 
+        !supabaseAdapter.createUser || !supabaseAdapter.linkAccount) {
       throw new Error('Required adapter methods are not implemented');
     }
-    // Check if user exists with this Bluesky ID
-    const existingUser = await supabaseAdapter.getUserByAccount({
-      provider: 'bluesky',
-      providerAccountId: bskySession.data.did
-    });
 
-    if (existingUser) {
-      // If the Bluesky account is already linked to another user
-      if (userId && existingUser.id !== userId) {
-        return NextResponse.json(
-          { 
-            success: false, 
-            error: 'This Bluesky account is already linked to another user'
-          },
-          { status: 409 }
-        );
+    try {
+      // Vérification si l'utilisateur existe avec cet ID Bluesky
+      const existingUser = await supabaseAdapter.getUserByAccount({
+        provider: 'bluesky',
+        providerAccountId: bskySession.data.did
+      });
+
+      if (existingUser) {
+        // Si le compte Bluesky est déjà lié à un autre utilisateur
+        if (userId && existingUser.id !== userId) {
+          return NextResponse.json(
+            { success: false, error: 'This Bluesky account is already linked to another user' },
+            { status: 409 }
+          );
+        }
+        // L'utilisateur existe, mise à jour du profil
+        userId = existingUser.id;
+        const blueskyProfile: BlueskyProfile = {
+          did: bskySession.data.did,
+          handle: bskySession.data.handle,
+          displayName: profile.data.displayName,
+          avatar: profile.data.avatar
+        };
+        user = await supabaseAdapter.updateUser(userId, {
+          provider: 'bluesky',
+          profile: blueskyProfile
+        });
+      } else if (userId) {
+        // L'utilisateur est connecté mais pas lié à ce compte Bluesky
+        const blueskyProfile: BlueskyProfile = {
+          did: bskySession.data.did,
+          handle: bskySession.data.handle,
+          displayName: profile.data.displayName,
+          avatar: profile.data.avatar
+        };
+        user = await supabaseAdapter.updateUser(userId, {
+          provider: 'bluesky',
+          profile: blueskyProfile
+        });
+      } else {
+        // Création d'un nouvel utilisateur
+        const blueskyProfile: BlueskyProfile = {
+          did: bskySession.data.did,
+          handle: bskySession.data.handle,
+          displayName: profile.data.displayName,
+          avatar: profile.data.avatar
+        };
+        user = await supabaseAdapter.createUser({
+          provider: 'bluesky',
+          profile: blueskyProfile
+        });
+        userId = user.id;
+
+        // Liaison du compte pour le nouvel utilisateur
+        await supabaseAdapter.linkAccount({
+          provider: 'bluesky',
+          type: 'oauth',
+          providerAccountId: bskySession.data.did,
+          access_token: bskySession.data.accessJwt,
+          refresh_token: bskySession.data.refreshJwt,
+          userId: userId,
+          expires_at: undefined,
+          token_type: 'bearer',
+          scope: undefined,
+        });
       }
-      // User exists, update their profile
-      userId = existingUser.id;
-      const blueskyProfile: BlueskyProfile = {
-        did: bskySession.data.did,
-        handle: bskySession.data.handle,
-        displayName: profile.data.displayName,
-        avatar: profile.data.avatar
-      };
-      user = await supabaseAdapter.updateUser(userId, {
-        provider: 'bluesky',
-        profile: blueskyProfile
-      });
-    } else if (userId) {
-      console.log(`User ${userId} is logged in but not linked to this Bluesky account`);
-      // User is logged in but not linked to this Bluesky account
-      const blueskyProfile: BlueskyProfile = {
-        did: bskySession.data.did,
-        handle: bskySession.data.handle,
-        displayName: profile.data.displayName,
-        avatar: profile.data.avatar
-      };
-      user = await supabaseAdapter.updateUser(userId, {
-        provider: 'bluesky',
-        profile: blueskyProfile
-      });
-    } else {
-      // Create new user
-      console.log('Creating new user with Bluesky data');
-      const blueskyProfile: BlueskyProfile = {
-        did: bskySession.data.did,
-        handle: bskySession.data.handle,
-        displayName: profile.data.displayName,
-        avatar: profile.data.avatar
-      };
-      user = await supabaseAdapter.createUser({
-        provider: 'bluesky',
-        profile: blueskyProfile
-      });
-      userId = user.id;
 
-      // Link account for new user
-      await supabaseAdapter.linkAccount({
-        provider: 'bluesky',
-        type: 'oauth',
-        providerAccountId: bskySession.data.did,
-        access_token: bskySession.data.accessJwt,
-        refresh_token: bskySession.data.refreshJwt,
-        userId: userId,
-        expires_at: undefined,
-        token_type: 'bearer',
-        scope: undefined,
+      return NextResponse.json({
+        success: true,
+        user: {
+          id: userId,
+          bluesky_id: bskySession.data.did,
+          bluesky_username: bskySession.data.handle,
+          bluesky_image: profile.data.avatar,
+        }
       });
+
+    } catch (error: any) {
+      console.error('Database operation error:', error);
+      return NextResponse.json(
+        { success: false, error: 'Error while saving user data' },
+        { status: 500 }
+      );
     }
 
-    return NextResponse.json({
-      success: true,
-      user: {
-        id: userId,
-        bluesky_id: bskySession.data.did,
-        bluesky_username: bskySession.data.handle,
-        bluesky_image: profile.data.avatar,
-        name: profile.data.displayName || bskySession.data.handle
-      }
-    });
-
-  } catch (error) {
-    console.error('Error in Bluesky authentication:', error);
-    return NextResponse.json({ error: 'Authentication failed' }, { status: 401 });
+  } catch (error: any) {
+    console.error('Server error:', error);
+    return NextResponse.json(
+      { success: false, error: 'An unexpected error occurred' },
+      { status: 500 }
+    );
   }
 }
 

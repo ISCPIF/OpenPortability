@@ -1,10 +1,14 @@
 'use client'
 
 import { useState, useEffect } from 'react';
-import { CheckCircle } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { supabase } from '@/lib/supabase';
 import { useTranslations } from 'next-intl';
+import Image from 'next/image';
+
+import stepsOKIcon from '../../../public/newSVG/steps-OK.svg'
+import stepsInitIcon from '../../../public/newSVG/steps-Init.svg'
+import stepsPartielIcon from '../../../public/newSVG/steps-partiel.svg'
 
 function ProgressStep({ 
   step, 
@@ -21,22 +25,13 @@ function ProgressStep({
 }) {
   return (
     <div className="flex-1 relative flex flex-col items-center">
-      {/* Ligne horizontale pour desktop */}
-      {/* {!isLast && (
-        <div 
-          className={`absolute left-[50%] top-6 h-0.5 w-full hidden md:block
-            ${isCompleted ? 'bg-gradient-to-r from-pink-500 to-purple-500' : 'bg-white/10'}`} 
-        />
-      )} */}
-      
-      {/* Cercle avec numéro ou check */}
       <div 
         className={`w-8 h-8 rounded-full flex items-center justify-center mb-3
           ${isCompleted 
             ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-lg shadow-pink-500/20' 
             : 'bg-white/5 text-white/40 border border-white/10'}`}
       >
-        {isCompleted ? <CheckCircle className="w-8 h-8" /> : step}
+        {isCompleted ? <Image src={stepsOKIcon} alt="Completed" width={32} height={32} /> : <Image src={stepsInitIcon} alt="Not started" width={32} height={32} />}
       </div>
       
       {/* Texte */}
