@@ -62,8 +62,15 @@
           "instance": "Select your Mastodon instance",
           "connect" : "Connect",
           "write_instance" : "Enter your instance",
-          "instance_not_yet" : "Add your instance if it's not yet added",
-          "return" : "← Go back to instances list"
+          "instance_not_yet" : "+  Add your instance if it's not yet added",
+          "return" : "← Go back to instances list",
+          "error": {
+            "unreachable": "Instance is unreachable. Please check the URL and try again.",
+            "fetch_instances": "Error fetching instances.",
+            "invalid_format": "Invalid instance format. Example: mastodon.social",
+            "special_chars": "Instance cannot contain special characters",
+            "too_long": "Instance name is too long"
+          }
 
         },
         "bluesky": "BlueSky"
