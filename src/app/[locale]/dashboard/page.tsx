@@ -187,9 +187,12 @@ export default function DashboardPage() {
             <div className="text-center mb-8 md:mb-20 relative z-10">
               {progress === 100 ? (
                 <div className="space-y-2 mt-12">
-                  <h2 className={`${plex.className} text-xl font-semibold text-indigo-100`}>
-                    {t('migrationStep.completed')}
+                  <h2 className={`${plex.className} text-xl font-semibold text-indigo-100 text-balance`}>
+                    {t('migrationStep.completed1')}
                   </h2>
+                  <p className={`${plex.className} text-indigo-200 text-balance`}>
+                    {t('migrationStep.completed2', { count: daysLeft })}
+                  </p>
                   <p className={`${plex.className} text-indigo-200`}>
                     {t('migrationStep.daysLeft', { count: daysLeft })}
                   </p>

@@ -190,8 +190,9 @@
     "addSocialNetwork": "Add social network",
     "addSocialNetworkDescription": "Connect to other social networks to enhance your experience",
     "migrationStep": {
-      "completed": "You have completed the first step of your migration",
-      "daysLeft": "{count} days left before the big departure",
+      "completed1": "Congratulations! You’ve completed the first of the two migration steps.",
+      "completed2": "Make sure your X followers also register on this platform, and come back on #January20 to activate your reconnection.",
+      "daysLeft": "{count} days to go!",
       "nextSteps": "Complete the following steps to sail to new shores!"
     },
     "importButton": "Import my Twitter/X archive",
