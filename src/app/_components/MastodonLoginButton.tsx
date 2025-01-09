@@ -183,7 +183,7 @@ export default function MastodonLoginButton({
               />
             </div> */}
 
-            <div className="p-1">
+            <div className="p-1 max-h-60 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 hover:scrollbar-thumb-purple-400">
               {filteredInstances.map((instance, index) => (
                 <motion.button
                   key={instance}
@@ -191,13 +191,13 @@ export default function MastodonLoginButton({
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.05 }}
                   onClick={() => handleSignIn(instance)}
-                  className="w-full p-3 flex items-center justify-between bg-gray-50 
+                  className="w-full p-3 mb-2 flex items-center justify-between bg-gray-50 
                             hover:bg-purple-50 border border-gray-200 hover:border-purple-200 
                             rounded-lg transition-all duration-200 group"
                 >
                   <span className="text-gray-700 group-hover:text-purple-700">{instance}</span>
                   <ChevronDown className="w-4 h-4 text-gray-400 group-hover:text-purple-500 
-                                       rotate-[-90deg] transition-all duration-200" />
+                                      rotate-[-90deg] transition-all duration-200" />
                 </motion.button>
               ))}
             </div>
