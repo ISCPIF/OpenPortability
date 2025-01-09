@@ -7,14 +7,14 @@ import { ChevronDown, Plus, Search, X } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
 interface MastodonLoginButtonProps {
-    onLoadingChange?: (loading: boolean) => void
-    onError?: (error: string) => void
-    isConnected?: boolean
-    isSelected?: boolean
-    className?: string
-    onClick?: () => void
-    showForm?: boolean
-  }
+  onLoadingChange?: (loading: boolean) => void
+  onError?: (error: string) => void
+  isConnected?: boolean
+  isSelected?: boolean
+  className?: string
+  onClick?: () => void
+  showForm?: boolean
+}
 
 const itemVariants = {
   hidden: { opacity: 0, y: 20 },
@@ -24,8 +24,8 @@ const itemVariants = {
 
 const formVariants = {
   hidden: { opacity: 0, scale: 0.95 },
-  visible: { 
-    opacity: 1, 
+  visible: {
+    opacity: 1,
     scale: 1,
     transition: {
       type: "spring",
@@ -33,8 +33,8 @@ const formVariants = {
       damping: 30
     }
   },
-  exit: { 
-    opacity: 0, 
+  exit: {
+    opacity: 0,
     scale: 0.95,
     transition: {
       duration: 0.2
@@ -43,8 +43,8 @@ const formVariants = {
 }
 
 export default function MastodonLoginButton({
-    onLoadingChange = () => { },
-    onError = () => { },
+  onLoadingChange = () => { },
+  onError = () => { },
     isConnected = false,
     isSelected = false,
     className = "",
@@ -52,11 +52,11 @@ export default function MastodonLoginButton({
     showForm = false
   }: MastodonLoginButtonProps) {
     const [instanceText, setInstanceText] = useState('')
-    const [instances, setInstances] = useState<string[]>([])
-    const [showCustomInput, setShowCustomInput] = useState(false)
-    const [searchTerm, setSearchTerm] = useState('')
-    const [instanceError, setInstanceError] = useState('')
-    const t = useTranslations('dashboardLoginButtons')
+  const [instances, setInstances] = useState<string[]>([])
+  const [showCustomInput, setShowCustomInput] = useState(false)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [instanceError, setInstanceError] = useState('')
+  const t = useTranslations('dashboardLoginButtons')
 
 
   useEffect(() => {
@@ -77,25 +77,25 @@ export default function MastodonLoginButton({
     }
   }, [showForm])
 
-  const filteredInstances = instances.filter(instance => 
+  const filteredInstances = instances.filter(instance =>
     instance.toLowerCase().includes(searchTerm.toLowerCase())
   ).slice(0, 5)
 
   const validateInstance = (instance: string): boolean => {
     setInstanceError('')
-    
+
     // Enlever les espaces
     instance = instance.trim()
-    
+
     // Vérifier que ce n'est pas vide
     if (!instance) {
       setInstanceError(t('services.mastodon.error.required'))
       return false
     }
 
-    // Vérifier le format (juste un nom de domaine simple)
-    const domainRegex = /^[a-zA-Z0-9][a-zA-Z0-9-]*\.[a-zA-Z]{2,}$/
-    if (!domainRegex.test(instance)) {
+    // Vérification basique du hostname de l’instance
+    const hostnameRegex = /^[a-zA-Z0-9][a-zA-Z0-9\.\-]+$/;
+    if (!hostnameRegex.test(instance)) {
       setInstanceError(t('services.mastodon.error.invalid_format'))
       return false
     }
@@ -105,7 +105,7 @@ export default function MastodonLoginButton({
 
   const handleSignIn = async (instance: string) => {
     if (!instance) return
-    
+
     // Pour une instance personnalisée, on valide
     if (!instances.includes(instance) && !validateInstance(instance)) {
       return
@@ -140,9 +140,9 @@ export default function MastodonLoginButton({
         exit="exit"
         onClick={onClick}
         className={`flex items-center justify-center gap-2 w-full px-4 py-2.5 text-white 
-                   ${isSelected 
-                     ? 'bg-[#4c32b5] ring-2 ring-purple-400/50' 
-                     : 'bg-[#563ACC] hover:bg-[#4c32b5]'} 
+                   ${isSelected
+            ? 'bg-[#4c32b5] ring-2 ring-purple-400/50'
+            : 'bg-[#563ACC] hover:bg-[#4c32b5]'} 
                    rounded-xl transition-all duration-200 ${plex.className} ${className}
                    hover:shadow-lg hover:shadow-purple-500/20`}
         disabled={isConnected}
@@ -151,15 +151,15 @@ export default function MastodonLoginButton({
         <span className="font-medium">
           {isConnected ? t('connected') : t('services.mastodon.title')}
         </span>
-        <ChevronDown 
-          className={`w-4 h-4 transition-transform duration-300 ${isSelected ? 'rotate-180' : ''}`} 
+        <ChevronDown
+          className={`w-4 h-4 transition-transform duration-300 ${isSelected ? 'rotate-180' : ''}`}
         />
       </motion.button>
     )
   }
 
   return (
-    <motion.div 
+    <motion.div
       variants={formVariants}
       initial="hidden"
       animate="visible"
@@ -224,7 +224,7 @@ export default function MastodonLoginButton({
                 <X className="w-5 h-5 text-gray-500" />
               </button>
             </div>
-            
+
             <div className="relative">
               <input
                 type="text"
@@ -237,10 +237,10 @@ export default function MastodonLoginButton({
                 className={`w-full px-4 py-3 bg-gray-50 border rounded-xl 
                           text-gray-800 placeholder-gray-500 
                           focus:ring-2 focus:outline-none transition-all duration-200
-                          ${instanceError 
-                            ? 'border-red-300 focus:border-red-400 focus:ring-red-400/20' 
-                            : 'border-gray-200 focus:border-purple-400 focus:ring-purple-400/20'
-                          }`}
+                          ${instanceError
+                    ? 'border-red-300 focus:border-red-400 focus:ring-red-400/20'
+                    : 'border-gray-200 focus:border-purple-400 focus:ring-purple-400/20'
+                  }`}
               />
               {instanceError && (
                 <motion.p
