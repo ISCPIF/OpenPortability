@@ -176,8 +176,9 @@
     "addSocialNetwork": "Ajouter un réseau social",
     "addSocialNetworkDescription": "Connectez-vous à d'autres réseaux sociaux pour enrichir votre expérience",
     "migrationStep": {
-      "completed": "Vous avez réalisé la première étape de votre migration",
-      "daysLeft": "{count} jours restants avant le grand départ",
+      "completed1": "Bravo ! Vous avez terminé la première des deux étapes de la migration.",
+      "completed2": "Assurez-vous que vos abonnés s’inscrivent également sur HelloQuitX et revenez le #20Janvier pour activer votre reconnexion.",
+      "daysLeft": "Plus que {count} jours !",
       "nextSteps": "Effectuez les étapes suivantes pour voguer vers de nouveaux rivages !"
     },
     "importButton": "Importer mon archive Twitter/X",
