@@ -59,12 +59,10 @@
         "twitter": "Twitter/X",
         "mastodon": {
           "title": "Mastodon",
-          "instance": "Select your Mastodon instance",
+          "instance": "Where is your account hosted? (ex. mastodon.social)",
           "connect" : "Connect",
-          "write_instance" : "Enter your instance",
-          "instance_not_yet" : "+  Add your instance if it's not yet added",
-          "return" : "← Go back to instances list",
           "error": {
+            "required": "The name of your server is required",
             "unreachable": "Instance is unreachable. Please check the URL and try again.",
             "fetch_instances": "Error fetching instances.",
             "invalid_format": "Invalid instance format. Example: mastodon.social",
