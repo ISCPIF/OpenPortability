@@ -16,6 +16,13 @@ export async function POST(req: Request) {
     
     try {
       bskySession = await agent.login({ identifier, password });
+      console.log('✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ [bluesky] Login response:', {
+        did: bskySession.data.did,
+        handle: bskySession.data.handle,
+        hasAccessJwt: !!bskySession.data.accessJwt,
+        hasRefreshJwt: !!bskySession.data.refreshJwt,
+        fullSession: bskySession // Pour voir toute la session
+      })
       profile = await agent.getProfile({ actor: bskySession.data.handle });
     } catch (error: any) {
       console.error('Bluesky authentication error:', error);

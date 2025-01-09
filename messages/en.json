@@ -375,5 +375,16 @@
       "mac": "Mac",
       "linux": "Linux"
     }
+  },
+"migrate": {
+    "title": "Migrate your subscriptions",
+    "matches_found": "matches found",
+    "followers": "Followers",
+    "following": "Following",
+    "loading": "Loading your matches",
+    "selectAll": "Select all",
+    "deselectAll": "Deselect all",
+    "startMigration": "Start migration",
+    "migrating": "Migrating..."
   }
 }
