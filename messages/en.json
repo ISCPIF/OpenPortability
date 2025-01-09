@@ -121,23 +121,19 @@
   },
   "progressSteps": {
     "dashboard": {
-      "title": "Dashboard",
-      "description": "Successfully connected to HelloQuitX platform!"
+      "title": "Welcome aboard"
     },
     "socialNetworks": {
-      "title": "Social Networks",
-      "description": "Add a social network"
+      "title": "Link my social networks accounts"
     },
     "import": {
-      "title": "Import",
+      "title": "Upload my X/Twitter archive",
       "description": {
-        "withStats": "{following} following, {followers} followers",
-        "noStats": "Import your subscriptions"
+        "withStats": "{following} following, {followers} followers"
       }
     },
     "share": {
-      "title": "Share",
-      "description": "Help your friends migrate"
+      "title": "Share with my community"
     }
   },
   "successModal": {
