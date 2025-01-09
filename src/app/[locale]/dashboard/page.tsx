@@ -11,7 +11,6 @@ import ConnectedAccounts from '@/app/_components/ConnectedAccounts';
 import MatchedBlueSkyProfiles from '@/app/_components/MatchedBlueSkyProfiles';
 import UploadResults from '@/app/_components/UploadResults';
 import ProgressSteps from '@/app/_components/ProgressSteps';
-import PartageButton from '@/app/_components/PartageButton';
 import DahsboardSea from '@/app/_components/DashboardSea';
 import { useSession, signIn } from 'next-auth/react';
 import { motion } from 'framer-motion';
@@ -234,44 +233,44 @@ export default function DashboardPage() {
                 />
               </div>
             )}
-            {/* {connectedServicesCount < 3 || !hasOnboarded && ( */}
-            <div className="flex justify-center gap-4 relative z-10 bg-white/5 backdrop-blur-sm rounded-2xl p-4">
-              {connectedServicesCount < 3 && (
-                <div className="flex-1 max-w-md">
-       <DashboardLoginButtons
-                    connectedServices={{
-                      twitter: !!session?.user?.twitter_id,
-                      bluesky: !!session?.user?.bluesky_id,
-                      mastodon: !!session?.user?.mastodon_id
-                    }}
-                    hasUploadedArchive={!!stats}
-                    onLoadingChange={setIsLoading}
-                    mastodonInstances={mastodonInstances}
-                  />
-                </div>
-              )}
+            {(connectedServicesCount < 3 || !hasOnboarded) &&
+              <div className="flex flex-col sm:flex-row justify-center gap-4 relative z-10 bg-white/5 backdrop-blur-sm rounded-2xl p-4">
+                {connectedServicesCount < 3 && (
+                  <div className="flex-1 max-w-md">
+                    <DashboardLoginButtons
+                      connectedServices={{
+                        twitter: !!session?.user?.twitter_id,
+                        bluesky: !!session?.user?.bluesky_id,
+                        mastodon: !!session?.user?.mastodon_id
+                      }}
+                      hasUploadedArchive={!!stats}
+                      onLoadingChange={setIsLoading}
+                      mastodonInstances={mastodonInstances}
+                    />
+                  </div>
+                )}
 
-              {!hasOnboarded && (
-                <div className="flex-1 max-w-md flex items-center space-y-4 p-4">
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => {
-                      const locale = params.locale as string || 'fr';
-                      router.push(`/${locale}/upload`);
-                    }}
-                    className="w-full flex items-center justify-between px-8 py-4 bg-white rounded-full text-black font-medium hover:bg-gray-50 transition-colors relative overflow-hidden group"
-                  >
-                    <div className="flex items-center gap-3">
-                      <Ship className="w-6 h-6" />
-                      <span>{t('importButton')}</span>
-                    </div>
-                    <span className="text-gray-400 group-hover:text-black transition-colors">›</span>
-                  </motion.button>
-                </div>
-              )}
-            </div>
-            {/* )} */}
+                {!hasOnboarded && (
+                  <div className="flex-1 max-w-md flex items-center space-y-4 py-4">
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => {
+                        const locale = params.locale as string || 'fr';
+                        router.push(`/${locale}/upload`);
+                      }}
+                      className="w-full flex items-center justify-between px-8 py-4 bg-white rounded-full text-black font-medium hover:bg-gray-50 transition-colors relative overflow-hidden group"
+                    >
+                      <div className="flex items-center gap-3">
+                        <Ship className="w-6 h-6" />
+                        <span>{t('importButton')}</span>
+                      </div>
+                      <span className="text-gray-400 group-hover:text-black transition-colors">›</span>
+                    </motion.button>
+                  </div>
+                )}
+              </div>
+            }
 
             <div className="mt-16 space-y-16 mb-16">
               {session?.user?.id && (
@@ -285,7 +284,7 @@ export default function DashboardPage() {
                   >
                     <Mail className="w-5 h-5" />
                     <span className={`${plex.className} text-lg`}>{t('newsletter.subscribe')}</span>
-                    </motion.button>
+                  </motion.button>
                 </div>
               )}
               <div className="flex flex-col items-center text-center space-y-4 mb-4">

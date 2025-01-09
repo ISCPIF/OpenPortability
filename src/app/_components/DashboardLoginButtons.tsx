@@ -50,7 +50,7 @@ export default function DashboardLoginButtons({
   const [instanceText, setInstanceText] = useState('')
   const [showCustomInput, setShowCustomInput] = useState(false)
   const t = useTranslations('dashboardLoginButtons')
-  
+
   const identifierRef = useRef<HTMLInputElement>(null)
   const passwordRef = useRef<HTMLInputElement>(null)
 
@@ -112,7 +112,7 @@ export default function DashboardLoginButtons({
   )
 
   return (
-    <div className="space-y-2">
+    <div className="flex flex-col justify-evenly gap-3 h-full">
       {!connectedServices.twitter && (
         <>
           {renderServiceButton('twitter', twitterIcon, t('connectedDashboard.twitter'))}
@@ -142,28 +142,28 @@ export default function DashboardLoginButtons({
         </>
       )}
 
-    {!connectedServices.mastodon && (
-            <>
-              {renderServiceButton('mastodon', mastodonIcon, t('connectedDashboard.mastodon'))}
-              <AnimatePresence>
-                {selectedService === 'mastodon' && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
-                    className="overflow-hidden"
-                  >
-                    <div className="bg-white rounded-2xl shadow-xl text-black mt-2">
-                      <MastodonLoginButton 
-                        onLoadingChange={onLoadingChange}
-                        showForm={true}
-                      />
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </>
-          )}
+      {!connectedServices.mastodon && (
+        <>
+          {renderServiceButton('mastodon', mastodonIcon, t('connectedDashboard.mastodon'))}
+          <AnimatePresence>
+            {selectedService === 'mastodon' && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="overflow-hidden"
+              >
+                <div className="bg-white rounded-2xl shadow-xl text-black mt-2">
+                  <MastodonLoginButton
+                    onLoadingChange={onLoadingChange}
+                    showForm={true}
+                  />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </>
+      )}
 
     </div>
   )
