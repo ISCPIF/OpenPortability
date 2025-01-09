@@ -107,23 +107,19 @@
   },
   "progressSteps": {
     "dashboard": {
-      "title": "Dashboard",
-      "description": "Connexion réussie à la plateforme HelloQuitteX !"
+      "title": "Bienvenue à bord"
     },
     "socialNetworks": {
-      "title": "Réseaux sociaux",
-      "description": "Ajoutez un réseau social"
+      "title": "J’associe mes comptes de réseaux sociaux"
     },
     "import": {
-      "title": "Import",
+      "title": "J’importe mon archive X/Twitter",
       "description": {
-        "withStats": "{following} abos, {followers} abonnés",
-        "noStats": "Importez vos abonnements"
+        "withStats": "{following} abos, {followers} abonnés"
       }
     },
     "share": {
-      "title": "Partage",
-      "description": "Aidez vos amis à migrer"
+      "title": "Je partage à ma communauté"
     }
   },
   "successModal": {
