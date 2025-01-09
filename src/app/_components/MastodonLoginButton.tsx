@@ -45,15 +45,14 @@ const formVariants = {
 export default function MastodonLoginButton({
   onLoadingChange = () => { },
   onError = () => { },
-    isConnected = false,
-    isSelected = false,
-    className = "",
-    onClick = () => {},
-    showForm = false
-  }: MastodonLoginButtonProps) {
-    const [instanceText, setInstanceText] = useState('')
+  isConnected = false,
+  isSelected = false,
+  className = "",
+  onClick = () => { },
+  showForm = false
+}: MastodonLoginButtonProps) {
+  const [instanceText, setInstanceText] = useState('')
   const [instances, setInstances] = useState<string[]>([])
-  const [showCustomInput, setShowCustomInput] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [instanceError, setInstanceError] = useState('')
   const t = useTranslations('dashboardLoginButtons')
@@ -76,10 +75,6 @@ export default function MastodonLoginButton({
       fetchInstances()
     }
   }, [showForm])
-
-  const filteredInstances = instances.filter(instance =>
-    instance.toLowerCase().includes(searchTerm.toLowerCase())
-  ).slice(0, 5)
 
   const validateInstance = (instance: string): boolean => {
     setInstanceError('')
@@ -159,116 +154,60 @@ export default function MastodonLoginButton({
   }
 
   return (
-    <motion.div
-      variants={formVariants}
-      initial="hidden"
-      animate="visible"
-      exit="exit"
-      className="p-6 bg-white rounded-2xl shadow-xl"
+    <div
+      className={`px-4 py-4 bg-white rounded-2xl shadow-xl text-sm text-gray-800`}
     >
-      <div className="space-y-6">
-        {!showCustomInput ? (
-          <>
-            {/* <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder={t('services.mastodon.search')}
-                className="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl 
-                          text-gray-800 placeholder-gray-500 focus:border-purple-400 
-                          focus:ring-2 focus:ring-purple-400/20 focus:outline-none 
-                          transition-all duration-200"
-              />
-            </div> */}
-
-            <div className="p-1">
-              {filteredInstances.map((instance, index) => (
-                <motion.button
-                  key={instance}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                  onClick={() => handleSignIn(instance)}
-                  className="w-full p-3 flex items-center justify-between bg-gray-50 
-                            hover:bg-purple-50 border border-gray-200 hover:border-purple-200 
-                            rounded-lg transition-all duration-200 group"
-                >
-                  <span className="text-gray-700 group-hover:text-purple-700">{instance}</span>
-                  <ChevronDown className="w-4 h-4 text-gray-400 group-hover:text-purple-500 
-                                       rotate-[-90deg] transition-all duration-200" />
-                </motion.button>
-              ))}
-            </div>
-
-            <button
-              onClick={() => setShowCustomInput(true)}
-              className="flex items-center gap-2 text-sm text-purple-600 hover:text-purple-500 
-                        transition-colors group"
-            >
-              {/* <Plus className="w-4 h-4 transition-transform group-hover:scale-110" /> */}
-              {t('services.mastodon.instance_not_yet')}
-            </button>
-          </>
-        ) : (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              {/* <h3 className="text-lg font-medium text-gray-900">
-                {t('services.mastodon.custom_instance')}
-              </h3> */}
-              <button
-                onClick={() => setShowCustomInput(false)}
-                className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+      <div className="">
+        <datalist id="known_instances">
+          {instances.map((instance, index) => (
+            <option key={index} value={instance} />
+          ))}
+        </datalist>
+        <form onSubmit={() => handleSignIn(instanceText)}>
+          <div className="relative">
+            <p>
+              {t('services.mastodon.instance')}
+            </p>
+            <input
+              type="text" list="known_instances"
+              value={instanceText}
+              onChange={(e) => {
+                setInstanceError('')
+                const instanceName = e.target.value;
+                validateInstance(instanceName)
+                setInstanceText(e.target.value)
+              }}
+              className={`w-full px-4 py-3 my-3 bg-gray-50 border rounded-xl 
+                              text-gray-800 placeholder-gray-500 
+                              focus:ring-2 focus:outline-none 
+                              ${instanceError
+                  ? 'border-red-300 focus:border-red-400 focus:ring-red-400/20'
+                  : 'border-gray-200 focus:border-purple-400 focus:ring-purple-400/20'
+                }`}
+            />
+            {instanceError && (
+              <p
+                className="mt-2 text-sm text-red-600"
               >
-                <X className="w-5 h-5 text-gray-500" />
-              </button>
-            </div>
-
-            <div className="relative">
-              <input
-                type="text"
-                value={instanceText}
-                onChange={(e) => {
-                  setInstanceText(e.target.value)
-                  setInstanceError('')
-                }}
-                placeholder={t('services.mastodon.write_instance')}
-                className={`w-full px-4 py-3 bg-gray-50 border rounded-xl 
-                          text-gray-800 placeholder-gray-500 
-                          focus:ring-2 focus:outline-none transition-all duration-200
-                          ${instanceError
-                    ? 'border-red-300 focus:border-red-400 focus:ring-red-400/20'
-                    : 'border-gray-200 focus:border-purple-400 focus:ring-purple-400/20'
-                  }`}
-              />
-              {instanceError && (
-                <motion.p
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="mt-2 text-sm text-red-600"
-                >
-                  {instanceError}
-                </motion.p>
-              )}
-            </div>
-
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={() => handleSignIn(instanceText)}
-              className="w-full py-3 px-4 bg-purple-600 hover:bg-purple-700 
-                        text-white font-medium rounded-xl shadow-lg 
-                        shadow-purple-600/20 hover:shadow-purple-600/30 
-                        transition-all duration-200 flex items-center justify-center gap-2"
-              disabled={!instanceText}
-            >
-              <SiMastodon className="w-5 h-5" />
-              {t('services.mastodon.connect')}
-            </motion.button>
+                {instanceError}
+              </p>
+            )}
           </div>
-        )}
+
+          <button
+            type="submit"
+            className="w-full py-3 px-4 bg-purple-600 hover:bg-purple-700 
+                            text-white font-medium rounded-xl shadow-lg 
+                            shadow-purple-600/20 hover:shadow-purple-600/30 
+                            disabled:bg-purple-200
+                             flex items-center justify-center gap-2"
+            disabled={!instanceText || !!instanceError}
+          >
+            <SiMastodon className="w-5 h-5" />
+            {t('services.mastodon.connect')}
+          </button>
+        </form>
       </div>
-    </motion.div>
+    </div>
   )
 }
