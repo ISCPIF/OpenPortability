@@ -10,40 +10,41 @@ import stepsOKIcon from '../../../public/newSVG/steps-OK.svg'
 import stepsInitIcon from '../../../public/newSVG/steps-Init.svg'
 import stepsPartielIcon from '../../../public/newSVG/steps-partiel.svg'
 
-function ProgressStep({ 
-  step, 
-  title, 
-  description, 
-  isCompleted, 
+function ProgressStep({
+  step,
+  title,
+  description,
+  isCompleted,
   isLast = false
-}: { 
+}: {
   step: number;
   title: string;
-  description: string;
+  description?: string;
   isCompleted: boolean;
   isLast?: boolean;
 }) {
   return (
     <div className="flex-1 relative flex flex-col items-center">
-      <div 
+      <div
         className={`w-8 h-8 rounded-full flex items-center justify-center mb-3
-          ${isCompleted 
-            ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-lg shadow-pink-500/20' 
+          ${isCompleted
+            ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-lg shadow-pink-500/20'
             : 'bg-white/5 text-white/40 border border-white/10'}`}
       >
         {isCompleted ? <Image src={stepsOKIcon} alt="Completed" width={32} height={32} /> : <Image src={stepsInitIcon} alt="Not started" width={32} height={32} />}
       </div>
-      
+
       {/* Texte */}
       <div className="text-center px-2">
         <h3 className={`font-medium mb-1 text-sm
           ${isCompleted ? 'text-white' : 'text-white/60'}`}>
           {title}
         </h3>
-        <p className={`text-xs leading-tight
+        {description &&
+          <p className={`text-xs leading-tight
           ${isCompleted ? 'text-white/80' : 'text-white/40'}`}>
-          {description}
-        </p>
+            {description}
+          </p>}
       </div>
     </div>
   );
@@ -62,9 +63,9 @@ interface ProgressStepsProps {
   onProgressChange?: (progress: number) => void;
 }
 
-export default function ProgressSteps({ 
-  hasTwitter, 
-  hasBluesky, 
+export default function ProgressSteps({
+  hasTwitter,
+  hasBluesky,
   hasMastodon,
   hasOnboarded,
   stats,
@@ -149,32 +150,29 @@ export default function ProgressSteps({
         <ProgressStep
           step={1}
           title={t('dashboard.title')}
-          description={t('dashboard.description')}
           isCompleted={true}
         />
-        
+
         <ProgressStep
           step={2}
           title={t('socialNetworks.title')}
-          description={t('socialNetworks.description')}
           isCompleted={getConnectedAccountsCount() >= 2}
         />
-        
+
         <ProgressStep
           step={3}
           title={t('import.title')}
           description={
             hasOnboarded
               ? t('import.description.withStats', { following: stats.following, followers: stats.followers })
-              : t('import.description.noStats')
+              : ""
           }
           isCompleted={hasOnboarded}
         />
-        
+
         <ProgressStep
           step={4}
           title={t('share.title')}
-          description={t('share.description')}
           isCompleted={hasSuccessfulShare}
           isLast={true}
         />
