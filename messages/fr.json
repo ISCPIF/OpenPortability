@@ -59,15 +59,13 @@
         "twitter": "Twitter/X",
         "mastodon": {
           "title": "Mastodon",
-          "instance": "Selectionnez votre instance Mastodon",
+          "instance": "Où est hébergé votre compte ? (ex. piaille.fr)",
           "connect": "Se connecter",
-          "write_instance" : "Entrez votre instance",
-          "instance_not_yet" : "+  Rajoutez votre instance si elle n'est pas encore ajoutée",
-          "return" : "← Retour à la liste des instances",
           "error": {
+            "required": "Le nom de votre serveur est requis. ",
             "unreachable": "L'instance est inaccessible. Veuillez vérifier l'URL et réessayer.",
             "fetch_instances": "Erreur lors de la récupération des instances.",
-            "invalid_format": "Format d'instance invalide. Exemple: mastodon.social",
+            "invalid_format": "Format d'instance invalide. Exemple: piaille.fr",
             "special_chars": "L'instance ne peut pas contenir de caractères spéciaux",
             "too_long": "Le nom d'instance est trop long"
           }
