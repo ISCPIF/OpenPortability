@@ -8,6 +8,7 @@ import type { AdapterUser } from "next-auth/adapters"
 import { isTwitterProfile, isMastodonProfile, isBlueskyProfile } from "./auth"
 import type { AdapterAccountType } from "next-auth/adapters"
 import type { CustomAdapterUser } from '@/lib/supabase-adapter'
+import { BskyAgent } from '@atproto/api'
 
 import { auth } from "./auth"
 
@@ -215,20 +216,53 @@ async jwt({ token, user, account, profile }) {
     {
       id: "bluesky",
       name: "Bluesky",
-      type: "credentials",
-      credentials: {},
-      async authorize(credentials): Promise<CustomAdapterUser | null> {
-        if (!credentials) {
-          console.error('Missing credentials');
-          return null;
-        }
+      type: "oauth",
+      clientId: process.env.BLUESKY_CLIENT_ID,
+      // clientSecret: process.env.TWITTER_CLIENT_SECRET,
+      authorization: "https://bsky.social", // URL factice mais nécessaire
+      token: {
+                url: "https://bsky.social/xrpc/com.atproto.server.createSession",
 
-        try {
-          // The user object should already be properly formatted from the API
-          return credentials as unknown as CustomAdapterUser;
-        } catch (error) {
-          console.error('Bluesky auth error:', error);
-          return null;
+        async request({ params, provider }) {
+          const { identifier, password } = params;
+          const agent = new BskyAgent({ service: 'https://bsky.social' });
+          const session = await agent.login({ identifier, password });
+          
+          return {
+            tokens: {
+              access_token: session.data.accessJwt,
+              refresh_token: session.data.refreshJwt,
+              expires_at: null,
+              // On stocke aussi le did et le handle
+              did: session.data.did,
+              handle: session.data.handle
+            }
+          };
+        }
+      },
+      userinfo: {
+        async request({ tokens }) {
+          const agent = new BskyAgent({ service: 'https://bsky.social' });
+          await agent.resumeSession({
+            accessJwt: tokens.access_token,
+            refreshJwt: tokens.refresh_token,
+            did: tokens.did,
+            handle: tokens.handle,
+            active: true // On ajoute le champ active requis
+          });
+          const profile = await agent.getProfile({ actor: agent.session?.did || '' });
+          return profile.data;
+        }
+      },
+      profile(profile) {
+        return {
+          id: profile.did,
+          name: profile.handle,
+          email: null,
+          image: profile.avatar,
+          has_onboarded: false,
+          hqx_newsletter: false,
+          oep_accepted: false
         }
       }
     },

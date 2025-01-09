@@ -362,5 +362,16 @@
         }
       }
     }
+  },
+  "migrate": {
+    "title": "Migration de vos abonnements",
+    "matches_found": "correspondances trouvées",
+    "followers": "Abonnés",
+    "following": "Abonnements",
+    "loading": "Chargement de vos correspondances",
+    "selectAll": "Tout sélectionner",
+    "deselectAll": "Tout désélectionner",
+    "startMigration": "Démarrer la migration",
+    "migrating": "Migration en cours..."
   }
 }

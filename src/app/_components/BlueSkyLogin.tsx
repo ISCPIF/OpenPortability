@@ -30,46 +30,32 @@ export default function BlueSkyLogin({ onLoginComplete }: BlueSkyLoginProps) {
     }
   }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
+  const handleBlueskyLogin = async () => {
     setIsLoading(true);
-
     try {
       const identifier = identifierRef.current?.value;
       const password = passwordRef.current?.value;
 
       if (!identifier || !password) {
-        throw new Error(t('form.errors.missingFields'));
-      }
-      const response = await fetch('/api/auth/bluesky', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ identifier, password }),
-      });
-
-      const data = await response.json();
-      
-      if (!data.success) {
-        setError(data.error);
+        setError(t('form.errors.missingFields'));
         return;
       }
-      
+
       const result = await signIn('bluesky', {
-        ...data.user,
-        redirect: false
+        identifier,
+        password,
+        redirect: false,
+        callbackUrl: '/fr/dashboard'
       });
 
       if (result?.error) {
-        throw new Error(result.error);
-      }
-
-      if (result?.ok) {
+        setError('Échec de la connexion');
+      } else if (result?.ok) {
         router.push(`/${locale}/dashboard`);
       }
-
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t('form.errors.default'));
+    } catch (error) {
+      console.error('Error:', error);
+      setError('Une erreur est survenue');
     } finally {
       setIsLoading(false);
       clearSensitiveData();
@@ -108,8 +94,10 @@ export default function BlueSkyLogin({ onLoginComplete }: BlueSkyLoginProps) {
             {t('title')}
           </h2>
       </div>
-
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={(e) => {
+      e.preventDefault();
+      handleBlueskyLogin();
+    }} className="space-y-4 md:space-y-6">
         <div className="space-y-5">
           <div>
             <label htmlFor="identifier" className={`${plex.className} block text-sm font-medium text-gray-500 mb-2`}>
