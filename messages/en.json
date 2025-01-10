@@ -59,12 +59,10 @@
         "twitter": "Twitter/X",
         "mastodon": {
           "title": "Mastodon",
-          "instance": "Select your Mastodon instance",
+          "instance": "Where is your account hosted? (ex. mastodon.social)",
           "connect" : "Connect",
-          "write_instance" : "Enter your instance",
-          "instance_not_yet" : "+  Add your instance if it's not yet added",
-          "return" : "← Go back to instances list",
           "error": {
+            "required": "The name of your server is required",
             "unreachable": "Instance is unreachable. Please check the URL and try again.",
             "fetch_instances": "Error fetching instances.",
             "invalid_format": "Invalid instance format. Example: mastodon.social",
@@ -121,23 +119,19 @@
   },
   "progressSteps": {
     "dashboard": {
-      "title": "Dashboard",
-      "description": "Successfully connected to HelloQuitX platform!"
+      "title": "Welcome aboard"
     },
     "socialNetworks": {
-      "title": "Social Networks",
-      "description": "Add a social network"
+      "title": "Link my social networks accounts"
     },
     "import": {
-      "title": "Import",
+      "title": "Upload my X/Twitter archive",
       "description": {
-        "withStats": "{following} following, {followers} followers",
-        "noStats": "Import your subscriptions"
+        "withStats": "{following} following, {followers} followers"
       }
     },
     "share": {
-      "title": "Share",
-      "description": "Help your friends migrate"
+      "title": "Share with my community"
     }
   },
   "successModal": {
@@ -190,8 +184,9 @@
     "addSocialNetwork": "Add social network",
     "addSocialNetworkDescription": "Connect to other social networks to enhance your experience",
     "migrationStep": {
-      "completed": "You have completed the first step of your migration",
-      "daysLeft": "{count} days left before the big departure",
+      "completed1": "Congratulations! You’ve completed the first of the two migration steps.",
+      "completed2": "Make sure your X followers also register on this platform, and come back on #January20 to activate your reconnection.",
+      "daysLeft": "{count} days to go!",
       "nextSteps": "Complete the following steps to sail to new shores!"
     },
     "importButton": "Import my Twitter/X archive",
