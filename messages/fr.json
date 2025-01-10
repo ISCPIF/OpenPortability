@@ -59,15 +59,13 @@
         "twitter": "Twitter/X",
         "mastodon": {
           "title": "Mastodon",
-          "instance": "Selectionnez votre instance Mastodon",
+          "instance": "Où est hébergé votre compte ? (ex. piaille.fr)",
           "connect": "Se connecter",
-          "write_instance" : "Entrez votre instance",
-          "instance_not_yet" : "+  Rajoutez votre instance si elle n'est pas encore ajoutée",
-          "return" : "← Retour à la liste des instances",
           "error": {
+            "required": "Le nom de votre serveur est requis. ",
             "unreachable": "L'instance est inaccessible. Veuillez vérifier l'URL et réessayer.",
             "fetch_instances": "Erreur lors de la récupération des instances.",
-            "invalid_format": "Format d'instance invalide. Exemple: mastodon.social",
+            "invalid_format": "Format d'instance invalide. Exemple: piaille.fr",
             "special_chars": "L'instance ne peut pas contenir de caractères spéciaux",
             "too_long": "Le nom d'instance est trop long"
           }
@@ -107,23 +105,19 @@
   },
   "progressSteps": {
     "dashboard": {
-      "title": "Dashboard",
-      "description": "Connexion réussie à la plateforme HelloQuitteX !"
+      "title": "Bienvenue à bord"
     },
     "socialNetworks": {
-      "title": "Réseaux sociaux",
-      "description": "Ajoutez un réseau social"
+      "title": "J’associe mes comptes de réseaux sociaux"
     },
     "import": {
-      "title": "Import",
+      "title": "J’importe mon archive X/Twitter",
       "description": {
-        "withStats": "{following} abos, {followers} abonnés",
-        "noStats": "Importez vos abonnements"
+        "withStats": "{following} abos, {followers} abonnés"
       }
     },
     "share": {
-      "title": "Partage",
-      "description": "Aidez vos amis à migrer"
+      "title": "Je partage à ma communauté"
     }
   },
   "successModal": {
@@ -176,8 +170,9 @@
     "addSocialNetwork": "Ajouter un réseau social",
     "addSocialNetworkDescription": "Connectez-vous à d'autres réseaux sociaux pour enrichir votre expérience",
     "migrationStep": {
-      "completed": "Vous avez réalisé la première étape de votre migration",
-      "daysLeft": "{count} jours restants avant le grand départ",
+      "completed1": "Bravo ! Vous avez terminé la première des deux étapes de la migration.",
+      "completed2": "Assurez-vous que vos abonnés s’inscrivent également sur HelloQuitX et revenez le #20Janvier pour activer votre reconnexion.",
+      "daysLeft": "Plus que {count} jours !",
       "nextSteps": "Effectuez les étapes suivantes pour voguer vers de nouveaux rivages !"
     },
     "importButton": "Importer mon archive Twitter/X",
