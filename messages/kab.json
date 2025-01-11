@@ -1,18 +1,21 @@
 {
     "consentModal": {
         "buttons": {
-            "cancel": "Semmet"
+            "cancel": "Semmet",
+            "accept": "Qbel, tkemmleḍ"
         }
     },
     "blueskyLogin": {
         "form": {
             "submit": "Qqen",
             "identifier": {
-                "placeholder": "isem_n_useqdac.bsky.social"
+                "placeholder": "isem_n_useqdac.bsky.social",
+                "label": "Asulay n BlueSky"
             },
             "password": {
                 "placeholder": "••••••••",
-                "label": "Awal n uɛeddi n wesnas"
+                "label": "Awal n uɛeddi n wesnas",
+                "help": "Snulfu-d awal n uɛeddi n usnas deg"
             },
             "errors": {
                 "default": "Teḍra-d tuccḍa"
@@ -20,7 +23,8 @@
         },
         "title": "Qqen ɣer BlueSky",
         "tooltip": {
-            "createAccount": "Snulfu-d yiwen da"
+            "createAccount": "Snulfu-d yiwen da",
+            "noAccount": "Ulac ɣur-k·m amiḍan deg BlueSky?"
         }
     },
     "settings": {
@@ -30,7 +34,8 @@
             "confirm": "Ih, kkes amiḍan-iw"
         },
         "notifications": {
-            "title": "Ilɣa"
+            "title": "Ilɣa",
+            "hqxNewsletter": "Awi-d ileqman seg HelloQuitX"
         },
         "logout": "Senser tuqqna",
         "deleteAccount": "Kkes amiḍan-iw"
@@ -50,7 +55,8 @@
         "addSocialNetwork": "Rnu aẓeṭṭa inmetti nniḍen"
     },
     "errorModal": {
-        "close": "Mdel"
+        "close": "Mdel",
+        "title": "Tuccḍa deg usali"
     },
     "successModal": {
         "following": {
@@ -75,24 +81,29 @@
         },
         "error": {
             "retry": "Ɛreḍ tikkelt-nniḍen",
-            "createAccount": "Snulfu-d amiḍan"
+            "createAccount": "Snulfu-d amiḍan",
+            "title": "Tuccḍa deg tunigin"
         }
     },
     "footer": {
         "hosted": {
             "cnrs": "CNRS/ISC-PIF",
-            "hqx": "HelloQuitX"
+            "hqx": "HelloQuitX",
+            "text": "Yiɣerɣert-a tessuddes-itt-id {cnrs} yernu tennegma-d s wufus n tegrawt n {hqx}"
         }
     },
     "largeFiles": {
         "status": {
             "completed": "Yemmed",
             "failed": "Yerreẓ",
-            "pending": "Yettṛaǧu"
+            "pending": "Yettṛaǧu",
+            "title": "Addad",
+            "processing": "Asesfer"
         },
         "progress": {
             "following": {
-                "processed": "{processed} / {total}"
+                "processed": "{processed} / {total}",
+                "title": "Teṭṭafareḍ"
             },
             "total": {
                 "processed": "{processed} / {total}"
@@ -100,6 +111,16 @@
             "followers": {
                 "processed": "{processed} / {total}"
             }
+        },
+        "stats": {
+            "followers": "Imeḍfaṛen",
+            "following": "Teṭṭafareḍ"
+        },
+        "button": {
+            "dashboard": "Uɣal ar tfelwit"
+        },
+        "logo": {
+            "alt": "Alugu n HelloQuitX"
         }
     },
     "connectedAccounts": {
@@ -122,32 +143,48 @@
     },
     "progressSteps": {
         "share": {
-            "title": "Beṭṭu"
+            "title": "Beṭṭu",
+            "description": "Ԑiwen imdukal-ik·im ad inigen"
         },
         "import": {
             "title": "Kter"
         },
         "socialNetworks": {
-            "description": "Rnu aẓeṭṭa inmetti"
+            "description": "Rnu aẓeṭṭa inmetti",
+            "title": "Iẓeḍwa inmettiyen"
+        },
+        "dashboard": {
+            "description": "Yeqqen akken iwata ɣer tɣerɣert HelloQuitX!"
         }
     },
     "uploadResults": {
         "stats": {
             "twitterAccounts": {
-                "value": "{count}"
+                "value": "{count}",
+                "label": "Imiḍanen n Twitter"
+            },
+            "readyTravelers": {
+                "label": "Theyyam iman-nnwen i usikel"
             }
-        }
+        },
+        "inviteFriends": "Ɛreḍ-d ineḍfaṛen-inek·inem ad ddun yid-k·m!"
     },
     "dashboard": {
         "newsletter": {
             "emailPlaceholder": "amedya@email.com",
-            "emailLabel": "Tansa-k·m imayl"
+            "emailLabel": "Tansa-k·m imayl",
+            "subscribing": "Ajerred iteddu…",
+            "confirmSubscribe": "Sentem ajerred"
         },
         "shareModal": {
-            "shareOn": "Bḍu-t deg {platform}"
+            "shareOn": "Bḍu-t deg {platform}",
+            "title": "Bḍu asikel-ik·im"
         },
         "loading": "Yettɛebbi-d isefka-k·m…",
-        "addSocialNetwork": "Rnu aẓeṭṭa inmetti"
+        "addSocialNetwork": "Rnu aẓeṭṭa inmetti",
+        "migrationStep": {
+            "completed": "Tfukkeḍ aswir amezwaru n yinig-ik·im"
+        }
     },
     "loginButtons": {
         "bluesky": {
@@ -161,7 +198,8 @@
             }
         },
         "twitter": {
-            "notDeleted": "Ɣuri amiḍan deg Twitter"
+            "notDeleted": "Ɣuri amiḍan deg Twitter",
+            "continue": "Kemmel akked Twitter"
         },
         "deleteAccount": "Kkseɣ yakan amiḍan-iw Twitter"
     },
@@ -169,14 +207,32 @@
         "loading-indic": "Yettɛebbi-d isefka-k·m…",
         "helpModal": {
             "steps": [
-                "Qqen ɣer umiḍan-inek·inem n Twitter"
+                "Qqen ɣer umiḍan-inek·inem n Twitter",
+                "Ruḥ ɣer \"Ugar\" deg umuɣ azelmaḍ",
+                null,
+                null,
+                "Sentem awal-ik·im uffir ma ssutren-t-id"
             ]
+        },
+        "logo": {
+            "alt": "Alugu n HelloQuitX"
+        },
+        "errors": {
+            "noFiles": "Ulac kra ufaylu yettwafernen",
+            "fileSize": "Tiddi n ufaylu tɛedda i talast n 1 GB"
         }
     },
     "uploadButton": {
         "dropHere": "Sers afaylu-k·m da"
     },
     "dashboardSea": {
-        "welcome": "Ansuf yis-k·m ɣer HelloQuitX!"
+        "welcome": "Ansuf yis-k·m ɣer HelloQuitX!",
+        "logo": {
+            "alt": "Alugu n HelloQuitX"
+        }
+    },
+    "signin": {
+        "loading": "Aɛebbi n telɣa…",
+        "subtitle": "Bdut tuqqna akked Twitter akken ad tzegrem isefka-nwen"
     }
 }
