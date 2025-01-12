@@ -207,8 +207,12 @@
             "emailLabel": "Ihre email-Adresse",
             "description": "Melden Sie sich an, um den Fortschritt des Projekts zu verfolgen und über neue Funktionen informiert zu werden.",
             "acceptOEP": "Ich möchte über weitere Initiativen von (https://www.onestpret.com) informiert werden, die HelloQuitX unterstützt",
-            "confirmSubscribe": "Abonnement bestätigen"
-        }
+            "confirmSubscribe": "Abonnement bestätigen",
+            "title": "Bleibe informiert",
+            "emailPlaceholder": "beispiel@email.de"
+        },
+        "addSocialNetwork": "Soziales Netzwerk hinzufügen",
+        "addSocialNetworkDescription": "Andere soziale Netzwerke verknüpfen für ein besseres Erlebnis"
     },
     "uploadResults": {
         "inviteFriends": "Lade deine Follower ein mitzumachen!",
@@ -265,7 +269,8 @@
         "description": "Drop deine ZIP-Datei (wenn sie 300 MB nicht überschreitet), oder lade data/following.js und data/follower.js hoch, wenn du sie bereits entpackt hast",
         "loading": "Deine Dateien werden verarbeitet, bitte bleibe auf dieser Seite, bis du weitergeleitet wirst.",
         "helpButton": "Hilfe, um an dein Twitter-Archive zu gelangen",
-        "loading-indic": "Ihre Daten werden geladen..."
+        "loading-indic": "Ihre Daten werden geladen...",
+        "action": "Deine Dateien hier auswählen oder hinverschieben"
     },
     "signin": {
         "title": "Bereit, um zu neuen Ufern aufzubrechen?",
@@ -295,6 +300,11 @@
             "notLinked": "Es ist kein {provider}-Konto verknüpft",
             "lastAccount": "Die Verknüpfung Ihres zuletzt verbundenen Kontos kann nicht aufgehoben werden"
         },
-        "unlinkError": "Beim Aufheben der Verknüpfung Ihres {provider}-Kontos ist ein Fehler aufgetreten"
+        "unlinkError": "Beim Aufheben der Verknüpfung Ihres {provider}-Kontos ist ein Fehler aufgetreten",
+        "providers": {
+            "twitter": "Twitter",
+            "bluesky": "Bluesky",
+            "mastodon": "Mastodon"
+        }
     }
 }
