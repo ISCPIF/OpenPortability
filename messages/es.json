@@ -17,7 +17,7 @@
             "password": {
                 "label": "Contraseña de la App",
                 "placeholder": "••••••••",
-                "help": "Crear una contraseña de la app en"
+                "help": "Crea una contraseña para la aplicación en"
             },
             "errors": {
                 "missingFields": "Por favor, completa todos los campos",
@@ -87,7 +87,7 @@
             "title": "Importar",
             "description": {
                 "withStats": "{following} siguiendo, {followers} seguidores",
-                "noStats": "Importar sus seguidores"
+                "noStats": "Importa tus suscripciones"
             }
         },
         "share": {
@@ -95,7 +95,7 @@
             "title": "Compartir"
         },
         "dashboard": {
-            "title": "Dashboard",
+            "title": "Panel de control",
             "description": "¡Conexión a la plataforma HelloQuitX exitosa!"
         },
         "socialNetworks": {
@@ -180,7 +180,7 @@
             "followers": "Seguidores"
         },
         "button": {
-            "dashboard": "Volver al dashboard"
+            "dashboard": "Volver al panel de control"
         }
     },
     "dashboard": {
