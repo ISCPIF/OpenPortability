@@ -35,4 +35,4 @@ create policy "Sources followers are viewable by everyone"
 
 create policy "Users can manage their own followers"
     on sources_followers for all
-    using ( auth.uid() = source_id );q
+    using ( auth.uid() = source_id );

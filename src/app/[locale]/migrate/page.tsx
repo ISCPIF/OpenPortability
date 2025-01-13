@@ -5,14 +5,17 @@ import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import Header from '@/app/_components/Header'
-import LoadingIndicator from '@/app/_components/LoadingIndicator'
 import { SiBluesky } from "react-icons/si"
-import { FaTwitter } from "react-icons/fa"
+import { FaTwitter, FaMastodon } from "react-icons/fa"
 import { motion, AnimatePresence } from "framer-motion"
 import { Ship } from 'lucide-react'
-import DahsboardSea from '@/app/_components/DashboardSea'
+import MigrateSea from '@/app/_components/MigrateSea'
 import Footer from '@/app/_components/Footer'
 import AccountToMigrate from '@/app/_components/AccountToMigrate'
+import DashboardSea from '@/app/_components/DashboardSea'
+import LoadingIndicator from '@/app/_components/LoadingIndicator'
+import ReconnexionOptions from '@/app/_components/ReconnexionOptions'
+import ManualReconnexion from '@/app/_components/ManualReconnexion'
 
 import { plex } from '@/app/fonts/plex'
 
@@ -26,6 +29,7 @@ type MatchStats = {
 type Match = {
   twitter_id: string
   bluesky_handle: string | null
+  mastodon_handle?: string | null
   relationship_type: 'follower' | 'following'
   mapping_date: string | null
 }
@@ -36,25 +40,33 @@ type GroupedMatches = {
 }
 
 export default function MigratePage() {
-  const { data: session, status } = useSession()
+  const { data: session, status, update: updateSession } = useSession()
   const router = useRouter()
   const t = useTranslations('migrate')
   const [isLoading, setIsLoading] = useState(true)
   const [userProfile, setUserProfile] = useState<any>(null)
-  const [matches, setMatches] = useState<GroupedMatches | null>(null)
-  const [stats, setStats] = useState<MatchStats | null>(null)
+  const [matches, setMatches] = useState<Match[]>([])
   const [selectedAccounts, setSelectedAccounts] = useState<Set<string>>(new Set())
   const [isMigrating, setIsMigrating] = useState(false)
+  const [activeTab, setActiveTab] = useState<'mastodon' | 'bluesky'>('bluesky')
+  const [showOptions, setShowOptions] = useState(true)
+  const [isAutomaticReconnect, setIsAutomaticReconnect] = useState(false)
 
   useEffect(() => {
-    console.log("Session from useEffect", session)
+    if (session?.user?.automatic_reconnect) {
+      setIsAutomaticReconnect(session.user.automatic_reconnect)
+      setShowOptions(false)
+    }
+  }, [session?.user?.automatic_reconnect])
+
+  useEffect(() => {
     const checkUserProfile = async () => {
       if (!session?.user?.id) {
         console.log("Redirecting to home")
         return
       }
 
-      if (!session.user?.has_onboarded || !session.user?.twitter_id || !session.user?.bluesky_id) {
+      if (!session.user?.has_onboarded || !session.user?.bluesky_id) {
         console.log("Redirecting to dashboard")
         return
       }
@@ -63,15 +75,16 @@ export default function MigratePage() {
       
       const matchesResponse = await fetch('/api/migrate/matching_found')
       const matchesData = await matchesResponse.json()
+
+      console.log("Matches data:", matchesData)
       
-      setMatches(matchesData.matches)
-      setStats(matchesData.stats)
+      // Ne garder que les following qui ont un match (bluesky_handle non null)
+      setMatches(matchesData.matches.following.filter(match => match.bluesky_handle !== null))
       setIsLoading(false)
     }
 
     checkUserProfile()
-  }, [session, router])
-
+  }, [router, session, status])
 
   const handleToggleAccount = (twitterId: string) => {
     setSelectedAccounts(prev => {
@@ -85,210 +98,110 @@ export default function MigratePage() {
     })
   }
 
-  const handleSelectAll = (type: 'followers' | 'following') => {
-    if (!matches) return
-    
-    const accounts = matches[type].filter(match => match.bluesky_handle) // Ne considérer que les comptes avec un handle Bluesky
-    const allSelected = accounts.every(match => selectedAccounts.has(match.twitter_id))
-    
-    setSelectedAccounts(prev => {
-      const newSet = new Set(prev)
-      accounts.forEach(match => {
-        if (allSelected) {
-          newSet.delete(match.twitter_id)
-        } else {
-          newSet.add(match.twitter_id)
-        }
-      })
-      return newSet
-    })
-  }
-
-  const handleStartMigration = async () => {
-    if (selectedAccounts.size === 0) return
-    
-    setIsMigrating(true)
+  const updateAutomaticReconnect = async (value: boolean) => {
     try {
+      const response = await fetch('/api/users/automatic-reconnect', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ automatic_reconnect: value }),
+      });
+  
+      if (!response.ok) {
+        throw new Error('Failed to update automatic reconnect setting');
+      }
+      
+      setIsAutomaticReconnect(value);
+      await updateSession(); // Met à jour la session avec les nouvelles données
+    } catch (error) {
+      console.error('Error updating automatic reconnect:', error);
+    }
+  };
+
+  const handleAutomaticReconnection = async () => {
+    await updateAutomaticReconnect(true);
+    setShowOptions(false);
+    // Ici vous pouvez ajouter la logique supplémentaire pour la reconnexion automatique
+  };
+  
+  const handleManualReconnection = async () => {
+    await updateAutomaticReconnect(false);
+    setShowOptions(false);
+    // Ici vous pouvez ajouter la logique supplémentaire pour la reconnexion manuelle
+  };
+
+  const toggleAutomaticReconnect = async () => {
+    const newValue = !isAutomaticReconnect;
+    await updateAutomaticReconnect(newValue);
+  };
+
+  const handleStartMigration = async (selectedAccounts: string[]) => {
+    try {
+      setIsMigrating(true);
+      console.log('Starting migration for accounts:', selectedAccounts);
+
       const response = await fetch('/api/migrate/send_follow', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          accounts: Array.from(selectedAccounts)
-        }),
-      })
+        body: JSON.stringify({ accounts: selectedAccounts }),
+      });
 
       if (!response.ok) {
-        throw new Error('Migration failed')
+        throw new Error('Failed to start migration');
       }
 
-      // Reset selection after successful migration
-      setSelectedAccounts(new Set())
-    } catch (error) {
-      console.error('Migration error:', error)
-    } finally {
-      setIsMigrating(false)
-    }
-  }
+      const result = await response.json();
+      console.log('Migration result:', result);
 
-  if (status === 'loading' || isLoading) {
-    return <LoadingIndicator msg={"Loading your matches"} />
-  }
+      // Optional: Show success message or update UI
+      // You might want to add some state for this
+
+    } catch (error) {
+      console.error('Error during migration:', error);
+      // Optional: Show error message to user
+    } finally {
+      setIsMigrating(false);
+    }
+  };
 
   return (
-    <div className={`min-h-screen bg-gradient-to-b from-blue-500 to-blue-700 ${plex.className}`}>
+    <div className="min-h-screen mt-4 relative w-full max-w-[90rem] m-auto bg-[#2a39a9]">
       <Header />
-      <main className="container mx-auto px-4 py-8 relative">
-        {/* <DahsboardSea className="absolute inset-0 pointer-events-none" /> */}
-        
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="relative"
-        >
-          <div className="flex items-center justify-between mb-8">
-            <div className="flex items-center space-x-3">
-              <Ship className="w-8 h-8 text-white" />
-              <h1 className="text-4xl font-bold text-white">
-                {t('title')}
-              </h1>
-            </div>
-            
-            {selectedAccounts.size > 0 && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-              >
-                <button
-                  onClick={handleStartMigration}
-                  disabled={isMigrating}
-                  className="bg-white text-blue-600 px-6 py-2 rounded-full font-medium shadow-lg
-                           hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-blue-600
-                           disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
-                >
-                  {isMigrating ? (
-                    <>
-                      <LoadingIndicator size="small" />
-                      <span>{t('migrating')}</span>
-                    </>
-                  ) : (
-                    <>
-                      <span>{t('startMigration')}</span>
-                      <span className="text-sm bg-blue-100 px-2 py-0.5 rounded-full">
-                        {selectedAccounts.size}
-                      </span>
-                    </>
-                  )}
-                </button>
-              </motion.div>
-            )}
+      <MigrateSea matchCount={matches.length}/>
+      <div className="container mx-auto px-4 mt-[400px] bg-[#2a39a9]">
+        {isAutomaticReconnect ? (
+          <div className="flex items-center justify-center gap-4 mb-8">
+            <span className="text-white">Reconnexion automatique activée</span>
+            <button
+              onClick={toggleAutomaticReconnect}
+              className={`w-16 h-8 rounded-full p-1 transition-colors duration-200 ease-in-out ${
+                isAutomaticReconnect ? 'bg-[#FF3366]' : 'bg-gray-400'
+              }`}
+            >
+              <div
+                className={`w-6 h-6 rounded-full bg-white transform transition-transform duration-200 ease-in-out ${
+                  isAutomaticReconnect ? 'translate-x-8' : 'translate-x-0'
+                }`}
+              />
+            </button>
           </div>
-
-          {/* Stats Cards */}
-          <AnimatePresence>
-            {stats && (
-              <motion.div 
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="grid grid-cols-2 gap-6 mb-8"
-              >
-                <div className="bg-white rounded-xl shadow-lg p-6">
-                  <h2 className="text-xl font-semibold mb-2 flex items-center space-x-2 text-gray-800">
-                    <FaTwitter className="text-blue-400" />
-                    <span>Followers</span>
-                  </h2>
-                  <p className="text-3xl font-bold text-blue-600">
-                    {stats.matched_followers} / {stats.total_followers}
-                  </p>
-                  <p className="text-gray-600 mt-1">{t('matches_found')}</p>
-                </div>
-                <div className="bg-white rounded-xl shadow-lg p-6">
-                  <h2 className="text-xl font-semibold mb-2 flex items-center space-x-2 text-gray-800">
-                    <FaTwitter className="text-blue-400" />
-                    <span>Following</span>
-                  </h2>
-                  <p className="text-3xl font-bold text-blue-600">
-                    {stats.matched_following} / {stats.total_following}
-                  </p>
-                  <p className="text-gray-600 mt-1">{t('matches_found')}</p>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Matches Lists */}
-          <AnimatePresence>
-            {matches && (
-              <motion.div 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="space-y-6"
-              >
-                {/* Followers Section */}
-                <div className="bg-white rounded-xl shadow-lg p-6">
-                  <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-2xl font-bold text-gray-800 flex items-center space-x-2">
-                      <FaTwitter className="text-blue-400" />
-                      <span>{t('followers')}</span>
-                    </h2>
-                    <button
-                      onClick={() => handleSelectAll('followers')}
-                      className="text-sm text-blue-600 hover:text-blue-800"
-                    >
-                      {matches.followers.every(m => selectedAccounts.has(m.twitter_id))
-                        ? t('deselectAll')
-                        : t('selectAll')}
-                    </button>
-                  </div>
-                  <div className="space-y-2">
-                    {matches.followers.map((match) => (
-                      <AccountToMigrate
-                        key={match.twitter_id}
-                        twitterId={match.twitter_id}
-                        blueskyHandle={match.bluesky_handle}
-                        isSelected={selectedAccounts.has(match.twitter_id)}
-                        onToggle={() => handleToggleAccount(match.twitter_id)}
-                        relationship="follower"
-                      />
-                    ))}
-                  </div>
-                </div>
-
-                {/* Following Section */}
-                <div className="bg-white rounded-xl shadow-lg p-6">
-                  <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-2xl font-bold text-gray-800 flex items-center space-x-2">
-                      <FaTwitter className="text-blue-400" />
-                      <span>{t('following')}</span>
-                    </h2>
-                    <button
-                      onClick={() => handleSelectAll('following')}
-                      className="text-sm text-blue-600 hover:text-blue-800"
-                    >
-                      {matches.following.every(m => selectedAccounts.has(m.twitter_id))
-                        ? t('deselectAll')
-                        : t('selectAll')}
-                    </button>
-                  </div>
-                  <div className="space-y-2">
-                    {matches.following.map((match) => (
-                      <AccountToMigrate
-                        key={match.twitter_id}
-                        twitterId={match.twitter_id}
-                        blueskyHandle={match.bluesky_handle}
-                        isSelected={selectedAccounts.has(match.twitter_id)}
-                        onToggle={() => handleToggleAccount(match.twitter_id)}
-                        relationship="following"
-                      />
-                    ))}
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </motion.div>
-      </main>
+        ) : showOptions ? (
+          <ReconnexionOptions
+            matchCount={matches.length}
+            onAutomatic={handleAutomaticReconnection}
+            onManual={handleManualReconnection}
+          />
+        ) : (
+          <ManualReconnexion
+            matches={matches}
+            onStartMigration={handleStartMigration}
+            onToggleAutomaticReconnect={handleAutomaticReconnection}
+          />
+        )}
+      </div>
       <Footer />
     </div>
   )

@@ -6,7 +6,7 @@
       }
     },
     "connectedAccounts": {
-      "connectedWith": "You are connected with {services} ✨",
+      "connectedWith": "You are connected with {services} ",
       "and": "and",
       "services": {
         "twitter": "Twitter/X",
@@ -87,7 +87,7 @@
           "cnrs": "CNRS/ISC-PIF",
           "hqx": "HelloQuitX"
         },
-        "copyright": "© {year} HelloQuitX. All rights reserved."
+        "copyright": " {year} HelloQuitX. All rights reserved."
       },
     "loginButtons": {
     "twitter": {
@@ -198,7 +198,7 @@
     "shareModal": {
       "title": "Share your journey",
       "shareOn": "Share on {platform}",
-      "shareText": "🔥The X exodus is massive! Don't lose any of your followers. Thanks to #HelloQuitX I've registered {count} new passengers for a journey to #BlueSky & #Mastodon. Join us and automatically find your communities on #January20!"
+      "shareText": "The X exodus is massive! Don't lose any of your followers. Thanks to #HelloQuitX I've registered {count} new passengers for a journey to #BlueSky & #Mastodon. Join us and automatically find your communities on #January20!"
     },
     "newsletter": {
       "title": "Stay Informed",
@@ -386,5 +386,39 @@
     "deselectAll": "Deselect all",
     "startMigration": "Start migration",
     "migrating": "Migrating..."
+  },
+"ReconnexionOptions": {
+    "buttons": {
+      "automatic": "RECONNECT ME AUTOMATICALLY",
+      "manual": "I CHOOSE ACCOUNTS TO RECONNECT"
+    },
+    "descriptions": {
+      "automatic": "HelloQuittex will reconnect you with all your followers from X for 30 days",
+      "manual": "HelloQuittex will show you in detail the accounts found on Bluesky and Mastodon so you can choose whether to connect or not"
+    },
+    "stats": {
+      "connections": "connections",
+      "bluesky": "on Bluesky",
+      "networks": "sources"
+    }
+  },
+  "migrateSea": {
+    "logo": {
+      "alt": "HelloQuittex Logo"
+    },
+    "title": "It's time for the #GreatReconnection!",
+    "matchMessage": "{matchCount} passengers were found during your first migration step!\nNow is the time to activate the connection with those you want to\njoin on your new networks."
+  },
+  "ManualReconnexion": {
+    "title": "Manual Reconnection",
+    "automaticReconnect": "RECONNECT ME AUTOMATICALLY",
+    "selectAll": "SELECT ALL",
+    "connect": "CONNECT ({count})",
+    "prev": "Previous",
+    "next": "Next",
+    "xAccountPseudo": "Account Handle",
+    "mastodonBlueskyCorrespondence": "Mastodon/Bluesky Correspondence",
+    "followOnBluesky": "Follow on Bluesky",
+    "followOnMastodon": "Follow on Mastodon"
   }
 }
