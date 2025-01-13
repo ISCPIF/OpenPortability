@@ -2,7 +2,7 @@
     "header": {
         "logout": "Déconnexion",
         "profile": {
-            "username": "@{username}"
+            "username": "@{nom_d_utilisateur}"
         }
     },
     "connectedAccounts": {
