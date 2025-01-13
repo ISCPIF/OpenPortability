@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS "public"."migration_matches" (
     id uuid DEFAULT uuid_generate_v4() PRIMARY KEY,
     user_id uuid REFERENCES auth.users(id) NOT NULL,
     twitter_id text NOT NULL,
-    relationship_type text NOT NULL CHECK (relationship_type IN ('follower', 'following')),
+    relationship_type text NOT NULL CHECK (relationship_type IN ('following')),
     bluesky_handle text,
     mapping_date timestamp with time zone,
     has_follow boolean DEFAULT false,
@@ -25,19 +25,6 @@ CREATE POLICY "Users can update their own matches"
 
 -- Insert initial data from the existing relationships
 INSERT INTO "public"."migration_matches" (user_id, twitter_id, relationship_type, bluesky_handle, mapping_date)
--- Get followers
-SELECT DISTINCT
-    sf.source_id as user_id,
-    sf.follower_id as twitter_id,
-    'follower' as relationship_type,
-    bm.bluesky_handle,
-    bm.imported_at as mapping_date
-FROM sources_followers sf
-LEFT JOIN bluesky_mappings bm ON sf.follower_id = bm.twitter_id
-
-UNION ALL
-
--- Get following
 SELECT DISTINCT
     st.source_id as user_id,
     st.target_twitter_id as twitter_id,

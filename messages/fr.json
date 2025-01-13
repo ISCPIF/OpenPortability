@@ -6,7 +6,7 @@
       }
     },
     "connectedAccounts": {
-      "connectedWith": "Vous êtes connecté avec {services} ✨",
+      "connectedWith": "Vous êtes connecté avec {services} ",
       "and": "et",
       "services": {
         "twitter": "Twitter/X",
@@ -86,7 +86,7 @@
           "cnrs": "CNRS/ISC-PIF",
           "hqx": "HelloQuitteX"
         },
-        "copyright": "© {year} HelloQuitteX. Tous droits réservés."
+        "copyright": " {year} HelloQuitteX. Tous droits réservés."
       },
     "loginButtons": {
     "twitter": {
@@ -184,7 +184,7 @@
     "shareModal": {
       "title": "Partager votre voyage",
       "shareOn": "Partager sur {platform}",
-      "shareText": "🔥 Je viens de faire mon #eXit L’exode de X est massif ! Ne perdez pas un seul de vos followers. Grâce à #HelloQuitX j’ai inscrit {count} nouveaux passagers pour un voyage vers #BlueSky & #Mastodon. Embarquez vous aussi et retrouvez automatiquement vos communautés le #20Janvier !"
+      "shareText": " Je viens de faire mon #eXit L’exode de X est massif ! Ne perdez pas un seul de vos followers. Grâce à #HelloQuitX j’ai inscrit {count} nouveaux passagers pour un voyage vers #BlueSky & #Mastodon. Embarquez vous aussi et retrouvez automatiquement vos communautés le #20Janvier !"
     },
     "newsletter": {
       "title": "Restez informé.e",
@@ -373,5 +373,39 @@
     "deselectAll": "Tout désélectionner",
     "startMigration": "Démarrer la migration",
     "migrating": "Migration en cours..."
+  },
+  "ReconnexionOptions": {
+    "buttons": {
+      "automatic": "RECONNECTEZ-MOI AUTOMATIQUEMENT",
+      "manual": "JE CHOISIS LES COMPTES À RECONNECTER"
+    },
+    "descriptions": {
+      "automatic": "HelloQuittex vous reconnectera avec tous vos abonnés venant de X pendant 30 jours",
+      "manual": "HelloQuittex vous proposera en détail les comptes trouvés sur Bluesky et Mastodon pour que vous puissiez choisir de vous connecter ou non"
+    },
+    "stats": {
+      "connections": "connexions",
+      "bluesky": "sur Bluesky",
+      "networks": "sources"
+    }
+  },
+  "migrateSea": {
+    "logo": {
+      "alt": "Logo HelloQuittex"
+    },
+    "title": "C'est l'heure de la #GrandeReconnexion !",
+    "matchMessage": "{matchCount} passagers ont été retrouvés lors de votre 1ère étape de migration !\nC'est le moment maintenant d'activer la connexion avec ceux que vous souhaitez\nrejoindre sur vos nouveaux réseaux."
+  },
+  "ManualReconnexion": {
+    "title": "Reconnexion manuelle",
+    "automaticReconnect": "ME RECONNECTER AUTOMATIQUEMENT",
+    "selectAll": "TOUT SÉLECTIONNER",
+    "connect": "CONNECTER ({count})",
+    "prev": "Précédent",
+    "next": "Suivant",
+    "xAccountPseudo": "Pseudo",
+    "mastodonBlueskyCorrespondence": "Correspondance Mastodon/Bluesky",
+    "followOnBluesky": "Suivre sur Bluesky",
+    "followOnMastodon": "Suivre sur Mastodon"
   }
 }

@@ -111,6 +111,8 @@ async jwt({ token, user, account, profile }) {
         token.has_onboarded = !!user.has_onboarded // Conversion explicite en boolean
         token.hqx_newsletter = !!user.hqx_newsletter
         token.oep_accepted = !!user.oep_accepted
+        token.automatic_reconnect = !!user.automatic_reconnect
+
       }
 
       if (account && profile) {
@@ -177,6 +179,7 @@ async jwt({ token, user, account, profile }) {
               has_onboarded: !!user.has_onboarded,
               hqx_newsletter: !!user.hqx_newsletter,
               oep_accepted: !!user.oep_accepted,
+              automatic_reconnect: !!user.automatic_reconnect,
               name: token.name || user.name,
               
               // For Twitter and Bluesky, use token values first
@@ -216,56 +219,91 @@ async jwt({ token, user, account, profile }) {
     {
       id: "bluesky",
       name: "Bluesky",
-      type: "oauth",
-      clientId: process.env.BLUESKY_CLIENT_ID,
-      // clientSecret: process.env.TWITTER_CLIENT_SECRET,
-      authorization: "https://bsky.social", // URL factice mais nécessaire
-      token: {
-                url: "https://bsky.social/xrpc/com.atproto.server.createSession",
+      type: "credentials",
+      credentials: {},
+      async authorize(credentials): Promise<CustomAdapterUser | null> {
+        if (!credentials) {
+          console.error('Missing credentials');
+          return null;
+        }
 
-        async request({ params, provider }) {
-          const { identifier, password } = params;
-          const agent = new BskyAgent({ service: 'https://bsky.social' });
-          const session = await agent.login({ identifier, password });
-          
-          return {
-            tokens: {
-              access_token: session.data.accessJwt,
-              refresh_token: session.data.refreshJwt,
-              expires_at: null,
-              // On stocke aussi le did et le handle
-              did: session.data.did,
-              handle: session.data.handle
-            }
-          };
-        }
-      },
-      userinfo: {
-        async request({ tokens }) {
-          const agent = new BskyAgent({ service: 'https://bsky.social' });
-          await agent.resumeSession({
-            accessJwt: tokens.access_token,
-            refreshJwt: tokens.refresh_token,
-            did: tokens.did,
-            handle: tokens.handle,
-            active: true // On ajoute le champ active requis
-          });
-          const profile = await agent.getProfile({ actor: agent.session?.did || '' });
-          return profile.data;
-        }
-      },
-      profile(profile) {
-        return {
-          id: profile.did,
-          name: profile.handle,
-          email: null,
-          image: profile.avatar,
-          has_onboarded: false,
-          hqx_newsletter: false,
-          oep_accepted: false
+        try {
+          // The user object should already be properly formatted from the API
+          return credentials as unknown as CustomAdapterUser;
+        } catch (error) {
+          console.error('Bluesky auth error:', error);
+          return null;
         }
       }
     },
+    // {
+    //   id: "bluesky",
+    //   name: "Bluesky",
+    //   type: "oauth",
+    //   clientId: process.env.BLUESKY_CLIENT_ID,
+    //   issuer: "https://bsky.social",
+    //   authorization: {
+    //     url: "https://app.beta.v2.helloquitx.com/api/auth/bluesky",
+    //     params: { 
+    //       response_type: "code",
+    //       scope: "openid profile email"
+    //     }
+    //   },
+    //   token: {
+    //     url: "https://app.beta.v2.helloquitx.com/api/auth/bluesky",
+    //     async request({ params }) {
+    //       const response = await fetch("/api/auth/bluesky", {
+    //         method: "POST",
+    //         headers: { "Content-Type": "application/json" },
+    //         body: JSON.stringify({
+    //           identifier: params.username,
+    //           password: params.password
+    //         })
+    //       });
+          
+    //       const data = await response.json();
+    //       if (!response.ok) {
+    //         throw new Error(data.error || "Authentication failed");
+    //       }
+          
+    //       return {
+    //         tokens: {
+    //           access_token: data.accessJwt,
+    //           refresh_token: data.refreshJwt,
+    //           did: data.did,
+    //           handle: data.handle
+    //         }
+    //       };
+    //     }
+    //   },
+    //   userinfo: {
+    //     url: "https://app.beta.v2.helloquitx.com/api/auth/bluesky/userinfo",
+    //     async request({ tokens }) {
+    //       const agent = new BskyAgent({ service: 'https://bsky.social' });
+    //       await agent.resumeSession({
+    //         accessJwt: tokens.access_token,
+    //         refreshJwt: tokens.refresh_token,
+    //         did: tokens.did,
+    //         handle: tokens.handle,
+    //         active: true
+    //       });
+          
+    //       const profile = await agent.getProfile({ actor: tokens.did });
+    //       return profile.data;
+    //     }
+    //   },
+    //   profile(profile) {
+    //     return {
+    //       id: profile.did,
+    //       name: profile.displayName || profile.handle,
+    //       email: null,
+    //       image: profile.avatar,
+    //       has_onboarded: false,
+    //       hqx_newsletter: false,
+    //       oep_accepted: false
+    //     }
+    //   }
+    // },
     TwitterProvider({
       clientId: process.env.TWITTER_CLIENT_ID!,
       clientSecret: process.env.TWITTER_CLIENT_SECRET!,
@@ -292,7 +330,8 @@ async jwt({ token, user, account, profile }) {
           profile: profile,
           has_onboarded: false,
           hqx_newsletter: false,
-          oep_accepted: false
+          oep_accepted: false,
+          automatic_reconnect: false
         }
       },
       // userinfo: {
@@ -313,6 +352,7 @@ async jwt({ token, user, account, profile }) {
           has_onboarded: false,
           hqx_newsletter: false,
           oep_accepted: false, 
+          automatic_reconnect: false
         }
     }})
   ],
