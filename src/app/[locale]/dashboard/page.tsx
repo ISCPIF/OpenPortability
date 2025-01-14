@@ -172,7 +172,7 @@ export default function DashboardPage() {
   const daysLeft = Math.ceil((new Date('2025-01-20').getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
 
   return (
-    <div className="min-h-screen bg-[#2a39a9] mt-4 relative w-full max-w-[90rem] m-auto">
+    <div className="min-h-screen bg-[#2a39a9] mt-4 relative w-full max-w-[80rem] m-auto">
       <Header />
       <div className="absolute inset-0 w-full h-full pointer-events-none">
         <DahsboardSea progress={progress} />
@@ -181,7 +181,7 @@ export default function DashboardPage() {
       <div className="relative min-h-[calc(100vh-4rem)] pt-80">
         <div className="container mx-auto px-4">
           <div className="max-w-2xl mx-auto">
-            <div className="text-center mb-8 md:mb-20 relative z-10">
+            <div className="text-center mb-8 md:mb-10 relative z-10">
               {progress === 100 ? (
                 <div className="space-y-2 mt-12">
                   <h2 className={`${plex.className} text-xl font-semibold text-indigo-100 text-balance`}>
@@ -195,7 +195,7 @@ export default function DashboardPage() {
                   </p>
                 </div>
               ) : (
-                <h2 className={`${plex.className} text-xl font-semibold text-indigo-100`}>
+                <h2 className={`${plex.className} text-xl font-semibold text-indigo-100 mt-16`}>
                   {t('migrationStep.nextSteps')}
                 </h2>
               )}
