@@ -179,7 +179,7 @@
     "shareModal": {
       "title": "Partager votre voyage",
       "shareOn": "Partager sur {platform}",
-      "shareText": "🔥 Je viens de faire mon #eXit L’exode de X est massif ! Ne perdez pas un seul de vos followers. Grâce à #HelloQuitX j’ai inscrit {count} nouveaux passagers pour un voyage vers #BlueSky & #Mastodon. Embarquez vous aussi et retrouvez automatiquement vos communautés le #20Janvier !"
+      "shareText": "🔥Je viens de faire mon #eXit! L’exode de X est massif. Ne perdez pas un seul de vos abonnés. Grâce à #HelloQuitX j’ai inscrit {count} nouveaux passagers pour partir vers #BlueSky & #Mastodon. Retrouvez automatiquement vos communautés le #20Janvier via https://app.helloquitx.com !"
     },
     "newsletter": {
       "title": "Restez informé.e",
