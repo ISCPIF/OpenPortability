@@ -11,9 +11,11 @@ export type { BlueskyProfile }
 
 async function createMastodonApp(instance: string){
   const { data: instances } = await supabase.from("mastodon_instances").select();
-  let cachedAppData = instances?.find(r => r.instance == instance);
+  const lcInstance = instance.toLowerCase()
+  let cachedAppData = instances?.find(r => r.instance.toLowerCase() == lcInstance);
   if (!cachedAppData) {
-    const url = `https://${instance}/api/v1/apps`;
+    // console.log("New instance, creating OAuth app")
+    const url = `https://${lcInstance}/api/v1/apps`;
     const formData = {
       "client_name": "HelloQuitX",
       "redirect_uris": [`${process.env.NEXTAUTH_URL}/api/auth/callback/mastodon`],
@@ -31,12 +33,14 @@ async function createMastodonApp(instance: string){
       if (!response.ok) {
         throw new Error(`❌ Error while creating the Mastodon OAuth app: ${response.status}`);
       }
+      // console.log(response);
       const json = await response.json();
       cachedAppData = {
-        instance,
+        instance: lcInstance,
         client_id: json.client_id,
         client_secret: json.client_secret
       };
+      // console.log(cachedAppData)
       await supabase.from("mastodon_instances").insert(cachedAppData);
     } catch (error) {
         console.error('❌ Error while creating the Mastodon OAuth app:', error);
