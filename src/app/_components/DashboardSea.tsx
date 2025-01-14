@@ -46,14 +46,16 @@ export default function Sea({ progress }: SeaProps) {
     }
 
     return (
-      <Image
-        src={img}
-        width={80 * scale}
-        height={82 * scale}
-        alt=""
-        className="absolute"
-        style={{ left: `${left}%`, top: `${top}%`, zIndex: 0 }}
-      ></Image>
+      <div className="relative z-30 top-24">
+        <Image
+          src={img}
+          width={80 * scale}
+          height={82 * scale}
+          alt=""
+          className="absolute"
+          style={{ left: `${left}%`, top: `${top}%`, zIndex: 0 }}
+        ></Image>
+      </div>
     );
   };
 
@@ -61,7 +63,7 @@ export default function Sea({ progress }: SeaProps) {
     if (progress === 0)
       return (
         <>
-          <Boat model={1} top={65} left={46.5} />
+          <Boat model={1} top={67} left={46.5} />
         </>
       );
     if (progress <= 25)
@@ -100,25 +102,25 @@ export default function Sea({ progress }: SeaProps) {
       );
   };
 
-    return (
-      <div className="absolute top-0 left-0 w-full h-[23rem]">
-        <Image src={seaBackground} fill alt="" className="object-cover"></Image>
-        <div className="relative z-[5] pt-12">
-          <Image
-            src={logoHQX}
-            alt={t('logo.alt')}
-            width={306}
-            height={125}
-            className="mx-auto"
-          />
-          <div className="container flex flex-col mx-auto text-center gap-y-4 px-6 lg:gap-y-8 relative mt-8">
-            <h1 className={`${plex.className} text-2xl lg:text-3xl font-light text-blue-500`}>
-              {t('welcome')}
-            </h1>
-          </div>
+  return (
+    <div className="absolute top-0 left-0 w-full h-[23rem]">
+      <Image src={seaBackground} fill alt="" className="object-cover"></Image>
+      <div className="relative z-[5] pt-12">
+        <Image
+          src={logoHQX}
+          alt={t('logo.alt')}
+          width={306}
+          height={125}
+          className="mx-auto"
+        />
+        <div className="container flex flex-col mx-auto text-center gap-y-4 px-6 lg:gap-y-8 relative mt-1 md:mt-6">
+          <h1 className={`${plex.className} text-2xl lg:text-3xl font-light text-blue-500`}>
+            {t('welcome')}
+          </h1>
         </div>
-        <Boats progress={progress} />
-        <ProgressImage progress={progress} />
       </div>
-    );
-  }
+      <Boats progress={progress} />
+      <ProgressImage progress={progress} />
+    </div>
+  );
+}
