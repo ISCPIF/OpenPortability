@@ -383,10 +383,36 @@ export async function updateUser(
   }
 }
 
+// Fonction utilitaire pour décoder les JWT
+export function decodeJwt(token: string): { exp: number } | null {
+  try {
+    const jwt = token.split('.')
+    if (jwt.length !== 3) {
+      throw new Error('Invalid JWT format')
+    }
+    
+    const payload = JSON.parse(Buffer.from(jwt[1], 'base64').toString())
+    return payload
+  } catch (error) {
+    console.error('❌ [Adapter] Erreur décodage JWT:', error)
+    return null
+  }
+}
+
 export async function linkAccount(account: AdapterAccount): Promise<void>
 {
   console.log("\n=== [Adapter] linkAccount ===")
   console.log("→ Linking account:", JSON.stringify(account, null, 2))
+  
+  // Décoder l'access token pour obtenir l'expiration
+  let expires_at = account.expires_at
+  if (account.access_token) {
+    const payload = decodeJwt(account.access_token)
+    if (payload?.exp) {
+      expires_at = payload.exp
+      console.log('📅 [Adapter] Expiration décodée du token:', new Date(expires_at * 1000).toISOString())
+    }
+  }
   
   const { error } = await authClient
     .from("accounts")
@@ -397,7 +423,7 @@ export async function linkAccount(account: AdapterAccount): Promise<void>
       provider_account_id: account.providerAccountId,
       refresh_token: account.refresh_token,
       access_token: account.access_token,
-      expires_at: account.expires_at,
+      expires_at,  // Utiliser l'expiration décodée du JWT
       token_type: account.token_type,
       scope: account.scope,
       id_token: account.id_token,
