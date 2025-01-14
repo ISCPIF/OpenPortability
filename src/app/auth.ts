@@ -18,13 +18,13 @@ async function createMastodonApp(instance: string){
     const url = `https://${lcInstance}/api/v1/apps`;
     const formData = {
       "client_name": "HelloQuitX",
-      "redirect_uris": [`${process.env.NEXTAUTH_URL}/api/auth/callback/mastodon`],
+      "redirect_uris": `${process.env.NEXTAUTH_URL}/api/auth/callback/mastodon`,
       // TODO: limiter au strict nécessaire
       // https://docs.joinmastodon.org/api/oauth-scopes/#granular
       "scopes": "read",
       "website": "https://app.helloquitx.com"
     };
-    try {
+        try {
       const response = await fetch(url, {
         method: 'POST',
         body: JSON.stringify(formData),
