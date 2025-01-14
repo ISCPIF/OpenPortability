@@ -2,6 +2,18 @@ import { NextResponse } from 'next/server'
 import { auth } from '@/app/auth'
 import { supabase, authClient } from '@/lib/supabase'
 import { BskyAgent } from '@atproto/api'
+import { createClient } from '@supabase/supabase-js'
+
+const supabaseServer = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  }
+)
 
 async function followOnMastodon(accessToken: string, userInstance: string, targetUsername: string, targetInstance: string) {
   // Remove 'https://' and any potential @instance from username
@@ -233,6 +245,50 @@ export async function POST(request: Request) {
           if (profile.success && profile.data.did) {
             await agent.follow(profile.data.did)
             console.log(' [send_follow] Successfully followed on Bluesky:', match.bluesky_handle)
+            
+            // Check current state before update
+            const { data: currentState, error: stateError } = await supabaseServer
+              .from('sources_targets')
+              .select('has_follow_bluesky, followed_at_bluesky')
+              .eq('source_id', session.user.id)
+              .eq('target_twitter_id', match.twitter_id)
+              .single()
+
+            console.log(' [send_follow] Current Bluesky follow state:', {
+              twitter_id: match.twitter_id,
+              source_id: session.user.id,
+              currentState,
+              stateError
+            })
+            
+            // Update sources_targets after successful Bluesky follow
+            const { error: updateError } = await supabaseServer
+              .from('sources_targets')
+              .update({
+                has_follow_bluesky: true,
+                followed_at_bluesky: new Date().toISOString()
+              })
+              .eq('source_id', session.user.id)
+              .eq('target_twitter_id', match.twitter_id)
+
+            if (updateError) {
+              console.error(' [send_follow] Failed to update sources_targets for Bluesky:', updateError)
+            } else {
+              // Verify the update
+              const { data: newState, error: verifyError } = await supabaseServer
+                .from('sources_targets')
+                .select('has_follow_bluesky, followed_at_bluesky')
+                .eq('source_id', session.user.id)
+                .eq('target_twitter_id', match.twitter_id)
+                .single()
+
+              console.log(' [send_follow] Updated Bluesky follow state:', {
+                twitter_id: match.twitter_id,
+                newState,
+                verifyError
+              })
+            }
+            
             results.bluesky.success++
           } else {
             throw new Error('Could not resolve profile DID')
@@ -275,6 +331,49 @@ export async function POST(request: Request) {
             match.mastodon_instance
           )
           console.log(' [send_follow] Successfully followed on Mastodon:', match.mastodon_username)
+
+          // Check current state before update
+          const { data: currentState, error: stateError } = await supabaseServer
+            .from('sources_targets')
+            .select('has_follow_mastodon, followed_at_mastodon')
+            .eq('source_id', session.user.id)
+            .eq('target_twitter_id', match.twitter_id)
+            .single()
+
+          console.log(' [send_follow] Current Mastodon follow state:', {
+            twitter_id: match.twitter_id,
+            currentState,
+            stateError
+          })
+
+          // Update sources_targets after successful Mastodon follow
+          const { error: updateError } = await supabaseServer
+            .from('sources_targets')
+            .update({
+              has_follow_mastodon: true,
+              followed_at_mastodon: new Date().toISOString()
+            })
+            .eq('source_id', session.user.id)
+            .eq('target_twitter_id', match.twitter_id)
+
+          if (updateError) {
+            console.error(' [send_follow] Failed to update sources_targets for Mastodon:', updateError)
+          } else {
+            // Verify the update
+            const { data: newState, error: verifyError } = await supabaseServer
+              .from('sources_targets')
+              .select('has_follow_mastodon, followed_at_mastodon')
+              .eq('source_id', session.user.id)
+              .eq('target_twitter_id', match.twitter_id)
+              .single()
+
+            console.log(' [send_follow] Updated Mastodon follow state:', {
+              twitter_id: match.twitter_id,
+              newState,
+              verifyError
+            })
+          }
+
           results.mastodon.success++
         } catch (error) {
           console.error(' [send_follow] Failed to follow on Mastodon:', {
