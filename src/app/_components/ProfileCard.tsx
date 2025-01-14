@@ -2,8 +2,7 @@
 
 import { useSession } from 'next-auth/react'
 import Image from 'next/image'
-import { FaTwitter, FaMastodon } from 'react-icons/fa'
-import { SiBluesky } from "react-icons/si"
+import { FaBluesky, FaXTwitter, FaMastodon } from 'react-icons/fa6'
 import { IoUnlinkOutline } from "react-icons/io5"
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
@@ -24,14 +23,14 @@ export default function ProfileCard({ type }: ProfileCardProps) {
       username: session.user.twitter_username,
       image: session.user.twitter_image,
       id: session.user.twitter_id,
-      icon: <FaTwitter className="text-[#1DA1F2] text-2xl" />,
+      icon: <FaXTwitter className="text-[#0f1419] text-2xl" />,
       connected: !!session.user.twitter_id
     },
     bluesky: {
       username: session.user.bluesky_username,
       image: session.user.bluesky_image,
       id: session.user.bluesky_id,
-      icon: <SiBluesky className="text-[#0085FF] text-2xl" />,
+      icon: <FaBluesky className="text-[#0085FF] text-2xl" />,
       connected: !!session.user.bluesky_id
     },
     mastodon: {
@@ -109,7 +108,7 @@ export default function ProfileCard({ type }: ProfileCardProps) {
             )}
           </div>
           {/* Badge du réseau social */}
-          <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center ring-2 ring-white/10">
+          <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-black/1 backdrop-blur-sm flex items-center justify-center ring-2 ring-white/10">
             {profile.icon}
           </div>
         </div>

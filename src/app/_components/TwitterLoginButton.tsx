@@ -2,7 +2,7 @@
 
 import { signIn } from "next-auth/react"
 import { motion } from "framer-motion"
-import { FaTwitter } from 'react-icons/fa'
+import { FaXTwitter } from 'react-icons/fa6'
 import { plex } from "@/app/fonts/plex"
 import { useTranslations } from 'next-intl'
 
@@ -72,10 +72,10 @@ export default function TwitterLoginButton({
       animate="visible"
       exit="exit"
       onClick={handleSignIn}
-      className={`flex items-center justify-center gap-2 w-full px-4 py-2 text-white bg-[#1DA1F2] hover:bg-[#1a8cd8] rounded-lg transition-colors ${plex.className} ${className}`}
+      className={`flex items-center justify-center gap-2 w-full px-4 py-2 text-white border bg-[#282729] border-white  hover:bg-gray-600 rounded-lg transition-colors ${plex.className} ${className}`}
       disabled={isConnected}
     >
-      <FaTwitter className="w-5 h-5" />
+      <FaXTwitter className="w-5 h-5" />
       <span>
         {isConnected ? t('connected') : t('services.twitter')}
       </span>

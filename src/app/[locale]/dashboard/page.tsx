@@ -155,8 +155,6 @@ export default function DashboardPage() {
     }
   };
 
-  const shareText = t('shareModal.shareText', { count: stats.followers + stats.following });
-
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[#2a39a9] relative w-full max-w-[90rem] m-auto">
