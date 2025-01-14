@@ -121,7 +121,6 @@ export async function POST(req: Request) {
           access_token: bskySession.data.accessJwt,
           refresh_token: bskySession.data.refreshJwt,
           userId: userId,
-          expires_at: undefined,
           token_type: 'bearer',
           scope: undefined,
         });
@@ -145,7 +144,6 @@ export async function POST(req: Request) {
           access_token: bskySession.data.accessJwt,
           refresh_token: bskySession.data.refreshJwt,
           userId: userId,
-          expires_at: undefined,
           token_type: 'bearer',
           scope: undefined,
         });
@@ -171,7 +169,6 @@ export async function POST(req: Request) {
           access_token: bskySession.data.accessJwt,
           refresh_token: bskySession.data.refreshJwt,
           userId: userId,
-          expires_at: undefined,
           token_type: 'bearer',
           scope: undefined,
         });
