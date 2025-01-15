@@ -12,6 +12,8 @@ export interface CustomAdapterUser extends Omit<AdapterUser, 'image'> {
   has_onboarded: boolean
   hqx_newsletter: boolean
   oep_accepted: boolean
+  have_seen_newsletter: boolean
+  research_accepted: boolean
   twitter_id?: string | null
   twitter_username?: string | null
   twitter_image?: string | null
@@ -125,6 +127,8 @@ const providerIdField = `${provider}_id` as keyof CustomAdapterUser
       has_onboarded: false,
       hqx_newsletter: false,
       oep_accepted: false,
+      have_seen_newsletter: false,
+      research_accepted: false,
       email: undefined
     }
 
@@ -174,6 +178,8 @@ const providerIdField = `${provider}_id` as keyof CustomAdapterUser
     has_onboarded: false,
     hqx_newsletter: false,
     oep_accepted: false,
+    have_seen_newsletter: false,
+    research_accepted: false,
     email: 'none'
   }
 
@@ -222,6 +228,8 @@ export async function getUser(id: string): Promise<CustomAdapterUser | null> {
     has_onboarded: user.has_onboarded,
     hqx_newsletter: user.hqx_newsletter,
     oep_accepted: user.oep_accepted,
+    have_seen_newsletter: user.have_seen_newsletter,
+    research_accepted: user.research_accepted,
     email: "none",
     emailVerified: null
   }
@@ -277,6 +285,8 @@ export async function getUserByAccount({ providerAccountId, provider }): Promise
     has_onboarded: user.has_onboarded,
     hqx_newsletter: user.hqx_newsletter,
     oep_accepted: user.oep_accepted,
+    have_seen_newsletter: user.have_seen_newsletter,
+    research_accepted: user.research_accepted,
     email: "none",
     emailVerified: null
   }
@@ -372,6 +382,8 @@ export async function updateUser(
     has_onboarded: user.has_onboarded,
     hqx_newsletter: user.hqx_newsletter,
     oep_accepted: user.oep_accepted,
+    have_seen_newsletter: user.have_seen_newsletter,
+    research_accepted: user.research_accepted,
     email: "none",
     emailVerified: null
   }
@@ -454,6 +466,8 @@ export async function getSessionAndUser(sessionToken: string): Promise<{ session
       has_onboarded: user.has_onboarded,
       hqx_newsletter: user.hqx_newsletter,
       oep_accepted: user.oep_accepted,
+      have_seen_newsletter: user.have_seen_newsletter,
+      research_accepted: user.research_accepted,
       email: "none",
       emailVerified: null
     }

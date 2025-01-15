@@ -110,6 +110,8 @@ async jwt({ token, user, account, profile }) {
         token.has_onboarded = !!user.has_onboarded // Conversion explicite en boolean
         token.hqx_newsletter = !!user.hqx_newsletter
         token.oep_accepted = !!user.oep_accepted
+        token.research_accepted = !!user.research_accepted
+        token.have_seen_newsletter = !!user.have_seen_newsletter
       }
 
       if (account && profile) {
@@ -176,6 +178,8 @@ async jwt({ token, user, account, profile }) {
               has_onboarded: !!user.has_onboarded,
               hqx_newsletter: !!user.hqx_newsletter,
               oep_accepted: !!user.oep_accepted,
+              research_accepted: !!user.research_accepted,
+              have_seen_newsletter: !!user.have_seen_newsletter,
               name: token.name || user.name,
               
               // For Twitter and Bluesky, use token values first
@@ -258,7 +262,9 @@ async jwt({ token, user, account, profile }) {
           profile: profile,
           has_onboarded: false,
           hqx_newsletter: false,
-          oep_accepted: false
+          oep_accepted: false,
+          have_seen_newsletter: false,
+          research_accepted: false
         }
       },
       // userinfo: {
@@ -278,7 +284,9 @@ async jwt({ token, user, account, profile }) {
           profile: profile,
           has_onboarded: false,
           hqx_newsletter: false,
-          oep_accepted: false, 
+          oep_accepted: false,
+          have_seen_newsletter: false,
+          research_accepted: false
         }
     }})
   ],

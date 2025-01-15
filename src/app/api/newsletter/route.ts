@@ -86,7 +86,7 @@ export async function POST(request: Request) {
       )
     }
 
-    const { email, acceptHQX, acceptOEP } = await request.json()
+    const { email, acceptHQX, acceptOEP, research_accepted } = await request.json()
 
     // Validation de base
     if (!email || (!acceptHQX && !acceptOEP)) {
@@ -118,6 +118,13 @@ export async function POST(request: Request) {
       updateData.oep_accepted = true
     }
 
+    if (research_accepted) {
+    
+    updateData.research_accepted = true
+    }
+
+    updateData.have_seen_newsletter = true
+
     // Mise à jour de l'utilisateur avec le client auth
     const { error: updateError } = await authClient
       .from('users')
@@ -136,5 +143,30 @@ export async function POST(request: Request) {
       { error: 'Failed to subscribe to newsletter' },
       { status: 500 }
     )
+  }
+}
+
+export async function GET() {
+  try {
+    const session = await auth();
+    
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { error } = await authClient
+      .from('users')
+      .update({ have_seen_newsletter: true })
+      .eq('id', session.user.id);
+
+    if (error) {
+      console.error('Error updating have_seen_newsletter:', error);
+      return NextResponse.json({ error: 'Failed to update preference' }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Error in newsletter GET route:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
