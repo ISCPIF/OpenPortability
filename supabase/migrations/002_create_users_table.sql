@@ -18,6 +18,9 @@ create table "next-auth"."users" (
     "updated_at" timestamptz not null default now(),
     "has_onboarded" boolean not null default false,
     "hqx_newsletter" boolean not null default false,
+    "oep_accepted" boolean not null default false,
+    "research_accepted"  boolean not null default false,
+    "have_seen_newsletter" boolean not null default false,
     primary key ("id"),
     unique("email")
 );
