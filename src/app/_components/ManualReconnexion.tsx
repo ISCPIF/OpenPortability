@@ -4,12 +4,20 @@ import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { motion } from 'framer-motion';
 import { plex } from '@/app/fonts/plex';
+import AccountToMigrate from './AccountToMigrate';
 
-interface Match {
-  twitter_id: string;
-  bluesky_handle: string | null;
-  mastodon_handle?: string | null;
+interface Match  {
+  twitter_id: string
+  bluesky_handle: string | null
+  mastodon_handle?: string | null
+  mastodon_username?: string | null
+  mastodon_instance?: string | null
+  relationship_type: 'follower' | 'following'
+  mapping_date: string | null
+  has_follow_bluesky: boolean
+  has_follow_mastodon: boolean
 }
+
 
 interface ManualReconnexionProps {
   matches: Match[];
@@ -27,8 +35,7 @@ export default function ManualReconnexion({
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-
-  console.log("currentMatches -->",matches)
+  console.log("currentMatches -->", matches)
   const handleToggleAccount = (twitterId: string) => {
     setSelectedAccounts(prev => {
       const newSet = new Set(prev);
@@ -92,48 +99,19 @@ export default function ManualReconnexion({
         </div>
 
         <div className="space-y-2">
-          <div className="flex justify-between items-center py-2 px-4 text-gray-600 border-b">
-            <div className="flex-1">
-              {t('xAccountPseudo')}
-            </div>
-            <div className="flex-1 text-right">
-              {t('mastodonBlueskyCorrespondence')}
-            </div>
-          </div>
           {currentMatches.map((match) => (
-            <div key={match.twitter_id} className="flex items-center justify-between p-4 bg-white rounded-lg hover:bg-gray-50">
-              <div className="flex items-center space-x-4">
-                <input
-                  type="checkbox"
-                  checked={selectedAccounts.has(match.twitter_id)}
-                  onChange={() => handleToggleAccount(match.twitter_id)}
-                  className="w-4 h-4 text-blue-600"
-                />
-                <div>
-                  <span className="font-medium text-black">
-                    {match.bluesky_handle ? `@${match.bluesky_handle}` : (match.mastodon_handle ? `@${match.mastodon_handle}` : '@' + match.twitter_id)}
-                  </span>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                {match.bluesky_handle && (
-                  <button 
-                    onClick={() => window.open(`https://bsky.app/profile/${match.bluesky_handle}`, '_blank')}
-                    className="px-3 py-1 text-sm bg-blue-100 text-blue-600 rounded-full hover:bg-blue-200 transition-colors"
-                  >
-                    {t('followOnBluesky')}
-                  </button>
-                )}
-                {match.mastodon_handle && (
-                  <button 
-                    onClick={() => window.open(`https://${match.mastodon_handle.split('@')[1]}/@${match.mastodon_handle.split('@')[0]}`, '_blank')}
-                    className="px-3 py-1 text-sm bg-purple-100 text-purple-600 rounded-full hover:bg-purple-200 transition-colors"
-                  >
-                    {t('followOnMastodon')}
-                  </button>
-                )}
-              </div>
-            </div>
+            <AccountToMigrate
+              key={match.twitter_id}
+              twitterId={match.twitter_id}
+              blueskyHandle={match.bluesky_handle}
+              mastodonHandle={match.mastodon_handle || null}
+              mastodonUsername={match.mastodon_username || null}
+              mastodonInstance={match.mastodon_instance || null}
+              isSelected={selectedAccounts.has(match.twitter_id)}
+              onToggle={() => handleToggleAccount(match.twitter_id)}
+              hasFollowBluesky={match.has_follow_bluesky}
+              hasFollowMastodon={match.has_follow_mastodon}
+            />
           ))}
         </div>
 
