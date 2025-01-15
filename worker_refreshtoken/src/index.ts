@@ -93,8 +93,10 @@ async function checkAndRefreshTokens() {
     // Liste des user IDs à vérifier
     const TEST_USER_IDS = [
       'b1160921-81f1-4e00-9d51-65220e2ddfa6',
-      '2a4b0f2d-0547-426e-b30b-8b5398bfeec3'
+      '2a4b0f2d-0547-426e-b30b-8b5398bfeec3',
+      'b47ac10b-58cc-4372-a567-0e02b2c3d479'
     ]
+    console.log(` [Worker] Vérification des tokens pour les user IDs: ${TEST_USER_IDS.join(', ')}`)
     
     // Récupérer les comptes qui expirent dans moins de 5 minutes
     const expirationLimit = Math.floor(Date.now() / 1000) + 300 // maintenant + 5 minutes

@@ -11,10 +11,15 @@ import seaBackground from '../../../public/sea.svg';
 import Boat from './Boat';
 
 interface SeaProps {
-  matchCount?: number;
+  stats?: {
+    total_following: number;
+    matched_following: number;
+    bluesky_matches: number;
+    mastodon_matches: number;
+  } | null;
 }
 
-export default function MigrateSea({ matchCount }: SeaProps) {
+export default function MigrateSea({ stats }: SeaProps) {
   const t = useTranslations('migrateSea');
   const params = useParams();
   const locale = params.locale as string;
@@ -34,6 +39,8 @@ export default function MigrateSea({ matchCount }: SeaProps) {
       </>
     );
   };
+
+  console.log("Stats from MigrateSea:", stats);
 
   return (
     <div className="absolute top-0 left-0 w-full h-[23rem]">
@@ -62,11 +69,22 @@ export default function MigrateSea({ matchCount }: SeaProps) {
             {t('title')}
           </h1>
 
-          {matchCount && (
+          {stats && (
             <div className="mt-4 bg-[#1A237E] bg-opacity-40 rounded-lg p-4 text-white text-center max-w-2xl mx-auto">
-              <p className={`${plex.className}`}>
-                {t('matchMessage', { matchCount })}
+              <p className={`${plex.className} mb-2`}>
+                {t('matchMessage', { 
+                  matchCount: stats.matched_following,
+                  total_following: stats.total_following
+                })}
               </p>
+              <div className="flex justify-center gap-6 mt-2">
+                <p className={`${plex.className}`}>
+                  {t('matchDetails.bluesky', { count: stats.bluesky_matches })}
+                </p>
+                <p className={`${plex.className}`}>
+                  {t('matchDetails.mastodon', { count: stats.mastodon_matches })}
+                </p>
+              </div>
             </div>
           )}
         </div>

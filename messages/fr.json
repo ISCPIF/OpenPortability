@@ -372,7 +372,13 @@
     "selectAll": "Tout sélectionner",
     "deselectAll": "Tout désélectionner",
     "startMigration": "Démarrer la migration",
-    "migrating": "Migration en cours..."
+    "migrating": "Migration en cours...",
+    "migrationInProgress": "Migration en cours...",
+    "migrationComplete": "Migration terminée !",
+    "migrationProgress": "{current} comptes migrés sur {total}",
+    "migrationCompleteStats": "{count} comptes migrés avec succès",
+    "minimize": "Réduire",
+    "close": "Fermer"
   },
   "ReconnexionOptions": {
     "buttons": {
@@ -393,6 +399,10 @@
     "logo": {
       "alt": "Logo HelloQuittex"
     },
+    "matchDetails": {
+      "bluesky": "{count} sur Bluesky",
+      "mastodon": "{count} sur Mastodon"
+    },
     "title": "C'est l'heure de la #GrandeReconnexion !",
     "matchMessage": "{matchCount} passagers ont été retrouvés lors de votre 1ère étape de migration !\nC'est le moment maintenant d'activer la connexion avec ceux que vous souhaitez\nrejoindre sur vos nouveaux réseaux."
   },
@@ -407,5 +417,24 @@
     "mastodonBlueskyCorrespondence": "Correspondance Mastodon/Bluesky",
     "followOnBluesky": "Suivre sur Bluesky",
     "followOnMastodon": "Suivre sur Mastodon"
-  }
+  },
+  "AccountToMigrate": {
+    "followOnBluesky": "Suivre sur Bluesky",
+    "followOnMastodon": "Suivre sur Mastodon",
+    "followedOnBluesky": "Suivi sur Bluesky",
+    "followedOnMastodon": "Suivi sur Mastodon"
+  },
+"reconnexionModal": {
+  "title": "Vous venez d'activer la connexion avec {count} comptes !",
+  "message": "Félicitations, votre reconnexion est bien effectuée, vous êtes arrivé à bon port.",
+  "stayInformed": "RESTEZ INFORMÉ DES NOUVELLES CONNEXIONS",
+  "progressTitle": "Reconnexion en cours : {succeeded} sur {total} comptes",
+  "progressMessage": "Veuillez patienter pendant que nous effectuons la reconnexion de vos comptes...",
+  "migrationInProgress": "Reconnexion en cours...",
+  "migrationComplete": "Reconnexion terminée !",
+  "migrationProgress": "{current} comptes reconnectés sur {total}",
+  "migrationCompleteStats": "{count} comptes reconnectés avec succès",
+  "minimize": "Réduire",
+  "close": "Fermer"
+}
 }
