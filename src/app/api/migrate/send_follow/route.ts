@@ -126,22 +126,8 @@ export async function POST(request: Request) {
     }
     console.log(' [send_follow] Session found for user:', session.user.id)
 
-    // Get user info from next-auth users table
-    const { data: userData, error: userError } = await authClient
-      .from('users')
-      .select('mastodon_id, mastodon_username, mastodon_instance')
-      .eq('id', session.user.id)
-      .single()
-
-    if (userError) {
-      console.error(' [send_follow] Error fetching user data:', userError)
-      return NextResponse.json({ error: 'Failed to fetch user data' }, { status: 500 })
-    }
-
-    console.log(' [send_follow] User data:', userData)
-
     const { accounts } = await request.json()
-    console.log(' [send_follow] Received accounts:', {
+    console.log(' [send_follow] Received batch of accounts:', {
       count: accounts?.length || 0,
       accounts: accounts
     })
@@ -160,8 +146,6 @@ export async function POST(request: Request) {
       .in('provider', ['bluesky', 'mastodon'])
       .eq('type', 'oauth')
 
-    console.log("Accounts data:", accountsData)
-
     if (accountsError || !accountsData) {
       console.error(' [send_follow] Credentials error:', accountsError)
       return NextResponse.json({ error: 'Social credentials not found' }, { status: 400 })
@@ -170,237 +154,101 @@ export async function POST(request: Request) {
     const blueskyAccount = accountsData.find(acc => acc.provider === 'bluesky')
     const mastodonAccount = accountsData.find(acc => acc.provider === 'mastodon')
 
-    console.log(' [send_follow] Found credentials:', {
-      hasBluesky: !!blueskyAccount,
-      hasMastodon: !!mastodonAccount,
-      blueskyHandle: blueskyAccount?.provider_account_id,
-      mastodonHandle: mastodonAccount?.provider_account_username
-    })
+    // Get user info for Mastodon instance
+    const { data: userData, error: userError } = await authClient
+      .from('users')
+      .select('mastodon_id, mastodon_username, mastodon_instance')
+      .eq('id', session.user.id)
+      .single()
 
-    // Get both Bluesky and Mastodon handles for selected accounts
-    console.log(' [send_follow] Fetching social handles...')
-    const { data: matches, error: matchesError } = await supabase
-      .from('migration_bluesky_view')
-      .select('twitter_id, bluesky_handle')
-      .in('twitter_id', accounts)
-      .eq('user_id', session.user.id)
-      .eq('has_follow_bluesky', false)
-      .not('bluesky_handle', 'is', null)
-
-    if (matchesError) {
-      console.error(' [send_follow] Error fetching Bluesky matches:', matchesError)
-    } else {
-      console.log(' [send_follow] Found Bluesky matches:', {
-        count: matches?.length || 0,
-        matches: matches
-      })
+    if (userError) {
+      console.error(' [send_follow] Error fetching user data:', userError)
+      return NextResponse.json({ error: 'Failed to fetch user data' }, { status: 500 })
     }
 
-    // Get Mastodon matches
-    const { data: mastodonMatches, error: mastodonMatchesError } = await supabase
-      .from('twitter_mastodon_users')
-      .select('twitter_id, mastodon_username, mastodon_instance, mastodon_id')
-      .in('twitter_id', accounts)
-      .not('mastodon_username', 'is', null)
+    // Traiter les follows Bluesky
+    const blueskyFollows = accounts.filter(acc => acc.bluesky_handle && !acc.has_follow_bluesky)
+    console.log(' [send_follow] Bluesky accounts to follow:', blueskyFollows.length)
 
-    if (mastodonMatchesError) {
-      console.error(' [send_follow] Error fetching Mastodon matches:', mastodonMatchesError)
-    } else {
-      console.log(' [send_follow] Found Mastodon matches:', {
-        count: mastodonMatches?.length || 0,
-        matches: mastodonMatches
-      })
-    }
+    let blueskySuccessCount = 0
+    let mastodonSuccessCount = 0
 
-    const results = {
-      bluesky: { success: 0, failed: 0 },
-      mastodon: { success: 0, failed: 0 }
-    }
-
-    // Follow on Bluesky
-    if (blueskyAccount?.access_token && matches && matches.length > 0) {
-      console.log(' [send_follow] Initializing Bluesky agent...')
+    if (blueskyAccount && blueskyFollows.length > 0) {
       const agent = new BskyAgent({ service: 'https://bsky.social' })
-      
-      console.log(' [send_follow] Resuming Bluesky session...', {
-        handle: blueskyAccount.provider_account_id,
-        did: blueskyAccount.provider_account_id
-      })
-      
       await agent.resumeSession({
         accessJwt: blueskyAccount.access_token,
         refreshJwt: blueskyAccount.refresh_token,
-        did: blueskyAccount.provider_account_id,
         handle: blueskyAccount.provider_account_id,
+        did: blueskyAccount.provider_account_id,
         active: true
       })
 
-      console.log(' [send_follow] Bluesky session resumed')
-
-      for (const match of matches) {
-        console.log(' [send_follow] Attempting to follow on Bluesky:', match.bluesky_handle)
+      for (const account of blueskyFollows) {
         try {
-          // First resolve the handle to a DID
-          const profile = await agent.getProfile({ actor: match.bluesky_handle })
-          if (profile.success && profile.data.did) {
-            await agent.follow(profile.data.did)
-            console.log(' [send_follow] Successfully followed on Bluesky:', match.bluesky_handle)
-            
-            // Check current state before update
-            const { data: currentState, error: stateError } = await supabaseServer
-              .from('sources_targets')
-              .select('has_follow_bluesky, followed_at_bluesky')
-              .eq('source_id', session.user.id)
-              .eq('target_twitter_id', match.twitter_id)
-              .single()
-
-            console.log(' [send_follow] Current Bluesky follow state:', {
-              twitter_id: match.twitter_id,
-              source_id: session.user.id,
-              currentState,
-              stateError
-            })
-            
-            // Update sources_targets after successful Bluesky follow
-            const { error: updateError } = await supabaseServer
-              .from('sources_targets')
-              .update({
-                has_follow_bluesky: true,
-                followed_at_bluesky: new Date().toISOString()
-              })
-              .eq('source_id', session.user.id)
-              .eq('target_twitter_id', match.twitter_id)
-
-            if (updateError) {
-              console.error(' [send_follow] Failed to update sources_targets for Bluesky:', updateError)
-            } else {
-              // Verify the update
-              const { data: newState, error: verifyError } = await supabaseServer
-                .from('sources_targets')
-                .select('has_follow_bluesky, followed_at_bluesky')
-                .eq('source_id', session.user.id)
-                .eq('target_twitter_id', match.twitter_id)
-                .single()
-
-              console.log(' [send_follow] Updated Bluesky follow state:', {
-                twitter_id: match.twitter_id,
-                newState,
-                verifyError
-              })
-            }
-            
-            results.bluesky.success++
-          } else {
-            throw new Error('Could not resolve profile DID')
+          const profile = await agent.getProfile({ actor: account.bluesky_handle })
+          if (!profile.success) {
+            throw new Error(`Failed to resolve profile for ${account.bluesky_handle}`)
           }
+          
+          await agent.follow(profile.data.did)
+          await supabaseServer
+            .from('sources_targets')
+            .update({ has_follow_bluesky: true })
+            .eq('source_id', session.user.id)
+            .eq('target_twitter_id', account.twitter_id)
+
+          console.log(` [send_follow] Successfully followed ${account.bluesky_handle} on Bluesky`)
+          blueskySuccessCount++
         } catch (error) {
-          console.error(' [send_follow] Failed to follow on Bluesky:', {
-            handle: match.bluesky_handle,
-            error: error
-          })
-          results.bluesky.failed++
+          console.error(` [send_follow] Failed to follow ${account.bluesky_handle} on Bluesky:`, error)
         }
       }
-    } else {
-      console.log(' [send_follow] Skipping Bluesky follows:', {
-        hasToken: !!blueskyAccount?.access_token,
-        hasMatches: !!matches,
-        matchCount: matches?.length || 0
-      })
     }
 
-    // Follow on Mastodon
-    if (mastodonAccount?.access_token && mastodonMatches && mastodonMatches.length > 0 && userData?.mastodon_instance) {
-      console.log(' [send_follow] Starting Mastodon follows...', {
-        accessToken: mastodonAccount.access_token.substring(0, 10) + '...',
-        userMastodonId: userData.mastodon_id,
-        userMastodonInstance: userData.mastodon_instance
-      })
+    // Traiter les follows Mastodon
+    const mastodonFollows = accounts.filter(acc => 
+      acc.mastodon_username && 
+      acc.mastodon_instance && 
+      !acc.has_follow_mastodon
+    )
+    console.log(' [send_follow] Mastodon accounts to follow:', mastodonFollows.length)
 
-      for (const match of mastodonMatches) {
-        const targetMastodonHandle = `${match.mastodon_username}@${match.mastodon_instance}`
-        console.log(' [send_follow] Attempting to follow on Mastodon:', {
-          handle: targetMastodonHandle,
-          instance: match.mastodon_instance
-        })
+    if (mastodonAccount && mastodonFollows.length > 0 && userData.mastodon_instance) {
+      for (const account of mastodonFollows) {
         try {
           await followOnMastodon(
             mastodonAccount.access_token,
             userData.mastodon_instance,
-            targetMastodonHandle,
-            match.mastodon_instance
+            account.mastodon_username!,
+            account.mastodon_instance!
           )
-          console.log(' [send_follow] Successfully followed on Mastodon:', match.mastodon_username)
-
-          // Check current state before update
-          const { data: currentState, error: stateError } = await supabaseServer
+          await supabaseServer
             .from('sources_targets')
-            .select('has_follow_mastodon, followed_at_mastodon')
+            .update({ has_follow_mastodon: true })
             .eq('source_id', session.user.id)
-            .eq('target_twitter_id', match.twitter_id)
-            .single()
+            .eq('target_twitter_id', account.twitter_id)
 
-          console.log(' [send_follow] Current Mastodon follow state:', {
-            twitter_id: match.twitter_id,
-            currentState,
-            stateError
-          })
-
-          // Update sources_targets after successful Mastodon follow
-          const { error: updateError } = await supabaseServer
-            .from('sources_targets')
-            .update({
-              has_follow_mastodon: true,
-              followed_at_mastodon: new Date().toISOString()
-            })
-            .eq('source_id', session.user.id)
-            .eq('target_twitter_id', match.twitter_id)
-
-          if (updateError) {
-            console.error(' [send_follow] Failed to update sources_targets for Mastodon:', updateError)
-          } else {
-            // Verify the update
-            const { data: newState, error: verifyError } = await supabaseServer
-              .from('sources_targets')
-              .select('has_follow_mastodon, followed_at_mastodon')
-              .eq('source_id', session.user.id)
-              .eq('target_twitter_id', match.twitter_id)
-              .single()
-
-            console.log(' [send_follow] Updated Mastodon follow state:', {
-              twitter_id: match.twitter_id,
-              newState,
-              verifyError
-            })
-          }
-
-          results.mastodon.success++
+          console.log(` [send_follow] Successfully followed ${account.mastodon_username}@${account.mastodon_instance} on Mastodon`)
+          mastodonSuccessCount++
         } catch (error) {
-          console.error(' [send_follow] Failed to follow on Mastodon:', {
-            username: match.mastodon_username,
-            error: error
-          })
-          results.mastodon.failed++
+          console.error(` [send_follow] Failed to follow ${account.mastodon_username}@${account.mastodon_instance} on Mastodon:`, error)
         }
       }
-    } else {
-      console.log(' [send_follow] Skipping Mastodon follows:', {
-        hasToken: !!mastodonAccount?.access_token,
-        hasMatches: !!mastodonMatches,
-        matchCount: mastodonMatches?.length || 0
-      })
     }
 
-    console.log(' [send_follow] Final results:', {
-      bluesky: results.bluesky,
-      mastodon: results.mastodon
+    return NextResponse.json({ 
+      success: true,
+      results: {
+        bluesky: {
+          attempted: blueskyFollows.length,
+          succeeded: blueskySuccessCount
+        },
+        mastodon: {
+          attempted: mastodonFollows.length,
+          succeeded: mastodonSuccessCount
+        }
+      }
     })
-
-    return NextResponse.json({
-      message: 'Follow requests sent',
-      results
-    })
-
   } catch (error) {
     console.error(' [send_follow] Unexpected error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
