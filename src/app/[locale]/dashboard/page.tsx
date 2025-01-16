@@ -313,23 +313,26 @@ export default function DashboardPage() {
                   </motion.button>
                 </div>
               )}
-              <div className="flex flex-col items-center text-center space-y-4 mb-4">
-                <h2 className={`${plex.className} text-2xl font-medium text-white`}>
-                  {t('tutorial.title')}
-                </h2>
-                <motion.a
-                  href="https://vimeo.com/1044334098?share=copy"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="group inline-flex items-center gap-3 text-indigo-200 hover:text-white transition-colors"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  <Play className="w-5 h-5" />
-                  <span className={`${plex.className} text-lg`}>{t('tutorial.watchVideo')}</span>
 
-                </motion.a>
-              </div>
+              {progress < 100 &&
+                <div className="flex flex-col items-center text-center space-y-4 mb-4">
+                  <h2 className={`${plex.className} text-2xl font-medium text-white`}>
+                    {t('tutorial.title')}
+                  </h2>
+                  <motion.a
+                    href="https://vimeo.com/1044334098?share=copy"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group inline-flex items-center gap-3 text-indigo-200 hover:text-white transition-colors"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <Play className="w-5 h-5" />
+                    <span className={`${plex.className} text-lg`}>{t('tutorial.watchVideo')}</span>
+
+                  </motion.a>
+                </div>
+              }
             </div>
 
             <AnimatePresence>
