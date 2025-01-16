@@ -1,1 +1,238 @@
-{}
+{
+    "consentModal": {
+        "buttons": {
+            "cancel": "Semmet",
+            "accept": "Qbel, tkemmleḍ"
+        }
+    },
+    "blueskyLogin": {
+        "form": {
+            "submit": "Qqen",
+            "identifier": {
+                "placeholder": "isem_n_useqdac.bsky.social",
+                "label": "Asulay n BlueSky"
+            },
+            "password": {
+                "placeholder": "••••••••",
+                "label": "Awal n uɛeddi n wesnas",
+                "help": "Snulfu-d awal n uɛeddi n usnas deg"
+            },
+            "errors": {
+                "default": "Teḍra-d tuccḍa"
+            }
+        },
+        "title": "Qqen ɣer BlueSky",
+        "tooltip": {
+            "createAccount": "Snulfu-d yiwen da",
+            "noAccount": "Ulac ɣur-k·m amiḍan deg BlueSky?"
+        }
+    },
+    "settings": {
+        "deleteConfirm": {
+            "cancel": "Semmet",
+            "title": "Kkes amḍan",
+            "confirm": "Ih, kkes amiḍan-iw"
+        },
+        "notifications": {
+            "title": "Ilɣa",
+            "hqxNewsletter": "Awi-d ileqman seg HelloQuitX"
+        },
+        "logout": "Senser tuqqna",
+        "deleteAccount": "Kkes amiḍan-iw"
+    },
+    "dashboardLoginButtons": {
+        "services": {
+            "mastodon": {
+                "title": "Mastodon",
+                "instances": {
+                    "piaille": "piaille.fr",
+                    "mastodon": "mastodon.social"
+                }
+            },
+            "twitter": "Twitter",
+            "bluesky": "BlueSky"
+        },
+        "addSocialNetwork": "Rnu aẓeṭṭa inmetti nniḍen"
+    },
+    "errorModal": {
+        "close": "Mdel",
+        "title": "Tuccḍa deg usali"
+    },
+    "successModal": {
+        "following": {
+            "username": "@{username}"
+        },
+        "close": "Mdel",
+        "followers": {
+            "username": "@{username}"
+        }
+    },
+    "profile": {
+        "providers": {
+            "twitter": "Twitter",
+            "mastodon": "Mastodon",
+            "bluesky": "Bluesky"
+        }
+    },
+    "migrationComplete": {
+        "success": {
+            "displayName": "({name})",
+            "viewProfile": "Wali amaɣnu"
+        },
+        "error": {
+            "retry": "Ɛreḍ tikkelt-nniḍen",
+            "createAccount": "Snulfu-d amiḍan",
+            "title": "Tuccḍa deg tunigin"
+        }
+    },
+    "footer": {
+        "hosted": {
+            "cnrs": "CNRS/ISC-PIF",
+            "hqx": "HelloQuitX",
+            "text": "Yiɣerɣert-a tessuddes-itt-id {cnrs} yernu tennegma-d s wufus n tegrawt n {hqx}"
+        }
+    },
+    "largeFiles": {
+        "status": {
+            "completed": "Yemmed",
+            "failed": "Yerreẓ",
+            "pending": "Yettṛaǧu",
+            "title": "Addad",
+            "processing": "Asesfer"
+        },
+        "progress": {
+            "following": {
+                "processed": "{processed} / {total}",
+                "title": "Teṭṭafareḍ"
+            },
+            "total": {
+                "processed": "{processed} / {total}"
+            },
+            "followers": {
+                "processed": "{processed} / {total}"
+            }
+        },
+        "stats": {
+            "followers": "Imeḍfaṛen",
+            "following": "Teṭṭafareḍ"
+        },
+        "button": {
+            "dashboard": "Uɣal ar tfelwit"
+        },
+        "logo": {
+            "alt": "Alugu n HelloQuitX"
+        }
+    },
+    "connectedAccounts": {
+        "services": {
+            "bluesky": "BlueSky",
+            "mastodon": "Mastodon",
+            "twitter": "Twitter"
+        },
+        "and": "d",
+        "connectedWith": "Aql-ik·em teqqneḍ s {services} ✨"
+    },
+    "partageButton": {
+        "share": "Bḍu"
+    },
+    "header": {
+        "profile": {
+            "username": "@{username}"
+        },
+        "logout": "Senser tuqqna"
+    },
+    "progressSteps": {
+        "share": {
+            "title": "Beṭṭu",
+            "description": "Ԑiwen imdukal-ik·im ad inigen"
+        },
+        "import": {
+            "title": "Kter"
+        },
+        "socialNetworks": {
+            "description": "Rnu aẓeṭṭa inmetti",
+            "title": "Iẓeḍwa inmettiyen"
+        },
+        "dashboard": {
+            "description": "Yeqqen akken iwata ɣer tɣerɣert HelloQuitX!"
+        }
+    },
+    "uploadResults": {
+        "stats": {
+            "twitterAccounts": {
+                "value": "{count}",
+                "label": "Imiḍanen n Twitter"
+            },
+            "readyTravelers": {
+                "label": "Theyyam iman-nnwen i usikel"
+            }
+        },
+        "inviteFriends": "Ɛreḍ-d ineḍfaṛen-inek·inem ad ddun yid-k·m!"
+    },
+    "dashboard": {
+        "newsletter": {
+            "emailPlaceholder": "amedya@email.com",
+            "emailLabel": "Tansa-k·m imayl",
+            "subscribing": "Ajerred iteddu…",
+            "confirmSubscribe": "Sentem ajerred"
+        },
+        "shareModal": {
+            "shareOn": "Bḍu-t deg {platform}",
+            "title": "Bḍu asikel-ik·im"
+        },
+        "loading": "Yettɛebbi-d isefka-k·m…",
+        "addSocialNetwork": "Rnu aẓeṭṭa inmetti",
+        "migrationStep": {
+            "completed": "Tfukkeḍ aswir amezwaru n yinig-ik·im"
+        }
+    },
+    "loginButtons": {
+        "bluesky": {
+            "connect": "Qqen s BlueSky"
+        },
+        "mastodon": {
+            "connect": "Qqen s Mastodon",
+            "instances": {
+                "mastodon": "Qqen s Mastodon.social",
+                "piaille": "Qqen s Piaille.fr"
+            }
+        },
+        "twitter": {
+            "notDeleted": "Ɣuri amiḍan deg Twitter",
+            "continue": "Kemmel akked Twitter"
+        },
+        "deleteAccount": "Kkseɣ yakan amiḍan-iw Twitter"
+    },
+    "upload": {
+        "loading-indic": "Yettɛebbi-d isefka-k·m…",
+        "helpModal": {
+            "steps": [
+                "Qqen ɣer umiḍan-inek·inem n Twitter",
+                "Ruḥ ɣer \"Ugar\" deg umuɣ azelmaḍ",
+                null,
+                null,
+                "Sentem awal-ik·im uffir ma ssutren-t-id"
+            ]
+        },
+        "logo": {
+            "alt": "Alugu n HelloQuitX"
+        },
+        "errors": {
+            "noFiles": "Ulac kra ufaylu yettwafernen",
+            "fileSize": "Tiddi n ufaylu tɛedda i talast n 1 GB"
+        }
+    },
+    "uploadButton": {
+        "dropHere": "Sers afaylu-k·m da"
+    },
+    "dashboardSea": {
+        "welcome": "Ansuf yis-k·m ɣer HelloQuitX!",
+        "logo": {
+            "alt": "Alugu n HelloQuitX"
+        }
+    },
+    "signin": {
+        "loading": "Aɛebbi n telɣa…",
+        "subtitle": "Bdut tuqqna akked Twitter akken ad tzegrem isefka-nwen"
+    }
+}

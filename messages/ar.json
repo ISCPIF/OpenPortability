@@ -1,0 +1,125 @@
+{
+    "successModal": {
+        "followers": {
+            "username": "@{username}"
+        },
+        "following": {
+            "username": "@{username}"
+        },
+        "close": "أغلق"
+    },
+    "dashboardLoginButtons": {
+        "services": {
+            "bluesky": "بلوسكاي",
+            "twitter": "تويتر",
+            "mastodon": {
+                "title": "ماستدون",
+                "instances": {
+                    "piaille": "piaille.fr",
+                    "mastodon": "mastodon.social"
+                }
+            }
+        }
+    },
+    "partageButton": {
+        "share": "شارك"
+    },
+    "largeFiles": {
+        "status": {
+            "completed": "اكتمل",
+            "processing": "المعالجة جارية",
+            "title": "منشورات",
+            "failed": "فشل"
+        }
+    },
+    "profile": {
+        "providers": {
+            "mastodon": "ماستدون",
+            "twitter": "تويتر",
+            "bluesky": "بلوسكاي"
+        }
+    },
+    "blueskyLogin": {
+        "form": {
+            "password": {
+                "label": "كلمة سر التطبيق",
+                "placeholder": "••••••••"
+            },
+            "identifier": {
+                "placeholder": "username.bsky.social"
+            },
+            "submit": "لِج"
+        }
+    },
+    "progressSteps": {
+        "share": {
+            "title": "مُشارَكة"
+        },
+        "socialNetworks": {
+            "title": "الشبكات الاجتماعية"
+        },
+        "import": {
+            "title": "استيراد"
+        },
+        "dashboard": {
+            "title": "لوح المراقبة"
+        }
+    },
+    "header": {
+        "profile": {
+            "username": "@{username}"
+        },
+        "logout": "خروج"
+    },
+    "connectedAccounts": {
+        "services": {
+            "mastodon": "ماستدون",
+            "bluesky": "بلوسكاي"
+        }
+    },
+    "consentModal": {
+        "buttons": {
+            "cancel": "ألغِ"
+        }
+    },
+    "migrationComplete": {
+        "error": {
+            "retry": "المحاولة مجددًا",
+            "createAccount": "إنشاء حساب"
+        },
+        "success": {
+            "displayName": "({name})",
+            "viewProfile": "عرض الملف التعريفي"
+        }
+    },
+    "footer": {
+        "hosted": {
+            "hqx": "HelloQuitX",
+            "cnrs": "CNRS/ISC-PIF"
+        }
+    },
+    "uploadResults": {
+        "stats": {
+            "twitterAccounts": {
+                "value": "{count}"
+            }
+        }
+    },
+    "errorModal": {
+        "close": "أغلق"
+    },
+    "dashboard": {
+        "newsletter": {
+            "subscribing": "جار التسجيل…",
+            "emailPlaceholder": "example@email.com"
+        }
+    },
+    "settings": {
+        "deleteConfirm": {
+            "cancel": "ألغِ"
+        },
+        "notifications": {
+            "title": "الإشعارات"
+        }
+    }
+}

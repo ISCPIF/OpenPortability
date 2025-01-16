@@ -1,0 +1,20 @@
+{
+    "connectedAccounts": {
+        "services": {
+            "bluesky": "BlueSky",
+            "twitter": "Twitter",
+            "mastodon": "Mastodon"
+        },
+        "connectedWith": "Accedeches a {services} ✨",
+        "and": "e"
+    },
+    "header": {
+        "logout": "Pechar sesión",
+        "profile": {
+            "username": "@{username}"
+        }
+    },
+    "blueskyLogin": {
+        "title": "Accede a BlueSky"
+    }
+}
