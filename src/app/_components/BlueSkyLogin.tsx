@@ -20,7 +20,7 @@ export default function BlueSkyLogin({ onLoginComplete }: BlueSkyLoginProps) {
   const [isLoading, setIsLoading] = useState(false);
   const t = useTranslations('blueskyLogin');
   const locale = useLocale();
-  
+
   const identifierRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
 
@@ -36,7 +36,10 @@ export default function BlueSkyLogin({ onLoginComplete }: BlueSkyLoginProps) {
     setIsLoading(true);
 
     try {
-      const identifier = identifierRef.current?.value;
+      let identifier = identifierRef.current?.value.trim();
+      if (identifier?.[0] === "@") {
+        identifier = identifier.slice(1);
+      }
       const password = passwordRef.current?.value;
 
       if (!identifier || !password) {
@@ -49,12 +52,12 @@ export default function BlueSkyLogin({ onLoginComplete }: BlueSkyLoginProps) {
       });
 
       const data = await response.json();
-      
+
       if (!data.success) {
         setError(data.error);
         return;
       }
-      
+
       const result = await signIn('bluesky', {
         ...data.user,
         redirect: false
@@ -78,12 +81,12 @@ export default function BlueSkyLogin({ onLoginComplete }: BlueSkyLoginProps) {
 
   const containerVariants = {
     hidden: { opacity: 0, y: 20 },
-    visible: { 
-      opacity: 1, 
+    visible: {
+      opacity: 1,
       y: 0,
       transition: { duration: 0.4, ease: "easeOut" }
     },
-    exit: { 
+    exit: {
       opacity: 0,
       y: -20,
       transition: { duration: 0.3 }
@@ -104,35 +107,34 @@ export default function BlueSkyLogin({ onLoginComplete }: BlueSkyLoginProps) {
       className="w-full max-w-md mx-auto backdrop-blur-lg bg-white p-8 rounded-2xl shadow-xl"
     >
       <div className="flex flex-col items-center gap-6 mb-8">
-          <h2 className={`${plex.className} text-xl font-bold bg-gradient-to-r from-sky-400 via-blue-500 to-purple-500 text-transparent bg-clip-text`}>
-            {t('title')}
-          </h2>
+        <h2 className={`${plex.className} text-xl font-bold bg-gradient-to-r from-sky-400 via-blue-500 to-purple-500 text-transparent bg-clip-text`}>
+          {t('title')}
+        </h2>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="space-y-5">
           <div>
-            <label htmlFor="identifier" className={`${plex.className} block text-sm font-medium text-gray-500 mb-2`}>
-              {t('form.identifier.label')}
+            <label htmlFor="identifier" className={`${plex.className} block text-sm font-medium text-gray-800 mb-2`}>
+              {t('form.identifier.label')} <span className="text-sm text-gray-500">({t('form.identifier.placeholder')})</span>
             </label>
-              <input
-                ref={identifierRef}
-                type="text"
-                id="identifier"
-                placeholder={t('form.identifier.placeholder')}
-                className={`${plex.className} w-full pl-11 pr-4 py-3 bg-white/10 border-2 border-gray-300/20 rounded-xl
+            <input
+              ref={identifierRef}
+              type="text"
+              id="identifier"
+              className={`${plex.className} w-full pl-11 pr-4 py-3 bg-white/10 border-2 border-gray-300/20 rounded-xl
                            focus:ring-2 focus:ring-sky-400 focus:border-transparent
                            placeholder-gray-400 text-black transition-all duration-200`}
-                disabled={isLoading}
-              />
+              disabled={isLoading}
+            />
             {/* </motion.div> */}
           </div>
-          
+
           <div>
-            <label htmlFor="password" className={`${plex.className} block text-sm font-medium text-gray-600 mb-2`}>
+            <label htmlFor="password" className={`${plex.className} block text-sm font-medium text-gray-800 mb-2`}>
               {t('form.password.label')}
             </label>
-            <motion.div 
+            <motion.div
               className="relative"
               variants={inputVariants}
               whileFocus="focus"
@@ -150,10 +152,10 @@ export default function BlueSkyLogin({ onLoginComplete }: BlueSkyLoginProps) {
                 disabled={isLoading}
               />
             </motion.div>
-            <p className={`${plex.className} mt-2 text-xs text-gray-400`}>
+            <p className={`${plex.className} mt-2 text-xs text-gray-600`}>
               {t('form.password.help')}{' '}
-              <a 
-                href="https://bsky.app/settings/app-passwords" 
+              <a
+                href="https://bsky.app/settings/app-passwords"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-sky-400 hover:text-sky-300 underline decoration-dotted"
