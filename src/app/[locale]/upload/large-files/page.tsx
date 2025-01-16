@@ -9,7 +9,6 @@ import ErrorModal from "../../../_components/ErrorModal";
 import Image from 'next/image';
 import seaBackground from '../../../../public/sea.svg';
 import { plex } from '../../../fonts/plex';
-import logoHQX from '../../../../../public/logoxHQX/HQX-rose-FR.svg';
 import { motion, AnimatePresence } from 'framer-motion';
 import boat1 from '../../../../../public/boats/boat-1.svg';
 import { Loader2 } from 'lucide-react';
@@ -128,11 +127,11 @@ export default function LargeFilesPage() {
   // Calculer les pourcentages de progression
   const totalItemCount = followerCount + followingCount;
   const isSmallUpload = totalItemCount < 2000;
-  
-  const followerProgress = jobStatus?.stats?.followers?.processed !== undefined ? 
+
+  const followerProgress = jobStatus?.stats?.followers?.processed !== undefined ?
     Math.round((jobStatus.stats.followers.processed / followerCount) * 100) : 0;
-  
-  const followingProgress = jobStatus?.stats?.following?.processed !== undefined ? 
+
+  const followingProgress = jobStatus?.stats?.following?.processed !== undefined ?
     Math.round((jobStatus.stats.following.processed / followingCount) * 100) : 0;
 
   const totalProgress = jobStatus?.stats?.progress || 0;
@@ -155,24 +154,24 @@ export default function LargeFilesPage() {
 
   return (
     <>
-    <div className="min-h-screen bg-[#2a39a9] relative w-full max-w-[90rem] m-auto">
-      <Header />
-      
-      <div className="flex justify-center mt-8 mb-8">
-        <Image
-          src={logoHQX}
-          alt={t('logo.alt')}
-          width={306}
-          height={125}
-          className="mx-auto"
-          priority
-        />
-      </div>
+      <div className="min-h-screen bg-[#2a39a9] relative w-full max-w-[90rem] m-auto">
+        <Header />
 
-      <div className="relative">
-        <div className="absolute inset-0 flex flex-col items-center justify-center p-8 mt-44">
+        <div className="flex justify-center mt-8 mb-8">
+          <Image
+            src={logoHQX}
+            alt={t('logo.alt')}
+            width={306}
+            height={125}
+            className="mx-auto"
+            priority
+          />
+        </div>
+
+        <div className="relative">
+          <div className="absolute inset-0 flex flex-col items-center justify-center p-8 mt-44">
             {jobStatus && (
-              <div className="text-white">                
+              <div className="text-white">
                 <div className="space-y-6">
                   {/* Global Progress */}
                   <div className="mb-6">
@@ -189,7 +188,7 @@ export default function LargeFilesPage() {
                       <motion.div
                         initial={{ width: 0 }}
                         animate={{ width: `${totalProgress}%` }}
-                        transition={{ 
+                        transition={{
                           duration: animationDuration,
                           ease: animationEase
                         }}
@@ -214,7 +213,7 @@ export default function LargeFilesPage() {
                         <motion.div
                           initial={{ width: 0 }}
                           animate={{ width: `${followerProgress}%` }}
-                          transition={{ 
+                          transition={{
                             duration: animationDuration,
                             ease: animationEase
                           }}
@@ -240,7 +239,7 @@ export default function LargeFilesPage() {
                         <motion.div
                           initial={{ width: 0 }}
                           animate={{ width: `${followingProgress}%` }}
-                          transition={{ 
+                          transition={{
                             duration: animationDuration,
                             ease: animationEase
                           }}
@@ -258,8 +257,8 @@ export default function LargeFilesPage() {
                     <span className={`px-3 py-1 rounded-full text-sm 
                       ${jobStatus.status === 'completed' ? 'bg-green-500/20 text-green-300' :
                         jobStatus.status === 'processing' ? 'bg-blue-500/20 text-blue-300' :
-                        jobStatus.status === 'failed' ? 'bg-red-500/20 text-red-300' :
-                        'bg-gray-500/20 text-gray-300'}`}
+                          jobStatus.status === 'failed' ? 'bg-red-500/20 text-red-300' :
+                            'bg-gray-500/20 text-gray-300'}`}
                     >
                       {jobStatus.status === 'processing' && (
                         <Loader2 className="w-4 h-4 animate-spin inline-block mr-2" />
@@ -267,7 +266,7 @@ export default function LargeFilesPage() {
                       {t(`status.${jobStatus.status}`)}
                     </span>
                   </div>
-                  
+
                   {jobStatus.status === 'completed' && (
                     <div className="grid grid-cols-2 gap-6 mt-6 text-center">
                       <div className="p-4 bg-black/20 rounded-xl">
@@ -312,10 +311,10 @@ export default function LargeFilesPage() {
                 </div>
               </div>
             )}
+          </div>
         </div>
       </div>
-    </div>
-    <Footer />
+      <Footer />
     </>
   );
 }
