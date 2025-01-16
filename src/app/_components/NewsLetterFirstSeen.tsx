@@ -1,12 +1,13 @@
 'use client'
 
 import { useState } from 'react'
-import { motion } from 'framer-motion'
-import { X } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { X, ChevronDown } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { plex } from '@/app/fonts/plex'
 import Image from 'next/image'
 import HQXBadge from '../../../public/newSVG/HQX-badge.svg'
+import { usePathname } from 'next/navigation'
 
 interface NewsLetterFirstSeenProps {
   userId: string
@@ -20,7 +21,21 @@ export default function NewsLetterFirstSeen({ userId, onSubscribe, onClose }: Ne
   const [acceptOEP, setAcceptOEP] = useState(false)
   const [acceptResearch, setAcceptResearch] = useState(false)
   const [error, setError] = useState('')
+  const [isLanguageOpen, setIsLanguageOpen] = useState(false)
   const t = useTranslations('firstSeen')
+  const pathname = usePathname()
+
+  const languages = [
+    { code: 'fr', name: 'Français', flag: '🇫🇷' },
+    { code: 'en', name: 'English', flag: '🇬🇧' }
+  ]
+
+  const currentLocale = pathname.split('/')[1]
+
+  const switchLanguage = (locale: string) => {
+    const newPath = pathname.replace(`/${currentLocale}`, `/${locale}`)
+    window.location.href = newPath
+  }
 
   const updatePreferences = async (submit: boolean) => {
     try {
@@ -82,25 +97,71 @@ export default function NewsLetterFirstSeen({ userId, onSubscribe, onClose }: Ne
 
   return (
     <div className="bg-white rounded-2xl p-8 max-w-2xl w-full relative max-h-[90vh] overflow-y-auto">
-      <button
-        onClick={handleDismiss}
-        className="absolute top-4 right-4 p-2 rounded-full hover:bg-gray-100 text-gray-500 hover:text-gray-700
-                  transition-all duration-200 z-10"
-        aria-label="Close"
-      >
-        <X className="w-6 h-6" />
-      </button>
+      <div className="absolute top-4 right-4 flex items-center gap-2">
+        {/* Language Selector */}
+        <div className="relative">
+          <button
+            onClick={() => setIsLanguageOpen(!isLanguageOpen)}
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100 transition-colors"
+          >
+            <span className="text-lg">
+              {languages.find(lang => lang.code === currentLocale)?.flag}
+            </span>
+            <ChevronDown
+              className={`w-4 h-4 text-gray-500 transition-transform duration-200 
+                ${isLanguageOpen ? 'rotate-180' : ''}`}
+            />
+          </button>
 
-      <div className="flex flex-col items-center gap-6">
+          <AnimatePresence>
+            {isLanguageOpen && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="absolute right-0 mt-2 w-40 origin-top-right"
+              >
+                <div className="bg-white rounded-xl border border-gray-200 shadow-lg overflow-hidden">
+                  {languages.map((lang) => (
+                    <button
+                      key={lang.code}
+                      onClick={() => {
+                        switchLanguage(lang.code);
+                        setIsLanguageOpen(false);
+                      }}
+                      className={`w-full px-4 py-2 text-xs ${plex.className} text-gray-700 hover:bg-gray-50 transition-colors text-left flex items-center gap-2
+                        ${currentLocale === lang.code ? 'bg-gray-50' : ''}`}
+                    >
+                      <span className="text-base">{lang.flag}</span>
+                      <span>{lang.name}</span>
+                    </button>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        <button
+          onClick={handleDismiss}
+          className="p-2 rounded-full hover:bg-gray-100 text-gray-500 hover:text-gray-700
+                  transition-all duration-200 z-10"
+          aria-label="Close"
+        >
+          <X className="w-6 h-6" />
+        </button>
+      </div>
+
+      <div className="flex flex-col items-center gap-1">
         <Image
           src={HQXBadge}
           alt="HelloQuitteX Logo"
-          width={120}
-          height={120}
-          className="mb-4"
+          width={80}
+          height={80}
+          className="mb-1"
         />
 
-        <h2 className={`${plex.className} text-2xl font-semibold text-center text-gray-900`}>
+        <h2 className={`${plex.className} text-xl font-semibold text-center text-gray-900`}>
           {t('title')}
         </h2>
 
@@ -113,8 +174,8 @@ export default function NewsLetterFirstSeen({ userId, onSubscribe, onClose }: Ne
         </div>
 
         <div className="w-full max-w-xl bg-gray-100 p-6 rounded-lg space-y-4">
-          <div className="space-y-2 text-center">
-            <p className="text-gray-600">{t('newsletter.subtitle')}</p>
+          <div className="space-y-2 text-center text-sm">
+            <p className="text-gray-600 text-sm">{t('newsletter.subtitle')}</p>
           </div>
 
           <div className="space-y-4">
@@ -127,7 +188,7 @@ export default function NewsLetterFirstSeen({ userId, onSubscribe, onClose }: Ne
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder={t('newsletter.emailPlaceholder')}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black placeholder:text-gray-400" 
+                className="w-full px-4 py-2 border border-gray-300 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black placeholder:text-gray-400" 
               />
             </div>
 
@@ -164,7 +225,7 @@ export default function NewsLetterFirstSeen({ userId, onSubscribe, onClose }: Ne
         <button
           onClick={handleSubmit}
           disabled={isLoading || (email.length > 0 && !isEmailValid)}
-          className="w-full bg-[#46489B] text-white py-4 rounded-lg font-semibold hover:bg-opacity-90 
+          className="mt-2 px-6 py-3 bg-[#46489B] text-white rounded-lg font-semibold hover:bg-opacity-90 
                     transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isLoading ? (
