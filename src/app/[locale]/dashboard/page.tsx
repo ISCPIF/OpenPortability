@@ -306,7 +306,7 @@ export default function DashboardPage() {
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={() => setShowNewsletterModal(true)}
-                    className="group inline-flex items-center gap-3 text-indigo-200 hover:text-white transition-colors"
+                    className="group inline-flex items-center gap-3 text-indigo-200 hover:text-white transition-colors underline decoration-indigo-500"
                   >
                     <Mail className="w-5 h-5" />
                     <span className={`${plex.className} text-lg`}>{t('newsletter.subscribe')}</span>
@@ -328,7 +328,7 @@ export default function DashboardPage() {
                     whileTap={{ scale: 0.98 }}
                   >
                     <Play className="w-5 h-5" />
-                    <span className={`${plex.className} text-lg`}>{t('tutorial.watchVideo')}</span>
+                    <span className={`${plex.className} text-lg underline decoration-indigo-500`}>{t('tutorial.watchVideo')}</span>
 
                   </motion.a>
                 </div>
