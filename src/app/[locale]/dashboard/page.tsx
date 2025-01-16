@@ -24,7 +24,7 @@ import { FaTwitter, FaMastodon } from 'react-icons/fa';
 import { SiBluesky } from "react-icons/si";
 import { Share2, Mail, X, Play } from 'lucide-react';
 import { AnimatePresence } from 'framer-motion';
-import logoHQX from '../../../public/logoxHQX/HQX-rose-FR.svg';
+import notificationIcon from '../../../../public/newSVG/notif.svg';
 import Footer from '@/app/_components/Footer';
 import { useTranslations } from 'next-intl';
 
@@ -300,36 +300,46 @@ export default function DashboardPage() {
 
             <div className="mt-16 space-y-16 mb-16">
               {session?.user?.id && (
-                <div className="flex flex-col items-center text-center space-y-4">
-                  <h2 className={`${plex.className} text-2xl font-medium text-white`}>{t('newsletter.title')}</h2>
+                <div className="flex flex-col items-center text-center">
+                  <Image
+                    src={notificationIcon}
+                    alt=""
+                    width={20}
+                    height={20}
+                    className=" text-white mb-2"
+                  />
+                  <h2 className={`${plex.className} text-2xl font-medium text-white mb-2`}>{t('newsletter.title')}</h2>
                   <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={() => setShowNewsletterModal(true)}
-                    className="group inline-flex items-center gap-3 text-indigo-200 hover:text-white transition-colors"
+                    className="group inline-flex items-center gap-3 text-indigo-200 hover:text-white transition-colors underline decoration-indigo-500"
                   >
                     <Mail className="w-5 h-5" />
                     <span className={`${plex.className} text-lg`}>{t('newsletter.subscribe')}</span>
                   </motion.button>
                 </div>
               )}
-              <div className="flex flex-col items-center text-center space-y-4 mb-4">
-                <h2 className={`${plex.className} text-2xl font-medium text-white`}>
-                  {t('tutorial.title')}
-                </h2>
-                <motion.a
-                  href="https://vimeo.com/1044334098?share=copy"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="group inline-flex items-center gap-3 text-indigo-200 hover:text-white transition-colors"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  <Play className="w-5 h-5" />
-                  <span className={`${plex.className} text-lg`}>{t('tutorial.watchVideo')}</span>
 
-                </motion.a>
-              </div>
+              {progress < 100 &&
+                <div className="flex flex-col items-center text-center space-y-4 mb-4">
+                  <h2 className={`${plex.className} text-2xl font-medium text-white`}>
+                    {t('tutorial.title')}
+                  </h2>
+                  <motion.a
+                    href="https://vimeo.com/1044334098?share=copy"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group inline-flex items-center gap-3 text-indigo-200 hover:text-white transition-colors"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <Play className="w-5 h-5" />
+                    <span className={`${plex.className} text-lg underline decoration-indigo-500`}>{t('tutorial.watchVideo')}</span>
+
+                  </motion.a>
+                </div>
+              }
             </div>
 
             <AnimatePresence>
