@@ -24,7 +24,7 @@ import { FaTwitter, FaMastodon } from 'react-icons/fa';
 import { SiBluesky } from "react-icons/si";
 import { Share2, Mail, X, Play } from 'lucide-react';
 import { AnimatePresence } from 'framer-motion';
-import logoHQX from '../../../public/logoxHQX/HQX-rose-FR.svg';
+import notificationIcon from '../../../../public/newSVG/notif.svg';
 import Footer from '@/app/_components/Footer';
 import { useTranslations } from 'next-intl';
 
@@ -300,8 +300,15 @@ export default function DashboardPage() {
 
             <div className="mt-16 space-y-16 mb-16">
               {session?.user?.id && (
-                <div className="flex flex-col items-center text-center space-y-4">
-                  <h2 className={`${plex.className} text-2xl font-medium text-white`}>{t('newsletter.title')}</h2>
+                <div className="flex flex-col items-center text-center">
+                  <Image
+                    src={notificationIcon}
+                    alt=""
+                    width={20}
+                    height={20}
+                    className=" text-white mb-2"
+                  />
+                  <h2 className={`${plex.className} text-2xl font-medium text-white mb-2`}>{t('newsletter.title')}</h2>
                   <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
