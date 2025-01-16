@@ -373,9 +373,9 @@
   },
   "firstSeen": {
     "title": "Welcome!",
-    "description": "You are about to onboard with HelloQuitX to reference your various different digital identities and duplicate your community on other networks.\nThe whole operation will take you 5 minutes and will have no impact on your X account.\nStarting January 20th, your BlueSky and Mastodon accounts will start receiving new followers automatically.\nTo ensure everything goes smoothly, we offer to guide you --in some cases the process requires several steps-- and inform you about upcoming features (such as importing your X messages to BlueSky or Mastodon).\nBefore you start, we recommend letting us have your email and give us permission to contact you via BlueSky or Mastodon.\nThis contact will be used sparingly and you can opt out of the support program at any time.",
+    "description": "You are about to onboard with HelloQuitX to reference your various different digital identities and duplicate your community on other networks. The whole operation will take you 5 minutes and will have no impact on your X account. Starting January 20th, your BlueSky and Mastodon accounts will start receiving new followers automatically.\nTo ensure everything goes smoothly, we offer to guide you --in some cases the process requires several steps-- and inform you about upcoming features (such as importing your X messages to BlueSky or Mastodon).\nBy joining us, you authorize us to contact you via BlueSky and Mastodon. We also recommend that you provide us with your email address to allow us to contact you regarding your future campaigns.\nThis contact will be used sparingly and you can opt out of the support program at any time.",
     "newsletter": {
-      "subtitle": "I would like to be accompagnied bu HelloQuitX",
+      "subtitle": "I would like to be accompagnied by HelloQuitX",
       "emailLabel": "Enter your email to stay informed (optional):",
       "emailPlaceholder": "Username@domain.com",
       "consent": "I want to stay informed about upcoming operations from On Est prêt, who accompanies HelloQuitX",
