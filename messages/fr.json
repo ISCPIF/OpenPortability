@@ -6,7 +6,7 @@
       }
     },
     "connectedAccounts": {
-      "connectedWith": "Vous êtes connecté avec {services} ✨",
+      "connectedWith": "Vous êtes connecté avec {services} ",
       "and": "et",
       "services": {
         "twitter": "Twitter/X",
@@ -84,7 +84,7 @@
           "cnrs": "CNRS/ISC-PIF",
           "hqx": "HelloQuitteX"
         },
-        "copyright": "© {year} HelloQuitteX. Tous droits réservés."
+        "copyright": " {year} HelloQuitteX. Tous droits réservés."
       },
     "loginButtons": {
     "twitter": {
@@ -179,7 +179,7 @@
     "shareModal": {
       "title": "Partager votre voyage",
       "shareOn": "Partager sur {platform}",
-      "shareText": "🔥Je viens de faire mon #eXit! L’exode de X est massif. Ne perdez pas un seul de vos abonnés. Grâce à #HelloQuitX j’ai inscrit {count} nouveaux passagers pour partir vers #BlueSky & #Mastodon. Retrouvez automatiquement vos communautés le #20Janvier via https://app.helloquitx.com !"
+      "shareText": "Je viens de faire mon #eXit! L’exode de X est massif. Ne perdez pas un seul de vos abonnés. Grâce à #HelloQuitX j’ai inscrit {count} nouveaux passagers pour partir vers #BlueSky & #Mastodon. Retrouvez automatiquement vos communautés le #20Janvier via https://app.helloquitx.com !"
     },
     "newsletter": {
       "title": "Restez informé.e",
@@ -208,7 +208,7 @@
   "upload": {
     "title": "Importez votre archive Twitter/X pour poursuivre votre voyage",
     "action" : "Déposez ou selectionnez votre archive Twitter/X ici",
-    "description": "Trois formats de données sont acceptés :\n- votre archive X originale si <1Go (au format Zip)\n- les fichiers following.js et follower.js ENSEMBLE et non zippés,\n- les versions fractionnées de ces fichiers pour les grosses archives (following-part*.js + follower-part*.js)",
+    "description": "Trois formats de données sont acceptés :\n- votre archive X originale si 1Go (au format Zip)\n- les fichiers following.js et follower.js ENSEMBLE et non zippés,\n- les versions fractionnées de ces fichiers pour les grosses archives (following-part*.js + follower-part*.js)",
     "loading": {
       "default": "Chargement...",
       "uploading": "Ne quittez pas la page, votre importation est en cours"
@@ -357,5 +357,21 @@
         }
       }
     }
+  },
+  "firstSeen": {
+    "title": "Bienvenue !",
+    "description": "Vous êtes sur le point d'embarquer avec HelloQuitteX afin de référencer vos différentes identités numériques et dupliquer votre communauté sur d'autres réseaux.\nL'ensemble de l'opération vous prendra 5 min et n'aura pas d'impact sur votre compte X.\nÀ partir du 20 Janvier, vos comptes BlueSky et Mastodon commenceront à recevoir automatiquement de nouveaux abonnés.\nAfin que tout se passe bien, nous vous proposons de vous accompagner --dans certains cas le processus requiert plusieurs étapes-- et de vous informer des fonctionnalités qui seront publiées prochainement (comme le fait d'importer ses messages X sur BlueSky ou Mastodon).\nAvant de commencer, nous vous recommandons donc de nous laisser votre courriel et de nous donner l'autorisation de vous contacter via BlueSly ou Mastodon.\nCe contact sera utilisé avec parcimonie et vous pourrez sortir du programme d'accompagnement à tout moment.",
+    "newsletter": {
+      "subtitle": "Je souhaite être accompagné.e par HelloQuitteX.",
+      "emailLabel": "Inscrivez votre mail pour rester informé.e (optionnel) :",
+      "emailPlaceholder": "pseudo@nomdedomaine.com",
+      "consent": "Je souhaite aussi être informé.e des prochaines initiatives de On est prêt, qui accompagne HelloQuitteX",
+      "researchConsent": "Je souhaite partager avec le CNRS mon graphe de connexions à des fins de recherche. Il sera traité de manière aggrégée. Aucun donnée personnelle ne sera rendu publique.",
+      "errors": {
+        "missingEmail": "E-mail manquant"
+      }
+    },
+    "cta": "ENVOYER",
+    "dismiss": "Ne plus afficher ce message"
   }
 }

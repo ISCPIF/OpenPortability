@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Header from '@/app/_components/Header';
 import NewsletterRequest from '@/app/_components/NewsletterRequest';
+import NewsletterFirstSeen from '@/app/_components/NewsLetterFirstSeen';
 import Image from 'next/image'
 import { supabase } from '@/lib/supabase';
 import BlueSkyLogin from '@/app/_components/BlueSkyLogin';
@@ -76,6 +77,8 @@ export default function DashboardPage() {
   }, [])
 
   useEffect(() => {
+
+    console.log("SESSION FROM DASHBOARD ",session)
     if (status === "unauthenticated") {
       router.replace("/auth/signin");
       return;
@@ -177,6 +180,31 @@ export default function DashboardPage() {
       <div className="absolute inset-0 w-full h-full pointer-events-none">
         <DahsboardSea progress={progress} />
       </div>
+
+      <AnimatePresence>
+        {session?.user && !session.user.have_seen_newsletter && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="relative my-4"
+            >
+              <NewsletterFirstSeen
+                userId={session.user.id}
+                onClose={() => {
+                  update();
+                  session.user.have_seen_newsletter = true;
+                }}
+                onSubscribe={() => {
+                  setShowNewsletterModal(false);
+                  update();
+                }}
+              />
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       <div className="relative min-h-[calc(100vh-4rem)] pt-80">
         <div className="container mx-auto px-4">
