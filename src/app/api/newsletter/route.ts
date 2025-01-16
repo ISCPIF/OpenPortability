@@ -88,42 +88,32 @@ export async function POST(request: Request) {
 
     const { email, acceptHQX, acceptOEP, research_accepted } = await request.json()
 
-    // Validation de base
-    if (!email || (!acceptHQX && !acceptOEP)) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      )
-    }
-
-    // Nettoyage et validation de l'email
-    const sanitizedEmail = sanitizeInput(email)
-    if (!validateEmail(sanitizedEmail)) {
-      return NextResponse.json(
-        { error: 'Invalid email format' },
-        { status: 400 }
-      )
-    }
-
-    // Construction de l'objet de mise à jour avec uniquement les champs à true
+    // Construction de l'objet de mise à jour
     const updateData: Record<string, any> = {
-      email: sanitizedEmail
+      have_seen_newsletter: true
     }
     
-    if (acceptHQX) {
-      updateData.hqx_newsletter = true
-    }
-    
-    if (acceptOEP) {
+    // Si un email est fourni, on valide et on active OEP
+    if (email) {
+      const sanitizedEmail = sanitizeInput(email)
+      if (!validateEmail(sanitizedEmail)) {
+        return NextResponse.json(
+          { error: 'Invalid email format' },
+          { status: 400 }
+        )
+      }
+      updateData.email = sanitizedEmail
       updateData.oep_accepted = true
+    }
+    
+    // Si pas d'email, c'est forcément acceptHQX only
+    if (!email) {
+      updateData.hqx_newsletter = true
     }
 
     if (research_accepted) {
-    
-    updateData.research_accepted = true
+      updateData.research_accepted = true
     }
-
-    updateData.have_seen_newsletter = true
 
     // Mise à jour de l'utilisateur avec le client auth
     const { error: updateError } = await authClient
