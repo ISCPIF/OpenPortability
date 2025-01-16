@@ -110,6 +110,8 @@ async jwt({ token, user, account, profile }) {
         token.has_onboarded = !!user.has_onboarded // Conversion explicite en boolean
         token.hqx_newsletter = !!user.hqx_newsletter
         token.oep_accepted = !!user.oep_accepted
+        token.research_accepted = !!user.research_accepted
+        token.have_seen_newsletter = !!user.have_seen_newsletter
       }
 
       if (account && profile) {
@@ -161,7 +163,6 @@ async jwt({ token, user, account, profile }) {
 
       return token
     },
-
     async session({ session, token }) {
       if (!supabaseAdapter.getUser) {
         throw new Error('Required adapter methods are not implemented');
@@ -174,19 +175,23 @@ async jwt({ token, user, account, profile }) {
             session.user = {
               ...session.user,
               id: token.id,
-              has_onboarded: !!user.has_onboarded, // Conversion explicite en boolean
+              has_onboarded: !!user.has_onboarded,
               hqx_newsletter: !!user.hqx_newsletter,
-              oep_accepted: !!user.oep_accepted, // Conversion explicite en boolean
+              oep_accepted: !!user.oep_accepted,
+              research_accepted: !!user.research_accepted,
+              have_seen_newsletter: !!user.have_seen_newsletter,
               name: token.name || user.name,
               
+              // For Twitter and Bluesky, use token values first
               twitter_id: token.twitter_id || user.twitter_id || undefined,
               twitter_username: token.twitter_username || user.twitter_username || undefined,
               twitter_image: token.twitter_image || user.twitter_image || undefined,
               
-              mastodon_id: token.mastodon_id || user.mastodon_id || undefined,
-              mastodon_username: token.mastodon_username || user.mastodon_username || undefined,
-              mastodon_image: token.mastodon_image || user.mastodon_image || undefined,
-              mastodon_instance: token.mastodon_instance || user.mastodon_instance || undefined,
+              // For Mastodon/Piaille, ALWAYS use database values
+              mastodon_id: user.mastodon_id || undefined,
+              mastodon_username: user.mastodon_username || undefined,
+              mastodon_image: user.mastodon_image || undefined,
+              mastodon_instance: user.mastodon_instance || undefined,
               
               bluesky_id: token.bluesky_id || user.bluesky_id || undefined,
               bluesky_username: token.bluesky_username || user.bluesky_username || undefined,
@@ -257,7 +262,9 @@ async jwt({ token, user, account, profile }) {
           profile: profile,
           has_onboarded: false,
           hqx_newsletter: false,
-          oep_accepted: false
+          oep_accepted: false,
+          have_seen_newsletter: false,
+          research_accepted: false
         }
       },
       // userinfo: {
@@ -265,11 +272,10 @@ async jwt({ token, user, account, profile }) {
       //   params: { "user.fields": "profile_image_url,description" }
       // }
     }),
-
     MastodonProvider({
-      clientId: process.env.AUTH_MASTODON_ID!,
-      clientSecret: process.env.AUTH_MASTODON_SECRET!,
-      issuer: process.env.AUTH_MASTODON_ISSUER!,
+      id: "mastodon",
+      // This will be rewrited on the fly later on
+      issuer: "https://mastodon.space",
       profile(profile: MastodonProfile) {
         return {
           id: profile.id,
@@ -278,28 +284,11 @@ async jwt({ token, user, account, profile }) {
           profile: profile,
           has_onboarded: false,
           hqx_newsletter: false,
-          oep_accepted: false
+          oep_accepted: false,
+          have_seen_newsletter: false,
+          research_accepted: false
         }
-      }
-    }),
-    MastodonProvider({
-      id: "piaille",
-      name: "Piaille",
-      clientId: process.env.AUTH_PIALLE_MASTONDON_ID!,
-      clientSecret: process.env.AUTH_PIAILLE_MASTODON_SECRET!,
-      issuer: process.env.AUTH_PIAILLE_MASTODON_ISSUER!,
-      profile(profile: MastodonProfile) {
-        return {
-          id: profile.id,
-          name: profile.display_name,
-          provider: 'mastodon',
-          profile: profile,
-          has_onboarded: false,
-          hqx_newsletter: false,
-          oep_accepted: false
-        }
-      }
-    })
+    }})
   ],
   pages: {
     signIn: '/auth/signin',

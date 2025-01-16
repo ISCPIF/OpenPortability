@@ -14,12 +14,14 @@ import { validateTwitterData, extractTargetFiles } from '../../_components/Uploa
 import Image from 'next/image';
 import seaBackground from '../../../public/sea.svg'
 import { plex } from '../../fonts/plex';
-import logoHQX from '../../../../public/logoxHQX/HQX-rose-FR.svg'
 import { motion } from 'framer-motion';
+import { AlertCircle } from 'lucide-react';
 import boat1 from '../../../public/boats/boat-1.svg'
 import Footer from "@/app/_components/Footer";
 import LoadingIndicator from '@/app/_components/LoadingIndicator';
-
+import SupportModal from '../../_components/SupportModale';
+import logoHQXFR from '../../../../public/logoxHQX/HQX-blanc-FR.svg';
+import logoHQXEN from '../../../../public/logoxHQX/HQX-white-UK.svg';
 
 const UploadButton = dynamic(() => import('../../_components/UploadButton'), {
   loading: () => <div className="animate-pulse bg-gray-200 h-12 w-48 rounded-lg"></div>,
@@ -43,7 +45,11 @@ export default function UploadPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [showHelpModal, setShowHelpModal] = useState(false);
+  const [showSupportModal, setShowSupportModal] = useState(false);
   const t = useTranslations('upload');
+  const tSupport = useTranslations('support');
+  const locale = params.locale as string;
+  const logoHQX = locale === 'fr' ? logoHQXFR : logoHQXEN;
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -141,11 +147,26 @@ export default function UploadPage() {
   };
 
   const validateFileType = (file: File): boolean => {
-
     console.log("File Type =", file.type)
-    const validTypes = ['application/javascript', 'text/javascript', 'application/zip', 'application/x-javascript'];
+    const validTypes = [
+        'application/javascript',
+        'text/javascript', 
+        'application/zip',
+        'application/x-javascript',
+        'text/ecmascript',
+        'application/ecmascript',
+        'application/x-ecmascript',
+        'text/x-javascript',
+        'text/jsx',
+        'text/plain',
+        'module',
+        'application/x-zip',
+       'application/x-zip-compressed',
+       'application/octet-stream',
+       'multipart/x-zip'
+    ];
     return validTypes.includes(file.type);
-  };
+ };
 
   const sanitizeContent = (content: Uint8Array): Uint8Array => {
     const text = new TextDecoder().decode(content);
@@ -350,14 +371,67 @@ export default function UploadPage() {
   };
 
   const handleFilesSelected = (files: FileList) => {
+    // Convertir FileList en Array pour un meilleur logging
+    const filesArray = Array.from(files);
+    
     console.log('📁 Files selected:', {
       numberOfFiles: files.length,
       firstFileName: files[0]?.name,
       firstFileType: files[0]?.type,
-      firstFileSize: files[0]?.size
+      firstFileSize: `${(files[0]?.size / (1024 * 1024)).toFixed(2)}MB`,
+      allFiles: filesArray.map(f => ({
+        name: f.name,
+        type: f.type,
+        size: `${(f.size / (1024 * 1024)).toFixed(2)}MB`,
+        rawSize: f.size
+      }))
     });
 
-    // Stocker les fichiers et afficher la modale de consentement
+    // Vérifications préalables
+    if (!files || files.length === 0) {
+      console.log('❌ Erreur: Aucun fichier sélectionné');
+      setError('Aucun fichier sélectionné');
+      return;
+    }
+
+    // Vérifier la taille de chaque fichier individuellement
+    for (const file of filesArray) {
+      console.log('📊 Vérification taille fichier:', {
+        fileName: file.name,
+        fileType: file.type,
+        size: `${(file.size / (1024 * 1024)).toFixed(2)}MB`,
+        maxSize: `${(MAX_FILE_SIZE / (1024 * 1024))}MB`,
+        isOverLimit: file.size > MAX_FILE_SIZE
+      });
+
+      if (file.size > MAX_FILE_SIZE) {
+        console.log('❌ Erreur: Fichier trop volumineux');
+        setError(t('errors.fileSize'));
+        return;
+      }
+    }
+
+    // Vérifier les types de fichiers
+    const fileTypes = filesArray.map(f => ({
+      name: f.name,
+      type: f.type,
+      isValid: f.type.startsWith('image/') || f.type.includes('zip')
+    }));
+    console.log('🔍 Vérification des types:', fileTypes);
+
+    // for (const file of filesArray) {
+    //   if (!file.type.startsWith('image/') && !file.type.includes('zip')) {
+    //     console.log('❌ Erreur: Type de fichier invalide', {
+    //       fileName: file.name,
+    //       fileType: file.type
+    //     });
+    //     setError(`Le fichier ${file.name} n'est pas une image ou une archive ZIP`);
+    //     return;
+    //   }
+    // }
+
+    console.log('✅ Toutes les vérifications sont passées, affichage de la modale de consentement');
+    // Si toutes les vérifications sont passées, stocker les fichiers et afficher la modale
     setPendingFiles(files);
     setShowConsent(true);
   };
@@ -384,18 +458,19 @@ export default function UploadPage() {
       await processFiles(pendingFiles);
     } catch (error) {
       handleUploadError(error instanceof Error ? error.message : 'Failed to process files');
-    } finally {
-      setIsUploading(false);
-    }
+    } 
   };
 
-  if (isLoading) {
+  if (isLoading || isUploading) {
     return (
       <div className="min-h-screen bg-[#2a39a9] relative w-full max-w-[90rem] m-auto">
         <div className="container mx-auto py-12">
           <div className="container flex flex-col m-auto text-center text-[#E2E4DF]">
             <div className="m-auto relative my-32 lg:my-40">
-              <LoadingIndicator msg={t('loading-indic')} />
+              <LoadingIndicator 
+                msg={isUploading ? t('loading-uploading') : t('loading-indic')}
+                 textSize="base"
+              />
             </div>
           </div>
         </div>
@@ -404,8 +479,7 @@ export default function UploadPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#2a39a9] relative w-full max-w-[90rem] m-auto">
-      <Header />
+    <div className="min-h-screen bg-[#2a39a9] relative w-full max-w-[90rem] m-auto">      <Header />
       <div className="relative z-10 pt-12">
         <Image
           src={logoHQX}
@@ -416,6 +490,7 @@ export default function UploadPage() {
           priority
         />
       </div>
+      
       <div className="flex justify-center items-center min-h-[60vh]">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -443,20 +518,54 @@ export default function UploadPage() {
                 </p>
                 
                 {!isUploading && (
-                  <div className="mt-8">
+                  <div className="space-y-4">
                     <UploadButton onFilesSelected={handleFilesSelected} onError={handleUploadError} />
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => setShowSupportModal(true)}
+                      className="w-full flex items-center justify-center gap-2 py-3 px-6 bg-white/10 hover:bg-white/20 backdrop-blur-lg rounded-xl text-white"
+                    >
+                      <AlertCircle className="w-5 h-5" />
+                      <span>{tSupport('modal.title')}</span>
+                    </motion.button>
                   </div>
                 )}
                 
                 {isUploading && (
                   <div className="flex items-center justify-center space-x-2">
                     <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white"></div>
-                    <span>{t('loading')}</span>
+                    <p className="text-white">{t('uploading')}</p>
                   </div>
                 )}
               </div>
             </div>
+            
           </motion.div>
+
+      {/* Modal de Support */}
+      <SupportModal 
+        isOpen={showSupportModal}
+        onClose={() => setShowSupportModal(false)}
+      />
+            
+          {/* </motion.div> */}
+
+          {/* <motion.button
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        onClick={() => setShowSupportModal(true)}
+        className="fixed bottom-4 right-4 bg-white/10 hover:bg-white/20 backdrop-blur-lg rounded-full p-3 text-white shadow-lg flex items-center gap-2"
+      >
+        <AlertCircle className="w-5 h-5" />
+        <span>{tSupport('button')}</span>
+      </motion.button> */}
+
+      {/* Modal de Support */}
+      <SupportModal 
+        isOpen={showSupportModal}
+        onClose={() => setShowSupportModal(false)}
+      />
       </div> 
 
       {/* Modals */}
@@ -464,6 +573,7 @@ export default function UploadPage() {
         message={error || ''}
         onClose={handleCloseError}
         isOpen={!!error}
+        showExtractInstructions={error?.toLowerCase().includes('1 go') || error?.toLowerCase().includes('1gb')}
       />
       
       <ConsentModal

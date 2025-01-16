@@ -6,6 +6,7 @@
         }
     },
     "connectedAccounts": {
+<<<<<<< HEAD
         "connectedWith": "You are connected with {services} ✨",
         "and": "and",
         "services": {
@@ -13,6 +14,15 @@
             "bluesky": "BlueSky",
             "mastodon": "Mastodon"
         }
+=======
+      "connectedWith": "You are connected with {services} ",
+      "and": "and",
+      "services": {
+        "twitter": "Twitter/X",
+        "bluesky": "BlueSky",
+        "mastodon": "Mastodon"
+      }
+>>>>>>> dev-dev-fanny
     },
     "blueskyLogin": {
         "title": "Connect to BlueSky",
@@ -40,6 +50,7 @@
         }
     },
     "consentModal": {
+<<<<<<< HEAD
         "title": "Upload Confirmation",
         "description": "By uploading your Twitter files, you confirm that:",
         "conditions": {
@@ -66,10 +77,46 @@
             },
             "bluesky": "BlueSky"
         }
+=======
+      "title": "Upload Confirmation",
+      "description": "By uploading your Twitter/X files, you confirm that:",
+      "conditions": {
+        "ownership": "You are the legitimate owner of this data.",
+        "cnrsUsage": "You agree that the provided data will be used by the National Center for Scientific Research (CNRS) as part of the HelloQuitX operation.",
+        "profileCreation": "You understand that this data will be used to create your profile on HelloQuitX."
+      },
+      "buttons": {
+        "cancel": "Cancel",
+        "accept": "Accept and continue"
+      }
     },
-    "errorModal": {
-        "title": "Upload Error",
-        "close": "Close"
+    "dashboardLoginButtons": {
+      "importTwitter": "Import my Twitter/X archive",
+      "addSocialNetwork": "Add another social network",
+      "services": {
+        "twitter": "Twitter/X",
+        "mastodon": {
+          "title": "Mastodon",
+          "instance": "Where is your account hosted? (ex. mastodon.social)",
+          "connect" : "Connect",
+          "error": {
+            "required": "The name of your server is required",
+            "unreachable": "Instance is unreachable. Please check the URL and try again.",
+            "fetch_instances": "Error fetching instances.",
+            "invalid_format": "Invalid instance format. Example: mastodon.social",
+            "special_chars": "Instance cannot contain special characters",
+            "too_long": "Instance name is too long"
+          }
+
+        },
+        "bluesky": "BlueSky"
+      },
+      "connectedDashboard" : {
+        "twitter" : "Connect to Twitter/X",
+        "bluesky" : "Connect to Bluesky",
+        "mastodon" : "Connect to Mastodon"
+      }
+>>>>>>> dev-dev-fanny
     },
     "footer": {
         "hosted": {
@@ -77,12 +124,91 @@
             "cnrs": "CNRS/ISC-PIF",
             "hqx": "HelloQuitX"
         },
+<<<<<<< HEAD
         "copyright": "© {year} HelloQuitX. All rights reserved."
     },
     "loginButtons": {
         "twitter": {
             "continue": "Continue with Twitter",
             "notDeleted": "I have a Twitter account"
+=======
+        "copyright": " {year} HelloQuitX. All rights reserved."
+      },
+    "loginButtons": {
+    "twitter": {
+      "continue": "Continue with Twitter/X",
+      "notDeleted" : "I have a Twitter/X account"
+    },
+    "deleteAccount": "I've already deleted my Twitter/X account",
+    "bluesky": {
+      "connect": "Connect with BlueSky"
+    },
+    "mastodon": {
+      "connect": "Connect with Mastodon"
+    }
+  },
+"migrationComplete": {
+    "error": {
+      "title": "Migration Error",
+      "retry": "Try Again",
+      "createAccount": "Create Account"
+    },
+    "success": {
+      "title": "Migration Complete!",
+      "description": "Your account has been successfully migrated to BlueSky under the handle {handle}",
+      "displayName": "({name})",
+      "viewProfile": "View Profile"
+    }
+  },
+  "partageButton": {
+    "share": "Share",
+    "shareOn": "Share on {platform}"
+  },
+  "progressSteps": {
+    "dashboard": {
+      "title": "Welcome aboard"
+    },
+    "socialNetworks": {
+      "title": "Link my social networks accounts"
+    },
+    "import": {
+      "title": "Upload my X/Twitter archive",
+      "description": {
+        "withStats": "{following} following, {followers} followers"
+      }
+    },
+    "share": {
+      "title": "Share with my community"
+    }
+  },
+  "successModal": {
+    "title": "Import Successful!",
+    "following": {
+      "title": "Following ({count})",
+      "username": "@{username}"
+    },
+    "followers": {
+      "title": "Followers ({count})",
+      "username": "@{username}"
+    },
+    "close": "Close"
+  },
+  "uploadButton": {
+    "dropHere": "Drop your file here",
+    "uploadInProgress": "We are analyzing your archive, please wait ...",
+    "clickOrDrop": "Click or drag your archive here",
+    "error": {
+      "uploadFailed": "Upload failed after several attempts. Please try again."
+    }
+  },
+  "uploadResults": {
+    "congratulations": "Congratulations @{username}, you are registered for the journey!",
+    "importSuccess": "Your file import has registered {count} new passengers!",
+    "stats": {
+        "twitterAccounts": {
+          "label": "Twitter/X Accounts",
+          "value": "{count}"
+>>>>>>> dev-dev-fanny
         },
         "deleteAccount": "I've already deleted my Twitter account",
         "bluesky": {
@@ -95,6 +221,7 @@
                 "mastodon": "Connect via Mastodon.social"
             }
         }
+<<<<<<< HEAD
     },
     "migrationComplete": {
         "error": {
@@ -307,4 +434,223 @@
             "oepNewsletter": "Be informed about On est prêt initiatives"
         }
     }
+=======
+      },
+    "inviteFriends": "Invite your followers to join you!",
+    "redirecting": "Redirecting to dashboard..."
+  },
+  "signin": {
+    "title": "Ready to travel to new shores ?",
+    "subtitle": "Start by connecting with Twitter/X to migrate your data",
+    "loading": "Loading information..."
+  },
+  "dashboard": {
+    "loading": "Loading your data...",
+    "addSocialNetwork": "Add social network",
+    "addSocialNetworkDescription": "Connect to other social networks to enhance your experience",
+    "migrationStep": {
+      "completed1": "Congratulations! You’ve completed the first of the two migration steps.",
+      "completed2": "Make sure your X followers also register on this platform, and come back on #January20 to activate your reconnection.",
+      "daysLeft": "{count} days to go!",
+      "nextSteps": "Complete the following steps to sail to new shores!"
+    },
+    "importButton": "Import my Twitter/X archive",
+    "shareModal": {
+      "title": "Share your journey",
+      "shareOn": "Share on {platform}",
+      "shareText": "I’ve just done my #eXit! the X exodus is massive. Don't lose any of your followers. Thanks to #HelloQuitX I've registered {count} new passengers for a journey to #BlueSky & #Mastodon. Join us on https://app.helloquitx.com and automatically find your communities on #January20!"
+    },
+    "newsletter": {
+      "title": "Stay Informed",
+      "description": "Sign up to follow the project's progress and be notified of new features.",
+      "subscribe": "Stay informed of the next steps of the HelloQuitX project",
+      "subscribed": "You are subscribed to the newsletter!",
+      "emailLabel": "Your email address",
+      "emailPlaceholder": "example@email.com",
+      "acceptHQX": "I want to receive updates from HelloQuitX",
+      "acceptOEP": "I would like to be informed about other initiatives from [On est prêt](https://www.onestpret.com), who supports HelloQuitX",
+      "subscribing": "Subscribing...",
+      "confirmSubscribe": "Confirm subscription"
+    },
+    "tutorial": {
+      "title": "Step by step tutorial explanation",
+      "description": "Learn how to easily migrate from Twitter/X to Mastodon and Bluesky",
+      "watchVideo": "Watch the video"
+    }
+},
+  "dashboardSea": {
+    "welcome": "Welcome aboard HelloQuitX!",
+    "logo": {
+      "alt": "HelloQuitX Logo"
+    }
+},
+"upload": {
+    "title": "Import your Twitter/X archive to continue your journey",
+    "action": "Drop or select your files here",
+    "description": "Three data formats are accepted:\n- your original X archive if <1GB (in Zip format)\n- following.js and follower.js files TOGETHER and unzipped,\n- split versions of these files for large archives (following-part*.js + follower-part*.js)",
+    "loading": {
+      "default": "Loading...",
+      "uploading": "Please stay on the page, your import is in progress"
+    },
+    "helpButton": "Help with getting your Twitter/X archive",
+    "loading-indic" : "Loading your data...",
+    "loading-uploading": "Stay on the page, import in progress",
+    "logo": {
+      "alt": "HelloQuitX Logo"
+    },
+    "helpModal": {
+      "title": "How to get your Twitter/X archive?",
+      "description": "To get your Twitter/X archive, follow these steps:",
+      "steps": [
+        "Log in to your Twitter/X account",
+        "Go to \"More\" in the left menu",
+        "Click on \"Settings and Support\" then \"Settings and Privacy\"",
+        "In \"Your Account\", select \"Download an archive of your data\"",
+        "Confirm your password if requested",
+        "Click on \"Request archive\"",
+        "Twitter/X will send you an email when your archive is ready to download",
+        "Once downloaded, you can import the .zip file here"
+      ],
+      "note": "Note: Twitter/X archive preparation can take up to 24 hours."
+    },
+    "errors": {
+      "fileSize": "File size exceeds 1GB limit",
+      "fileType": "Invalid file type. Please upload either a ZIP file or following.js and follower.js files",
+      "noFiles": "No files selected",
+      "invalidCombination": "Please upload either a ZIP file, following.js + follower.js, or their split versions (following-part*.js/follower-part*.js)"
+    }
+  },
+  "largeFiles": {
+    "logo": {
+      "alt": "HelloQuitX Logo"
+    },
+    "progress": {
+      "total": {
+        "title": "Total Progress",
+        "processed": "{processed} / {total}"
+      },
+      "followers": {
+        "title": "Followers",
+        "processed": "{processed} / {total}"
+      },
+      "following": {
+        "title": "Following",
+        "processed": "{processed} / {total}"
+      }
+    },
+    "status": {
+      "title": "Status",
+      "pending": "Pending",
+      "processing": "Processing",
+      "completed": "Completed",
+      "failed": "Failed"
+    },
+    "stats": {
+      "followers": "Followers",
+      "following": "Following"
+    },
+    "button": {
+      "dashboard": "Return to dashboard"
+    }
+  },
+  "profile": {
+    "unlinkConfirmation": "Are you sure you want to unlink your {provider} account?",
+    "unlinkSuccess": "Your {provider} account has been successfully unlinked",
+    "unlinkError": "An error occurred while unlinking your {provider} account",
+    "unlinkButton": "Unlink {provider} account",
+    "providers": {
+      "twitter": "Twitter/X",
+      "bluesky": "Bluesky",
+      "mastodon": "Mastodon"
+    },
+    "errors": {
+      "lastAccount": "Cannot unlink your last connected account",
+      "notLinked": "No {provider} account is linked"
+    }
+  },
+  "settings": {
+    "logout": "Sign out",
+    "deleteAccount": "Delete my account",
+    "deleteConfirm": {
+      "title": "Delete Account",
+      "message": "Are you sure you want to delete your account? This action cannot be undone and will result in the deletion of:\n\n• All your imported data\n• All your linked accounts (Twitter/X, BlueSky, Mastodon)\n• Your HelloQuitX profile",
+      "cancel": "Cancel",
+      "confirm": "Yes, delete my account"
+    },
+    "notifications": {
+      "title": "Notifications",
+      "hqxNewsletter": "Receive updates from HelloQuitX",
+      "oepNewsletter": "Be informed about On est prêt initiatives"
+    }  
+  },
+"support": {
+    "modal": {
+      "title": "A problem occured ?",
+      "description": "Send us a message and we'll get back to you as soon as possible.",
+      "error": {
+        "send": "Error sending message",
+        "unknown": "An unexpected error occurred"
+      },
+      "form": {
+        "email": {
+          "label": "Your email address",
+          "placeholder": "example@email.com"
+        },
+        "subject": {
+          "label": "Subject",
+          "placeholder": "Your subject"
+        },
+        "message": {
+          "label": "Message",
+          "placeholder": "Your message"
+        },
+        "submit": "Send",
+        "submitting": "Sending..."
+      }
+    }
+  },
+  "errorModal": {
+    "title": "Error",
+    "close": "Close",
+    "extractArchive": {
+      "title": "How to extract your archive",
+      "windows": "Windows",
+      "steps": {
+        "windows": {
+          "step1": "Right-click on the ZIP file",
+          "step2": "Select 'Extract All...'",
+          "step3": "Choose a destination folder",
+          "step4": "Click 'Extract'"
+        },
+        "mac": {
+          "step1": "Double-click on the ZIP file",
+          "step2": "The files will be automatically extracted"
+        },
+        "linux": {
+          "step1": "Right-click on the ZIP file",
+          "step2": "Select 'Extract Here' or 'Extract To...'",
+          "step3": "Choose a destination folder if prompted"
+        }
+      },
+      "mac": "Mac",
+      "linux": "Linux"
+    }
+  },
+  "firstSeen": {
+    "title": "Welcome!",
+    "description": "You are about to onboard with HelloQuitX to reference your various different digital identities and duplicate your community on other networks. The whole operation will take you 5 minutes and will have no impact on your X account. Starting January 20th, your BlueSky and Mastodon accounts will start receiving new followers automatically.\nTo ensure everything goes smoothly, we offer to guide you --in some cases the process requires several steps-- and inform you about upcoming features (such as importing your X messages to BlueSky or Mastodon).\nBy joining us, you authorize us to contact you via BlueSky and Mastodon. We also recommend that you provide us with your email address to allow us to contact you regarding your future campaigns.\nThis contact will be used sparingly and you can opt out of the support program at any time.",
+    "newsletter": {
+      "subtitle": "I would like to be accompagnied by HelloQuitX",
+      "emailLabel": "Enter your email to stay informed (optional):",
+      "emailPlaceholder": "Username@domain.com",
+      "consent": "I want to stay informed about upcoming operations from On Est prêt, who accompanies HelloQuitX",
+      "researchConsent": "I agree to share my connection graph with CNRS for research purposes. It will be processed in an aggregated manner. No personal data will be made public.",
+      "errors": {
+        "missingEmail": "Missing Email"
+      }
+    },
+    "cta": "SUBMIT",
+    "dismiss": "Don't show this message again"
+  }
+>>>>>>> dev-dev-fanny
 }

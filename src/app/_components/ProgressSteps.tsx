@@ -1,54 +1,56 @@
 'use client'
 
 import { useState, useEffect } from 'react';
-import { CheckCircle } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { supabase } from '@/lib/supabase';
 import { useTranslations } from 'next-intl';
+import Image from 'next/image';
 
-function ProgressStep({ 
-  step, 
-  title, 
-  description, 
-  isCompleted, 
+import stepsOKIcon from '../../../public/newSVG/steps-OK.svg'
+import stepsInitIcon from '../../../public/newSVG/steps-Init.svg'
+import stepsPartialIcon from '../../../public/newSVG/steps-partiel.svg'
+
+function ProgressStep({
+  step,
+  title,
+  description,
+  isCompleted,
+  isPartiallyCompleted = false,
   isLast = false
-}: { 
+}: {
   step: number;
   title: string;
-  description: string;
+  description?: string;
   isCompleted: boolean;
+  isPartiallyCompleted?: boolean;
   isLast?: boolean;
 }) {
   return (
     <div className="flex-1 relative flex flex-col items-center">
-      {/* Ligne horizontale pour desktop */}
-      {/* {!isLast && (
-        <div 
-          className={`absolute left-[50%] top-6 h-0.5 w-full hidden md:block
-            ${isCompleted ? 'bg-gradient-to-r from-pink-500 to-purple-500' : 'bg-white/10'}`} 
-        />
-      )} */}
-      
-      {/* Cercle avec numéro ou check */}
-      <div 
+      <div
         className={`w-8 h-8 rounded-full flex items-center justify-center mb-3
-          ${isCompleted 
-            ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-lg shadow-pink-500/20' 
+          ${isCompleted
+            ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-lg shadow-pink-500/20'
             : 'bg-white/5 text-white/40 border border-white/10'}`}
       >
-        {isCompleted ? <CheckCircle className="w-8 h-8" /> : step}
+        {isCompleted ?
+          <Image src={stepsOKIcon} alt="Completed" width={32} height={32} /> :
+          isPartiallyCompleted ?
+            <Image src={stepsPartialIcon} alt="Not started" width={32} height={32} /> :
+            <Image src={stepsInitIcon} alt="Not started" width={32} height={32} />}
       </div>
-      
+
       {/* Texte */}
       <div className="text-center px-2">
         <h3 className={`font-medium mb-1 text-sm
           ${isCompleted ? 'text-white' : 'text-white/60'}`}>
           {title}
         </h3>
-        <p className={`text-xs leading-tight
+        {description &&
+          <p className={`text-xs leading-tight
           ${isCompleted ? 'text-white/80' : 'text-white/40'}`}>
-          {description}
-        </p>
+            {description}
+          </p>}
       </div>
     </div>
   );
@@ -67,9 +69,9 @@ interface ProgressStepsProps {
   onProgressChange?: (progress: number) => void;
 }
 
-export default function ProgressSteps({ 
-  hasTwitter, 
-  hasBluesky, 
+export default function ProgressSteps({
+  hasTwitter,
+  hasBluesky,
   hasMastodon,
   hasOnboarded,
   stats,
@@ -154,32 +156,30 @@ export default function ProgressSteps({
         <ProgressStep
           step={1}
           title={t('dashboard.title')}
-          description={t('dashboard.description')}
           isCompleted={true}
         />
-        
+
         <ProgressStep
           step={2}
           title={t('socialNetworks.title')}
-          description={t('socialNetworks.description')}
-          isCompleted={getConnectedAccountsCount() >= 2}
+          isPartiallyCompleted={getConnectedAccountsCount() === 2}
+          isCompleted={getConnectedAccountsCount() === 3}
         />
-        
+
         <ProgressStep
           step={3}
           title={t('import.title')}
           description={
             hasOnboarded
               ? t('import.description.withStats', { following: stats.following, followers: stats.followers })
-              : t('import.description.noStats')
+              : ""
           }
           isCompleted={hasOnboarded}
         />
-        
+
         <ProgressStep
           step={4}
           title={t('share.title')}
-          description={t('share.description')}
           isCompleted={hasSuccessfulShare}
           isLast={true}
         />

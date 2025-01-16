@@ -12,6 +12,8 @@ export interface CustomAdapterUser extends Omit<AdapterUser, 'image'> {
   has_onboarded: boolean
   hqx_newsletter: boolean
   oep_accepted: boolean
+  have_seen_newsletter: boolean
+  research_accepted: boolean
   twitter_id?: string | null
   twitter_username?: string | null
   twitter_image?: string | null
@@ -125,6 +127,8 @@ const providerIdField = `${provider}_id` as keyof CustomAdapterUser
       has_onboarded: false,
       hqx_newsletter: false,
       oep_accepted: false,
+      have_seen_newsletter: false,
+      research_accepted: false,
       email: undefined
     }
 
@@ -174,6 +178,8 @@ const providerIdField = `${provider}_id` as keyof CustomAdapterUser
     has_onboarded: false,
     hqx_newsletter: false,
     oep_accepted: false,
+    have_seen_newsletter: false,
+    research_accepted: false,
     email: 'none'
   }
 
@@ -222,6 +228,8 @@ export async function getUser(id: string): Promise<CustomAdapterUser | null> {
     has_onboarded: user.has_onboarded,
     hqx_newsletter: user.hqx_newsletter,
     oep_accepted: user.oep_accepted,
+    have_seen_newsletter: user.have_seen_newsletter,
+    research_accepted: user.research_accepted,
     email: "none",
     emailVerified: null
   }
@@ -235,7 +243,7 @@ export async function getUserByAccount({ providerAccountId, provider }): Promise
   let column: string
   if (provider === 'twitter') {
     column = 'twitter_id'
-  } else if (provider === 'mastodon') {
+  } else if (provider === 'mastodon' || provider === 'piaille') {
     column = 'mastodon_id'
   } else if (provider === 'bluesky') {
     column = 'bluesky_id'
@@ -256,6 +264,11 @@ export async function getUserByAccount({ providerAccountId, provider }): Promise
 
   if (!user) return null
 
+  // For Piaille accounts, we need to verify the instance
+  if (provider === 'piaille' && user.mastodon_instance !== 'piaille.fr') {
+    return null
+  }
+
   return {
     id: user.id,
     name: user.name,
@@ -272,6 +285,8 @@ export async function getUserByAccount({ providerAccountId, provider }): Promise
     has_onboarded: user.has_onboarded,
     hqx_newsletter: user.hqx_newsletter,
     oep_accepted: user.oep_accepted,
+    have_seen_newsletter: user.have_seen_newsletter,
+    research_accepted: user.research_accepted,
     email: "none",
     emailVerified: null
   }
@@ -367,6 +382,8 @@ export async function updateUser(
     has_onboarded: user.has_onboarded,
     hqx_newsletter: user.hqx_newsletter,
     oep_accepted: user.oep_accepted,
+    have_seen_newsletter: user.have_seen_newsletter,
+    research_accepted: user.research_accepted,
     email: "none",
     emailVerified: null
   }
@@ -379,7 +396,7 @@ export async function linkAccount(account: AdapterAccount): Promise<void>
   
   const { error } = await authClient
     .from("accounts")
-    .insert([{
+    .upsert([{
       user_id: account.userId,
       type: account.type,
       provider: account.provider,
@@ -391,7 +408,9 @@ export async function linkAccount(account: AdapterAccount): Promise<void>
       scope: account.scope,
       id_token: account.id_token,
       session_state: account.session_state,
-    }])
+    }], {
+      onConflict: 'provider,provider_account_id',
+    })
 
   if (error) {
     console.log("❌ Error linking account:", error)
@@ -447,6 +466,8 @@ export async function getSessionAndUser(sessionToken: string): Promise<{ session
       has_onboarded: user.has_onboarded,
       hqx_newsletter: user.hqx_newsletter,
       oep_accepted: user.oep_accepted,
+      have_seen_newsletter: user.have_seen_newsletter,
+      research_accepted: user.research_accepted,
       email: "none",
       emailVerified: null
     }
@@ -492,14 +513,42 @@ export async function getAccountsByUserId(userId: string): Promise<AdapterAccoun
     })
   }
 
+  if (user.bluesky_id) {
+    accounts.push({
+      provider: 'bluesky',
+      type: 'oauth',
+      providerAccountId: user.bluesky_id,
+      userId: user.id
+    })
+  }
+
+  if (user.mastodon_id) {
+    // For mastodon.social
+    accounts.push({
+      provider: 'mastodon',
+      type: 'oauth',
+      providerAccountId: user.mastodon_id,
+      userId: user.id
+    })
+
+    // If it's a piaille.fr account, add it as a separate provider
+    if (user.mastodon_instance === 'piaille.fr') {
+      accounts.push({
+        provider: 'piaille',
+        type: 'oauth',
+        providerAccountId: user.mastodon_id,
+        userId: user.id
+      })
+    }
+  }
+
   return accounts
 }
 
 
-// Internal implementation with your existing logic
 async function unlinkAccountImpl(
   userId: string,
-  provider: 'twitter' | 'bluesky' | 'mastodon'
+  provider: 'twitter' | 'bluesky' | 'mastodon' | 'piaille'
 ): Promise<void> {
   console.log("\n=== [Adapter] Starting account unlinking ===")
   console.log("→ User ID:", userId)
@@ -521,9 +570,15 @@ async function unlinkAccountImpl(
     throw new UnlinkError("User not found", "NOT_FOUND", 404)
   }
 
-  // Check if the account is actually linked
-  const providerIdField = `${provider}_id`
+  // For Piaille, we check mastodon_id
+  const dbProvider = provider === 'piaille' ? 'mastodon' : provider
+  const providerIdField = `${dbProvider}_id`
   if (!user[providerIdField]) {
+    throw new UnlinkError("Account not linked", "NOT_LINKED", 400)
+  }
+
+  // For Piaille, verify the instance
+  if (provider === 'piaille' && user.mastodon_instance !== 'piaille.fr') {
     throw new UnlinkError("Account not linked", "NOT_LINKED", 400)
   }
 
@@ -542,8 +597,8 @@ async function unlinkAccountImpl(
     )
   }
 
-    // Delete account entry
-    const { error: deleteError } = await authClient
+  // Delete account entry with the actual provider (piaille or mastodon)
+  const { error: deleteError } = await authClient
     .from('accounts')
     .delete()
     .eq('user_id', userId)
@@ -554,13 +609,13 @@ async function unlinkAccountImpl(
     throw new UnlinkError("Database error", "DATABASE_ERROR", 500)
   }
 
-  // Prepare update data
+  // Update user fields using the database provider (always mastodon for piaille)
   const updates: any = {
-    [`${provider}_id`]: null,
-    [`${provider}_username`]: null,
-    [`${provider}_image`]: null
+    [`${dbProvider}_id`]: null,
+    [`${dbProvider}_username`]: null,
+    [`${dbProvider}_image`]: null
   }
-  if (provider === 'mastodon') {
+  if (dbProvider === 'mastodon') {
     updates.mastodon_instance = null
   }
 
@@ -579,19 +634,19 @@ async function unlinkAccountImpl(
 }
 
 export async function unlinkAccount(
-  userId: string,
-  provider: 'twitter' | 'bluesky' | 'mastodon'
+  account: Pick<AdapterAccount, "provider" | "providerAccountId">
 ): Promise<void> {
   console.log("\n=== [Adapter] Starting account unlinking ===")
-  console.log("User ID:", userId)
-  console.log("Provider:", provider)
+  console.log("Provider:", account.provider)
+  console.log("Provider Account ID:", account.providerAccountId)
 
-  const user = await getUser(userId)
+  // Get the user by account
+  const user = await getUserByAccount(account)
   if (!user) {
     throw new UnlinkError("User not found", "NOT_FOUND", 404)
   }
 
-  await unlinkAccountImpl(userId, provider)
+  await unlinkAccountImpl(user.id, account.provider as 'twitter' | 'bluesky' | 'mastodon')
 }
 
 type CustomSupabaseAdapter = Omit<Adapter, 'getUserByAccount' | 'updateUser' | 'createUser' | 'linkAccount'> & {
@@ -611,6 +666,7 @@ type CustomSupabaseAdapter = Omit<Adapter, 'getUserByAccount' | 'updateUser' | '
     })): Promise<CustomAdapterUser>;
   };
   linkAccount: NonNullable<Adapter['linkAccount']>;
+  getAccountsByUserId: (userId: string) => Promise<AdapterAccount[]>
 }
 
 
@@ -625,5 +681,6 @@ export const supabaseAdapter: CustomSupabaseAdapter = {
   getSessionAndUser,
   updateSession,
   deleteSession,
-  unlinkAccount
+  unlinkAccount,
+  getAccountsByUserId
 }

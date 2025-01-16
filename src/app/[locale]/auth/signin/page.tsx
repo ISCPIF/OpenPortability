@@ -13,9 +13,6 @@ import LoginSea from "@/app/_components/LoginSea"
 import Footer from "@/app/_components/Footer";
 import { useTranslations } from 'next-intl'
 
-// import logoHQXFR from '../../../../../public/logoxHQX/HQX-rose-FR.svg';
-// import logoHQXEN from '../../../../../public/logoxHQX/HQX-pink-UK.svg';
-
 export default function SignIn() {
   const { data: session, status } = useSession()
   const router = useRouter()
@@ -24,6 +21,8 @@ export default function SignIn() {
   const t = useTranslations('signin')
   const params = useParams()
   const locale = params.locale as string;
+  const [error, setError] = useState<string | null>(null)
+
   // const logoHQX = locale === 'fr' ? logoHQXFR : logoHQXEN;
 
 
@@ -92,6 +91,15 @@ export default function SignIn() {
               </div>
             )}
           </div>
+          {error && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="text-center text-sm text-red-600"
+            >
+              {t(`errors.${error}`)}
+            </motion.div>
+          )}
         </div>
         <Footer />
       </div>

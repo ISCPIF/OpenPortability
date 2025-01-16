@@ -86,36 +86,33 @@ export async function POST(request: Request) {
       )
     }
 
-    const { email, acceptHQX, acceptOEP } = await request.json()
+    const { email, acceptHQX, acceptOEP, research_accepted } = await request.json()
 
-    // Validation de base
-    if (!email || (!acceptHQX && !acceptOEP)) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      )
-    }
-
-    // Nettoyage et validation de l'email
-    const sanitizedEmail = sanitizeInput(email)
-    if (!validateEmail(sanitizedEmail)) {
-      return NextResponse.json(
-        { error: 'Invalid email format' },
-        { status: 400 }
-      )
-    }
-
-    // Construction de l'objet de mise à jour avec uniquement les champs à true
+    // Construction de l'objet de mise à jour
     const updateData: Record<string, any> = {
-      email: sanitizedEmail
+      have_seen_newsletter: true
     }
     
-    if (acceptHQX) {
+    // Si un email est fourni, on valide et on active OEP
+    if (email) {
+      const sanitizedEmail = sanitizeInput(email)
+      if (!validateEmail(sanitizedEmail)) {
+        return NextResponse.json(
+          { error: 'Invalid email format' },
+          { status: 400 }
+        )
+      }
+      updateData.email = sanitizedEmail
+      updateData.oep_accepted = true
+    }
+    
+    // Si pas d'email, c'est forcément acceptHQX only
+    if (!email) {
       updateData.hqx_newsletter = true
     }
-    
-    if (acceptOEP) {
-      updateData.oep_accepted = true
+
+    if (research_accepted) {
+      updateData.research_accepted = true
     }
 
     // Mise à jour de l'utilisateur avec le client auth
@@ -136,5 +133,30 @@ export async function POST(request: Request) {
       { error: 'Failed to subscribe to newsletter' },
       { status: 500 }
     )
+  }
+}
+
+export async function GET() {
+  try {
+    const session = await auth();
+    
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { error } = await authClient
+      .from('users')
+      .update({ have_seen_newsletter: true })
+      .eq('id', session.user.id);
+
+    if (error) {
+      console.error('Error updating have_seen_newsletter:', error);
+      return NextResponse.json({ error: 'Failed to update preference' }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Error in newsletter GET route:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
