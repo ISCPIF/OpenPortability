@@ -287,7 +287,7 @@ export default function DashboardPage() {
                       }}
                       className="w-full flex items-center justify-between px-8 py-4 bg-white rounded-full text-black font-medium hover:bg-gray-50 transition-colors relative overflow-hidden group"
                     >
-                      <div className="flex items-center gap-3">
+                      <div className="flex text-left gap-3">
                         <Ship className="w-6 h-6" />
                         <span>{t('importButton')}</span>
                       </div>
