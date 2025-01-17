@@ -101,9 +101,9 @@ export default function DashboardLoginButtons({
         }
       }}
       disabled={isLoading}
-      className="w-full flex items-center justify-between px-8 py-4 bg-white rounded-full text-black font-medium hover:bg-gray-50 transition-colors relative overflow-hidden group"
+      className="w-full flex text-left justify-between px-8 py-4 bg-white rounded-full text-black font-medium hover:bg-gray-50 transition-colors relative overflow-hidden group"
     >
-      <div className="flex items-center gap-3">
+      <div className="flex gap-3 text-left items-start">
         <Image src={icon} alt={service} width={24} height={24} />
         <span>{label}</span>
       </div>
