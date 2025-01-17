@@ -23,11 +23,6 @@ export default function SignIn() {
   const locale = params.locale as string;
   const [error, setError] = useState<string | null>(null)
 
-  // const logoHQX = locale === 'fr' ? logoHQXFR : logoHQXEN;
-
-
-
-
   // Log des paramètres d'URL pour débogage
   useEffect(() => {
     const error = searchParams.get('error')
