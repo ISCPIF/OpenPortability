@@ -8,19 +8,21 @@ import Image from 'next/image';
 
 import stepsOKIcon from '../../../public/newSVG/steps-OK.svg'
 import stepsInitIcon from '../../../public/newSVG/steps-Init.svg'
-import stepsPartielIcon from '../../../public/newSVG/steps-partiel.svg'
+import stepsPartialIcon from '../../../public/newSVG/steps-partiel.svg'
 
 function ProgressStep({
   step,
   title,
   description,
   isCompleted,
+  isPartiallyCompleted = false,
   isLast = false
 }: {
   step: number;
   title: string;
   description?: string;
   isCompleted: boolean;
+  isPartiallyCompleted?: boolean;
   isLast?: boolean;
 }) {
   return (
@@ -31,7 +33,11 @@ function ProgressStep({
             ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-lg shadow-pink-500/20'
             : 'bg-white/5 text-white/40 border border-white/10'}`}
       >
-        {isCompleted ? <Image src={stepsOKIcon} alt="Completed" width={32} height={32} /> : <Image src={stepsInitIcon} alt="Not started" width={32} height={32} />}
+        {isCompleted ?
+          <Image src={stepsOKIcon} alt="Completed" width={32} height={32} /> :
+          isPartiallyCompleted ?
+            <Image src={stepsPartialIcon} alt="Not started" width={32} height={32} /> :
+            <Image src={stepsInitIcon} alt="Not started" width={32} height={32} />}
       </div>
 
       {/* Texte */}
@@ -156,7 +162,8 @@ export default function ProgressSteps({
         <ProgressStep
           step={2}
           title={t('socialNetworks.title')}
-          isCompleted={getConnectedAccountsCount() >= 2}
+          isPartiallyCompleted={getConnectedAccountsCount() === 2}
+          isCompleted={getConnectedAccountsCount() === 3}
         />
 
         <ProgressStep
