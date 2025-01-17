@@ -1,9 +1,9 @@
 {
     "header": {
-        "logout": "Déconnexion",
-        "profile": {
-            "username": "@{nom_d_utilisateur}"
-        }
+      "logout": "Déconnexion",
+      "profile": {
+        "username": "@{username}"
+      }
     },
     "connectedAccounts": {
       "connectedWith": "Vous êtes connecté avec {services} ",
@@ -15,29 +15,29 @@
       }
     },
     "blueskyLogin": {
-        "title": "Connectez-vous à BlueSky",
-        "description": "Connectez votre compte BlueSky pour synchroniser vos données et profiter d'une expérience complète.",
-        "tooltip": {
-            "info": "Nous ne stockons jamais votre mot de passe. Nous utilisons uniquement les tokens d'authentification sécurisés fournis par BlueSky.",
-            "noAccount": "Pas encore de compte BlueSky ?",
-            "createAccount": "Créez-en un ici"
+      "title": "Connectez-vous à BlueSky",
+      "description": "Connectez votre compte BlueSky pour synchroniser vos données et profiter d'une expérience complète.",
+      "tooltip": {
+        "info": "Nous ne stockons jamais votre mot de passe. Nous utilisons uniquement les tokens d'authentification sécurisés fournis par BlueSky.",
+        "noAccount": "Pas encore de compte BlueSky ?",
+        "createAccount": "Créez-en un ici"
+      },
+      "form": {
+        "identifier": {
+          "label": "Identifiant BlueSky",
+          "placeholder": "nomdutilisateur.bsky.social"
         },
-        "form": {
-            "identifier": {
-                "label": "Identifiant BlueSky",
-                "placeholder": "nomdutilisateur.bsky.social"
-            },
-            "password": {
-                "label": "Mot de passe d'application",
-                "placeholder": "••••••••",
-                "help": "Créez un mot de passe d'application sur"
-            },
-            "submit": "Se connecter",
-            "errors": {
-                "missingFields": "Veuillez remplir tous les champs",
-                "default": "Une erreur est survenue"
-            }
+        "password": {
+          "label": "Mot de passe d'application",
+          "placeholder": "••••••••",
+          "help": "Créez un mot de passe d'application sur"
+        },
+        "submit": "Se connecter",
+        "errors": {
+          "missingFields": "Veuillez remplir tous les champs",
+          "default": "Une erreur est survenue"
         }
+      }
     },
     "consentModal": {
       "title": "Confirmation d'upload",
@@ -80,9 +80,9 @@
     },
     "footer": {
         "hosted": {
-            "text": "Cette plateforme est hébergée par le {cnrs} et développée en partenariat avec le collectif {hqx}",
-            "cnrs": "CNRS/ISC-PIF",
-            "hqx": "HelloQuitteX"
+          "text": "Cette plateforme est hébergée par le {cnrs} et développée en partenariat avec le collectif {hqx}",
+          "cnrs": "CNRS/ISC-PIF",
+          "hqx": "HelloQuitteX"
         },
         "copyright": " {year} HelloQuitteX. Tous droits réservés."
       },
