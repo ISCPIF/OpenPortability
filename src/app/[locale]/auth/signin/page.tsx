@@ -12,6 +12,7 @@ import LoadingIndicator from "@/app/_components/LoadingIndicator"
 import LoginSea from "@/app/_components/LoginSea"
 import Footer from "@/app/_components/Footer";
 import { useTranslations } from 'next-intl'
+import Header from "@/app/_components/Header"
 
 export default function SignIn() {
   const { data: session, status } = useSession()
@@ -66,6 +67,7 @@ export default function SignIn() {
 
   return (
     <div className="min-h-screen bg-[#2a39a9] relative w-full max-w-[90rem] m-auto">
+      <Header />
       <div className="container mx-auto py-12">
         <div className="container flex flex-col m-auto text-center text-[#E2E4DF]">
           <LoginSea />
