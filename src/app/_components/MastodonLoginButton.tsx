@@ -173,7 +173,7 @@ export default function MastodonLoginButton({
               value={instanceText}
               onChange={(e) => {
                 setInstanceError('')
-                const instanceName = e.target.value;
+                const instanceName = e.target.value?.trim();
                 validateInstance(instanceName)
                 setInstanceText(e.target.value)
               }}
