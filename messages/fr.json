@@ -163,7 +163,13 @@
   "signin": {
     "title": "Prêt à migrer vers de nouveaux rivages ?",
     "subtitle": "Commencez par vous connecter avec Twitter/X pour migrer vos données",
-    "loading": "Chargement des informations…"
+    "loading": "Chargement des informations…",
+    "logo": {
+      "alt": "HelloQuitteX Logo"
+    },
+    "logoCNRS": {
+      "alt": "CNRS, Centre national de la recherche scientifique"
+    }
   },
   "dashboard": {
     "loading": "Chargement de vos données...",
@@ -203,6 +209,9 @@
     "welcome": "Bienvenue à bord d'HelloQuitteX !",
     "logo": {
       "alt": "HelloQuitteX Logo"
+    },
+    "logoCNRS": {
+      "alt": "CNRS, Centre national de la recherche scientifique"
     }
   },
   "upload": {
@@ -217,8 +226,11 @@
     "loading-indic" : "Chargement de vos données...",
     "loading-uploading": "Restez sur la page, importation en cours",
     "logo": {
-        "alt": "HelloQuitteX Logo"
-      },
+      "alt": "HelloQuitteX Logo"
+    },
+    "logoCNRS": {
+      "alt": "CNRS, Centre national de la recherche scientifique"
+    },
     "helpModal": {
       "title": "Comment obtenir votre archive Twitter/X ?",
       "description": "Pour obtenir votre archive Twitter/X, suivez ces étapes :",
@@ -245,6 +257,9 @@
   "largeFiles": {
     "logo": {
       "alt": "HelloQuitteX Logo"
+    },
+    "logoCNRS": {
+      "alt": "CNRS, Centre national de la recherche scientifique"
     },
     "progress": {
       "total": {

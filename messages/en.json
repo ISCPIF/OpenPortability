@@ -440,9 +440,15 @@
     "redirecting": "Redirecting to dashboard..."
   },
   "signin": {
-    "title": "Ready to travel to new shores ?",
+    "title": "Ready to travel to new shores?",
     "subtitle": "Start by connecting with Twitter/X to migrate your data",
-    "loading": "Loading information..."
+    "loading": "Loading information...",
+    "logo": {
+      "alt": "HelloQuitX Logo"
+    },
+    "logoCNRS": {
+      "alt": "CNRS, French National Centre for Scientific Research"
+    }
   },
   "dashboard": {
     "loading": "Loading your data...",
@@ -482,6 +488,9 @@
     "welcome": "Welcome aboard HelloQuitX!",
     "logo": {
       "alt": "HelloQuitX Logo"
+    },
+    "logoCNRS": {
+      "alt": "CNRS, French National Centre for Scientific Research"
     }
 },
 "upload": {
@@ -497,6 +506,9 @@
     "loading-uploading": "Stay on the page, import in progress",
     "logo": {
       "alt": "HelloQuitX Logo"
+    },
+    "logoCNRS": {
+      "alt": "CNRS, French National Centre for Scientific Research"
     },
     "helpModal": {
       "title": "How to get your Twitter/X archive?",
@@ -523,6 +535,9 @@
   "largeFiles": {
     "logo": {
       "alt": "HelloQuitX Logo"
+    },
+    "logoCNRS": {
+      "alt": "CNRS, French National Centre for Scientific Research"
     },
     "progress": {
       "total": {
