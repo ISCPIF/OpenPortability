@@ -39,7 +39,7 @@
             "profileCreation": "Entiende que estos datos son utilizados para crear un perfil en HelloQuitX."
         },
         "title": "Confirmación de envío",
-        "description": "Enviado sus archivos Twitter, ud. confirma que:",
+        "description": "Enviado sus archivos Twitter/X, ud. confirma que:",
         "buttons": {
             "accept": "Aceptar y continuar",
             "cancel": "Cancelar"
@@ -53,7 +53,7 @@
             },
             "twitterAccounts": {
                 "value": "{count}",
-                "label": "Cuentas Twitter"
+                "label": "Cuentas Twitter/X"
             },
             "readyTravelers": {
                 "value": "{count} cuentas listas",
@@ -66,7 +66,7 @@
         "importSuccess": "¡La importación de sus archivos permitió inscribir {count} nuevos pasajeros!"
     },
     "loginButtons": {
-        "deleteAccount": "Ya eliminé mi cuenta de Twitter",
+        "deleteAccount": "Ya eliminé mi cuenta de Twitter/X",
         "mastodon": {
             "instances": {
                 "piaille": "Conectarse vía Piaille.fr",
@@ -75,8 +75,8 @@
             "connect": "Conectarse con Mastodon"
         },
         "twitter": {
-            "continue": "Continuar con Twitter",
-            "notDeleted": "Tengo una cuenta de Twitter"
+            "continue": "Continuar con Twitter/X",
+            "notDeleted": "Tengo una cuenta de Twitter/X"
         },
         "bluesky": {
             "connect": "Conectarse con BlueSky"
@@ -84,7 +84,7 @@
     },
     "progressSteps": {
         "import": {
-            "title": "Importar",
+            "title": "Importo mi archivo X/Twitter",
             "description": {
                 "withStats": "{following} siguiendo, {followers} seguidores",
                 "noStats": "Importa tus suscripciones"
@@ -92,14 +92,14 @@
         },
         "share": {
             "description": "Ayuda a tus amistades a migrar",
-            "title": "Compartir"
+            "title": "Compartir con mi comunidad"
         },
         "dashboard": {
-            "title": "Panel de control",
+            "title": "Bienvenido/a a bordo",
             "description": "¡Conexión a la plataforma HelloQuitX exitosa!"
         },
         "socialNetworks": {
-            "title": "Redes sociales",
+            "title": "Conecto mis redes sociales",
             "description": "Agregar una red social"
         }
     },
@@ -110,22 +110,25 @@
         },
         "helpModal": {
             "steps": [
-                "Conéctese a su cuenta de Twitter",
+                "Conéctese a su cuenta de Twitter/X",
                 "Vaya a \"Más\" en el menú izquierdo",
                 "Haga clic en \"Configuración y privacidad\"",
                 "En \"Tu cuenta\", seleccione \"Descargar un archivo con tus datos\"",
                 "Confirme su contraseña si se lo requiere",
                 "Haga clic en \"Solicita tu archivo\"",
-                "Twitter le enviará un email cuando su archivo esté listo para descargar",
+                "Twitter/X le enviará un email cuando su archivo esté listo para descargar",
                 "Una vez descargado, podrá importar el archivo .zip aquí"
             ],
-            "description": "Para obtener su archivo Twitter, siga estos pasos:",
-            "title": "¿Cómo obtener su archivo Twitter?",
-            "note": "Nota: La preparación del archivo Twitter puede tomar hasta 24 horas."
+            "description": "Para obtener su archivo Twitter/X, siga estos pasos:",
+            "title": "¿Cómo obtener su archivo Twitter/X?",
+            "note": "Nota: La preparación del archivo Twitter/X puede tomar hasta 24 horas."
         },
-        "title": "Importar su archivo Twitter para continuar su viaje",
-        "helpButton": "Ayuda para obtener su archivo Twitter",
-        "loading": "Sus archivos están siendo procesados, por favor permanece en la página hasta la redirección.",
+        "title": "Importar su archivo Twitter/X para continuar su viaje",
+        "helpButton": "Ayuda para obtener su archivo Twitter/X",
+        "loading": {
+            "default": "Cargando...",
+            "uploading": "Permanezca en la página, su importación está en curso"
+        },
         "errors": {
             "fileSize": "El tamaño del archivo excede el límite de 1GB",
             "fileType": "Tipo de archivo inválido. Por favor suba o bien un archivo ZIP o bien los archivos following.js y follower.js",
@@ -133,7 +136,11 @@
             "invalidCombination": "Por favor suba o bien un archivo ZIP, following.js + follower.js, o sus versiones fraccionadas (following-part*.js/follower-part*.js)"
         },
         "action": "Suelta o selecciona tu archivo Twitter aquí",
-        "description": "Tres formatos de datos son aceptados:\n- su archivo X originar si < 1 GB (en formato Zip)\n- los archivos following.js y follower.js JUNTOS y descomprimidos,\n- las versiones fraccionadas de estos archivos para archivos pesados (following-part*.js + follower-part*.js)"
+        "description": "Tres formatos de datos son aceptados:\n- su archivo X originar si < 1 GB (en formato Zip)\n- los archivos following.js y follower.js JUNTOS y descomprimidos,\n- las versiones fraccionadas de estos archivos para archivos pesados (following-part*.js + follower-part*.js)",
+        "loading-uploading": "Permanezca en la página, importación en curso",
+        "logoCNRS": {
+            "alt": "CNRS, Centro Nacional por la Investigación Científica francés"
+        }
     },
     "dashboardLoginButtons": {
         "services": {
@@ -142,13 +149,28 @@
                     "piaille": "piaille.fr",
                     "mastodon": "mastodon.social"
                 },
-                "title": "Mastodon"
+                "title": "Mastodon",
+                "instance": "¿Dónde está albergada su cuenta? (ej. mastodon.social)",
+                "connect": "Conectarse",
+                "error": {
+                    "required": "El nombre de su servidor es requerido",
+                    "unreachable": "La instancia es inaccesible. Por favor corrobore la URL otra vez.",
+                    "fetch_instances": "Error en la recuperación de las instancias.",
+                    "invalid_format": "Formato de instancia inválido. Ejemplo: mastodon.social",
+                    "special_chars": "La instancia no puede contener caracteres especiales",
+                    "too_long": "El nombre de la instancia es demasiado largo"
+                }
             },
-            "twitter": "Twitter",
+            "twitter": "Twitter/X",
             "bluesky": "BlueSky"
         },
-        "importTwitter": "Importar mi archivo Twitter",
-        "addSocialNetwork": "Agregar otra red social"
+        "importTwitter": "Importar mi archivo Twitter/X",
+        "addSocialNetwork": "Agregar otra red social",
+        "connectedDashboard": {
+            "twitter": "Asocio mi cuenta Twitter/X",
+            "bluesky": "Asocio mi cuenta Bluesky",
+            "mastodon": "Asocio mi cuenta Mastodon"
+        }
     },
     "largeFiles": {
         "progress": {
@@ -181,18 +203,23 @@
         },
         "button": {
             "dashboard": "Volver al panel de control"
+        },
+        "logoCNRS": {
+            "alt": "CNRS, Centro Nacional por la Investigación Científica francés"
         }
     },
     "dashboard": {
         "migrationStep": {
             "completed": "Ha completado la primera etapa de su migración",
-            "daysLeft": "{count} días restantes antes de la gran partida",
-            "nextSteps": "¡Completa las siguientes etapas para viajar a nuevas orillas!"
+            "daysLeft": "¡{count} días restantes!",
+            "nextSteps": "¡Completa las siguientes etapas para viajar a nuevas orillas!",
+            "completed1": "¡Felicitaciones! Ha completado la primera de las dos etapas de migración.",
+            "completed2": "Asegúrese de que sus seguidores se inscriban también a HelloQuitX y regrese el #20deEnero para activar su reconexión."
         },
         "shareModal": {
             "title": "Compartir mi viaje",
             "shareOn": "Compartir en {platform}",
-            "shareText": "🔥 El eXodo es masivo! No pierdas ninguno de tus seguidores. Gracias a #HelloQuitX registré {count} nuevos pasajeros para un viaje a #BlueSky y #Mastodon. Únete y encuentra tu comunidad el #20deEnero!"
+            "shareText": "¡Acabo de hacer mi #eXit! El éxodo de X es masivo. No pierdas ninguno de tus seguidores. Gracias a #HelloQuitX registré {count} nuevos pasajeros para un viaje a #BlueSky y #Mastodon. ¡Únete y encuentra tu comunidad el #20deEnero vía https://app.helloquitx.com!"
         },
         "newsletter": {
             "title": "Seguir informado/a",
@@ -209,7 +236,12 @@
         "loading": "Cargando sus datos...",
         "addSocialNetwork": "Agregar una red social",
         "addSocialNetworkDescription": "Conéctese a otras redes sociales para enriquecer su experiencia",
-        "importButton": "Importar mi archivo Twitter"
+        "importButton": "Importar mi archivo Twitter/X",
+        "tutorial": {
+            "title": "Explicación paso a paso en nuestro tutorial",
+            "description": "Descubra como migrar fácilmente de Twitter/X a Mastodon y Bluesky",
+            "watchVideo": "Mire el vídeo"
+        }
     },
     "profile": {
         "errors": {
@@ -219,7 +251,7 @@
         "unlinkError": "Ha ocurrido un error al momento de desligar su cuenta {provider}",
         "providers": {
             "mastodon": "Mastodon",
-            "twitter": "Twitter",
+            "twitter": "Twitter/X",
             "bluesky": "Bluesky"
         },
         "unlinkSuccess": "Su cuenta {provider} fue desligada con éxito",
@@ -229,7 +261,13 @@
     "signin": {
         "loading": "Cargando información...",
         "title": "¿Listo/a para viajar a nuevas costas?",
-        "subtitle": "Comience por conectarse a Twitter para migrar sus datos"
+        "subtitle": "Comience por conectarse a Twitter/X para migrar sus datos",
+        "logo": {
+            "alt": "HelloQuitX Logo"
+        },
+        "logoCNRS": {
+            "alt": "CNRS, Centro Nacional por la Investigación Científica francés"
+        }
     },
     "migrationComplete": {
         "error": {
@@ -266,7 +304,7 @@
         "deleteConfirm": {
             "cancel": "Cancelar",
             "title": "Eliminar la cuenta",
-            "message": "¿Está seguro/a de querer eliminar su cuenta? Esta acción es irreversible e implicará la supresión de:\n\n• Todos sus datos importados\n• Todas sus cuentas ligadas (Twitter, BlueSky, Mastodon)\n• Su perfil HelloQuitX",
+            "message": "¿Está seguro/a de querer eliminar su cuenta? Esta acción es irreversible e implicará la supresión de:\n\n• Todos sus datos importados\n• Todas sus cuentas ligadas (Twitter/X, BlueSky, Mastodon)\n• Su perfil HelloQuitX",
             "confirm": "Sí, eliminar mi cuenta"
         },
         "deleteAccount": "Eliminar mi cuenta"
@@ -275,11 +313,36 @@
         "welcome": "¡Bienvenido/a a bordo de HelloQuitX!",
         "logo": {
             "alt": "HelloQuitX Logo"
+        },
+        "logoCNRS": {
+            "alt": "CNRS, Centro Nacional por la Investigación Científica francés"
         }
     },
     "errorModal": {
         "close": "Cerrar",
-        "title": "Error de carga"
+        "title": "Error",
+        "extractArchive": {
+            "title": "Cómo extraer su archivo",
+            "windows": "Windows",
+            "steps": {
+                "windows": {
+                    "step1": "Clic derecho sobre el archivo .zip",
+                    "step2": "Seleccione \"Extraer todo\"",
+                    "step3": "Elija un archivo de destino",
+                    "step4": "Haga clic sobre \"Extraer\""
+                },
+                "mac": {
+                    "step1": "Haga doble-clic sobre el archivo .zip",
+                    "step2": "El archivo será automáticamente extraído"
+                },
+                "linux": {
+                    "step2": "Seleccione \"Extraer aquí\" o \"Extraer en...\"",
+                    "step1": "Haga clic derecho sobre el archivo .zip"
+                }
+            },
+            "mac": "Mac",
+            "linux": "Linux"
+        }
     },
     "footer": {
         "hosted": {
@@ -287,10 +350,11 @@
             "hqx": "HelloQuitX",
             "text": "Esta plataforma es hospedada por el {cnrs} y desarrollada en colaboración con el colectivo {hqx}"
         },
-        "copyright": "© {year} HelloQuitX. Todos los derechos reservados."
+        "copyright": " {year} HelloQuitX. Todos los derechos reservados."
     },
     "partageButton": {
-        "share": "Compartir"
+        "share": "Compartir",
+        "shareOn": "Comparto en {platform}"
     },
     "header": {
         "logout": "Cerrar sesión",
@@ -299,12 +363,54 @@
         }
     },
     "connectedAccounts": {
-        "connectedWith": "Está conectado con {services}",
+        "connectedWith": "Está conectado con {services} ",
         "and": "y",
         "services": {
-            "twitter": "Twitter",
+            "twitter": "Twitter/X",
             "bluesky": "BlueSky",
             "mastodon": "Mastodon"
         }
+    },
+    "support": {
+        "modal": {
+            "title": "¿Ha ocurrido un problema?",
+            "description": "Envíenos un mensaje y le contestaremos a la brevedad.",
+            "error": {
+                "send": "Error al enviar el mensaje",
+                "unknown": "Un error inesperado ha ocurrido"
+            },
+            "form": {
+                "email": {
+                    "label": "Su dirección de email",
+                    "placeholder": "ejemplo@email.com"
+                },
+                "subject": {
+                    "label": "Asunto",
+                    "placeholder": "Su asunto"
+                },
+                "submit": "Enviar",
+                "submitting": "Enviando...",
+                "message": {
+                    "label": "Mensaje",
+                    "placeholder": "Su mensaje"
+                }
+            }
+        }
+    },
+    "firstSeen": {
+        "title": "¡Bienvenido/a!",
+        "newsletter": {
+            "subtitle": "Deseo ser acompañado/a por HelloQuitX",
+            "emailLabel": "Ingrese su email para seguir informado/a (opcional):",
+            "emailPlaceholder": "nombeDeUsuario@direccion.com",
+            "consent": "Deseo también estar informado/a de las próximas iniciativas On Est prêt, quienes acompañan HelloQuitX",
+            "researchConsent": "Deseo compartir con el CNRS mi grafo de conexiones para propósitos de investigación. Será tratado de forma agregada. Ningún dato personal se volverá público.",
+            "errors": {
+                "missingEmail": "Email faltante"
+            }
+        },
+        "cta": "ENVIAR",
+        "dismiss": "No mostrar más este mensaje",
+        "description": "Está al punto de embarcarse con HelloQuitX para referenciar sus distintas identidades en linea y duplicar su comunidad en otras redes. El total de la operación le tomará 5 minutos y no tendrá impacto sobre su cuenta X. A partir del 20 de enero, sus cuentas BlueSky y Mastodon comenzarán a recibir automáticamente nuevos suscriptores.\nPara que todo vaya bien, le ofrecemos guiar --en algunos casos el proceso requiere de varias etapas-- e informar sobre las funcionalidades que serán publicadas próximamente (como importar sus mensajes X en BlueSky o Mastodon).\nEmbarcando con nosotros, nos autoriza a contactarlo/a por BlueSky o Mastodon. Le recomendamos además dejarno su email, para permitirnos contactarlo/a en sus futuras campañas.\nEste contacto será utilizado con moderación y puede optar por bajarse del programa en cualquier momento."
     }
 }
