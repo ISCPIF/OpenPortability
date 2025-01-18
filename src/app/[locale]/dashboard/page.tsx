@@ -287,7 +287,7 @@ export default function DashboardPage() {
                       }}
                       className="w-full flex items-center justify-between px-8 py-4 bg-white rounded-full text-black font-medium hover:bg-gray-50 transition-colors relative overflow-hidden group"
                     >
-                      <div className="flex items-center gap-3">
+                      <div className="flex text-left gap-3">
                         <Ship className="w-6 h-6" />
                         <span>{t('importButton')}</span>
                       </div>
@@ -308,7 +308,7 @@ export default function DashboardPage() {
                     height={20}
                     className=" text-white mb-2"
                   />
-                  <h2 className={`${plex.className} text-2xl font-medium text-white mb-2`}>{t('newsletter.title')}</h2>
+                  {/* <h2 className={`${plex.className} text-2xl font-medium text-white mb-2`}>{t('newsletter.title')}</h2> */}
                   <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
