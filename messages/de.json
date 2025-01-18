@@ -1,0 +1,310 @@
+{
+    "consentModal": {
+        "conditions": {
+            "cnrsUsage": "Du damit einverstanden bist, dass die zur Verfügung gestellten Daten vom National Center for Scientific Research (CNRS) als Teil des Betriebs von HelloQuitX verwendet werden dürfen.",
+            "ownership": "Du legitime Eigentümer:in dieser Daten bist.",
+            "profileCreation": "Du verstehst, dass diese Daten verwendet werden, um dein Profil auf HelloQuitX anzulegen."
+        },
+        "buttons": {
+            "cancel": "Abbrechen",
+            "accept": "Akzeptieren und fortfahren"
+        },
+        "title": "Upload-Bestätigung",
+        "description": "Indem du deine Twitter-Dateien hochlädst, bestätigst du dass:"
+    },
+    "footer": {
+        "hosted": {
+            "text": "Diese Plattform wird von {cnrs} betrieben und zusammen mit {hqx} entwickelt",
+            "hqx": "HelloQuitX",
+            "cnrs": "CNRS/ISC-PIF"
+        },
+        "copyright": "© {year} HelloQuitX. Alle Rechte vorbehalten."
+    },
+    "blueskyLogin": {
+        "tooltip": {
+            "info": "Wir speichern niemals dein Passwort. Wir nutzen ausschließlich sichere Zugangstokens, die von BlueSky bereitgestellt werden.",
+            "noAccount": "Du hast noch keinen BlueSky account?",
+            "createAccount": "Erstelle hier einen"
+        },
+        "title": "Mit BlueSky verbinden",
+        "form": {
+            "submit": "Anmelden",
+            "errors": {
+                "missingFields": "Bitte fülle alle Felder aus",
+                "default": "Ein Fehler ist aufgetreten"
+            },
+            "identifier": {
+                "placeholder": "username.bsky.social",
+                "label": "BlueSky Benutzername"
+            },
+            "password": {
+                "label": "App-Passwort",
+                "placeholder": "••••••••",
+                "help": "Erstelle ein App-Passwort unter"
+            }
+        },
+        "description": "Verbinde deinen BlueSky-Konto, um deine Daten zu synchronisieren und die volle Erfahrung zu genießen."
+    },
+    "header": {
+        "logout": "Abmelden",
+        "profile": {
+            "username": "@{username}"
+        }
+    },
+    "connectedAccounts": {
+        "services": {
+            "twitter": "Twitter",
+            "bluesky": "BlueSky",
+            "mastodon": "Mastodon"
+        },
+        "and": "und",
+        "connectedWith": "Du bist mit {services} verbunden ✨"
+    },
+    "dashboardLoginButtons": {
+        "addSocialNetwork": "Ein weiteres soziales Netzwerk hinzufügen",
+        "services": {
+            "twitter": "Twitter",
+            "mastodon": {
+                "title": "Mastodon",
+                "instances": {
+                    "piaille": "piaille.fr",
+                    "mastodon": "mastodon.social"
+                }
+            },
+            "bluesky": "BlueSky"
+        },
+        "importTwitter": "Importiere mein Twitter-Archiv und fahre mit der Migration fort"
+    },
+    "errorModal": {
+        "title": "Fehler beim Hochladen",
+        "close": "Schließen"
+    },
+    "loginButtons": {
+        "twitter": {
+            "continue": "Mit Twitter fortfahren",
+            "notDeleted": "Ich habe ein Twitter-Konto"
+        },
+        "deleteAccount": "Ich habe mein Twitter-Konto bereits gelöscht",
+        "bluesky": {
+            "connect": "Verbunden mit BlueSky"
+        },
+        "mastodon": {
+            "connect": "Mit Mastodon verbinden",
+            "instances": {
+                "piaille": "Mit Piaille.fr verbinden",
+                "mastodon": "Mit Mastodon.social verbinden"
+            }
+        }
+    },
+    "migrationComplete": {
+        "error": {
+            "title": "Fehler bei der Migration",
+            "createAccount": "Konto anlegen",
+            "retry": "Nochmal versuchen"
+        },
+        "success": {
+            "title": "Migration erfolgreich!",
+            "displayName": "{{name}}",
+            "viewProfile": "Profil ansehen",
+            "description": "Dein Konto wurde erfolgreich zu BlueSky übertragen unter dem Benutzernamen {handle}"
+        }
+    },
+    "partageButton": {
+        "share": "Teilen"
+    },
+    "progressSteps": {
+        "socialNetworks": {
+            "description": "Ein soziales Netzwerk hinzufügen",
+            "title": "Soziale Netzwerke"
+        },
+        "import": {
+            "title": "Importieren",
+            "description": {
+                "withStats": "{following} gefolgt, {followers} Follower",
+                "noStats": "Abos importieren"
+            }
+        },
+        "share": {
+            "title": "Teilen",
+            "description": "Helfe deinen Freunden zu wechseln"
+        },
+        "dashboard": {
+            "title": "Übersichtsseite",
+            "description": "Erfolgreich mit der HelloQuitX-Plattform verbunden!"
+        }
+    },
+    "successModal": {
+        "title": "Import erfolgreich!",
+        "following": {
+            "title": "{{count}} gefolgt",
+            "username": "@{username}"
+        },
+        "followers": {
+            "username": "@{username}",
+            "title": "Follower ({count})"
+        },
+        "close": "Schließen"
+    },
+    "uploadButton": {
+        "dropHere": "Datei hier ablegen",
+        "uploadInProgress": "Wir analysieren dein Archive, bitte warten ...",
+        "clickOrDrop": "Klicken, oder Archiv hier ablegen",
+        "error": {
+            "uploadFailed": "Upload nach mehreren Versuchen fehlgeschlagen. Bitte versuche es erneut."
+        }
+    },
+    "largeFiles": {
+        "progress": {
+            "following": {
+                "title": "Folgend",
+                "processed": "{processed} / {total}"
+            },
+            "followers": {
+                "title": "Follower",
+                "processed": "{processed} / {total}"
+            },
+            "total": {
+                "title": "Vollständiger Fortschritt",
+                "processed": "{processed} / {total}"
+            }
+        },
+        "logo": {
+            "alt": "HelloQuitX-Logo"
+        },
+        "status": {
+            "title": "Status",
+            "pending": "Warte",
+            "processing": "Verarbeite",
+            "completed": "Erledigt",
+            "failed": "Fehlgeschlagen"
+        },
+        "stats": {
+            "followers": "Follower",
+            "following": "Folgend"
+        },
+        "button": {
+            "dashboard": "Zurück zur Übersichtsseite"
+        }
+    },
+    "dashboard": {
+        "shareModal": {
+            "shareOn": "Teilen auf {platform}",
+            "title": "Teile deine Reise",
+            "shareText": "🔥Der X-Exodus ist massiv! Verliere keine deiner Follower. Dank #HelloQuitX habe ich {count} neue Passagiere für die Reise zu #BlueSky & #Mastodon registriert. Schließe dich uns an und finde automatisch deine Communities am #January20!"
+        },
+        "loading": "Lade deine Daten ...",
+        "migrationStep": {
+            "completed": "Du hast den ersten Schritt deiner Migration abgeschlossen",
+            "daysLeft": "Noch {count} Tage bis zur großen Abfahrt",
+            "nextSteps": "Schließe die folgenden Schritte ab, um zu neuen Ufern zu segeln!"
+        },
+        "importButton": "Importiere mein Twitter-Archiv und fahre mit der Reise fort",
+        "newsletter": {
+            "acceptHQX": "Ich möchte Updates von HelloQuitX erhalten",
+            "subscribing": "Unterzeichnend...",
+            "subscribed": "Sie sind Abonnent der newsletter!",
+            "subscribe": "Bleiben Sie über die nächsten Schritte des HelloQuitX-Projekts informiert",
+            "emailLabel": "Ihre email-Adresse",
+            "description": "Melden Sie sich an, um den Fortschritt des Projekts zu verfolgen und über neue Funktionen informiert zu werden.",
+            "acceptOEP": "Ich möchte über weitere Initiativen von (https://www.onestpret.com) informiert werden, die HelloQuitX unterstützt",
+            "confirmSubscribe": "Abonnement bestätigen",
+            "title": "Bleibe informiert",
+            "emailPlaceholder": "beispiel@email.de"
+        },
+        "addSocialNetwork": "Soziales Netzwerk hinzufügen",
+        "addSocialNetworkDescription": "Andere soziale Netzwerke verknüpfen für ein besseres Erlebnis"
+    },
+    "uploadResults": {
+        "inviteFriends": "Lade deine Follower ein mitzumachen!",
+        "stats": {
+            "twitterAccounts": {
+                "value": "{count}",
+                "label": "Twitter-Konten"
+            },
+            "totalImported": {
+                "value": "{count} Konten importiert",
+                "label": "Gesamt importiert"
+            },
+            "readyTravelers": {
+                "label": "Bereit für die Reise",
+                "value": "{count} Konten bereit"
+            }
+        },
+        "congratulations": "Herzlichen Glückwunsch @{username}, du bist für die Reise angemeldet!",
+        "importSuccess": "Dein Dateiimport hat {count} neue Passagiere registriert!",
+        "redirecting": "Leite auf Übersichtsseite weiter ..."
+    },
+    "dashboardSea": {
+        "logo": {
+            "alt": "HelloQuitX-Logo"
+        },
+        "welcome": "Willkommen an Bord von HelloQuitX!"
+    },
+    "upload": {
+        "logo": {
+            "alt": "HelloQuitX-Logo"
+        },
+        "helpModal": {
+            "description": "Um an dein Twitter-Archiv zu gelangen, folge diesen Schritten:",
+            "steps": [
+                "Logge in dein Twitter-Konto ein",
+                "Gehe zu \"Mehr\" im linken Menü",
+                "Klicke auf \"Einstellungen und Support\", dann \"Einstellungen und Privatspäre\"",
+                "Unter \"Dein Account\", wähle \"Ein Archiv deiner Daten herunterladen\"",
+                "Bestätige dein Passwort, falls du dazu aufgefordert wirst",
+                "Klicke auf \"Archiv anfordern\"",
+                "Twitter sendet dir eine E-Mail, wenn dein Archiv zum Download bereitsteht",
+                "Nach dem Download kannst du die .zip-Datei hier importieren"
+            ],
+            "note": "Hinweis: Die Bereitstellung des Twitter-Archivs kann bis zu 24 Stunden dauern.",
+            "title": "Wie kommst du an dein Twitter-Archiv?"
+        },
+        "errors": {
+            "fileSize": "Die Dateigröße übersteigt die Grenze von 1 GB",
+            "noFiles": "Keine Dateien ausgewählt",
+            "invalidCombination": "Bite lade entweder eine ZIP-Datei hoch, oder following.js + follower.js, deren aufgeteilte Versionen (following-part*.js/follower-part*.js)",
+            "fileType": "Ungültiger Dateityp. Bitte lade entweder eine ZIP-Datei, oder following.js und follower.js, hoch"
+        },
+        "title": "Importiere dein Twitter-Archiv und setze deine Reise fort",
+        "description": "Drop deine ZIP-Datei (wenn sie 300 MB nicht überschreitet), oder lade data/following.js und data/follower.js hoch, wenn du sie bereits entpackt hast",
+        "loading": "Deine Dateien werden verarbeitet, bitte bleibe auf dieser Seite, bis du weitergeleitet wirst.",
+        "helpButton": "Hilfe, um an dein Twitter-Archive zu gelangen",
+        "loading-indic": "Ihre Daten werden geladen...",
+        "action": "Deine Dateien hier auswählen oder hinverschieben"
+    },
+    "signin": {
+        "title": "Bereit, um zu neuen Ufern aufzubrechen?",
+        "subtitle": "Beginne mit Twitter zu verbinden, um deine Daten zu migrieren",
+        "loading": "Lade Informationen ..."
+    },
+    "settings": {
+        "notifications": {
+            "oepNewsletter": "Erfahren Sie mehr über On est prêt initiatives",
+            "title": "Benachrichtigungen",
+            "hqxNewsletter": "Erhalten Sie Updates von HelloQuitX"
+        },
+        "deleteConfirm": {
+            "message": "Sind Sie sicher, dass Sie Ihr Konto löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden und führt zum Löschen von:\n\n• Alle Ihre importierten Daten\n• Alle Ihre verknüpften Konten (Twitter, BlueSky, Mastodon)\n• Ihr HelloQuitX-Profil",
+            "cancel": "Abbrechen",
+            "title": "Mein Konto löschen",
+            "confirm": "Ja, mein Konto löschen"
+        },
+        "deleteAccount": "Mein Konto löschen",
+        "logout": "Abmelden"
+    },
+    "profile": {
+        "unlinkConfirmation": "Sind Sie sicher, dass Sie die Verknüpfung Ihres {provider}-Kontos aufheben wollen?",
+        "unlinkButton": "Verknüpfung des {provider}-Kontos aufheben",
+        "unlinkSuccess": "Die Verknüpfung Ihres {provider}-Kontos wurde erfolgreich aufgehoben",
+        "errors": {
+            "notLinked": "Es ist kein {provider}-Konto verknüpft",
+            "lastAccount": "Die Verknüpfung Ihres zuletzt verbundenen Kontos kann nicht aufgehoben werden"
+        },
+        "unlinkError": "Beim Aufheben der Verknüpfung Ihres {provider}-Kontos ist ein Fehler aufgetreten",
+        "providers": {
+            "twitter": "Twitter",
+            "bluesky": "Bluesky",
+            "mastodon": "Mastodon"
+        }
+    }
+}

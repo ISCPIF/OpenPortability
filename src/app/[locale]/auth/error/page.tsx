@@ -26,6 +26,12 @@ export default function AuthError() {
 
   const getErrorMessage = (errorCode: string, customMessage?: string) => {
     switch (errorCode) {
+      case 'MastodonAccountAlreadyLinked':
+        return {
+          title: 'Compte déjà lié',
+          message: 'Ce compte Mastodon est déjà lié à un autre utilisateur. Veuillez utiliser un autre compte ou contacter le support.',
+          action: 'Retour à l\'accueil'
+        }
       case 'RateLimit':
         return {
           title: 'Trop de requêtes',

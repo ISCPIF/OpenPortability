@@ -22,7 +22,7 @@ async function createMastodonApp(instance: string){
       // TODO: limiter au strict nécessaire
       // https://docs.joinmastodon.org/api/oauth-scopes/#granular
       "scopes": "read",
-      "website": "https://app.helloquitx.com"
+      "website": "https://app.beta.v2.helloquitx.com"
     };
         try {
       const response = await fetch(url, {

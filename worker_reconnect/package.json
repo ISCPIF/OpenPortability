@@ -1,0 +1,23 @@
+{
+  "name": "worker-reconnect",
+  "version": "1.0.0",
+  "description": "Worker for handling automatic reconnection jobs",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "ts-node src/index.ts"
+  },
+  "dependencies": {
+    "@atproto/api": "^0.13.19",
+    "@supabase/supabase-js": "^2.39.0",
+    "dotenv": "^16.3.1",
+    "node-fetch": "^2.7.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.4",
+    "@types/node-fetch": "^2.6.9",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.3.2"
+  }
+}
