@@ -15,6 +15,7 @@ export interface CustomAdapterUser extends Omit<AdapterUser, 'image'> {
   oep_accepted: boolean
   have_seen_newsletter: boolean
   research_accepted: boolean
+  automatic_reconnect: boolean
   twitter_id?: string | null
   twitter_username?: string | null
   twitter_image?: string | null
@@ -117,6 +118,7 @@ export async function createUser(
         oep_accepted: existingUser.oep_accepted,
         have_seen_newsletter: existingUser.have_seen_newsletter,
         research_accepted: existingUser.research_accepted,
+        automatic_reconnect: existingUser.automatic_reconnect,
         twitter_id: existingUser.twitter_id,
         twitter_username: existingUser.twitter_username,
         twitter_image: existingUser.twitter_image,
@@ -170,6 +172,7 @@ const providerIdField = `${provider}_id` as keyof CustomAdapterUser
       oep_accepted: false,
       have_seen_newsletter: false,
       research_accepted: false,
+      automatic_reconnect: false,
       email: undefined
     }
 
@@ -221,6 +224,7 @@ const providerIdField = `${provider}_id` as keyof CustomAdapterUser
     oep_accepted: false,
     have_seen_newsletter: false,
     research_accepted: false,
+    automatic_reconnect: false,
     email: 'none'
   }
 
@@ -271,6 +275,7 @@ export async function getUser(id: string): Promise<CustomAdapterUser | null> {
     oep_accepted: user.oep_accepted,
     have_seen_newsletter: user.have_seen_newsletter,
     research_accepted: user.research_accepted,
+    automatic_reconnect: user.automatic_reconnect,
     email: "none",
     emailVerified: null
   }
@@ -335,6 +340,7 @@ export async function getUserByAccount({ providerAccountId, provider }): Promise
     oep_accepted: user.oep_accepted,
     have_seen_newsletter: user.have_seen_newsletter,
     research_accepted: user.research_accepted,
+    automatic_reconnect: user.automatic_reconnect,
     email: "none",
     emailVerified: null
   }
@@ -432,8 +438,25 @@ export async function updateUser(
     oep_accepted: user.oep_accepted,
     have_seen_newsletter: user.have_seen_newsletter,
     research_accepted: user.research_accepted,
+    automatic_reconnect: user.automatic_reconnect,
     email: "none",
     emailVerified: null
+  }
+}
+
+// Fonction utilitaire pour décoder les JWT
+export function decodeJwt(token: string): { exp: number } | null {
+  try {
+    const jwt = token.split('.')
+    if (jwt.length !== 3) {
+      throw new Error('Invalid JWT format')
+    }
+    
+    const payload = JSON.parse(Buffer.from(jwt[1], 'base64').toString())
+    return payload
+  } catch (error) {
+    console.error('❌ [Adapter] Erreur décodage JWT:', error)
+    return null
   }
 }
 
@@ -441,6 +464,16 @@ export async function linkAccount(account: AdapterAccount): Promise<void>
 {
   console.log("\n=== [Adapter] linkAccount ===")
   console.log("→ Linking account:", JSON.stringify(account, null, 2))
+  
+  // Décoder l'access token pour obtenir l'expiration
+  let expires_at = account.expires_at
+  if (account.access_token) {
+    const payload = decodeJwt(account.access_token)
+    if (payload?.exp) {
+      expires_at = payload.exp
+      console.log('📅 [Adapter] Expiration décodée du token:', new Date(expires_at * 1000).toISOString())
+    }
+  }
   
   const { error } = await authClient
     .from("accounts")
@@ -451,7 +484,7 @@ export async function linkAccount(account: AdapterAccount): Promise<void>
       provider_account_id: account.providerAccountId,
       refresh_token: account.refresh_token,
       access_token: account.access_token,
-      expires_at: account.expires_at,
+      expires_at,  // Utiliser l'expiration décodée du JWT
       token_type: account.token_type,
       scope: account.scope,
       id_token: account.id_token,
@@ -516,6 +549,7 @@ export async function getSessionAndUser(sessionToken: string): Promise<{ session
       oep_accepted: user.oep_accepted,
       have_seen_newsletter: user.have_seen_newsletter,
       research_accepted: user.research_accepted,
+      automatic_reconnect: user.automatic_reconnect,
       email: "none",
       emailVerified: null
     }

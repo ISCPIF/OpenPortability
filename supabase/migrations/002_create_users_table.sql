@@ -21,6 +21,7 @@ create table "next-auth"."users" (
     "oep_accepted" boolean not null default false,
     "research_accepted"  boolean not null default false,
     "have_seen_newsletter" boolean not null default false,
+    "automatic_reconnect" boolean not null default false,
     primary key ("id"),
     unique("email")
 );

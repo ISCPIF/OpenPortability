@@ -388,5 +388,79 @@
     },
     "cta": "ENVOYER",
     "dismiss": "Ne plus afficher ce message"
-  }
+  },
+  "migrate": {
+    "title": "Migration de vos abonnements",
+    "matches_found": "correspondances trouvées",
+    "followers": "Abonnés",
+    "following": "Abonnements",
+    "loading": "Chargement de vos correspondances",
+    "selectAll": "Tout sélectionner",
+    "deselectAll": "Tout désélectionner",
+    "startMigration": "Démarrer la migration",
+    "migrating": "Migration en cours...",
+    "migrationInProgress": "Migration en cours...",
+    "migrationComplete": "Migration terminée !",
+    "migrationProgress": "{current} comptes migrés sur {total}",
+    "migrationCompleteStats": "{count} comptes migrés avec succès",
+    "minimize": "Réduire",
+    "close": "Fermer"
+  },
+  "ReconnexionOptions": {
+    "buttons": {
+      "automatic": "RECONNECTEZ-MOI AUTOMATIQUEMENT",
+      "manual": "JE CHOISIS LES COMPTES À RECONNECTER"
+    },
+    "descriptions": {
+      "automatic": "HelloQuittex vous reconnectera avec tous vos abonnés venant de X pendant 30 jours",
+      "manual": "HelloQuittex vous proposera en détail les comptes trouvés sur Bluesky et Mastodon pour que vous puissiez choisir de vous connecter ou non"
+    },
+    "stats": {
+      "connections": "connexions",
+      "bluesky": "sur Bluesky",
+      "networks": "sources"
+    }
+  },
+  "migrateSea": {
+    "logo": {
+      "alt": "Logo HelloQuittex"
+    },
+    "matchDetails": {
+      "bluesky": "{count} sur Bluesky",
+      "mastodon": "{count} sur Mastodon"
+    },
+    "title": "C'est l'heure de la #GrandeReconnexion !",
+    "matchMessage": "{matchCount} passagers ont été retrouvés lors de votre 1ère étape de migration !\nC'est le moment maintenant d'activer la connexion avec ceux que vous souhaitez\nrejoindre sur vos nouveaux réseaux."
+  },
+  "ManualReconnexion": {
+    "title": "Reconnexion manuelle",
+    "automaticReconnect": "ME RECONNECTER AUTOMATIQUEMENT",
+    "selectAll": "TOUT SÉLECTIONNER",
+    "connect": "CONNECTER ({count})",
+    "prev": "Précédent",
+    "next": "Suivant",
+    "xAccountPseudo": "Pseudo",
+    "mastodonBlueskyCorrespondence": "Correspondance Mastodon/Bluesky",
+    "followOnBluesky": "Suivre sur Bluesky",
+    "followOnMastodon": "Suivre sur Mastodon"
+  },
+  "AccountToMigrate": {
+    "followOnBluesky": "Suivre sur Bluesky",
+    "followOnMastodon": "Suivre sur Mastodon",
+    "followedOnBluesky": "Suivi sur Bluesky",
+    "followedOnMastodon": "Suivi sur Mastodon"
+  },
+"reconnexionModal": {
+  "title": "Vous venez d'activer la connexion avec {count} comptes !",
+  "message": "Félicitations, votre reconnexion est bien effectuée, vous êtes arrivé à bon port.",
+  "stayInformed": "RESTEZ INFORMÉ DES NOUVELLES CONNEXIONS",
+  "progressTitle": "Reconnexion en cours : {succeeded} sur {total} comptes",
+  "progressMessage": "Veuillez patienter pendant que nous effectuons la reconnexion de vos comptes...",
+  "migrationInProgress": "Reconnexion en cours...",
+  "migrationComplete": "Reconnexion terminée !",
+  "migrationProgress": "{current} comptes reconnectés sur {total}",
+  "migrationCompleteStats": "{count} comptes reconnectés avec succès",
+  "minimize": "Réduire",
+  "close": "Fermer"
+}
 }
