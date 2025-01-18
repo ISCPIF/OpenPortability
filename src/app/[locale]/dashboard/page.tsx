@@ -308,7 +308,7 @@ export default function DashboardPage() {
                     height={20}
                     className=" text-white mb-2"
                   />
-                  <h2 className={`${plex.className} text-2xl font-medium text-white mb-2`}>{t('newsletter.title')}</h2>
+                  {/* <h2 className={`${plex.className} text-2xl font-medium text-white mb-2`}>{t('newsletter.title')}</h2> */}
                   <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}

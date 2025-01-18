@@ -8,6 +8,7 @@ import type { AdapterUser } from "next-auth/adapters"
 import { isTwitterProfile, isMastodonProfile, isBlueskyProfile } from "./auth"
 import type { AdapterAccountType } from "next-auth/adapters"
 import type { CustomAdapterUser } from '@/lib/supabase-adapter'
+import { authClient } from '@/lib/supabase'
 
 import { auth } from "./auth"
 
@@ -78,6 +79,24 @@ export const authConfig = {
       try {
         // Vérifier si un utilisateur est déjà connecté
         const session = await auth();
+
+        if (session?.user?.id && account.provider === 'mastodon') {
+          const mastodonProfile = profile as MastodonProfile;
+          const instance = new URL(mastodonProfile.url).origin;
+
+          // Vérifier si un autre utilisateur a déjà ce compte Mastodon
+          const { data: existingUser } = await authClient
+            .from('users')
+            .select('id')
+            .eq('mastodon_id', mastodonProfile.id)
+            .eq('mastodon_instance', instance)
+            .single();
+
+            if (existingUser && existingUser.id !== session.user.id) {
+              console.log("This Mastodon account is already linked to another user");
+              return '/auth/error?error=MastodonAccountAlreadyLinked';
+            }
+        }
         
         // Si on essaie de lier un compte Bluesky
         if (session?.user?.id && account.provider === 'bluesky') {
