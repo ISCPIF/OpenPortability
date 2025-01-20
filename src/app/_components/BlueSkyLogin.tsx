@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { BskyAgent } from '@atproto/api';
 import { signIn } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -19,6 +19,8 @@ export default function BlueSkyLogin({ onLoginComplete }: BlueSkyLoginProps) {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const t = useTranslations('blueskyLogin');
+  const pathname = usePathname();
+
 
   const locale = useLocale();
 
@@ -79,7 +81,8 @@ export default function BlueSkyLogin({ onLoginComplete }: BlueSkyLoginProps) {
 
       if (result?.ok) {
         console.log('Redirecting to dashboard...');
-        router.push(`/${locale}/dashboard`);
+        const redirectPath = pathname?.includes('/migrate') ? '/migrate' : '/dashboard';
+        router.push(`/${locale}${redirectPath}`);
       } else {
         console.log('Sign in failed:', result);
       }

@@ -258,6 +258,11 @@ export async function POST(request: Request) {
     })
   } catch (error) {
     console.error(' [send_follow] Unexpected error:', error)
+    
+    if (error instanceof Error && error.message === 'Token could not be verified') {
+      return NextResponse.json({ error: 'InvalidToken' }, { status: 500 })
+    }
+  
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
