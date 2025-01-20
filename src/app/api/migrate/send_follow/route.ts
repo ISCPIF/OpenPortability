@@ -204,6 +204,9 @@ export async function POST(request: Request) {
         }
       }
     }
+    else {
+      console.log(' [send_follow] No Bluesky credentials found')
+    }
 
     // Traiter les follows Mastodon
     const mastodonFollows = accounts.filter(acc => 
@@ -234,6 +237,10 @@ export async function POST(request: Request) {
           console.error(` [send_follow] Failed to follow ${account.mastodon_username}@${account.mastodon_instance} on Mastodon:`, error)
         }
       }
+    }
+    else
+    {
+      console.log(' [send_follow] No Mastodon credentials found')
     }
 
     return NextResponse.json({ 

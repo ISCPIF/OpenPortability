@@ -17,6 +17,7 @@ import LoadingIndicator from '@/app/_components/LoadingIndicator'
 import ReconnexionOptions from '@/app/_components/ReconnexionOptions'
 import ManualReconnexion from '@/app/_components/ManualReconnexion'
 import ReconnexionModaleResults from '@/app/_components/ReconnexionModaleResults'
+import AutomaticReconnexion from '@/app/_components/AutomaticReconnexion'
 
 import { plex } from '@/app/fonts/plex'
 
@@ -65,7 +66,7 @@ export default function MigratePage() {
   const [showOptions, setShowOptions] = useState(true)
   const [isAutomaticReconnect, setIsAutomaticReconnect] = useState(false)
   const [stats, setStats] = useState<Stats | null>(null)
-  const [showReconnexionModal, setShowReconnexionModal] = useState(false)
+  const [showModaleResults, setShowModaleResults] = useState(false)
   const [migrationResults, setMigrationResults] = useState<{ bluesky: { attempted: number; succeeded: number }; mastodon: { attempted: number; succeeded: number } } | null>(null)
 
   useEffect(() => {
@@ -82,7 +83,7 @@ export default function MigratePage() {
         return
       }
 
-      if (!session.user?.has_onboarded || !session.user?.bluesky_id) {
+      if (!session.user?.has_onboarded) {
         console.log("Redirecting to dashboard")
         return
       }
@@ -144,12 +145,16 @@ export default function MigratePage() {
 
   const handleAutomaticReconnection = async () => {
     await updateAutomaticReconnect(true);
+    setIsAutomaticReconnect(true);
     setShowOptions(false);
-    // Ici vous pouvez ajouter la logique supplémentaire pour la reconnexion automatique
+    // Démarrer la migration automatique avec tous les comptes
+    const allAccountIds = matches.map(match => match.twitter_id);
+    handleStartMigration(allAccountIds);
   };
-  
+
   const handleManualReconnection = async () => {
     await updateAutomaticReconnect(false);
+    setIsAutomaticReconnect(false);
     setShowOptions(false);
     // Ici vous pouvez ajouter la logique supplémentaire pour la reconnexion manuelle
   };
@@ -157,6 +162,7 @@ export default function MigratePage() {
   const toggleAutomaticReconnect = async () => {
     const newValue = !isAutomaticReconnect;
     await updateAutomaticReconnect(newValue);
+    setIsAutomaticReconnect(newValue);
   };
 
   const handleStartMigration = async (selectedAccounts: string[]) => {
@@ -177,7 +183,7 @@ export default function MigratePage() {
         mastodon: { attempted: totalMastodonToMigrate, succeeded: 0 }
       };
       setMigrationResults(totalResults);
-      setShowReconnexionModal(true);
+      setShowModaleResults(true);
 
       // Traiter par batch de 10 comptes
       const BATCH_SIZE = 10;
@@ -243,47 +249,42 @@ export default function MigratePage() {
   };
 
   return (
-    <div className="min-h-screen mt-4 relative w-full max-w-[90rem] m-auto bg-[#2a39a9]">
-      <Header />
-      <MigrateSea stats={stats}/>
-      <div className="container mx-auto px-4 mt-[400px] bg-[#2a39a9]">
-        {isAutomaticReconnect ? (
-          <div className="flex items-center justify-center gap-4 mb-8">
-            <span className="text-white">Reconnexion automatique activée</span>
-            <button
-              onClick={toggleAutomaticReconnect}
-              className={`w-16 h-8 rounded-full p-1 transition-colors duration-200 ease-in-out ${
-                isAutomaticReconnect ? 'bg-[#FF3366]' : 'bg-gray-400'
-              }`}
-            >
-              <div
-                className={`w-6 h-6 rounded-full bg-white transform transition-transform duration-200 ease-in-out ${
-                  isAutomaticReconnect ? 'translate-x-8' : 'translate-x-0'
-                }`}
+    <main className="min-h-screen bg-[#2a39a9]">
+      <div className="w-full max-w-[90rem] m-auto">
+        <div className="bg-[#2a39a9]">
+          <Header />
+          <MigrateSea stats={stats}/>
+          
+          <div className="mt-[600px] bg-[#2a39a9]">
+            {isAutomaticReconnect ? (
+              <AutomaticReconnexion
+                results={migrationResults || { bluesky: { attempted: 0, succeeded: 0 }, mastodon: { attempted: 0, succeeded: 0 } }}
+                onPause={toggleAutomaticReconnect}
               />
-            </button>
+            ) : showOptions ? (
+              <ReconnexionOptions
+                onAutomatic={handleAutomaticReconnection}
+                onManual={handleManualReconnection}
+              />
+            ) : (
+              <ManualReconnexion
+                matches={matches}
+                onStartMigration={handleStartMigration}
+                onToggleAutomaticReconnect={handleAutomaticReconnection}
+              />
+            )}
           </div>
-        ) : showOptions ? (
-          <ReconnexionOptions
-            matchCount={matches.length}
-            onAutomatic={handleAutomaticReconnection}
-            onManual={handleManualReconnection}
-          />
-        ) : (
-          <ManualReconnexion
-            matches={matches}
-            onStartMigration={handleStartMigration}
-            onToggleAutomaticReconnect={handleAutomaticReconnection}
-          />
-        )}
+
+          {/* {showModaleResults && (
+            <ReconnexionModaleResults
+              results={migrationResults}
+              onClose={() => setShowModaleResults(false)}
+            />
+          )} */}
+
+          <Footer />
+        </div>
       </div>
-      {showReconnexionModal && migrationResults && (
-        <ReconnexionModaleResults
-          onClose={() => setShowReconnexionModal(false)}
-          results={migrationResults}
-        />
-      )}
-      <Footer />
-    </div>
-  )
+    </main>
+  );
 }

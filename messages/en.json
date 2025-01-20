@@ -388,6 +388,7 @@
     "migrating": "Migrating..."
   },
 "ReconnexionOptions": {
+    "title": "Choose how you want to reconnect to your followings",
     "buttons": {
       "automatic": "RECONNECT ME AUTOMATICALLY",
       "manual": "I CHOOSE ACCOUNTS TO RECONNECT"
@@ -410,8 +411,12 @@
       "bluesky": "{count} on Bluesky",
       "mastodon": "{count} on Mastodon"
     },
-    "title": "It's time for the #GreatReconnection!",
-    "matchMessage": "{matchCount} passengers were found during your first migration step!\nNow is the time to activate the connection with those you want to\njoin on your new networks."
+    "title": "the #GreatReconnection!",
+    "matchMessage": "{matchCount} passengers were found during your first migration step!\nNow is the time to activate the connection with those you want to\njoin on your new networks.",
+    "stats": {
+      "awaitingConnection": "of your followed accounts are\nawaiting connection!",
+      "alreadyTransferred": "subscribers have already been\ntransferred!"
+    }
   },
   "ManualReconnexion": {
     "title": "Manual Reconnection",
@@ -451,5 +456,11 @@
     "migrationCompleteStats": "Successfully reconnected {count} accounts",
     "minimize": "Minimize",
     "close": "Close"
+  },
+  "AutomaticReconnexion": {
+    "reconnectionInProgress": "Automatic reconnection activated",
+    "accountsToConnect": "Accounts to connect",
+    "blueskyAccounts": "Bluesky accounts",
+    "mastodonAccounts": "Mastodon accounts"
   }
 }
