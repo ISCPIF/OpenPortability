@@ -54,3 +54,4 @@ backup.sql
 /tests
 /volumes
 /cleanup
+/worker_refreshtoken/node_modules
