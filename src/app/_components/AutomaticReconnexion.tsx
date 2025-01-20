@@ -5,20 +5,23 @@ import { FaPause } from 'react-icons/fa'
 
 interface AutomaticReconnexionProps {
   onPause: () => void
-  blueskyTotal: number
-  mastodonTotal: number
-  blueskyProcessed: number
-  mastodonProcessed: number
+  results: {
+    bluesky: { attempted: number; succeeded: number }
+    mastodon: { attempted: number; succeeded: number }
+  }
 }
 
 export default function AutomaticReconnexion({
   onPause,
-  blueskyTotal,
-  mastodonTotal,
-  blueskyProcessed,
-  mastodonProcessed
+  results
 }: AutomaticReconnexionProps) {
   const t = useTranslations('AutomaticReconnexion')
+
+  // Calculer les pourcentages de progression
+  const blueskyProgress = results.bluesky.attempted === 0 ? 0 : 
+    (results.bluesky.succeeded / results.bluesky.attempted) * 100
+  const mastodonProgress = results.mastodon.attempted === 0 ? 0 :
+    (results.mastodon.succeeded / results.mastodon.attempted) * 100
 
   return (
     <div className="flex flex-col space-y-8 w-full max-w-3xl mx-auto">
@@ -54,12 +57,12 @@ export default function AutomaticReconnexion({
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span>{t('blueskyAccounts')}</span>
-                <span>{blueskyProcessed}/{blueskyTotal}</span>
+                <span>{results.bluesky.succeeded}/{results.bluesky.attempted}</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2.5">
                 <div 
                   className="bg-[#d6356f] h-2.5 rounded-full transition-all duration-500 ease-out"
-                  style={{ width: `${(blueskyProcessed / blueskyTotal) * 100}%` }}
+                  style={{ width: `${blueskyProgress}%` }}
                 />
               </div>
             </div>
@@ -68,12 +71,12 @@ export default function AutomaticReconnexion({
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span>{t('mastodonAccounts')}</span>
-                <span>{mastodonProcessed}/{mastodonTotal}</span>
+                <span>{results.mastodon.succeeded}/{results.mastodon.attempted}</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2.5">
                 <div 
                   className="bg-[#d6356f] h-2.5 rounded-full transition-all duration-500 ease-out"
-                  style={{ width: `${(mastodonProcessed / mastodonTotal) * 100}%` }}
+                  style={{ width: `${mastodonProgress}%` }}
                 />
               </div>
             </div>

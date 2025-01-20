@@ -9,6 +9,10 @@ import { useEffect, useState } from 'react';
 import BSIcon from '../../../public/newSVG/BS.svg';
 import MastoIcon from '../../../public/newSVG/masto.svg';
 
+const formatNumber = (num: number): string => {
+  return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+};
+
 interface ReconnexionOptionsProps {
   onAutomatic: () => void;
   onManual: () => void;
@@ -85,23 +89,23 @@ export default function ReconnexionOptions({ onAutomatic, onManual }: Reconnexio
         <div className="mt-12 flex justify-center space-x-12">
           {/* Connexions totales */}
           <div className="bg-[#1A237E] rounded-lg p-4 text-center text-white min-w-[140px]">
-            <div className="text-4xl font-bold mb-2">{stats?.connections || 0}</div>
+            <div className="text-4xl font-bold mb-2">{stats ? formatNumber(stats.connections) : 0}</div>
             <div className={`${plex.className} text-sm`}>{t('stats.connections')}</div>
           </div>
 
           {/* Mappings Bluesky */}
           <div className="bg-[#1A237E] rounded-lg p-4 text-center text-white min-w-[140px]">
-            <div className="text-4xl font-bold mb-2">{stats?.blueskyMappings || 0}</div>
+            <div className="text-4xl font-bold mb-2">{stats ? formatNumber(stats.blueskyMappings) : 0}</div>
             <div className={`${plex.className} text-sm`}>{t('stats.bluesky')}</div>
-          </div>
-
-          {/* Sources */}
-          <div className="bg-[#1A237E] rounded-lg p-4 text-center text-white min-w-[140px]">
             <div className="flex justify-center gap-2 mb-2">
               <Image src={BSIcon} alt="Bluesky" width={24} height={24} />
               <Image src={MastoIcon} alt="Mastodon" width={24} height={24} />
             </div>
-            <div className="text-4xl font-bold mb-2">{stats?.sources || 0}</div>
+          </div>
+
+          {/* Sources */}
+          <div className="bg-[#1A237E] rounded-lg p-4 text-center text-white min-w-[140px]">
+            <div className="text-4xl font-bold mb-2">{stats ? formatNumber(stats.sources) : 0}</div>
             <div className={`${plex.className} text-sm`}>{t('stats.networks')}</div>
           </div>
         </div>
