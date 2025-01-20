@@ -7,8 +7,6 @@ import type {
   VerificationToken
 } from "next-auth/adapters"
 import type { Profile } from "next-auth"
-import { encrypt, decrypt } from './encryption';
-
 
 export interface CustomAdapterUser extends Omit<AdapterUser, 'image'> {
   has_onboarded: boolean
@@ -428,7 +426,7 @@ export async function linkAccount(account: AdapterAccount): Promise<void>
       expires_at,  // Utiliser l'expiration décodée du JWT
       token_type: account.token_type,
       scope: account.scope,
-      id_token: account.id_token ? encrypt(account.id_token) : null,
+      id_token: account.id_token,
       session_state: account.session_state,
     }], {
       onConflict: 'provider,provider_account_id',
