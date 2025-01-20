@@ -91,7 +91,7 @@ export default function ManualReconnexion({
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={() => onStartMigration(Array.from(selectedAccounts))}
-              className="bg-[#FF3366] text-white px-6 py-2 rounded-full font-bold hover:bg-[#FF1F59] transition-colors"
+              className="bg-[#d6356f] text-white px-6 py-2 rounded-full font-bold hover:bg-[#FF1F59] transition-colors"
             >
               {t('connect', { count: selectedAccounts.size })}
             </motion.button>
