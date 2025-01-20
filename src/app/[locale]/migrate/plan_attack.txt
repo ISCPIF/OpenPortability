@@ -1,0 +1,12 @@
+
+Processus de migration :
+Afficher une liste des correspondances trouvées
+Permettre à l'utilisateur de sélectionner qui il veut suivre
+Proposer une action en masse pour suivre tous les comptes trouvés
+Garder une trace des comptes déjà migrés pour éviter les doublons
+
+Interface utilisateur :
+Afficher le nombre total de followers/following Twitter
+Montrer combien ont été trouvés sur Bluesky
+Permettre un filtrage et une recherche dans la liste
+Montrer le statut de la migration (en cours, complété, etc.)

@@ -131,6 +131,8 @@ async jwt({ token, user, account, profile }) {
         token.oep_accepted = !!user.oep_accepted
         token.research_accepted = !!user.research_accepted
         token.have_seen_newsletter = !!user.have_seen_newsletter
+        token.automatic_reconnect = !!user.automatic_reconnect
+
       }
 
       if (account && profile) {
@@ -199,6 +201,7 @@ async jwt({ token, user, account, profile }) {
               oep_accepted: !!user.oep_accepted,
               research_accepted: !!user.research_accepted,
               have_seen_newsletter: !!user.have_seen_newsletter,
+              automatic_reconnect: !!user.automatic_reconnect,
               name: token.name || user.name,
               
               // For Twitter and Bluesky, use token values first
@@ -255,6 +258,74 @@ async jwt({ token, user, account, profile }) {
         }
       }
     },
+    // {
+    //   id: "bluesky",
+    //   name: "Bluesky",
+    //   type: "oauth",
+    //   clientId: process.env.BLUESKY_CLIENT_ID,
+    //   issuer: "https://bsky.social",
+    //   authorization: {
+    //     url: "https://app.beta.v2.helloquitx.com/api/auth/bluesky",
+    //     params: { 
+    //       response_type: "code",
+    //       scope: "openid profile email"
+    //     }
+    //   },
+    //   token: {
+    //     url: "https://app.beta.v2.helloquitx.com/api/auth/bluesky",
+    //     async request({ params }) {
+    //       const response = await fetch("/api/auth/bluesky", {
+    //         method: "POST",
+    //         headers: { "Content-Type": "application/json" },
+    //         body: JSON.stringify({
+    //           identifier: params.username,
+    //           password: params.password
+    //         })
+    //       });
+          
+    //       const data = await response.json();
+    //       if (!response.ok) {
+    //         throw new Error(data.error || "Authentication failed");
+    //       }
+          
+    //       return {
+    //         tokens: {
+    //           access_token: data.accessJwt,
+    //           refresh_token: data.refreshJwt,
+    //           did: data.did,
+    //           handle: data.handle
+    //         }
+    //       };
+    //     }
+    //   },
+    //   userinfo: {
+    //     url: "https://app.beta.v2.helloquitx.com/api/auth/bluesky/userinfo",
+    //     async request({ tokens }) {
+    //       const agent = new BskyAgent({ service: 'https://bsky.social' });
+    //       await agent.resumeSession({
+    //         accessJwt: tokens.access_token,
+    //         refreshJwt: tokens.refresh_token,
+    //         did: tokens.did,
+    //         handle: tokens.handle,
+    //         active: true
+    //       });
+          
+    //       const profile = await agent.getProfile({ actor: tokens.did });
+    //       return profile.data;
+    //     }
+    //   },
+    //   profile(profile) {
+    //     return {
+    //       id: profile.did,
+    //       name: profile.displayName || profile.handle,
+    //       email: null,
+    //       image: profile.avatar,
+    //       has_onboarded: false,
+    //       hqx_newsletter: false,
+    //       oep_accepted: false
+    //     }
+    //   }
+    // },
     TwitterProvider({
       clientId: process.env.TWITTER_CLIENT_ID!,
       clientSecret: process.env.TWITTER_CLIENT_SECRET!,
@@ -283,7 +354,8 @@ async jwt({ token, user, account, profile }) {
           hqx_newsletter: false,
           oep_accepted: false,
           have_seen_newsletter: false,
-          research_accepted: false
+          research_accepted: false,
+          automatic_reconnect: false
         }
       },
       // userinfo: {
@@ -305,7 +377,8 @@ async jwt({ token, user, account, profile }) {
           hqx_newsletter: false,
           oep_accepted: false,
           have_seen_newsletter: false,
-          research_accepted: false
+          research_accepted: false,
+          automatic_reconnect: false
         }
     }})
   ],

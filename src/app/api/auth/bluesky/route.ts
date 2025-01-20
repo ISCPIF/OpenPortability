@@ -3,6 +3,39 @@ import { BskyAgent } from '@atproto/api'
 import { auth } from "@/app/auth"
 import { supabaseAdapter, BlueskyProfile } from "@/lib/supabase-adapter"
 
+
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url);
+  const clientId = searchParams.get('client_id');
+  const redirectUri = searchParams.get('redirect_uri');
+  const codeChallenge = searchParams.get('code_challenge');
+  const state = searchParams.get('state');
+
+  // Store these parameters for later use
+  const authParams = {
+    clientId,
+    redirectUri,
+    codeChallenge,
+    state
+  };
+
+  console.log('GET request received');
+  console.log('Auth params:', authParams);
+  
+  // Get the base URL from the request
+  const baseUrl = new URL(req.url).origin;
+  
+  // Pass the parameters to the signin page using the correct domain
+  const signinUrl = new URL('/auth/signin', baseUrl);
+  signinUrl.searchParams.set('provider', 'bluesky');
+  signinUrl.searchParams.set('callbackUrl', redirectUri || '');
+  signinUrl.searchParams.set('state', state || '');
+  signinUrl.searchParams.set('code_challenge', codeChallenge || '');
+  
+  console.log('Redirecting to:', signinUrl.toString());
+  return NextResponse.redirect(signinUrl);
+}
+
 export async function POST(req: Request) {
   try {
     const { identifier, password } = await req.json();
@@ -16,6 +49,13 @@ export async function POST(req: Request) {
     
     try {
       bskySession = await agent.login({ identifier, password });
+      console.log('✅ ✅ ✅ ✅ ✅ ✅ ✅ ✅ [bluesky] Login response:', {
+        did: bskySession.data.did,
+        handle: bskySession.data.handle,
+        hasAccessJwt: !!bskySession.data.accessJwt,
+        hasRefreshJwt: !!bskySession.data.refreshJwt,
+        fullSession: bskySession // Pour voir toute la session
+      })
       profile = await agent.getProfile({ actor: bskySession.data.handle });
     } catch (error: any) {
       console.error('Bluesky authentication error:', error);
@@ -73,6 +113,17 @@ export async function POST(req: Request) {
           provider: 'bluesky',
           profile: blueskyProfile
         });
+
+        await supabaseAdapter.linkAccount({
+          provider: 'bluesky',
+          type: 'oauth',
+          providerAccountId: bskySession.data.did,
+          access_token: bskySession.data.accessJwt,
+          refresh_token: bskySession.data.refreshJwt,
+          userId: userId,
+          token_type: 'bearer',
+          scope: undefined,
+        });
       } else if (userId) {
         // L'utilisateur est connecté mais pas lié à ce compte Bluesky
         const blueskyProfile: BlueskyProfile = {
@@ -84,6 +135,17 @@ export async function POST(req: Request) {
         user = await supabaseAdapter.updateUser(userId, {
           provider: 'bluesky',
           profile: blueskyProfile
+        });
+
+        await supabaseAdapter.linkAccount({
+          provider: 'bluesky',
+          type: 'oauth',
+          providerAccountId: bskySession.data.did,
+          access_token: bskySession.data.accessJwt,
+          refresh_token: bskySession.data.refreshJwt,
+          userId: userId,
+          token_type: 'bearer',
+          scope: undefined,
         });
       } else {
         // Création d'un nouvel utilisateur
@@ -107,7 +169,6 @@ export async function POST(req: Request) {
           access_token: bskySession.data.accessJwt,
           refresh_token: bskySession.data.refreshJwt,
           userId: userId,
-          expires_at: undefined,
           token_type: 'bearer',
           scope: undefined,
         });

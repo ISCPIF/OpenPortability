@@ -1,6 +1,5 @@
 'use client'
 
-import { motion } from 'framer-motion';
 import { Ship, Users, Globe } from 'lucide-react';
 import PartageButton from './PartageButton';
 import { useEffect, useState } from 'react';
@@ -57,11 +56,12 @@ export default function UploadResults({
   setIsModalOpen,
 }: UploadResultsProps) {
   const [totalUsers, setTotalUsers] = useState<number>(stats.totalUsers);
-  const session = useSession();
+  const { data: session } = useSession();
 
   if (!session) {
     return null;
   }
+
   // Calculate completion status
   const totalSteps = 4; 
   const completedSteps = [hasTwitter, hasBluesky, hasMastodon, hasOnboarded].filter(Boolean).length;
@@ -101,11 +101,7 @@ export default function UploadResults({
   const totalReady = totalStats ? totalStats.total_sources : 0;
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className={`w-full max-w-2xl mx-auto mb-8 ${plex.className}`}
-    >
+    <div className={`w-full max-w-2xl mx-auto mb-8 ${plex.className}`}>
       <div className="bg-gradient-to-br from-green-500/10 via-emerald-500/10 to-teal-500/10 
                     backdrop-blur-xl rounded-2xl border border-white/10 shadow-xl p-6 space-y-6">
         <div className="space-y-4">
@@ -166,7 +162,7 @@ export default function UploadResults({
               
               switch (platform) {
                 case 'mastodon':
-                  shareUrl = `${session.data.user.mastodon_instance}/share?text=${encodeURIComponent(shareText)}`;
+                  shareUrl = `${session.user.mastodon_instance}/share?text=${encodeURIComponent(shareText)}`;
                   break;
                 case 'bluesky':
                   shareUrl = `https://bsky.app/intent/compose?text=${encodeURIComponent(shareText)}`;
@@ -176,12 +172,10 @@ export default function UploadResults({
                   break;
               }
 
-              // Ouvrir directement l'URL
               if (shareUrl) {
                 window.open(shareUrl, '_blank');
               }
 
-              // Appeler la fonction onShare du parent si elle existe
               if (onShare) {
                 onShare(shareUrl, platform);
               }
@@ -190,15 +184,11 @@ export default function UploadResults({
         </div>
 
         {showRedirectMessage && (
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="text-sm text-white/60 text-center mt-4"
-          >
+          <p className="text-sm text-white/60 text-center mt-4">
             {t('redirecting')}
-          </motion.p>
+          </p>
         )}
       </div>
-    </motion.div>
+    </div>
   );
 }

@@ -21,8 +21,10 @@ async function createMastodonApp(instance: string){
       "redirect_uris": `${process.env.NEXTAUTH_URL}/api/auth/callback/mastodon`,
       // TODO: limiter au strict nécessaire
       // https://docs.joinmastodon.org/api/oauth-scopes/#granular
-      "scopes": "read",
-      "website": "https://app.helloquitx.com"
+      // Using scopes (plural) for app creation as per documentation
+      // https://docs.joinmastodon.org/api/oauth-scopes/
+      "scopes": "read write follow",
+      "website": "https://app.beta.v2.helloquitx.com"
     };
         try {
       const response = await fetch(url, {
@@ -61,7 +63,7 @@ export const { auth, signIn, signOut, handlers } = NextAuth(async req => {
       mastodonProvider.issuer = issuer;
       mastodonProvider.clientId = res.client_id;
       mastodonProvider.clientSecret = res.client_secret;
-      mastodonProvider.authorization = `${issuer}/oauth/authorize?scope=read`;
+      mastodonProvider.authorization = `${issuer}/oauth/authorize?scope=read+write+follow`;
       mastodonProvider.token = `${issuer}/oauth/token`;
       mastodonProvider.userinfo = `${issuer}/api/v1/accounts/verify_credentials`;
     }

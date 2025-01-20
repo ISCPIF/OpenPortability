@@ -401,5 +401,99 @@
     },
     "cta": "SUBMIT",
     "dismiss": "Don't show this message again"
+  },
+"migrate": {
+    "title": "Migrate your subscriptions",
+    "matches_found": "matches found",
+    "followers": "Followers",
+    "following": "Following",
+    "loading": "Loading your matches",
+    "selectAll": "Select all",
+    "deselectAll": "Deselect all",
+    "startMigration": "Start migration",
+    "migrating": "Migrating..."
+  },
+"ReconnexionOptions": {
+    "title": "Choose how you want to reconnect to your followings",
+    "buttons": {
+      "automatic": "RECONNECT ME AUTOMATICALLY",
+      "manual": "I CHOOSE ACCOUNTS TO RECONNECT"
+    },
+    "descriptions": {
+      "automatic": "HelloQuittex will reconnect you with all your followers from X for 30 days",
+      "manual": "HelloQuittex will show you in detail the accounts found on Bluesky and Mastodon so you can choose whether to connect or not"
+    },
+    "stats": {
+      "connections": "imported connections",
+      "bluesky": "connections that can be activated on Bluesky and Mastodon",
+      "networks": "users with at least one connection that can be activated"
+    }
+  },
+  "migrateSea": {
+    "logo": {
+      "alt": "HelloQuittex Logo"
+    },
+    "matchDetails": {
+      "bluesky": "{count} on Bluesky",
+      "mastodon": "{count} on Mastodon"
+    },
+    "title": "the #GreatReconnection!",
+    "matchMessage": "{matchCount} passengers were found during your first migration step!\nNow is the time to activate the connection with those you want to\njoin on your new networks.",
+    "stats": {
+      "awaitingConnection": "of your followed accounts are\nawaiting connection!",
+      "alreadyTransferred": "subscribers have already been\ntransferred!"
+    }
+  },
+  "ManualReconnexion": {
+    "title": "Manual Reconnection",
+    "automaticReconnect": "RECONNECT ME AUTOMATICALLY",
+    "selectAll": "SELECT ALL",
+    "connect": "CONNECT ({count})",
+    "prev": "Previous",
+    "next": "Next",
+    "xAccountPseudo": "Account Handle",
+    "mastodonBlueskyCorrespondence": "Mastodon/Bluesky Correspondence",
+    "followOnBluesky": "Follow on Bluesky",
+    "followOnMastodon": "Follow on Mastodon"
+  },
+  "AccountToMigrate": {
+    "followOnBluesky": "Follow on Bluesky",
+    "followOnMastodon": "Follow on Mastodon",
+    "followedOnBluesky": "Followed on Bluesky",
+    "followedOnMastodon": "Followed on Mastodon"
+  },
+  "reconnexionModal": {
+    "title": "You have just activated the connection with {count} accounts!",
+    "message": "Congratulations, your reconnection is complete, you have arrived safely.",
+    "stayInformed": "STAY INFORMED ABOUT NEW CONNECTIONS",
+    "progressTitle": "Reconnection in progress: {succeeded} of {total} accounts",
+    "progressMessage": "Please wait while we reconnect your accounts...",
+    "migrationInProgress": "Reconnection in progress...",
+    "migrationComplete": "Reconnection completed!",
+    "migrationProgress": "{current} out of {total} accounts reconnected",
+    "migrationCompleteStats": "Successfully reconnected {count} accounts",
+    "minimize": "Minimize",
+    "close": "Close"
+  },
+  "Migrate": {
+    "migrationInProgress": "Reconnection in progress...",
+    "migrationComplete": "Reconnection completed!",
+    "migrationProgress": "{current} out of {total} accounts reconnected",
+    "migrationCompleteStats": "Successfully reconnected {count} accounts",
+    "minimize": "Minimize",
+    "close": "Close"
+  },
+  "AutomaticReconnexion": {
+    "reconnectionInProgress": "Automatic reconnection activated",
+    "chooseManualy": "your followings to reconnect",
+    "switchToManual": "Click here to choose manualy",
+    "accountsToConnect": "Accounts to connect",
+    "blueskyAccounts": "Bluesky accounts",
+    "mastodonAccounts": "Mastodon accounts"
+  },
+  "refreshTokenModal": {
+    "title": "Reconnection Required",
+    "description": "Your BlueSky session has expired. To continue using the application, please reconnect to your BlueSky account.",
+    "close": "Close"
   }
 }
