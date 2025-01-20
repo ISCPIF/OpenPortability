@@ -398,9 +398,9 @@
       "manual": "HelloQuittex will show you in detail the accounts found on Bluesky and Mastodon so you can choose whether to connect or not"
     },
     "stats": {
-      "connections": "connections",
-      "bluesky": "on Bluesky",
-      "networks": "sources"
+      "connections": "imported connections",
+      "bluesky": "connections that can be activated on Bluesky and Mastodon",
+      "networks": "users with at least one connection that can be activated"
     }
   },
   "migrateSea": {
@@ -459,8 +459,15 @@
   },
   "AutomaticReconnexion": {
     "reconnectionInProgress": "Automatic reconnection activated",
+    "chooseManualy": "your followings to reconnect",
+    "switchToManual": "Click here to choose manualy",
     "accountsToConnect": "Accounts to connect",
     "blueskyAccounts": "Bluesky accounts",
     "mastodonAccounts": "Mastodon accounts"
+  },
+  "refreshTokenModal": {
+    "title": "Reconnection Required",
+    "description": "Your BlueSky session has expired. To continue using the application, please reconnect to your BlueSky account.",
+    "close": "Close"
   }
 }
