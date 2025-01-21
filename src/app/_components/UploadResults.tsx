@@ -58,10 +58,6 @@ export default function UploadResults({
 }: UploadResultsProps) {
   const [totalUsers, setTotalUsers] = useState<number>(stats.totalUsers);
   const session = useSession();
-
-  if (!session) {
-    return null;
-  }
   // Calculate completion status
   const totalSteps = 4; 
   const completedSteps = [hasTwitter, hasBluesky, hasMastodon, hasOnboarded].filter(Boolean).length;
@@ -95,6 +91,10 @@ export default function UploadResults({
 
     fetchTotalStats();
   }, [t]);
+
+  if (!session) {
+    return null;
+  }
 
   const totalProcessed = stats.followers + stats.following;
   const totalInDatabase = totalStats ? totalStats.total_followers + totalStats.total_following : 0;
