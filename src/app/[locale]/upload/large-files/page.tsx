@@ -15,7 +15,6 @@ import { Loader2 } from 'lucide-react';
 import Footer from "@/app/_components/Footer";
 import logoHQXFR from '../../../../../public/logoxHQX/HQX-blanc-FR.svg';
 import logoHQXEN from '../../../../../public/logoxHQX/HQX-white-UK.svg';
-import logoCNRS from "../../../../../public/logo-cnrs-blanc.svg"
 import LoadingIndicator from '@/app/_components/LoadingIndicator';
 
 
@@ -157,13 +156,6 @@ export default function LargeFilesPage() {
     <>
       <div className="min-h-screen bg-[#2a39a9] relative w-full max-w-[90rem] m-auto">
         <Header />
-        <Image
-          src={logoCNRS}
-          alt={t('logoCNRS.alt')}
-          width={60}
-          height={60}
-          className="absolute top-4 left-4"
-        />
         <div className="flex justify-center mt-8 mb-8">
           <Image
             src={logoHQX}
