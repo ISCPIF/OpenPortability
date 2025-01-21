@@ -76,11 +76,6 @@ const Footer = memo(() => {
               />
             </FooterLink>
           </div>
-          <div className="flex gap-4 mt-2 text-xs">
-            <FooterLink href="https://helloquittex.com/Comment-sont-traitees-vos-donnees-personnelles.html">
-              {t('privacy')}
-            </FooterLink>
-          </div>
         </div>
       </div>
       <SupportModal 
