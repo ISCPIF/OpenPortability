@@ -176,7 +176,9 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-[#2a39a9] mt-4 relative w-full max-w-[80rem] m-auto">
-      <Header />
+      <div className="relative z-40">
+        <Header />
+      </div>
       <div className="absolute inset-0 w-full h-full pointer-events-none">
         <DahsboardSea progress={progress} />
       </div>
