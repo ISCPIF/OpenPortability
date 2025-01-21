@@ -69,7 +69,7 @@ const Footer = memo(() => {
             <FooterLink href="https://www.cnrs.fr">
               <Image
                 src={logoCNRS}
-                alt={t('logoCNRS.alt')}
+                alt={"Centre Nationale de la Recherche Scientifique"}
                 width={20}
                 height={20}
                 className="opacity-80 hover:opacity-100 transition-opacity"
