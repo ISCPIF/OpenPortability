@@ -85,7 +85,8 @@
           "cnrs": "CNRS/ISC-PIF",
           "hqx": "HelloQuitX"
         },
-        "copyright": " {year} HelloQuitX. All rights reserved."
+        "copyright": " {year} HelloQuitX. All rights reserved.",
+        "privacy": "Privacy Policy"
       },
     "loginButtons": {
     "twitter": {
