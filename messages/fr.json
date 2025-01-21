@@ -177,7 +177,7 @@
     "addSocialNetworkDescription": "Connectez-vous à d'autres réseaux sociaux pour enrichir votre expérience",
     "migrationStep": {
       "completed1": "Bravo ! Vous avez terminé la première des deux étapes de la migration.",
-      "completed2": "Assurez-vous que vos abonnés s’inscrivent également sur HelloQuitX et revenez le #20Janvier pour activer votre reconnexion.\nNous avons dû reporter la reconnexion quelques temps. Selon votre choix, vous serez prévenu.e de la phase 2 de HelloQuitteX par mail ou via nos comptes X, BlueSky et Mastodon.\nOn laisse passer le gros temps, et on embarque !",
+      "completed2": "N'oubliez par d'inviter vos abonnés à s’inscrire sur HelloQuitX. En 1min ils pourront être reconnectés à votre compte, même sans leur archive.\nLa phase 2 de la reconnexion interviendra dans quelques jours. Selon vos préférences, vous recevrez une notification par e-mail ou pourrez suivre le lancement sur nos comptes X, BlueSky et Mastodon.\nRestez à l’affût, de belles surprises vous attendent !",
       "nextSteps": "Effectuez les étapes suivantes pour voguer vers de nouveaux rivages !"
     },
     "importButton": "Importer mon archive Twitter/X",

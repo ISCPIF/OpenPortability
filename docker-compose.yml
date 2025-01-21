@@ -4,7 +4,7 @@ services:
   app:
       build:
         context: .
-        dockerfile: Dockerfile.dev
+        dockerfile: Dockerfile
       env_file:
         - .env.local
       environment:
@@ -15,13 +15,7 @@ services:
       extra_hosts:
         - "host.docker.internal:host-gateway"
       volumes:
-        - ./src:/app/src
-        - ./public:/app/public
-        - ./.next:/app/.next
         - shared-tmp:/app/tmp
-        - /app/node_modules
-        - ./.env.local:/app/.env.local
-        - ./messages:/app/messages
 
 
   worker:
