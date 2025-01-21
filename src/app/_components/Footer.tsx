@@ -55,7 +55,7 @@ const Footer = memo(() => {
             {t('copyright', { year })}
           </div>
           <div className="flex gap-4 mt-2">
-            <FooterLink href="https://github.com/FannyCaulfield/helloquittex">
+            <FooterLink href="https://github.com/ISCPIF/helloquittex">
               <Github className="w-5 h-5" />
             </FooterLink>
             <button 
