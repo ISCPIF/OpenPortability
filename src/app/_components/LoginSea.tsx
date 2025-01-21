@@ -9,7 +9,6 @@ import seaBackground from '../../../public/sea-wave.svg';
 import Boat from './Boat';
 import logoHQXFR from '../../../public/logoxHQX/HQX-blanc-FR.svg';
 import logoHQXEN from '../../../public/logoxHQX/HQX-white-UK.svg';
-import logoCNRS from "../../../public/logo-cnrs-blanc.svg"
 
 interface SeaProps {
   progress: number;
@@ -23,13 +22,6 @@ export default function LoginSea() {
   return (
     <div className="absolute top-0 left-0 w-full h-[35rem]">
       <Image src={seaBackground} fill alt="" className="object-cover"></Image>
-      <Image
-        src={logoCNRS}
-        alt={t('logoCNRS.alt')}
-        width={60}
-        height={60}
-        className="absolute top-4 left-4"
-      />
       <Image
         src={logoHQX}
         alt={t('logo.alt')}
