@@ -9,6 +9,7 @@ import Image from 'next/image'
 import HQXBadge from '../../../public/newSVG/HQX-badge.svg'
 import { usePathname } from 'next/navigation'
 import { Globe } from 'lucide-react';
+import { isValidEmail } from '@/lib/utils'
 
 interface NewsLetterFirstSeenProps {
   userId: string
@@ -27,9 +28,9 @@ export default function NewsLetterFirstSeen({ userId, onSubscribe, onClose }: Ne
   const pathname = usePathname()
 
   const languages = [
-    { code: 'fr', name: 'FR'},
-    { code: 'en', name: 'EN'},
-    { code: 'es', name: 'ES'}
+    { code: 'fr', name: 'FR' },
+    { code: 'en', name: 'EN' },
+    { code: 'es', name: 'ES' }
   ];
   const currentLocale = pathname.split('/')[1]
 
@@ -42,21 +43,21 @@ export default function NewsLetterFirstSeen({ userId, onSubscribe, onClose }: Ne
     try {
       setIsLoading(true)
       setError('')
-      
+
       if (!submit) {
         // Si c'est un dismiss, on fait juste une requête GET pour mettre à jour have_seen_newsletter
         const response = await fetch(`/api/newsletter`, {
           method: 'GET'
         });
-        
+
         if (!response.ok) {
           throw new Error('Failed to update preferences')
         }
-        
+
         onClose?.()
         return
       }
-      
+
       // Si c'est un submit, on continue avec la requête POST normale
       const response = await fetch(`/api/newsletter`, {
         method: 'POST',
@@ -94,27 +95,26 @@ export default function NewsLetterFirstSeen({ userId, onSubscribe, onClose }: Ne
   const handleSubmit = () => updatePreferences(true)
   const handleDismiss = () => updatePreferences(false)
 
-  const isEmailValid = email.trim().length > 0 && email.includes('@')
 
   return (
     <div className="bg-white rounded-2xl p-8 max-w-2xl w-full relative max-h-[90vh] overflow-y-auto">
       <div className="absolute top-4 right-4 flex items-center gap-2">
         {/* Language Selector */}
-            {/* Language Selector */}
-            <div className="relative mr-6">
-              <button
-                onClick={() => setIsLanguageOpen(!isLanguageOpen)}
-                className="flex items-center gap-2 p-2 rounded-lg hover:bg-black/5 transition-colors"
-              >
-                <Globe className="w-5 h-5 bg-black" aria-hidden="true" />
-                <span className="text-lg text-black">
-                  {languages.find(lang => lang.code === currentLocale)?.name}
-                </span>
-                <ChevronDown
-                  className={`w-4 h-4 text-black/60 transition-transform duration-200 
+        {/* Language Selector */}
+        <div className="relative mr-6">
+          <button
+            onClick={() => setIsLanguageOpen(!isLanguageOpen)}
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-black/5 transition-colors"
+          >
+            <Globe className="w-5 h-5 bg-black" aria-hidden="true" />
+            <span className="text-lg text-black">
+              {languages.find(lang => lang.code === currentLocale)?.name}
+            </span>
+            <ChevronDown
+              className={`w-4 h-4 text-black/60 transition-transform duration-200 
                     ${isLanguageOpen ? 'rotate-180' : ''}`}
-                />
-              </button>
+            />
+          </button>
 
           <AnimatePresence>
             {isLanguageOpen && (
@@ -191,7 +191,7 @@ export default function NewsLetterFirstSeen({ userId, onSubscribe, onClose }: Ne
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder={t('newsletter.emailPlaceholder')}
-                className="w-full px-4 py-2 border border-gray-300 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black placeholder:text-gray-400" 
+                className="w-full px-4 py-2 border border-gray-300 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black placeholder:text-gray-400"
               />
             </div>
 
@@ -227,7 +227,7 @@ export default function NewsLetterFirstSeen({ userId, onSubscribe, onClose }: Ne
 
         <button
           onClick={handleSubmit}
-          disabled={isLoading || (email.length > 0 && !isEmailValid)}
+          disabled={isLoading || !isValidEmail(email)}
           className="mt-2 px-6 py-3 bg-[#46489B] text-white rounded-lg font-semibold hover:bg-opacity-90 
                     transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
         >

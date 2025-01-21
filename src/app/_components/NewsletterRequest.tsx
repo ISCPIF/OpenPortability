@@ -6,6 +6,7 @@ import { Mail, CheckCircle2, X } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { plex } from '@/app/fonts/plex'
 import Link from 'next/link'
+import { isValidEmail } from '@/lib/utils'
 
 interface NewsletterRequestProps {
   userId: string
@@ -25,7 +26,7 @@ export default function NewsletterRequest({ userId, onSubscribe, onClose }: News
     try {
       setIsLoading(true)
       setError('')
-      
+
       const response = await fetch(`/api/newsletter`, {
         method: 'POST',
         headers: {
@@ -90,8 +91,7 @@ export default function NewsletterRequest({ userId, onSubscribe, onClose }: News
       </motion.div>
     )
   }
-  const isEmailValid = email.trim().length > 0;
-  
+
   return (
     <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl p-8 max-w-md w-full 
                     shadow-xl border border-slate-700/50 relative">
@@ -125,7 +125,7 @@ export default function NewsletterRequest({ userId, onSubscribe, onClose }: News
             type="email"
             id="email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => setEmail(e.target.value.trim())}
             className="w-full px-4 py-3 bg-slate-800/50 border border-slate-700/50 rounded-xl 
                      text-white placeholder-slate-400
                      focus:ring-2 focus:ring-blue-500 focus:border-transparent
@@ -169,7 +169,7 @@ export default function NewsletterRequest({ userId, onSubscribe, onClose }: News
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           onClick={handleSubscribe}
-          disabled={isLoading || !isEmailValid}
+          disabled={isLoading || !isValidEmail(email)}
           className="w-full py-3 px-4 bg-gradient-to-r from-blue-500 to-indigo-500 
                    hover:from-blue-600 hover:to-indigo-600
                    text-white font-semibold rounded-xl shadow-lg
