@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from "@/app/auth"
 import { createClient } from "@supabase/supabase-js"
+import { isValidEmail } from '@/lib/utils'
 
 // Regex plus stricte pour la validation des emails
 const EMAIL_REGEX = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z]{2,})+$/
@@ -20,48 +21,6 @@ const authClient = createClient(
   }
 )
 
-// Liste des TLDs communs pour une validation supplémentaire
-const COMMON_TLDS = new Set([
-  'com', 'net', 'org', 'edu', 'gov', 'mil', 'int',
-  'fr', 'uk', 'de', 'it', 'es', 'eu', 'ca', 'au', 'jp',
-  'co', 'io', 'me', 'info', 'biz', 'dev'
-]);
-
-// Fonction de validation d'email plus complète
-const validateEmail = (email: string): boolean => {
-  // Vérification de base
-  if (!email || typeof email !== 'string') return false
-  
-  // Vérification de la longueur totale
-  if (email.length < 3 || email.length > 254) return false
-
-  // Vérification du format avec regex
-  if (!EMAIL_REGEX.test(email)) return false
-
-  const [localPart, domain] = email.split('@')
-  
-  // Vérification de la partie locale
-  if (localPart.length > 64) return false
-  if (/^[.-]|[.-]$/.test(localPart)) return false // Ne peut pas commencer ou finir par . ou -
-  if (/[.]{2,}/.test(localPart)) return false // Pas de points consécutifs
-  
-  // Vérification du domaine
-  if (domain.length > 255 || domain.length < 3) return false
-  if (/[^a-zA-Z0-9.-]/.test(domain)) return false // Caractères invalides dans le domaine
-  if (/^[.-]|[.-]$/.test(domain)) return false // Ne peut pas commencer ou finir par . ou -
-  if (/[.]{2,}/.test(domain)) return false // Pas de points consécutifs
-  
-  // Vérification du TLD
-  const tld = domain.split('.').pop()?.toLowerCase()
-  if (!tld || tld.length < 2 || !COMMON_TLDS.has(tld)) return false
-  
-  // Vérification des sous-domaines
-  const subdomains = domain.split('.')
-  if (subdomains.some(sub => sub.length < 1 || sub.length > 63)) return false
-  if (subdomains.some(sub => /^[0-9]/.test(sub))) return false // Les sous-domaines ne peuvent pas commencer par un chiffre
-  
-  return true
-}
 
 // Fonction de nettoyage des entrées
 const sanitizeInput = (input: string): string => {
@@ -96,7 +55,7 @@ export async function POST(request: Request) {
     // Si un email est fourni, on valide et on active OEP
     if (email) {
       const sanitizedEmail = sanitizeInput(email)
-      if (!validateEmail(sanitizedEmail)) {
+      if (!isValidEmail(sanitizedEmail)) {
         return NextResponse.json(
           { error: 'Invalid email format' },
           { status: 400 }
