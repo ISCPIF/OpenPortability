@@ -21,6 +21,7 @@ export default function ProfileCard({ type }: ProfileCardProps) {
   const profiles = {
     twitter: {
       username: session.user.twitter_username,
+      instance: null,
       image: session.user.twitter_image,
       id: session.user.twitter_id,
       icon: <FaXTwitter className="text-[#0f1419] text-2xl" />,
@@ -28,6 +29,7 @@ export default function ProfileCard({ type }: ProfileCardProps) {
     },
     bluesky: {
       username: session.user.bluesky_username,
+      instance: null,
       image: session.user.bluesky_image,
       id: session.user.bluesky_id,
       icon: <FaBluesky className="text-[#0085FF] text-2xl" />,
@@ -35,6 +37,7 @@ export default function ProfileCard({ type }: ProfileCardProps) {
     },
     mastodon: {
       username: session.user.mastodon_username,
+      instance: session.user.mastodon_instance ? new URL(session.user.mastodon_instance)?.hostname : "",
       // On ignore l’image de profil mastodon pour l’instant
       // à voir si on la remplace par une image générique, 
       // ou si on autorise un accès wildcard 
@@ -90,7 +93,6 @@ export default function ProfileCard({ type }: ProfileCardProps) {
       setIsUnlinking(false)
     }
   }
-
   return (
     <div className="group">
       <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-black/40 to-black/20 backdrop-blur-md rounded-lg border border-white/10 hover:border-white/20 transition-all duration-300">
@@ -118,9 +120,10 @@ export default function ProfileCard({ type }: ProfileCardProps) {
           <p className="text-sm font-medium text-white truncate">
             {profile.username}
           </p>
-          <p className="text-xs text-white/50 truncate font-mono">
-            {profile.id?.slice(0, 16)}...
-          </p>
+          {profile.instance && <p className="text-xs text-white/50">
+            {profile.instance}...
+          </p>}
+
         </div>
 
         {/* Bouton de déliaison */}
