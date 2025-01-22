@@ -27,7 +27,7 @@ Dans le terminal du repo Git cloné, run les commandes suivantes :
 supabase start
 ```
 
-Appliquer la migration lors du premier lancement et pour redemarer la base de donnees en appliquant les modifications des migrations
+Appliquer la migration lors du premier lancement et pour redémarrer la base de donnees en appliquant les modifications des migrations
 
 ```bash
 supabase db reset
@@ -47,39 +47,44 @@ Get the required values by running:
 supabase status
 ```
 
-On doit recuperer les valeurs suivants :
+On doit récupérer les valeurs suivantes :
 - API URL = NEXT_PUBLIC_SUPABASE_URL
 - anon key = NEXT_PUBLIC_SUPABASE_ANON_KEY
 - service_role key = SUPABASE_SERVICE_ROLE_KEY
 
+#### 4. Install dependencies
+
+```bash
+npm install
+```
 
 ### 2. Getting Started
 
-### 1. Creer une application Twitter sur : 
+### 1. Créer une application Twitter sur : 
 ``` https://developer.twitter.com/en/portal/dashboard ```
 
-- Selectionner la version de l'API Twitter : OAuth 2.0
+- Sélectionner la version de l'API Twitter : OAuth 2.0
 - Remplir les champs obligatoires 
-- Dans la rubrique Keys and Tokens : en bas de la page, il y a la "OAuth 2.0 Client ID and Client Secret", on veut recuperer les valeurs suivantes :
+- Dans la rubrique Keys and Tokens : en bas de la page, il y a la "OAuth 2.0 Client ID and Client Secret", on veut récupérer les valeurs suivantes :
     - TWITTER_CLIENT_ID = CLIENT_ID
     - TWITTER_CLIENT_SECRET =  CLIENT_SECRET
 
 
 Pour les autres variables d'environnement :
 
-NEXTAUTH_URL= la URL de l'application qui doit etre externe pour permettre la connexion avec l'API Twitter 
+NEXTAUTH_URL= l'URL de l'application qui doit être externe pour permettre la connexion avec l'API Twitter 
 
 ### 2. Lancer le tunnel pour obtenir l'URL de l'application
 
-Ensuite creer le tunnel pour obtenir l'URL de l'application :
+Ensuite créer le tunnel pour obtenir l'URL de l'application :
 
 ```bash
 cloudflared tunnel --url http://localhost:3000
 ```
 
-Recuperer l'URL obtenue et l'ajouter a l'env variable `NEXTAUTH_URL` dans `.env.local`
+Récupérer l'URL obtenue et l'ajouter à l'env variable `NEXTAUTH_URL` dans `.env.local`
 
-### 3. Se connecter au developper Portal de Twitter et copier l'url de l'application dans les champs suivants :
+### 4. Se connecter au developer Portal de Twitter et copier l'url de l'application dans les champs suivants :
 
 User Authentification Settings :
 - Callback URI/ Redirect URL :
@@ -93,4 +98,18 @@ User Authentification Settings :
 [URL TUNNEL]
 ```
 
-### 4. L'application devrait etre accessible !
+### 5. Générer une clé de cryptage
+
+```shell
+openssl rand -hex 16
+```
+
+Et l'ajouter au fichier `.env.local`
+
+```
+ENCRYPTION_KEY=abcd1234…
+```
+
+### 6. L'application devrait être accessible !
+
+sur http://localhost:3000/
