@@ -74,7 +74,19 @@ Pour les autres variables d'environnement :
 
 NEXTAUTH_URL= l'URL de l'application qui doit être externe pour permettre la connexion avec l'API Twitter 
 
-### 2. Lancer le tunnel pour obtenir l'URL de l'application
+### 2. Lancer l'application en mode développement
+
+```
+nm run dev
+```
+
+### 3. Lancer le tunnel pour obtenir l'URL de l'application
+
+Install [cloudflared](https://github.com/cloudflare/cloudflared) (Mac/Linux)
+
+```bash
+brew install cloudflared
+```
 
 Ensuite créer le tunnel pour obtenir l'URL de l'application :
 
