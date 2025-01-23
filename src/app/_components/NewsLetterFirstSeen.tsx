@@ -8,6 +8,7 @@ import { plex } from '@/app/fonts/plex'
 import Image from 'next/image'
 import HQXBadge from '../../../public/newSVG/HQX-badge.svg'
 import { usePathname } from 'next/navigation'
+import { Globe } from 'lucide-react';
 
 interface NewsLetterFirstSeenProps {
   userId: string
@@ -26,10 +27,10 @@ export default function NewsLetterFirstSeen({ userId, onSubscribe, onClose }: Ne
   const pathname = usePathname()
 
   const languages = [
-    { code: 'fr', name: 'Français', flag: '🇫🇷' },
-    { code: 'en', name: 'English', flag: '🇬🇧' }
-  ]
-
+    { code: 'fr', name: 'FR'},
+    { code: 'en', name: 'EN'},
+    { code: 'es', name: 'ES'}
+  ];
   const currentLocale = pathname.split('/')[1]
 
   const switchLanguage = (locale: string) => {
@@ -99,19 +100,21 @@ export default function NewsLetterFirstSeen({ userId, onSubscribe, onClose }: Ne
     <div className="bg-white rounded-2xl p-8 max-w-2xl w-full relative max-h-[90vh] overflow-y-auto">
       <div className="absolute top-4 right-4 flex items-center gap-2">
         {/* Language Selector */}
-        <div className="relative">
-          <button
-            onClick={() => setIsLanguageOpen(!isLanguageOpen)}
-            className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100 transition-colors"
-          >
-            <span className="text-lg">
-              {languages.find(lang => lang.code === currentLocale)?.flag}
-            </span>
-            <ChevronDown
-              className={`w-4 h-4 text-gray-500 transition-transform duration-200 
-                ${isLanguageOpen ? 'rotate-180' : ''}`}
-            />
-          </button>
+            {/* Language Selector */}
+            <div className="relative mr-6">
+              <button
+                onClick={() => setIsLanguageOpen(!isLanguageOpen)}
+                className="flex items-center gap-2 p-2 rounded-lg hover:bg-black/5 transition-colors"
+              >
+                <Globe className="w-5 h-5 bg-black" aria-hidden="true" />
+                <span className="text-lg text-black">
+                  {languages.find(lang => lang.code === currentLocale)?.name}
+                </span>
+                <ChevronDown
+                  className={`w-4 h-4 text-black/60 transition-transform duration-200 
+                    ${isLanguageOpen ? 'rotate-180' : ''}`}
+                />
+              </button>
 
           <AnimatePresence>
             {isLanguageOpen && (

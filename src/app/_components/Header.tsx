@@ -10,6 +10,7 @@ import { ChevronDown } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { usePathname } from 'next/navigation';
 import { plex } from '@/app/fonts/plex';
+import { Globe } from 'lucide-react';
 
 const Header = () => {
   const { data: session } = useSession();
@@ -19,8 +20,9 @@ const Header = () => {
   const pathname = usePathname();
 
   const languages = [
-    { code: 'fr', name: 'Français', flag: '🇫🇷' },
-    { code: 'en', name: 'English', flag: '🇬🇧' }
+    { code: 'fr', name: 'FR'},
+    { code: 'en', name: 'EN'},
+    { code: 'es', name: 'ES'}
   ];
 
   const currentLocale = pathname.split('/')[1];
@@ -43,8 +45,9 @@ const Header = () => {
                 onClick={() => setIsLanguageOpen(!isLanguageOpen)}
                 className="flex items-center gap-2 p-2 rounded-lg hover:bg-black/5 transition-colors"
               >
-                <span className="text-lg">
-                  {languages.find(lang => lang.code === currentLocale)?.flag}
+                <Globe className="w-5 h-5 bg-black" aria-hidden="true" />
+                <span className="text-lg text-black">
+                  {languages.find(lang => lang.code === currentLocale)?.name}
                 </span>
                 <ChevronDown
                   className={`w-4 h-4 text-black/60 transition-transform duration-200 
@@ -71,8 +74,7 @@ const Header = () => {
                           className={`w-full px-4 py-2 text-xs ${plex.className} text-white hover:bg-white/10 transition-colors text-left flex items-center gap-2
                             ${currentLocale === lang.code ? 'bg-white/5' : ''}`}
                         >
-                          <span className="text-base">{lang.flag}</span>
-                          <span>{lang.name}</span>
+                          <span className="text-base">{lang.name}</span>
                         </button>
                       ))}
                     </div>

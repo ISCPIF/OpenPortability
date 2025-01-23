@@ -20,16 +20,16 @@ export async function GET() {
     }
 
     // Récupérer le nombre total de followers
-    console.log('Comptage des followers...');
+    // console.log('Comptage des followers...');
     const followersResult = await supabase
       .from('sources_followers')
       .select('*', { count: 'exact', head: true });
     
-    console.log('Résultat followers:', {
-      count: followersResult.count,
-      error: followersResult.error,
-      status: followersResult.status
-    });
+    // console.log('Résultat followers:', {
+    //   count: followersResult.count,
+    //   error: followersResult.error,
+    //   status: followersResult.status
+    // });
 
     if (followersResult.error) {
       console.error('Erreur comptage followers:', followersResult.error);
@@ -37,16 +37,16 @@ export async function GET() {
     }
 
     // Récupérer le nombre total de following
-    console.log('Comptage des following...');
+    // console.log('Comptage des following...');
     const followingResult = await supabase
       .from('sources_targets')
       .select('*', { count: 'exact', head: true });
     
-    console.log('Résultat following:', {
-      count: followingResult.count,
-      error: followingResult.error,
-      status: followingResult.status
-    });
+    // console.log('Résultat following:', {
+    //   count: followingResult.count,
+    //   error: followingResult.error,
+    //   status: followingResult.status
+    // });
 
     if (followingResult.error) {
       console.error('Erreur comptage following:', followingResult.error);
@@ -54,16 +54,16 @@ export async function GET() {
     }
 
     // Récupérer le nombre total de sources
-    console.log('Comptage des sources...');
+    // console.log('Comptage des sources...');
     const sourcesResult = await supabase
       .from('sources')
       .select('*', { count: 'exact', head: true });
     
-    console.log('Résultat sources:', {
-      count: sourcesResult.count,
-      error: sourcesResult.error,
-      status: sourcesResult.status
-    });
+    // console.log('Résultat sources:', {
+    //   count: sourcesResult.count,
+    //   error: sourcesResult.error,
+    //   status: sourcesResult.status
+    // });
 
     if (sourcesResult.error) {
       console.error('Erreur comptage sources:', sourcesResult.error);
@@ -76,7 +76,7 @@ export async function GET() {
       total_sources: sourcesResult.count || 0
     };
 
-    console.log('Réponse finale:', response);
+    // console.log('Réponse finale:', response);
     return NextResponse.json(response);
 
   } catch (error) {

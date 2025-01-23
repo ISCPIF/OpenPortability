@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js"
+import { authClient } from "@/lib/supabase"
 import type {
   Adapter,
   AdapterUser,
@@ -14,6 +15,7 @@ export interface CustomAdapterUser extends Omit<AdapterUser, 'image'> {
   oep_accepted: boolean
   have_seen_newsletter: boolean
   research_accepted: boolean
+  automatic_reconnect: boolean
   twitter_id?: string | null
   twitter_username?: string | null
   twitter_image?: string | null
@@ -67,20 +69,6 @@ export class UnlinkError extends Error {
   }
 }
 
-// Create Supabase clients
-const authClient = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false
-    },
-    db: {
-      schema: "next-auth"
-    }
-  }
-)
 
 export async function createUser(user: Partial<AdapterUser>): Promise<CustomAdapterUser>;
 export async function createUser(
@@ -91,6 +79,59 @@ export async function createUser(
 ): Promise<CustomAdapterUser> {
   console.log("\n=== [Adapter] Starting user creation ===")
   console.log("→ Input user data:", JSON.stringify(userData, null, 2))
+
+
+  if ('provider' in userData && 
+    'profile' in userData && 
+    userData.provider === 'mastodon' && 
+    userData.profile) {
+
+      //getUserbyAccount renvoie null si provider === 'mastodon'
+      //pour eviter de reattacher un account avec uniquement un user_id
+      // on verifier ici si l'association mastodon_id@mastodon_instance existe
+
+      console.log("Looking for existing user with Mastodon ID and instance")
+    const mastodonProfile = userData.profile as MastodonProfile
+    const instance = new URL(mastodonProfile.url).origin
+
+    console.log("Instance:", instance)
+    console.log("Mastodon ID:", mastodonProfile.id)
+
+    // Vérifier si un utilisateur existe déjà avec cet ID et cette instance
+    const { data: existingUser, error } = await authClient
+      .from('users')
+      .select('*')
+      .eq('mastodon_id', mastodonProfile.id)
+      .eq('mastodon_instance', instance)
+      .single()
+
+    if (existingUser) {
+      console.log("Found existing user with same Mastodon ID and instance")
+      return {
+        id: existingUser.id,
+        name: existingUser.name || null,
+        email: "none",
+        emailVerified: null,
+        // image: existingUser.image || null,
+        has_onboarded: existingUser.has_onboarded,
+        hqx_newsletter: existingUser.hqx_newsletter,
+        oep_accepted: existingUser.oep_accepted,
+        have_seen_newsletter: existingUser.have_seen_newsletter,
+        research_accepted: existingUser.research_accepted,
+        automatic_reconnect: existingUser.automatic_reconnect,
+        twitter_id: existingUser.twitter_id,
+        twitter_username: existingUser.twitter_username,
+        twitter_image: existingUser.twitter_image,
+        bluesky_id: existingUser.bluesky_id,
+        bluesky_username: existingUser.bluesky_username,
+        bluesky_image: existingUser.bluesky_image,
+        mastodon_id: existingUser.mastodon_id,
+        mastodon_username: existingUser.mastodon_username,
+        mastodon_image: existingUser.mastodon_image,
+        mastodon_instance: existingUser.mastodon_instance
+      }
+    }
+  }
 
   // Type guard for provider data
   if ('provider' in userData && userData.provider && 'profile' in userData) {
@@ -104,6 +145,8 @@ const providerIdField = `${provider}_id` as keyof CustomAdapterUser
       : provider === 'mastodon'
       ? (profile as MastodonProfile).id
       : (userData as any).bluesky_id || (userData as any).did // Try both fields
+
+  
 
     console.log('Looking for existing user with provider ID:', providerId)
     const { data: existingUser } = await authClient
@@ -129,6 +172,7 @@ const providerIdField = `${provider}_id` as keyof CustomAdapterUser
       oep_accepted: false,
       have_seen_newsletter: false,
       research_accepted: false,
+      automatic_reconnect: false,
       email: undefined
     }
 
@@ -180,6 +224,7 @@ const providerIdField = `${provider}_id` as keyof CustomAdapterUser
     oep_accepted: false,
     have_seen_newsletter: false,
     research_accepted: false,
+    automatic_reconnect: false,
     email: 'none'
   }
 
@@ -230,6 +275,7 @@ export async function getUser(id: string): Promise<CustomAdapterUser | null> {
     oep_accepted: user.oep_accepted,
     have_seen_newsletter: user.have_seen_newsletter,
     research_accepted: user.research_accepted,
+    automatic_reconnect: user.automatic_reconnect,
     email: "none",
     emailVerified: null
   }
@@ -240,11 +286,18 @@ export async function getUserByEmail(email: string): Promise<CustomAdapterUser |
 }
 
 export async function getUserByAccount({ providerAccountId, provider }): Promise<CustomAdapterUser | null> {
+
+  console.log("\n=== [Adapter] Starting user search by account ===")
+  console.log("PROVIDER_ACCOUNT_ID:", providerAccountId)
+  console.log("PROVIDER:", provider)
+
+  console.log("=============================================================================")
   let column: string
   if (provider === 'twitter') {
     column = 'twitter_id'
   } else if (provider === 'mastodon' || provider === 'piaille') {
-    column = 'mastodon_id'
+    console.log("RETURNING NULL FOR GETUSERBYACCOUNT FOR MASTODON")
+    return null;
   } else if (provider === 'bluesky') {
     column = 'bluesky_id'
   } else {
@@ -287,6 +340,7 @@ export async function getUserByAccount({ providerAccountId, provider }): Promise
     oep_accepted: user.oep_accepted,
     have_seen_newsletter: user.have_seen_newsletter,
     research_accepted: user.research_accepted,
+    automatic_reconnect: user.automatic_reconnect,
     email: "none",
     emailVerified: null
   }
@@ -384,8 +438,25 @@ export async function updateUser(
     oep_accepted: user.oep_accepted,
     have_seen_newsletter: user.have_seen_newsletter,
     research_accepted: user.research_accepted,
+    automatic_reconnect: user.automatic_reconnect,
     email: "none",
     emailVerified: null
+  }
+}
+
+// Fonction utilitaire pour décoder les JWT
+export function decodeJwt(token: string): { exp: number } | null {
+  try {
+    const jwt = token.split('.')
+    if (jwt.length !== 3) {
+      throw new Error('Invalid JWT format')
+    }
+    
+    const payload = JSON.parse(Buffer.from(jwt[1], 'base64').toString())
+    return payload
+  } catch (error) {
+    console.error('❌ [Adapter] Erreur décodage JWT:', error)
+    return null
   }
 }
 
@@ -393,6 +464,16 @@ export async function linkAccount(account: AdapterAccount): Promise<void>
 {
   console.log("\n=== [Adapter] linkAccount ===")
   console.log("→ Linking account:", JSON.stringify(account, null, 2))
+  
+  // Décoder l'access token pour obtenir l'expiration
+  let expires_at = account.expires_at
+  if (account.access_token) {
+    const payload = decodeJwt(account.access_token)
+    if (payload?.exp) {
+      expires_at = payload.exp
+      console.log('📅 [Adapter] Expiration décodée du token:', new Date(expires_at * 1000).toISOString())
+    }
+  }
   
   const { error } = await authClient
     .from("accounts")
@@ -403,7 +484,7 @@ export async function linkAccount(account: AdapterAccount): Promise<void>
       provider_account_id: account.providerAccountId,
       refresh_token: account.refresh_token,
       access_token: account.access_token,
-      expires_at: account.expires_at,
+      expires_at,  // Utiliser l'expiration décodée du JWT
       token_type: account.token_type,
       scope: account.scope,
       id_token: account.id_token,
@@ -468,6 +549,7 @@ export async function getSessionAndUser(sessionToken: string): Promise<{ session
       oep_accepted: user.oep_accepted,
       have_seen_newsletter: user.have_seen_newsletter,
       research_accepted: user.research_accepted,
+      automatic_reconnect: user.automatic_reconnect,
       email: "none",
       emailVerified: null
     }
