@@ -1,0 +1,404 @@
+{
+  "header":{
+    "logout":"Logga ut",
+    "profile":{
+      "username":"@{username}"
+    }
+  },
+  "connectedAccounts":{
+    "connectedWith":"Du är ansluten med {services} ",
+    "and":"och",
+    "services":{
+      "twitter":"Twitter/X",
+      "bluesky":"BlueSky",
+      "mastodon":"Mastodon"
+    }
+  },
+  "blueskyLogin":{
+    "title":"Anslut till BlueSky",
+    "description":"Anslut ditt BlueSky-konto för att synka dina data och få den fulla upplevelsen.",
+    "tooltip":{
+      "info":"Vi lagrar aldrig ditt lösenord. Vi använder endast säkra autentiseringstoken från BlueSky.",
+      "noAccount":"Har du inget BlueSky-konto ännu?",
+      "createAccount":"Skapa ett här"
+    },
+    "form":{
+      "identifier":{
+        "label":"BlueSky Identifierare",
+        "placeholder":"användarnamn.bsky.social"
+      },
+      "password":{
+        "label":"Applösenord",
+        "placeholder":"••••••••",
+        "help":"Skapa ett applösenord på"
+      },
+      "submit":"Logga in",
+      "errors":{
+        "missingFields":"Vänligen fyll i alla fält",
+        "default":"Ett fel inträffade"
+      }
+    }
+  },
+  "consentModal":{
+    "title":"Bekräftelse på uppladdning",
+    "description":"Genom att ladda upp dina Twitter/X-filer bekräftar du att:",
+    "conditions":{
+      "ownership":"Du är den rättmätiga ägaren av dessa data.",
+      "cnrsUsage":"Du godkänner att de tillhandahållna uppgifterna används av Nationella Forskningscentret (CNRS) som en del av HelloQuitX-operationen.",
+      "profileCreation":"Du förstår att dessa data kommer att användas för att skapa din profil på HelloQuitX."
+    },
+    "buttons":{
+      "cancel":"Avbryt",
+      "accept":"Acceptera och fortsätt"
+    }
+  },
+  "dashboardLoginButtons":{
+    "importTwitter":"Importera mitt Twitter/X-arkiv",
+    "addSocialNetwork":"Lägg till ett annat socialt nätverk",
+    "services":{
+      "twitter":"Twitter/X",
+      "mastodon":{
+        "title":"Mastodon",
+        "instance":"På vilken server är ditt konto? (ex. mastodon.social)",
+        "connect":"Anslut",
+        "error":{
+          "required":"Namnet på din server krävs",
+          "unreachable":"Servern är otillgänglig. Kontrollera URL:en och försök igen.",
+          "fetch_instances":"Fel vid hämtning av instanser.",
+          "invalid_format":"Ogiltigt serverformat. Exempel: mastodon.social",
+          "special_chars":"Servern kan inte innehålla specialtecken",
+          "too_long":"Servernamnet är för långt"
+        }
+      },
+      "bluesky":"BlueSky"
+    },
+    "connectedDashboard":{
+      "twitter":"Anslut till Twitter/X",
+      "bluesky":"Anslut till Bluesky",
+      "mastodon":"Anslut till Mastodon"
+    }
+  },
+  "footer":{
+    "hosted":{
+      "text":"Denna plattform är driftad av {cnrs} och utvecklad i samarbete med {hqx}",
+      "cnrs":"franska CNRS/ISC-PIF",
+      "hqx":"HelloQuitX"
+    },
+    "copyright":"{year} HelloQuitX. Alla rättigheter förbehållna."
+  },
+  "loginButtons":{
+    "twitter":{
+      "continue":"Fortsätt med Twitter/X",
+      "notDeleted":"Jag har ett Twitter/X-konto"
+    },
+    "deleteAccount":"Jag har redan raderat mitt Twitter/X-konto",
+    "bluesky":{
+      "connect":"Anslut med BlueSky"
+    },
+    "mastodon":{
+      "connect":"Anslut med Mastodon"
+    }
+  },
+  "migrationComplete":{
+    "error":{
+      "title":"Migrationsfel",
+      "retry":"Försök igen",
+      "createAccount":"Skapa konto"
+    },
+    "success":{
+      "title":"Migration slutförd!",
+      "description":"Ditt konto har framgångsrikt migrerats till BlueSky under användarnamnet {handle}",
+      "displayName":"({name})",
+      "viewProfile":"Visa profil"
+    }
+  },
+  "partageButton":{
+    "share":"Dela",
+    "shareOn":"Dela på {platform}"
+  },
+  "progressSteps":{
+    "dashboard":{
+      "title":"Välkommen ombord"
+    },
+    "socialNetworks":{
+      "title":"Länka mina konton på sociala nätverk"
+    },
+    "import":{
+      "title":"Ladda upp mitt X/Twitter-arkiv",
+      "description":{
+        "withStats":"{following} följer, {followers} följare"
+      }
+    },
+    "share":{
+      "title":"Dela med mitt nätverk"
+    }
+  },
+  "successModal":{
+    "title":"Import lyckades!",
+    "following":{
+      "title":"Följer ({count})",
+      "username":"@{username}"
+    },
+    "followers":{
+      "title":"Följare ({count})",
+      "username":"@{username}"
+    },
+    "close":"Stäng"
+  },
+  "uploadButton":{
+    "dropHere":"Släpp din fil här",
+    "uploadInProgress":"Vi analyserar ditt arkiv, vänligen vänta...",
+    "clickOrDrop":"Klicka eller dra ditt arkiv hit",
+    "error":{
+      "uploadFailed":"Uppladdning misslyckades efter flera försök. Försök igen."
+    }
+  },
+  "uploadResults":{
+    "congratulations":"Grattis @{username}, du är registrerad för resan!",
+    "importSuccess":"Din filimport har registrerat {count} nya passagerare!",
+    "stats":{
+      "twitterAccounts":{
+        "label":"Twitter/X-konton",
+        "value":"{count}"
+      },
+      "totalImported":{
+        "label":"Totalt importerade",
+        "value":"{count} konton importerade"
+      },
+      "readyTravelers":{
+        "label":"Redo att resa",
+        "value":"{count} konton redo"
+      }
+    },
+    "inviteFriends":"Bjud in dina följare att följa med!",
+    "redirecting":"Omdirigerar till instrumentpanelen..."
+  },
+  "signin":{
+    "title":"Redo att resa till nya horisonter?",
+    "subtitle":"Börja med att ansluta med Twitter/X för att migrera dina data",
+    "loading":"Laddar information...",
+    "logo":{
+      "alt":"HelloQuitX Logotyp"
+    },
+    "logoCNRS":{
+      "alt":"CNRS, Franska nationella forskningscentret"
+    }
+  },
+  "dashboard":{
+    "loading":"Laddar dina data...",
+    "addSocialNetwork":"Lägg till socialt nätverk",
+    "addSocialNetworkDescription":"Anslut till andra sociala nätverk för att förbättra din upplevelse",
+    "migrationStep":{
+      "completed1":"Grattis! Du har slutfört det första av två migrationssteg.",
+      "completed2":"Se till att dina X-följare också registrerar sig på denna plattform och kom tillbaka den #20januari för att aktivera din återanslutning.",
+      "daysLeft":"{count} dagar kvar!",
+      "nextSteps":"Slutför följande steg för att segla till nya horisonter!"
+    },
+    "importButton":"Importera mitt Twitter/X-arkiv",
+    "shareModal":{
+      "title":"Dela din resa",
+      "shareOn":"Dela på {platform}",
+      "shareText":"Jag har precis gjort mitt #eXit! X-utvandriningen är massiv. Förlora inte några av dina följare. Tack vare #HelloQuitX har jag registrerat {count} nya passagerare för en resa till #BlueSky & #Mastodon. Följ med oss på https://app.helloquitx.com och hitta dina gemenskaper automatiskt den #20januari!"
+    },
+    "newsletter":{
+      "title":"Håll dig informerad",
+      "description":"Registrera dig för att följa projektets framsteg och bli meddelad om nya funktioner.",
+      "subscribe":"Håll dig informerad om nästa steg i HelloQuitX-projektet",
+      "subscribed":"Du är registrerad för nyhetsbrevet!",
+      "emailLabel":"Din e-postadress",
+      "emailPlaceholder":"exempel@epost.com",
+      "acceptHQX":"Jag vill få uppdateringar från HelloQuitX",
+      "acceptOEP":"Jag vill bli informerad om andra initiativ från [On est prêt](https://www.onestpret.com), som stödjer HelloQuitX",
+      "subscribing":"Registrerar...",
+      "confirmSubscribe":"Bekräfta prenumeration"
+    },
+    "tutorial":{
+      "title":"Steg-för-steg handledning",
+      "description":"Lär dig hur du enkelt migrerar från Twitter/X till Mastodon och Bluesky",
+      "watchVideo":"Titta på videon"
+    }
+  },
+  "dashboardSea":{
+    "welcome":"Välkommen ombord på HelloQuitX!",
+    "logo":{
+      "alt":"HelloQuitX Logotyp"
+    },
+    "logoCNRS":{
+      "alt":"CNRS, Franska nationella forskningscentret"
+    }
+  },
+  "upload":{
+    "title":"Importera ditt Twitter/X-arkiv för att fortsätta resan",
+    "action":"Släpp eller välj dina filer här",
+    "description":"Tre dataformat accepteras:\n- ditt ursprungliga X-arkiv om <1GB (i Zip-format)\n- following.js och follower.js-filer TILLSAMMANS och ozipade,\n- delade versioner av dessa filer för stora arkiv (following-part*.js + follower-part*.js)",
+    "loading":{
+      "default":"Laddar...",
+      "uploading":"Stanna kvar på sidan, din import pågår"
+    },
+    "helpButton":"Hjälp med att få ditt Twitter/X-arkiv",
+    "loading-indic":"Laddar dina data...",
+    "loading-uploading":"Stanna kvar på sidan, import pågår",
+    "logo":{
+      "alt":"HelloQuitX Logotyp"
+    },
+    "logoCNRS":{
+      "alt":"CNRS, Franska nationella forskningscentret"
+    },
+    "helpModal":{
+      "title":"Hur får jag mitt Twitter/X-arkiv?",
+      "description":"För att få ditt Twitter/X-arkiv, följ dessa steg:",
+      "steps":[
+        "Logga in på ditt Twitter/X-konto",
+        "Gå till \"Mer\" i vänstermenyn",
+        "Klicka på \"Inställningar och support\" och sedan \"Inställningar och sekretess\"",
+        "Under \"Ditt konto\", välj \"Ladda ner ett arkiv av dina data\"",
+        "Bekräfta ditt lösenord om det efterfrågas",
+        "Klicka på \"Begär arkiv\"",
+        "Twitter/X skickar dig ett e-postmeddelande när ditt arkiv är redo att laddas ner",
+        "När det har laddats ner kan du importera .zip-filen här"
+      ],
+      "note":"Notera: Förberedelsen av Twitter/X-arkivet kan ta upp till 24 timmar."
+    },
+    "errors":{
+      "fileSize":"Filstorleken överstiger 1GB-gränsen",
+      "fileType":"Ogiltig filtyp. Ladda upp antingen en ZIP-fil eller following.js- och follower.js-filer",
+      "noFiles":"Inga filer valda",
+      "invalidCombination":"Ladda upp antingen en ZIP-fil, following.js + follower.js, eller deras delade versioner (following-part*.js/follower-part*.js)"
+    }
+  },
+  "largeFiles":{
+    "logo":{
+      "alt":"HelloQuitX Logotyp"
+    },
+    "logoCNRS":{
+      "alt":"CNRS, Franska nationella forskningscentret"
+    },
+    "progress":{
+      "total":{
+        "title":"Total framsteg",
+        "processed":"{processed} / {total}"
+      },
+      "followers":{
+        "title":"Följare",
+        "processed":"{processed} / {total}"
+      },
+      "following":{
+        "title":"Följer",
+        "processed":"{processed} / {total}"
+      }
+    },
+    "status":{
+      "title":"Status",
+      "pending":"Väntar",
+      "processing":"Bearbetar",
+      "completed":"Slutförd",
+      "failed":"Misslyckades"
+    },
+    "stats":{
+      "followers":"Följare",
+      "following":"Följer"
+    },
+    "button":{
+      "dashboard":"Återvänd till instrumentpanelen"
+    }
+  },
+  "profile":{
+    "unlinkConfirmation":"Är du säker på att du vill koppla bort ditt {provider}-konto?",
+    "unlinkSuccess":"Ditt {provider}-konto har kopplats bort",
+    "unlinkError":"Ett fel inträffade när {provider}-kontot kopplades bort",
+    "unlinkButton":"Koppla bort {provider}-konto",
+    "providers":{
+      "twitter":"Twitter/X",
+      "bluesky":"Bluesky",
+      "mastodon":"Mastodon"
+    },
+    "errors":{
+      "lastAccount":"Kan inte koppla bort ditt sista anslutna konto",
+      "notLinked":"Inget {provider}-konto är länkat"
+    }
+  },
+  "settings":{
+    "logout":"Logga ut",
+    "deleteAccount":"Radera mitt konto",
+    "deleteConfirm":{
+      "title":"Radera konto",
+      "message":"Är du säker på att du vill radera ditt konto? Denna åtgärd kan inte ångras och kommer att resultera i att:\n\n• All dina importerade data raderas\n• Alla dina länkade konton (Twitter/X, BlueSky, Mastodon) raderas\n• Din HelloQuitX-profil raderas",
+      "cancel":"Avbryt",
+      "confirm":"Ja, radera mitt konto"
+    },
+    "notifications":{
+      "title":"Notifieringar",
+      "hqxNewsletter":"Ta emot uppdateringar från HelloQuitX",
+      "oepNewsletter":"Bli informerad om On est prêt-initiativ"
+    }
+  },
+  "support":{
+    "modal":{
+      "title":"Uppstod ett problem?",
+      "description":"Skicka oss ett meddelande så återkommer vi så snart som möjligt.",
+      "error":{
+        "send":"Fel vid sändning av meddelandet",
+        "unknown":"Ett oväntat fel inträffade"
+      },
+      "form":{
+        "email":{
+          "label":"Din e-postadress",
+          "placeholder":"exempel@epost.com"
+        },
+        "subject":{
+          "label":"Ämne",
+          "placeholder":"Ditt ämne"
+        },
+        "message":{
+          "label":"Meddelande",
+          "placeholder":"Ditt meddelande"
+        },
+        "submit":"Skicka",
+        "submitting":"Skickar..."
+      }
+    }
+  },
+  "errorModal":{
+    "title":"Fel",
+    "close":"Stäng",
+    "extractArchive":{
+      "title":"Hur du kan extrahera ditt arkiv",
+      "windows":"Windows",
+      "steps":{
+        "windows":{
+          "step1":"Högerklicka på ZIP-filen",
+          "step2":"Välj 'Extrahera alla...'",
+          "step3":"Välj en målmapp",
+          "step4":"Klicka på 'Extrahera'"
+        },
+        "mac":{
+          "step1":"Dubbelklicka på ZIP-filen",
+          "step2":"Filerna kommer att extraheras automatiskt"
+        },
+        "linux":{
+          "step1":"Högerklicka på ZIP-filen",
+          "step2":"Välj 'Extrahera här' eller 'Extrahera till...'",
+          "step3":"Välj en målmapp om det behövs"
+        }
+      },
+      "mac":"Mac",
+      "linux":"Linux"
+    }
+  },
+  "firstSeen":{
+    "title":"Välkommen!",
+    "description":"Du håller på att registrera dig med HelloQuitX för att referera dina olika digitala identiteter och duplicera din gemenskap på andra nätverk. Hela processen tar 5 minuter och påverkar inte ditt X-konto. Från och med den 20 januari kommer dina BlueSky- och Mastodon-konton automatiskt att få nya följare.\nFör att säkerställa att allt går smidigt erbjuder vi dig vägledning -- ibland krävs flera steg i processen -- och informerar dig om kommande funktioner (som att importera dina X-meddelanden till BlueSky eller Mastodon).\nGenom att ansluta till oss godkänner du att vi kontaktar dig via BlueSky och Mastodon. Vi rekommenderar också att du lämnar din e-postadress så att vi kan kontakta dig angående framtida kampanjer.\nDenna kontakt kommer att användas sparsamt och du kan när som helst avbryta supportprogrammet.",
+    "newsletter":{
+      "subtitle":"Jag vill bli assisterad av HelloQuitX",
+      "emailLabel":"Ange din e-post för att hålla dig informerad (valfritt):",
+      "emailPlaceholder":"exempel@epost.com",
+      "consent":"Jag vill hålla mig informerad om kommande operationer från On Est Prêt, som följer HelloQuitX",
+      "researchConsent":"Jag godkänner att dela min anslutningsgraf med CNRS för forskningsändamål. Den kommer att behandlas i aggregerad form. Inga personuppgifter kommer att offentliggöras.",
+      "errors":{
+        "missingEmail":"E-postadress saknas"
+      }
+    },
+    "cta":"SKICKA",
+    "dismiss":"Visa inte detta meddelande igen"
+  }
+}
