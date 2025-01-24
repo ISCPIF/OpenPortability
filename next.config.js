@@ -9,34 +9,38 @@ const nextConfig = {
   images: {
     domains: ['pbs.twimg.com', 'abs.twimg.com', 'cdn.bsky.app']
   },
-  headers: async () => {
-    return [
-      {
-        source: '/:path*',
-        headers: [
-          {
-            key: 'Access-Control-Allow-Origin',
-            value: '*',
-          },
-        ],
-      },
-    ]
-  },
-  output: 'standalone'
-}
-
-module.exports = withNextIntl({
-  ...nextConfig,
-  generateEtags: false,
   headers: async () => [
     {
       source: '/:path*',
       headers: [
         {
-          key: 'Cache-Control',
-          value: 'no-store, must-revalidate'
+          key: 'X-DNS-Prefetch-Control',
+          value: 'on'
+        },
+        {
+          key: 'X-XSS-Protection',
+          value: '1; mode=block'
+        },
+        {
+          key: 'X-Frame-Options',
+          value: 'DENY'
+        },
+        {
+          key: 'X-Content-Type-Options',
+          value: 'nosniff'
+        },
+        {
+          key: 'Referrer-Policy',
+          value: 'origin-when-cross-origin'
+        },
+        {
+          key: 'Permissions-Policy',
+          value: 'camera=(), microphone=(), geolocation=()'
         }
       ]
     }
-  ]
-});
+  ],
+  output: 'standalone'
+};
+
+module.exports = withNextIntl(nextConfig);
