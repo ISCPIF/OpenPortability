@@ -17,7 +17,7 @@ async function createMastodonApp(instance: string){
     // console.log("New instance, creating OAuth app")
     const url = `https://${lcInstance}/api/v1/apps`;
     const formData = {
-      "client_name": "HelloQuitX",
+      "client_name": "OpenPortability",
       "redirect_uris": `${process.env.NEXTAUTH_URL}/api/auth/callback/mastodon`,
       // TODO: limiter au strict nécessaire
       // https://docs.joinmastodon.org/api/oauth-scopes/#granular
