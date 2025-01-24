@@ -20,8 +20,7 @@ import boat1 from '../../../public/boats/boat-1.svg'
 import Footer from "@/app/_components/Footer";
 import LoadingIndicator from '@/app/_components/LoadingIndicator';
 import SupportModal from '../../_components/SupportModale';
-import logoHQXFR from '../../../../public/logoxHQX/HQX-blanc-FR.svg';
-import logoHQXEN from '../../../../public/logoxHQX/HQX-white-UK.svg';
+import logo from '../../../../public/logo/logo-openport-blanc.svg';
 
 const UploadButton = dynamic(() => import('../../_components/UploadButton'), {
   loading: () => <div className="animate-pulse bg-gray-200 h-12 w-48 rounded-lg"></div>,
@@ -48,8 +47,6 @@ export default function UploadPage() {
   const [showSupportModal, setShowSupportModal] = useState(false);
   const t = useTranslations('upload');
   const tSupport = useTranslations('support');
-  const locale = params.locale as string;
-  const logoHQX = locale === 'fr' ? logoHQXFR : logoHQXEN;
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -483,7 +480,7 @@ export default function UploadPage() {
       <Header />
       <div className="relative z-10 pt-12">
         <Image
-          src={logoHQX}
+          src={logo}
           alt={t('logo.alt')}
           width={306}
           height={125}
