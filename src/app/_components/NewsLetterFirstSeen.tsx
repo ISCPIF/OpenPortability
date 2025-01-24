@@ -6,7 +6,7 @@ import { X, ChevronDown } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { plex } from '@/app/fonts/plex'
 import Image from 'next/image'
-import HQXBadge from '../../../public/newSVG/HQX-badge.svg'
+import Badge from '../../../public/newSVG/HQX-badge.svg'
 import { usePathname } from 'next/navigation'
 import { Globe } from 'lucide-react';
 import { isValidEmail } from '@/lib/utils'
@@ -157,8 +157,8 @@ export default function NewsLetterFirstSeen({ userId, onSubscribe, onClose }: Ne
 
       <div className="flex flex-col items-center gap-1">
         <Image
-          src={HQXBadge}
-          alt="HelloQuitteX Logo"
+          src={Badge}
+          alt="Logo"
           width={80}
           height={80}
           className="mb-1"

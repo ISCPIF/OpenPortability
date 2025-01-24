@@ -44,8 +44,8 @@
       "description": "En uploadant vos fichiers Twitter/X, vous confirmez que :",
       "conditions": {
         "ownership": "Vous êtes le propriétaire légitime de ces données.",
-        "cnrsUsage": "Vous acceptez que les donnees fournies soient utilisées par le Centre Nationale de la Recherche Scientifique (CNRS) dans le cadre de l'opération HelloQuitteX.",
-        "profileCreation": "Vous comprenez que ces données seront utilisées pour créer votre profil sur HelloQuitteX."
+        "cnrsUsage": "Vous acceptez que les donnees fournies soient utilisées par le Centre Nationale de la Recherche Scientifique (CNRS) dans le cadre de l'opération OpenPortability.",
+        "profileCreation": "Vous comprenez que ces données seront utilisées pour créer votre profil sur OpenPortability."
       },
       "buttons": {
         "cancel": "Annuler",
@@ -80,11 +80,11 @@
     },
     "footer": {
         "hosted": {
-          "text": "Cette plateforme est hébergée par le {cnrs} et développée en partenariat avec le collectif {hqx}",
+          "text": "Cette plateforme est hébergée par le {cnrs}.",
           "cnrs": "CNRS/ISC-PIF",
-          "hqx": "HelloQuitteX"
+          "hqx": "OpenPortability"
         },
-        "copyright": " {year} HelloQuitteX. Tous droits réservés.",
+        "copyright": " {year} OpenPortability. Tous droits réservés.",
         "privacy": "Politique de confidentialité"
       },
     "loginButtons": {
@@ -166,7 +166,7 @@
     "subtitle": "Commencez par vous connecter avec Twitter/X pour migrer vos données",
     "loading": "Chargement des informations…",
     "logo": {
-      "alt": "HelloQuitteX Logo"
+      "alt": "OpenPortability Logo"
     },
     "logoCNRS": {
       "alt": "CNRS, Centre national de la recherche scientifique"
@@ -178,14 +178,14 @@
     "addSocialNetworkDescription": "Connectez-vous à d'autres réseaux sociaux pour enrichir votre expérience",
     "migrationStep": {
       "completed1": "Bravo ! Vous avez terminé la première des deux étapes de la migration.",
-      "completed2": "N'oubliez par d'inviter vos abonnés à s’inscrire sur HelloQuitX. En 1min ils pourront être reconnectés à votre compte, même sans leur archive.\nLa phase 2 de la reconnexion interviendra dans quelques jours. Selon vos préférences, vous recevrez une notification par e-mail ou pourrez suivre le lancement sur nos comptes X, BlueSky et Mastodon.\nRestez à l’affût, de belles surprises vous attendent !",
+      "completed2": "N'oubliez par d'inviter vos abonnés à s’inscrire sur OpenPortability. En 1min ils pourront être reconnectés à votre compte, même sans leur archive.\nLa phase 2 de la reconnexion interviendra dans quelques jours. Selon vos préférences, vous recevrez une notification par e-mail ou pourrez suivre le lancement sur nos comptes X, BlueSky et Mastodon.\nRestez à l’affût, de belles surprises vous attendent !",
       "nextSteps": "Effectuez les étapes suivantes pour voguer vers de nouveaux rivages !"
     },
     "importButton": "Importer mon archive Twitter/X",
     "shareModal": {
       "title": "Partager votre voyage",
       "shareOn": "Partager sur {platform}",
-      "shareText": "Je viens de faire mon #eXit! L’exode de X est massif. Ne perdez pas un seul de vos abonnés. Grâce à #HelloQuitX j’ai inscrit {count} nouveaux passagers pour partir vers #BlueSky & #Mastodon. Retrouvez automatiquement vos communautés le #20Janvier via https://app.helloquitx.com !"
+      "shareText": "Je viens de faire mon #eXit! L’exode de X est massif. Ne perdez pas un seul de vos abonnés. Grâce à #OpenPortability j’ai inscrit {count} nouveaux passagers pour partir vers #BlueSky & #Mastodon. Retrouvez automatiquement vos communautés le #20Janvier via https://app.OpenPortability.com !"
     },
     "newsletter": {
       "title": "Restez informé.e",
@@ -194,8 +194,8 @@
       "subscribed": "Vous êtes inscrit.e à la newsletter !",
       "emailLabel": "Votre adresse email",
       "emailPlaceholder": "exemple@email.com",
-      "acceptHQX": "Je veux recevoir des updates de HelloQuitteX",
-      "acceptOEP": "Je souhaite aussi être informé.e des prochaines initiatives de [On est prêt](https://www.onestpret.com), qui accompagne HelloQuitteX",
+      "acceptHQX": "Je veux recevoir des updates de OpenPortability",
+      "acceptOEP": "Je souhaite aussi être informé.e des prochaines initiatives de [On est prêt](https://www.onestpret.com), qui accompagne OpenPortability",
       "subscribing": "Inscription en cours...",
       "confirmSubscribe": "Confirmer l'inscription"
     },
@@ -206,9 +206,9 @@
     }
   },
   "dashboardSea": {
-    "welcome": "Bienvenue à bord d'HelloQuitteX !",
+    "welcome": "Bienvenue à bord d'OpenPortability !",
     "logo": {
-      "alt": "HelloQuitteX Logo"
+      "alt": "OpenPortability Logo"
     },
     "logoCNRS": {
       "alt": "CNRS, Centre national de la recherche scientifique"
@@ -226,7 +226,7 @@
     "loading-indic" : "Chargement de vos données...",
     "loading-uploading": "Restez sur la page, importation en cours",
     "logo": {
-      "alt": "HelloQuitteX Logo"
+      "alt": "OpenPortability Logo"
     },
     "logoCNRS": {
       "alt": "CNRS, Centre national de la recherche scientifique"
@@ -256,7 +256,7 @@
   },
   "largeFiles": {
     "logo": {
-      "alt": "HelloQuitteX Logo"
+      "alt": "OpenPortability Logo"
     },
     "logoCNRS": {
       "alt": "CNRS, Centre national de la recherche scientifique"
@@ -310,13 +310,13 @@
     "deleteAccount": "Supprimer mon compte",
     "deleteConfirm": {
       "title": "Supprimer le compte",
-      "message": "Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible et entraînera la suppression de :\n\n• Toutes vos données importées\n• Tous vos comptes liés (Twitter/X, BlueSky, Mastodon)\n• Votre profil HelloQuitteX",
+      "message": "Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible et entraînera la suppression de :\n\n• Toutes vos données importées\n• Tous vos comptes liés (Twitter/X, BlueSky, Mastodon)\n• Votre profil OpenPortability",
       "cancel": "Annuler",
       "confirm": "Oui, supprimer mon compte"
     },
     "notifications": {
       "title": "Notifications",
-      "hqxNewsletter": "Recevoir les updates de HelloQuitteX",
+      "hqxNewsletter": "Recevoir les updates de OpenPortability",
       "oepNewsletter": "Être informé.e des initiatives de On est prêt"
     }
   },
@@ -375,12 +375,12 @@
   },
   "firstSeen": {
     "title": "Bienvenue !",
-    "description": "Vous êtes sur le point d'embarquer avec HelloQuitteX afin de référencer vos différentes identités numériques et dupliquer votre communauté sur d'autres réseaux. L'ensemble de l'opération vous prendra 5 min et n'aura pas d'impact sur votre compte X. À partir du 20 Janvier, vos comptes BlueSky et Mastodon commenceront à recevoir automatiquement de nouveaux abonnés.\nAfin que tout se passe bien, nous vous proposons de vous accompagner --dans certains cas le processus requiert plusieurs étapes-- et de vous informer des fonctionnalités qui seront publiées prochainement (comme le fait d'importer ses messages X sur BlueSky ou Mastodon).\nEn embarquant avec nous, vous nous autorisez à vous contacter par BlueSky et Mastodon. Nous vous recommondons de plus à nous laisser votre e-mail afin de nous permettre de vous contacter sur la suite de vos campagnes.\nCe contact sera utilisé avec parcimonie et vous pourrez sortir du programme d'accompagnement à tout moment.",
+    "description": "Vous êtes sur le point d'embarquer avec OpenPortability afin de référencer vos différentes identités numériques et dupliquer votre communauté sur d'autres réseaux. L'ensemble de l'opération vous prendra 5 min et n'aura pas d'impact sur votre compte X. À partir du 20 Janvier, vos comptes BlueSky et Mastodon commenceront à recevoir automatiquement de nouveaux abonnés.\nAfin que tout se passe bien, nous vous proposons de vous accompagner --dans certains cas le processus requiert plusieurs étapes-- et de vous informer des fonctionnalités qui seront publiées prochainement (comme le fait d'importer ses messages X sur BlueSky ou Mastodon).\nEn embarquant avec nous, vous nous autorisez à vous contacter par BlueSky et Mastodon. Nous vous recommondons de plus à nous laisser votre e-mail afin de nous permettre de vous contacter sur la suite de vos campagnes.\nCe contact sera utilisé avec parcimonie et vous pourrez sortir du programme d'accompagnement à tout moment.",
     "newsletter": {
-      "subtitle": "Je souhaite être accompagné.e par HelloQuitteX.",
+      "subtitle": "Je souhaite être accompagné.e par OpenPortability.",
       "emailLabel": "Inscrivez votre mail pour rester informé.e (optionnel) :",
       "emailPlaceholder": "pseudo@nomdedomaine.com",
-      "consent": "Je souhaite aussi être informé.e des prochaines initiatives de On est prêt, qui accompagne HelloQuitteX",
+      "consent": "Je souhaite aussi être informé.e des prochaines initiatives de On est prêt, qui accompagne OpenPortability",
       "researchConsent": "Je souhaite partager avec le CNRS mon graphe de connexions à des fins de recherche. Il sera traité de manière aggrégée. Aucun donnée personnelle ne sera rendu publique.",
       "errors": {
         "missingEmail": "E-mail manquant"

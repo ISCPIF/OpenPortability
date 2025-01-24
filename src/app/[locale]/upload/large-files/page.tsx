@@ -13,8 +13,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import boat1 from '../../../../../public/boats/boat-1.svg';
 import { Loader2 } from 'lucide-react';
 import Footer from "@/app/_components/Footer";
-import logoHQXFR from '../../../../../public/logoxHQX/HQX-blanc-FR.svg';
-import logoHQXEN from '../../../../../public/logoxHQX/HQX-white-UK.svg';
+import logo from '../../../../../public/logo/logo-openport-blanc.svg';
 import LoadingIndicator from '@/app/_components/LoadingIndicator';
 
 
@@ -50,8 +49,6 @@ export default function LargeFilesPage() {
   const searchParams = useSearchParams();
   const params = useParams();
   const t = useTranslations('largeFiles');
-  const locale = params.locale as string;
-  const logoHQX = locale === 'fr' ? logoHQXFR : logoHQXEN;
 
   const jobId = searchParams.get('jobId');
   const followerCount = parseInt(searchParams.get('followerCount') || '0', 10);
@@ -158,7 +155,7 @@ export default function LargeFilesPage() {
         <Header />
         <div className="flex justify-center mt-8 mb-8">
           <Image
-            src={logoHQX}
+            src={logo}
             alt={t('logo.alt')}
             width={306}
             height={125}
