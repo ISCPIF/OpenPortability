@@ -185,7 +185,7 @@
     "shareModal": {
       "title": "Partager votre voyage",
       "shareOn": "Partager sur {platform}",
-      "shareText": "Je viens de faire mon #eXit! L’exode de X est massif. Ne perdez pas un seul de vos abonnés. Grâce à #OpenPortability j’ai inscrit {count} nouveaux passagers pour partir vers #BlueSky & #Mastodon. Retrouvez automatiquement vos communautés le #20Janvier via https://app.OpenPortability.com !"
+      "shareText": "Je viens de faire mon #eXit! L’exode de X est massif. Ne perdez pas un seul de vos abonnés. Grâce à #OpenPortability j’ai inscrit {count} nouveaux passagers pour partir vers #BlueSky & #Mastodon. Retrouvez automatiquement vos communautés le #20Janvier via https://openportability.org !"
     },
     "newsletter": {
       "title": "Restez informé.e",
