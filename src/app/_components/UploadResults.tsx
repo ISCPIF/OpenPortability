@@ -96,6 +96,10 @@ export default function UploadResults({
     fetchTotalStats();
   }, [t]);
 
+  if (!session) {
+    return null;
+  }
+
   const totalProcessed = stats.followers + stats.following;
   const totalInDatabase = totalStats ? totalStats.total_followers + totalStats.total_following : 0;
   const totalReady = totalStats ? totalStats.total_sources : 0;

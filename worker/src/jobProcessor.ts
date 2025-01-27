@@ -489,42 +489,55 @@ async function processFollowers(followers: any[], userId: string, workerId: stri
     // Créer la source si elle n'existe pas
     await ensureSourceExists(userId, workerId);
 
-    // Préparer les données pour l'insertion
-    const followersToInsert = followers.map((item: any) => ({
-      twitter_id: item.follower.accountId,
-    }));
+    // Traiter par lots plus petits
+    const CHUNK_SIZE = 50;
+    for (let i = 0; i < followers.length; i += CHUNK_SIZE) {
+      const chunk = followers.slice(i, i + CHUNK_SIZE);
+      
+      // Préparer les données pour l'insertion
+      const followersToInsert = chunk.map((item: any) => ({
+        twitter_id: item.follower.accountId,
+      }));
 
-    console.log('Sample follower data to insert:', followersToInsert[0]);
+      // Insérer d'abord dans la table followers
+      const { error: followersError } = await supabase
+        .from('followers')
+        .upsert(followersToInsert, { 
+          onConflict: 'twitter_id',
+          count: 'exact'
+        });
 
-    // Insérer les followers (table followers)
-    const { data: followersData, error: followersError } = await supabase
-      .from('followers')
-      .upsert(followersToInsert, { onConflict: 'twitter_id' });
+      if (followersError) {
+        console.error(` [Worker ${workerId}] Error inserting followers:`, followersError);
+        throw new Error(`Failed to insert followers: ${followersError.message}`);
+      }
 
-    if (followersError) {
-      console.error(` [Worker ${workerId}] Error inserting followers:`, followersError);
-      throw new Error(`Failed to insert followers: ${followersError.message || JSON.stringify(followersError)}`);
+      // Attendre un court instant pour éviter la contention
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Préparer et insérer les relations
+      const relationsToInsert = chunk.map((item: any) => ({
+        source_id: userId,
+        follower_id: item.follower.accountId,
+      }));
+
+      const { error: relationsError } = await supabase
+        .from('sources_followers')
+        .upsert(relationsToInsert, { 
+          onConflict: 'source_id,follower_id',
+          count: 'exact'
+        });
+
+      if (relationsError) {
+        console.error(` [Worker ${workerId}] Error inserting follower relations:`, relationsError);
+        throw new Error(`Failed to insert relations: ${relationsError.message}`);
+      }
+
+      // Log progress
+      console.log(` [Worker ${workerId}] Processed chunk ${i/CHUNK_SIZE + 1}/${Math.ceil(followers.length/CHUNK_SIZE)}`);
     }
 
-    // Préparer les relations
-    const relationsToInsert = followers.map((item: any) => ({
-      source_id: userId,
-      follower_id: item.follower.accountId,
-    }));
-
-    console.log('Sample relation data to insert:', relationsToInsert[0]);
-
-    // Créer les relations (table sources_followers)
-    const { data: relationsData, error: relationsError } = await supabase
-      .from('sources_followers')
-      .upsert(relationsToInsert, { onConflict: 'source_id,follower_id' });
-
-    if (relationsError) {
-      console.error(` [Worker ${workerId}] Error inserting follower relations:`, relationsError);
-      throw new Error(`Failed to insert relations: ${relationsError.message || JSON.stringify(relationsError)}`);
-    }
-
-    console.log(` [Worker ${workerId}] Created ${followers.length} follower relations`);
+    console.log(` [Worker ${workerId}] Successfully created ${followers.length} follower relations`);
   } catch (error) {
     console.error(` [Worker ${workerId}] Error in processFollowers:`, error);
     throw error;

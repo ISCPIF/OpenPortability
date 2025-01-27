@@ -20,9 +20,7 @@ import boat1 from '../../../public/boats/boat-1.svg'
 import Footer from "@/app/_components/Footer";
 import LoadingIndicator from '@/app/_components/LoadingIndicator';
 import SupportModal from '../../_components/SupportModale';
-import logoHQXFR from '../../../../public/logoxHQX/HQX-blanc-FR.svg';
-import logoHQXEN from '../../../../public/logoxHQX/HQX-white-UK.svg';
-import logoCNRS from "../../../../public/logo-cnrs-blanc.svg"
+import logo from '../../../../public/logo/logo-openport-blanc.svg';
 
 const UploadButton = dynamic(() => import('../../_components/UploadButton'), {
   loading: () => <div className="animate-pulse bg-gray-200 h-12 w-48 rounded-lg"></div>,
@@ -49,8 +47,6 @@ export default function UploadPage() {
   const [showSupportModal, setShowSupportModal] = useState(false);
   const t = useTranslations('upload');
   const tSupport = useTranslations('support');
-  const locale = params.locale as string;
-  const logoHQX = locale === 'fr' ? logoHQXFR : logoHQXEN;
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -482,16 +478,9 @@ export default function UploadPage() {
   return (
     <div className="min-h-screen bg-[#2a39a9] relative w-full max-w-[90rem] m-auto">
       <Header />
-      <Image
-        src={logoCNRS}
-        alt={t('logoCNRS.alt')}
-        width={60}
-        height={60}
-        className="absolute top-4 left-4"
-      />
       <div className="relative z-10 pt-12">
         <Image
-          src={logoHQX}
+          src={logo}
           alt={t('logo.alt')}
           width={306}
           height={125}

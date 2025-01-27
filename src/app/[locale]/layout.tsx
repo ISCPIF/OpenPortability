@@ -27,7 +27,7 @@ const spaceGrotesk = Space_Grotesk({
 })
 
 export const metadata: Metadata = {
-  title: "HelloQuitteX",
+  title: "OpenPortability",
   description: "Libérez vos espaces numériques",
 };
 

@@ -1,25 +1,28 @@
-# Stage de build
+# Build stage
 FROM node:18-alpine AS builder
 WORKDIR /app
+
 COPY package*.json ./
-RUN npm ci
+RUN npm install
+
 COPY . .
 RUN npm run build
 
-# Stage de production
-FROM node:18-alpine AS runner
+# Production stage
+FROM node:18-alpine AS production
 WORKDIR /app
 
 ENV NODE_ENV production
-
-# Copie des fichiers nécessaires
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
-COPY --from=builder /app/messages ./messages
-
-EXPOSE 3000
 ENV PORT 3000
 ENV HOSTNAME "0.0.0.0"
 
-CMD ["node", "server.js"]
+COPY package*.json ./
+RUN npm install --production
+
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/next.config.js ./
+
+EXPOSE 3000
+
+CMD ["npm", "run", "start"]

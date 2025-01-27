@@ -1,9 +1,11 @@
 'use client';
 
+import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { memo, useState } from 'react';
 import { Github, Mail } from 'lucide-react';
 import SupportModal from './SupportModale';
+import logoCNRS from "../../../public/logo-cnrs-blanc.svg"
 
 const FooterLink = memo(({ href, children }: { href: string; children: React.ReactNode }) => (
   <a 
@@ -34,13 +36,6 @@ const Footer = memo(() => {
         </FooterLink>
       );
     }
-    if (part === 'hqx') {
-      return (
-        <FooterLink key="hqx" href="https://helloquittex.com/">
-          {hqxText}
-        </FooterLink>
-      );
-    }
     return <span key={index}>{part}</span>;
   });
 
@@ -54,8 +49,8 @@ const Footer = memo(() => {
           <div className="text-xs text-slate-400 font-space-grotesk">
             {t('copyright', { year })}
           </div>
-          <div className="flex gap-4 mt-2">
-            <FooterLink href="https://github.com/FannyCaulfield/helloquittex">
+          <div className="flex gap-4 mt-2 items-center">
+            <FooterLink href="https://github.com/ISCPIF/OpenPortability">
               <Github className="w-5 h-5" />
             </FooterLink>
             <button 
@@ -64,6 +59,15 @@ const Footer = memo(() => {
             >
               <Mail className="w-5 h-5" />
             </button>
+            <FooterLink href="https://www.cnrs.fr">
+              <Image
+                src={logoCNRS}
+                alt={"Centre Nationale de la Recherche Scientifique"}
+                width={20}
+                height={20}
+                className="opacity-80 hover:opacity-100 transition-opacity"
+              />
+            </FooterLink>
           </div>
         </div>
       </div>
