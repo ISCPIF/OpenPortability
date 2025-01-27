@@ -1,28 +1,11 @@
-# Build stage
-FROM node:18-alpine AS builder
+FROM node:18-alpine
 WORKDIR /app
 
+# On ne copie que le package.json pour profiter du cache de Docker
 COPY package*.json ./
 RUN npm install
 
-COPY . .
-RUN npm run build
-
-# Production stage
-FROM node:18-alpine AS production
-WORKDIR /app
-
-ENV NODE_ENV production
-ENV PORT 3000
-ENV HOSTNAME "0.0.0.0"
-
-COPY package*.json ./
-RUN npm install --production
-
-COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/next.config.js ./
-
+# Le reste des fichiers sera monté via le volume dans docker-compose
 EXPOSE 3000
 
-CMD ["npm", "run", "start"]
+CMD ["npm", "run", "dev"]

@@ -6,8 +6,8 @@ import { useTranslations } from 'next-intl';
 import { useParams } from 'next/navigation';
 import { FaCheck } from "react-icons/fa";
 
-import logoHQXFR from '../../../public/logoxHQX/HQX-rose-FR.svg';
-import logoHQXEN from '../../../public/logoxHQX/HQX-pink-UK.svg';
+import logo from '../../../public/logo/logo-openport-rose.svg';
+
 import seaBackground from '../../../public/sea.svg';
 import arrowGrowth from '../../../public/v2/uil_arrow-growth.svg';
 import chainon from '../../../public/v2/chainon.svg';
@@ -25,8 +25,6 @@ interface SeaProps {
 export default function MigrateSea({ stats }: SeaProps) {
   const t = useTranslations('migrateSea');
   const params = useParams();
-  const locale = params.locale as string;
-  const logoHQX = locale === 'fr' ? logoHQXFR : logoHQXEN;
 
   const Boats = () => {
     return (
@@ -51,8 +49,8 @@ export default function MigrateSea({ stats }: SeaProps) {
       
         <div className="relative z-[5] ">
         <Image
-            src={logoHQX}
-            alt="HelloQuitteX"
+            src={logo}
+            alt="OpenPortability Logo"
             width={306}
             height={125}
             className="mx-auto"
