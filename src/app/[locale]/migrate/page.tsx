@@ -116,12 +116,6 @@ export default function MigratePage() {
     await updateAutomaticReconnect(false)
   }
 
-  useEffect(() => {
-    if (session?.user?.automatic_reconnect) {
-      setIsAutomaticReconnect(session.user.automatic_reconnect)
-      setShowOptions(false)
-    }
-  }, [session?.user?.automatic_reconnect])
 
   useEffect(() => {
     if (!session?.user?.id) {

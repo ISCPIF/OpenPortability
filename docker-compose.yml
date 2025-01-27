@@ -14,8 +14,13 @@ services:
         - app_network
       extra_hosts:
         - "host.docker.internal:host-gateway"
+      ports:
+        - "3000:3000" 
       volumes:
+        - .:/app
+        - /app/node_modules
         - shared-tmp:/app/tmp
+        - ./messages:/app/messages
 
   worker:
     build:
@@ -43,7 +48,7 @@ services:
       - "443:443"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - /etc/letsencrypt:/etc/nginx/certs:ro
+      - ./nginx/certs:/etc/nginx/certs:ro 
     depends_on:
       - app
     networks:
@@ -63,28 +68,6 @@ services:
       - app_network
     extra_hosts:
       - "host.docker.internal:host-gateway"
-    healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "host.docker.internal:54321"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
-
-  token-refresh:
-    build:
-      context: ./worker_refreshtoken
-      dockerfile: Dockerfile
-    environment:
-      - NODE_ENV=production
-    env_file:
-      - .env.local
-    restart: unless-stopped
-    networks:
-      - app_network
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    depends_on:
-      - app
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "host.docker.internal:54321"]
       interval: 30s
