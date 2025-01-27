@@ -5,9 +5,8 @@ import { plex } from '@/app/fonts/plex';
 import { useTranslations } from 'next-intl';
 import { useParams } from 'next/navigation';
 
-import logoHQXFR from '../../../public/logoxHQX/HQX-rose-FR.svg';
-import logoHQXEN from '../../../public/logoxHQX/HQX-pink-UK.svg';
-import logoCNRS from "../../../public/logo-cnrs-bleu.svg"
+import logo from '../../../public/logo/logo-openport-rose.svg';
+
 
 import seaBackground from '../../../public/sea.svg';
 import Boat from './Boat';
@@ -26,7 +25,6 @@ export default function Sea({ progress }: SeaProps) {
   const t = useTranslations('dashboardSea');
   const params = useParams();
   const locale = params.locale as string;
-  const logoHQX = locale === 'fr' ? logoHQXFR : logoHQXEN;
   const ProgressImage = ({ progress }: { progress: number }) => {
     let img;
     let scale = 1;
@@ -107,16 +105,9 @@ export default function Sea({ progress }: SeaProps) {
   return (
     <div className="absolute top-0 left-0 w-full h-[23rem]">
       <Image src={seaBackground} fill alt="" className="object-cover"></Image>
-      <Image
-        src={logoCNRS}
-        alt={t('logoCNRS.alt')}
-        width={60}
-        height={60}
-        className="absolute top-4 left-4"
-      />
       <div className="relative z-[5] pt-12">
         <Image
-          src={logoHQX}
+          src={logo}
           alt={t('logo.alt')}
           width={306}
           height={125}

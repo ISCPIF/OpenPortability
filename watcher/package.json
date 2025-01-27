@@ -1,5 +1,5 @@
 {
-  "name": "helloquittex-watcher",
+  "name": "openportability-watcher",
   "version": "1.0.0",
   "main": "dist/monitor.js",
   "scripts": {
