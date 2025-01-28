@@ -14,15 +14,15 @@ async function createMastodonApp(instance: string){
   const lcInstance = instance.toLowerCase()
   let cachedAppData = instances?.find(r => r.instance.toLowerCase() == lcInstance);
   if (!cachedAppData) {
-    // console.log("New instance, creating OAuth app")
+    console.log("New instance, creating OAuth app")
     const url = `https://${lcInstance}/api/v1/apps`;
     const formData = {
       "client_name": "OpenPortability",
       "redirect_uris": `${process.env.NEXTAUTH_URL}/api/auth/callback/mastodon`,
       // TODO: limiter au strict nécessaire
       // https://docs.joinmastodon.org/api/oauth-scopes/#granular
-      "scopes": "profile",
-      "website": "https://openportability.org"
+      "scopes": "read write:follows",
+      "website": "https://app.beta.v2.helloquitx.com"
     };
         try {
       const response = await fetch(url, {
@@ -61,7 +61,7 @@ export const { auth, signIn, signOut, handlers } = NextAuth(async req => {
       mastodonProvider.issuer = issuer;
       mastodonProvider.clientId = res.client_id;
       mastodonProvider.clientSecret = res.client_secret;
-      mastodonProvider.authorization = `${issuer}/oauth/authorize?scope=profile`;
+      mastodonProvider.authorization = `${issuer}/oauth/authorize?scope=read write:follows`;
       mastodonProvider.token = `${issuer}/oauth/token`;
       mastodonProvider.userinfo = `${issuer}/api/v1/accounts/verify_credentials`;
     }

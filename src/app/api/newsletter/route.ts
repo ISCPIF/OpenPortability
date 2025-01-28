@@ -1,37 +1,7 @@
 import { NextResponse } from 'next/server'
 import { auth } from "@/app/auth"
-import { createClient } from "@supabase/supabase-js"
-import { isValidEmail } from '@/lib/utils'
+import { UserService } from '@/lib/services/userServices'
 
-// Regex plus stricte pour la validation des emails
-const EMAIL_REGEX = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z]{2,})+$/
-
-// Client Supabase avec les droits d'administration
-const authClient = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false
-    },
-    db: {
-      schema: "next-auth"
-    }
-  }
-)
-
-
-// Fonction de nettoyage des entrées
-const sanitizeInput = (input: string): string => {
-  return input
-    .trim()
-    .toLowerCase()
-    // Échapper les caractères spéciaux SQL et les caractères dangereux
-    .replace(/['";\\<>]/g, '')
-    // Supprimer les espaces multiples
-    .replace(/\s+/g, ' ')
-}
 
 export async function POST(request: Request) {
   try {
@@ -46,48 +16,21 @@ export async function POST(request: Request) {
     }
 
     const { email, acceptHQX, acceptOEP, research_accepted } = await request.json()
-
-    // Construction de l'objet de mise à jour
-    const updateData: Record<string, any> = {
-      have_seen_newsletter: true
-    }
     
-    // Si un email est fourni, on valide et on active OEP
-    if (email) {
-      const sanitizedEmail = sanitizeInput(email)
-      if (!isValidEmail(sanitizedEmail)) {
-        return NextResponse.json(
-          { error: 'Invalid email format' },
-          { status: 400 }
-        )
-      }
-      updateData.email = sanitizedEmail
-      updateData.oep_accepted = true
-    }
-    
-    // Si pas d'email, c'est forcément acceptHQX only
-    if (!email) {
-      updateData.hqx_newsletter = true
-    }
-
-    if (research_accepted) {
-      updateData.research_accepted = true
-    }
-
-    // Mise à jour de l'utilisateur avec le client auth
-    const { error: updateError } = await authClient
-      .from('users')
-      .update(updateData)
-      .eq('id', session.user.id)
-
-    if (updateError) {
-      console.error('Database error:', updateError)
-      throw new Error('Failed to update user newsletter preferences')
-    }
+    const userService = new UserService()
+    await userService.updatePreferencesNewsletter(session.user.id, {
+      email,
+      acceptHQX,
+      acceptOEP,
+      research_accepted
+    })
 
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Newsletter subscription error:', error)
+    if (error instanceof Error && error.message === 'Invalid email format') {
+      return NextResponse.json({ error: error.message }, { status: 400 })
+    }
     return NextResponse.json(
       { error: 'Failed to subscribe to newsletter' },
       { status: 500 }
@@ -103,19 +46,15 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { error } = await authClient
-      .from('users')
-      .update({ have_seen_newsletter: true })
-      .eq('id', session.user.id);
+    const userService = new UserService()
+    const preferences = await userService.getNewsletterPreferences(session.user.id)
 
-    if (error) {
-      console.error('Error updating have_seen_newsletter:', error);
-      return NextResponse.json({ error: 'Failed to update preference' }, { status: 500 });
-    }
-
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ data: preferences });
   } catch (error) {
     console.error('Error in newsletter GET route:', error);
+    if (error instanceof Error && error.message === 'User not found') {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
