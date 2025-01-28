@@ -83,6 +83,12 @@ export default function BlueSkyLogin({ onLoginComplete }: BlueSkyLoginProps) {
       if (result?.ok) {
         console.log('Redirecting to dashboard...');
         const redirectPath = pathname?.includes('/migrate') ? '/migrate' : '/dashboard';
+        
+        // Appeler onLoginComplete avant la redirection
+        if (onLoginComplete) {
+          onLoginComplete(data.agent);
+        }
+
         router.push(`/${locale}${redirectPath}`);
       } else {
         console.log('Sign in failed:', result);

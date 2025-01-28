@@ -46,19 +46,19 @@ export default function SignIn() {
     })
   }, [session, status])
 
-  // Log des changements d'état de chargement
-  useEffect(() => {
-    console.log('[SignIn] Loading State:', isLoading)
-  }, [isLoading])
+  // // Log des changements d'état de chargement
+  // useEffect(() => {
+  //   console.log('[SignIn] Loading State:', isLoading)
+  // }, [isLoading])
 
-  useEffect(() => {
-    if (session) {
-      console.log('[SignIn] Session detected, redirecting to dashboard')
-      setIsLoading(true)
-      const locale = params.locale as string || 'fr'
-      router.push(`/${locale}/dashboard`)
-    }
-  }, [session, router, params.locale])
+  // useEffect(() => {
+  //   if (session) {
+  //     console.log('[SignIn] Session detected, redirecting to dashboard')
+  //     setIsLoading(true)
+  //     const locale = params.locale as string || 'fr'
+  //     router.push(`/${locale}/dashboard`)
+  //   }
+  // }, [session, router, params.locale])
 
   const handleLoadingChange = (loading: boolean) => {
     console.log('[SignIn] Loading change:', loading)

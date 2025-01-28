@@ -57,3 +57,4 @@ backup.sql
 docker-compose.yml
 Dockerfile
 /nginx
+nginx.conf

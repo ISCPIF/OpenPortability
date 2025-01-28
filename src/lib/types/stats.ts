@@ -18,3 +18,8 @@ export interface StatsResponse {
   total_following: number;
   total_sources: number;
 }
+
+export type UserStats = {
+  following: number;
+  followers: number;
+}

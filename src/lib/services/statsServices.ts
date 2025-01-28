@@ -1,5 +1,5 @@
 import { StatsRepository } from "@/lib/repositories/statsRepository";
-import { StatsResponse, ReconnectionStats } from "@/lib/types/stats";
+import { StatsResponse, ReconnectionStats, UserStats } from "@/lib/types/stats";
 
 export class StatsService {
     private repository: StatsRepository;
@@ -39,6 +39,8 @@ export class StatsService {
           const followersCount = followersData.data?.count ?? 0;
           const followingCount = followingData.data?.count ?? 0;
           const targetsWithHandleCount = targetsWithHandleData.data?.count ?? 0;
+
+          console.log("📊 [ReconnectionStats] targetsWithHandleCount :", targetsWithHandleCount, "Following count:", followingCount, "Bluesky mappings count:", targetsWithHandleCount);
           const sourcesCount = sourcesData.count ?? 0;
           return {
             connections: Number(followersCount) + Number(followingCount),
@@ -48,5 +50,17 @@ export class StatsService {
         } catch (error) {
           throw error;
         }
+      }
+
+    async getUserStats(userId: string): Promise<UserStats> {
+        const [following, followers] = await Promise.all([
+          this.repository.getSourcesTargetsByUserId(userId),
+          this.repository.getSourcesFollowersByUserId(userId)
+        ]);
+        
+        return {
+          following,
+          followers
+        };
       }
   }

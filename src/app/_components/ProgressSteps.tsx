@@ -102,12 +102,9 @@ export default function ProgressSteps({
           throw new Error('Failed to fetch share events');
         }
 
-        const { data } = await response.json();
-        console.log('📦 Share events:', data);
-
-        const hasShared = Array.isArray(data) && data.length > 0 && data.some(event => event.success);
-        console.log('✅ Share status:', hasShared ? 'Has shared' : 'Has not shared');
-        setHasSuccessfulShare(hasShared);
+        const { hasShares } = await response.json();
+        console.log('✅ Share status:', hasShares ? 'Has shared' : 'Has not shared');
+        setHasSuccessfulShare(hasShares);
       } catch (error) {
         console.error('❌ Failed to check share status:', error);
       }

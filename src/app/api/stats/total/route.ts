@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/app/auth';
 import { StatsService } from '@/lib/services/statsServices';
+import { StatsRepository } from '@/lib/repositories/statsRepository';
 
 export async function GET() {
   try {
@@ -9,7 +10,8 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const statsService = new StatsService();
+    const repository = new StatsRepository();
+    const statsService = new StatsService(repository);
 
     console.log("statsService:", statsService)
     const stats = await statsService.getTotalStats();

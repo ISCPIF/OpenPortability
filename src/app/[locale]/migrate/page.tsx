@@ -1,93 +1,78 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
-import Header from '@/app/_components/Header'
-import { SiBluesky } from "react-icons/si"
-import { FaTwitter, FaMastodon } from "react-icons/fa"
-import { motion, AnimatePresence } from "framer-motion"
-import { Ship } from 'lucide-react'
-import MigrateSea from '@/app/_components/MigrateSea'
-import Footer from '@/app/_components/Footer'
-import AccountToMigrate from '@/app/_components/AccountToMigrate'
-import DashboardSea from '@/app/_components/DashboardSea'
-import LoadingIndicator from '@/app/_components/LoadingIndicator'
-import ReconnexionOptions from '@/app/_components/ReconnexionOptions'
-import ManualReconnexion from '@/app/_components/ManualReconnexion'
-import ReconnexionModaleResults from '@/app/_components/ReconnexionModaleResults'
-import AutomaticReconnexion from '@/app/_components/AutomaticReconnexion'
-import RefreshTokenModale from '@/app/_components/RefreshTokenModale'
-
+import dynamic from 'next/dynamic'
 import { plex } from '@/app/fonts/plex'
+import Header from '@/app/_components/Header'
+import LoadingIndicator from '@/app/_components/LoadingIndicator'
+import Footer from '@/app/_components/Footer'
+import { MatchingTarget, MatchingStats } from '@/lib/types/matching'
 
-type MatchStats = {
-  total_followers: number
-  matched_followers: number
-  total_following: number
-  matched_following: number
-}
+// Dynamic imports for heavy components
+const MigrateSea = dynamic(() => import('@/app/_components/MigrateSea'), {
+  loading: () => <div className="animate-pulse bg-blue-900/50 h-[600px]" />
+})
 
-type Match = {
-  twitter_id: string
-  bluesky_handle: string | null
-  mastodon_handle?: string | null
-  mastodon_username?: string | null
-  mastodon_instance?: string | null
-  relationship_type: 'follower' | 'following'
-  mapping_date: string | null
-  has_follow_bluesky: boolean
-  has_follow_mastodon: boolean
-}
+const AutomaticReconnexion = dynamic(() => import('@/app/_components/AutomaticReconnexion'), {
+  loading: () => <LoadingIndicator msg="Automatic" />
+})
 
-type GroupedMatches = {
-  followers: Match[]
-  following: Match[]
-}
+const ReconnexionOptions = dynamic(() => import('@/app/_components/ReconnexionOptions'), {
+  loading: () => <LoadingIndicator msg="Reconnection options" />
+})
+
+const ManualReconnexion = dynamic(() => import('@/app/_components/ManualReconnexion'), {
+  loading: () => <LoadingIndicator msg="Manual" />
+})
+
+const RefreshTokenModale = dynamic(() => import('@/app/_components/RefreshTokenModale'), {
+  ssr: false
+})
 
 type Stats = {
-    total_following: number;
-    matched_following: number;
-    bluesky_matches: number;
-    mastodon_matches: number;
+  total_following: number;
+  matched_following: number;
+  bluesky_matches: number;
+  mastodon_matches: number;
 }
-
 
 export default function MigratePage() {
   const { data: session, status, update: updateSession } = useSession()
   const router = useRouter()
   const t = useTranslations('migrate')
-  const [isLoading, setIsLoading] = useState(true)
   const [userProfile, setUserProfile] = useState<any>(null)
-  const [matches, setMatches] = useState<Match[]>([])
-  const [selectedAccounts, setSelectedAccounts] = useState<Set<string>>(new Set())
+  const [isLoading, setIsLoading] = useState(true)
   const [isMigrating, setIsMigrating] = useState(false)
-  const [activeTab, setActiveTab] = useState<'mastodon' | 'bluesky'>('bluesky')
   const [showOptions, setShowOptions] = useState(true)
   const [isAutomaticReconnect, setIsAutomaticReconnect] = useState(false)
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
+  const [showRefreshTokenModal, setShowRefreshTokenModal] = useState(false)
+  const [invalidTokenProviders, setInvalidTokenProviders] = useState<string[]>([])
+  const [accountsToProcess, setAccountsToProcess] = useState<MatchingTarget[]>([])
+  const [selectedAccounts, setSelectedAccounts] = useState<Set<string>>(new Set())
+  const [activeTab, setActiveTab] = useState<'mastodon' | 'bluesky'>('bluesky')
   const [stats, setStats] = useState<Stats | null>(null)
   const [showModaleResults, setShowModaleResults] = useState(false)
   const [migrationResults, setMigrationResults] = useState<{ bluesky: { attempted: number; succeeded: number }; mastodon: { attempted: number; succeeded: number } } | null>(null)
   const [missingProviders, setMissingProviders] = useState<string[]>([])
-  const [showSuccessModal, setShowSuccessModal] = useState(false)
-  const [showRefreshTokenModal, setShowRefreshTokenModal] = useState(false)
-  const [invalidTokenProviders, setInvalidTokenProviders] = useState<string[]>([])
 
-  // Fonction pour vérifier les tokens
+  // Memoized token check function
   const checkTokens = async () => {
     try {
       const response = await fetch('/api/auth/refresh', {
-        method: 'POST'
+        method: 'POST',
+        headers: {
+          'Cache-Control': 'no-cache'
+        }
       })
       const data = await response.json()
 
-      console.log('Tokens data:', data)
-
       if (!data.success) {
-        setInvalidTokenProviders(['bluesky'])
+        setInvalidTokenProviders(data.providers || [])
         setShowRefreshTokenModal(true)
-        console.log("Tokens are invalid")
         return false
       }
 
@@ -98,54 +83,26 @@ export default function MigratePage() {
     }
   }
 
-  // Gestionnaire pour le mode automatique
-  const handleAutomaticMode = async () => {
-    // const tokensValid = await checkTokens()
-    // if (!tokensValid) return
-    
-    setIsAutomaticReconnect(true)
-    await updateAutomaticReconnect(true)
-  }
-
-  // Gestionnaire pour le mode manuel
-  const handleManualMode = async () => {
-    // const tokensValid = await checkTokens()
-    // if (!tokensValid) return
-
-    setIsAutomaticReconnect(false)
-    await updateAutomaticReconnect(false)
-  }
-
-
   useEffect(() => {
-    if (!session?.user?.id) {
-      // router.push(`/${locale}/dashboard`)
+    if (!session?.user?.id || !session.user?.has_onboarded) {
       return
     }
 
-    if (!session.user?.has_onboarded) {
-      console.log("Redirecting to dashboard")
-      return
-    }
     const checkUserProfile = async () => {
-      if (!session?.user?.id) {
-        console.log("Redirecting to home")
-        return
-      }
-
-      if (!session.user?.has_onboarded) {
-        console.log("Redirecting to dashboard")
-        return
-      }
-
       setUserProfile(session.user)
 
-      checkTokens();
-      
-      const matchesResponse = await fetch('/api/migrate/matching_found')
-      const matchesData = await matchesResponse.json()
+      // Parallel API calls
+      const [tokensCheck, matchesResponse] = await Promise.all([
+        checkTokens(),
+        fetch('/api/migrate/matching_found', {
+          headers: {
+            'Cache-Control': 'no-cache'
+          }
+        })
+      ])
 
-      console.log("Matches data:", matchesData)
+      const matchesData = await matchesResponse.json()
+      console.log("****************************************",matchesData)
       
       if (matchesData.error) {
         console.error("Error fetching matches:", matchesData.error)
@@ -153,37 +110,47 @@ export default function MigratePage() {
         return
       }
       
-      // Calculer les statistiques
       const matches = matchesData.matches.following
-      const total_following = matches.length
       
-      // Compter les comptes déjà suivis (has_follow = true)
-      const already_followed = matches.filter(match => 
-        (match.bluesky_handle && match.has_follow_bluesky) || 
-        (match.mastodon_username && match.has_follow_mastodon)
-      ).length
-
-      // Compter les comptes à suivre (has_follow = false)
-      const to_follow = matches.filter(match => 
-        (match.bluesky_handle && !match.has_follow_bluesky) || 
-        (match.mastodon_username && !match.has_follow_mastodon)
-      ).length
-
-      // Mettre à jour les stats
-      setStats({
-        total_following: to_follow, // Nombre de comptes à suivre
-        matched_following: already_followed, // Nombre de comptes déjà suivis
-        bluesky_matches: matches.filter(m => m.bluesky_handle).length,
-        mastodon_matches: matches.filter(m => m.mastodon_username).length
+      // Store the full matches data for migration
+      setAccountsToProcess(matches)
+      
+      // Use reduce for better performance with large datasets
+      const stats = matches.reduce((acc, match) => {
+        const hasBlueskyFollow = match.bluesky_handle && match.has_follow_bluesky
+        const hasMastodonFollow = match.mastodon_username && match.has_follow_mastodon
+        
+        return {
+          total_following: acc.total_following + (!hasBlueskyFollow || !hasMastodonFollow ? 1 : 0),
+          matched_following: acc.matched_following + (hasBlueskyFollow || hasMastodonFollow ? 1 : 0),
+          bluesky_matches: acc.bluesky_matches + (match.bluesky_handle ? 1 : 0),
+          mastodon_matches: acc.mastodon_matches + (match.mastodon_username ? 1 : 0)
+        }
+      }, {
+        total_following: 0,
+        matched_following: 0,
+        bluesky_matches: 0,
+        mastodon_matches: 0
       })
 
-      // Enregistrer les matches pour la migration
-      setMatches(matches)
+      setStats(stats)
       setIsLoading(false)
     }
 
     checkUserProfile()
-  }, [router, session, status])
+  }, [session?.user?.id, session?.user?.has_onboarded])
+
+  // Fonction pour vérifier les tokens
+  const handleAutomaticMode = async () => {
+    setIsAutomaticReconnect(true)
+    await updateAutomaticReconnect(true)
+  }
+
+  // Gestionnaire pour le mode manuel
+  const handleManualMode = async () => {
+    setIsAutomaticReconnect(false)
+    await updateAutomaticReconnect(false)
+  }
 
   const handleToggleAccount = (twitterId: string) => {
     setSelectedAccounts(prev => {
@@ -221,13 +188,13 @@ export default function MigratePage() {
   const handleAutomaticReconnection = async () => {
     await handleAutomaticMode();
     // Démarrer la migration automatique avec tous les comptes
-    const allAccountIds = matches.map(match => match.twitter_id);
+    const allAccountIds = accountsToProcess.map(match => match.target_twitter_id);
     handleStartMigration(allAccountIds);
   };
 
   const handleManualReconnection = async () => {
     await handleManualMode();
-    // Ici vous pouvez ajouter la logique supplémentaire pour la reconnexion manuelle
+    setShowOptions(false);
   };
 
   const toggleAutomaticReconnect = async () => {
@@ -241,40 +208,28 @@ export default function MigratePage() {
       setIsMigrating(true);
       console.log('Starting migration for accounts:', selectedAccounts);
 
-      const accountsToMigrate = matches.filter(match => 
-        selectedAccounts.includes(match.twitter_id)
+      const accountsToMigrate = accountsToProcess.filter(match => 
+        selectedAccounts.includes(match.target_twitter_id)
       );
 
-      const totalBlueskyToMigrate = accountsToMigrate.filter(acc => acc.bluesky_handle).length;
-      const totalMastodonToMigrate = accountsToMigrate.filter(acc => acc.mastodon_username && acc.mastodon_instance).length;
-
-      // Initialiser les résultats avec les totaux mais 0 succès
-      setMigrationResults({
-        bluesky: { attempted: totalBlueskyToMigrate, succeeded: 0 },
-        mastodon: { attempted: totalMastodonToMigrate, succeeded: 0 }
-      });
-
-      // Traiter par batch de 10 comptes
-      const BATCH_SIZE = 10;
-      let processedBluesky = 0;
-      let processedMastodon = 0;
-
+      // Process in batches
+      const BATCH_SIZE = 100;
       for (let i = 0; i < accountsToMigrate.length; i += BATCH_SIZE) {
-        const batch = accountsToMigrate.slice(i, i + BATCH_SIZE);
+        const batchAccounts = accountsToMigrate.slice(i, i + BATCH_SIZE);
+        
+        // Send the accounts as is - no need to reconstruct since they already match MatchingTarget
+        console.log('Sending batch to API:', batchAccounts);
         
         const response = await fetch('/api/migrate/send_follow', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ accounts: batch }),
+          body: JSON.stringify({ accounts: batchAccounts }),
         });
-
-        const result = await response.json();
-        console.log('results from send_follow:', result);
-
-        if (response.status === 500 && result.error === 'InvalidToken') {
-          console.log('Token invalide détecté pendant la migration');
+        
+        if (response.status === 500 && response.error === 'InvalidToken') {
+          console.log('Invalid token detected during migration');
           setInvalidTokenProviders(['bluesky']);
           setShowRefreshTokenModal(true);
           return;
@@ -284,30 +239,34 @@ export default function MigratePage() {
           throw new Error(`Failed to process batch ${i / BATCH_SIZE + 1}`);
         }
 
-        if (result.success) {
-          // Mettre à jour le nombre de comptes traités avec succès
-          processedBluesky += result.results.bluesky.succeeded || 0;
-          processedMastodon += result.results.mastodon.succeeded || 0;
+        const result = await response.json();
+        console.log('Results from send_follow:', result);
 
-          // Mettre à jour l'interface avec la progression
-          setMigrationResults({
-            bluesky: {
-              attempted: totalBlueskyToMigrate,
-              succeeded: processedBluesky
-            },
-            mastodon: {
-              attempted: totalMastodonToMigrate,
-              succeeded: processedMastodon
-            }
-          });
+        // Update processed counts based on the actual batch results
+        if (result.mastodon) {
+          const batchMastodonSuccess = result.mastodon.successCount || 0;
+          // Update processedMastodon count
         }
+
+        if (result.bluesky) {
+          const batchBlueskySuccess = result.bluesky.successCount || 0;
+          // Update processedBluesky count
+        }
+
+        // Update progress after each batch
+        // Update migrationResults state
       }
 
+      // Migration completed
+      setShowSuccessModal(true);
+      setIsMigrating(false);
+      
+      // Refresh the session to update follow status
+      await updateSession();
     } catch (error) {
       console.error('Error during migration:', error);
-      alert('An error occurred during migration. Please try again.');
-    } finally {
       setIsMigrating(false);
+      // You might want to show an error modal here
     }
   };
 
@@ -316,32 +275,44 @@ export default function MigratePage() {
       <div className="w-full max-w-[90rem] m-auto">
         <div className="bg-[#2a39a9]">
           <Header />
-          <MigrateSea stats={stats}/>
+          
+          <Suspense fallback={<div className="animate-pulse bg-blue-900/50 h-[600px]" />}>
+            <MigrateSea stats={stats}/>
+          </Suspense>
           
           <div className="mt-[600px] bg-[#2a39a9]">
-            {isAutomaticReconnect ? (
-              <AutomaticReconnexion
-                results={migrationResults || { bluesky: { attempted: 0, succeeded: 0 }, mastodon: { attempted: 0, succeeded: 0 } }}
-                onPause={toggleAutomaticReconnect}
-              />
-            ) : showOptions ? (
-              <ReconnexionOptions
-                onAutomatic={handleAutomaticReconnection}
-                onManual={handleManualReconnection}
-              />
-            ) : (
-              <ManualReconnexion
-                matches={matches}
-                onStartMigration={handleStartMigration}
-                onToggleAutomaticReconnect={handleAutomaticReconnection}
-              />
-            )}
+            <Suspense fallback={<LoadingIndicator msg="Loading..." />}>
+              {isAutomaticReconnect ? (
+                <AutomaticReconnexion
+                  results={migrationResults || { bluesky: { attempted: 0, succeeded: 0 }, mastodon: { attempted: 0, succeeded: 0 } }}
+                  onPause={toggleAutomaticReconnect}
+                />
+              ) : showOptions ? (
+                <ReconnexionOptions
+                  onAutomatic={handleAutomaticReconnection}
+                  onManual={handleManualReconnection}
+                />
+              ) : (
+                <ManualReconnexion
+                  matches={accountsToProcess}
+                  onStartMigration={handleStartMigration}
+                  onToggleAutomaticReconnect={handleAutomaticReconnection}
+                />
+              )}
+            </Suspense>
           </div>
 
           {showRefreshTokenModal && (
             <RefreshTokenModale
-              invalidProviders={invalidTokenProviders}
               onClose={() => setShowRefreshTokenModal(false)}
+              providers={invalidTokenProviders}
+              onReconnectMastodon={() => {
+                setShowRefreshTokenModal(false)
+                const mastodonButton = document.querySelector('[data-testid="mastodon-login-button"]')
+                if (mastodonButton) {
+                  (mastodonButton as HTMLElement).click()
+                }
+              }}
             />
           )}
 
@@ -349,5 +320,5 @@ export default function MigratePage() {
         </div>
       </div>
     </main>
-  );
+  )
 }
