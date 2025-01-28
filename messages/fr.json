@@ -478,7 +478,13 @@
   },
   "refreshTokenModal": {
     "title": "Reconnexion nécessaire",
-    "description": "Votre session BlueSky a expiré. Pour continuer à utiliser l'application, veuillez vous reconnecter à votre compte BlueSky.",
+    "description": "Votre session a expiré pour {provider}. Veuillez vous reconnecter pour continuer.",
+    "descriptionMultiple": "Votre session a expiré pour les services suivants : {providers}. Veuillez vous reconnecter pour continuer.",
+    "details": {
+      "bluesky": "Votre session BlueSky a expiré. Pour des raisons de sécurité, nous n'utilisons que des jetons d'accès temporaires qui doivent être renouvelés régulièrement.",
+      "mastodon": "Nous avons besoin de permissions supplémentaires pour permettre la reconnexion avec vos abonnements. Veuillez vous reconnecter pour autoriser ces nouvelles fonctionnalités.",
+      "both": "• BlueSky : Session expirée (jetons temporaires)\n• Mastodon : Mise à jour des permissions nécessaire"
+    },
     "close": "Fermer"
   }
 }

@@ -42,11 +42,18 @@ const nextConfig = {
   ],
   output: 'standalone',
   experimental: {
-    // Activer turbotrace pour une meilleure performance de build
-    turbotrace: {
-      logLevel: 'error',
-      memoryLimit: 4000
+    // Optimisations pour le développement
+    workerThreads: true,
+    cpus: 4
+  },
+  // Optimisations de développement
+  webpack: (config, { dev, isServer }) => {
+    if (dev && !isServer) {
+      // Désactiver certaines optimisations en développement pour accélérer le rechargement
+      config.optimization.splitChunks = false;
+      config.optimization.runtimeChunk = false;
     }
+    return config;
   }
 };
 

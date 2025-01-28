@@ -493,7 +493,13 @@
   },
   "refreshTokenModal": {
     "title": "Reconnection Required",
-    "description": "Your BlueSky session has expired. To continue using the application, please reconnect to your BlueSky account.",
+    "description": "Your session has expired for {provider}. Please reconnect to continue.",
+    "descriptionMultiple": "Your session has expired for the following services: {providers}. Please reconnect to continue.",
+    "details": {
+      "bluesky": "Your BlueSky session has expired. For security reasons, we only use temporary access tokens that need to be renewed regularly.",
+      "mastodon": "We need additional permissions to enable reconnection with your followers. Please reconnect to authorize these new features.",
+      "both": "• BlueSky: Session expired (temporary tokens)\n• Mastodon: Permission update required"
+    },
     "close": "Close"
   }
 }
