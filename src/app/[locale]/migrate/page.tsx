@@ -117,12 +117,12 @@ export default function MigratePage() {
       
       // Use reduce for better performance with large datasets
       const stats = matches.reduce((acc, match) => {
-        const hasBlueskyFollow = match.bluesky_handle && match.has_follow_bluesky
-        const hasMastodonFollow = match.mastodon_username && match.has_follow_mastodon
+        const toFollowBluesky = match.bluesky_handle && !match.has_follow_bluesky ? 1 : 0
+        const toFollowMastodon = match.mastodon_username && !match.has_follow_mastodon ? 1 : 0
         
         return {
-          total_following: acc.total_following + (!hasBlueskyFollow || !hasMastodonFollow ? 1 : 0),
-          matched_following: acc.matched_following + (hasBlueskyFollow || hasMastodonFollow ? 1 : 0),
+          total_following: acc.total_following + toFollowBluesky + toFollowMastodon,
+          matched_following: acc.matched_following + (match.has_follow_bluesky || match.has_follow_mastodon ? 1 : 0),
           bluesky_matches: acc.bluesky_matches + (match.bluesky_handle ? 1 : 0),
           mastodon_matches: acc.mastodon_matches + (match.mastodon_username ? 1 : 0)
         }
