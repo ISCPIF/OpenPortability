@@ -23,13 +23,13 @@ export interface MastodonTarget {
 }
 
 export interface MastodonBatchFollowResult {
-  success: boolean;
-  error?: string;
-  results: Array<{
-    target: MastodonTarget;
-    success: boolean;
+  attempted: number;
+  succeeded: number;
+  failures: Array<{
+    handle: string;
     error?: string;
   }>;
+  successfulHandles: string[];
 }
 
 export interface IMastodonService {

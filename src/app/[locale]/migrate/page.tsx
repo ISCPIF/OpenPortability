@@ -134,10 +134,13 @@ export default function MigratePage() {
       })
 
       setStats(stats)
+      console.log("****************************************",stats)
       setIsLoading(false)
     }
 
     checkUserProfile()
+
+    console.log("session from /migrate", session)
   }, [session?.user?.id, session?.user?.has_onboarded])
 
   // Fonction pour vérifier les tokens
@@ -208,16 +211,34 @@ export default function MigratePage() {
       setIsMigrating(true);
       console.log('Starting migration for accounts:', selectedAccounts);
 
+      // Get all selected accounts
       const accountsToMigrate = accountsToProcess.filter(match => 
         selectedAccounts.includes(match.target_twitter_id)
       );
 
-      // Process in batches
-      const BATCH_SIZE = 100;
-      for (let i = 0; i < accountsToMigrate.length; i += BATCH_SIZE) {
-        const batchAccounts = accountsToMigrate.slice(i, i + BATCH_SIZE);
+      // Initialize progress tracking with total matches
+      const initialResults = {
+        bluesky: {
+          attempted: accountsToMigrate.filter(acc => !acc.has_follow_bluesky).length,
+          succeeded: accountsToMigrate.filter(acc => acc.has_follow_bluesky).length
+        },
+        mastodon: {
+          attempted: accountsToMigrate.filter(acc => !acc.has_follow_mastodon).length,
+          succeeded: accountsToMigrate.filter(acc => acc.has_follow_mastodon).length
+        }
+      };
+      setMigrationResults(initialResults);
+
+      // Process in batches, excluding already followed accounts
+      const BATCH_SIZE = 25;
+      let remainingAccounts = accountsToMigrate.filter(acc => 
+        (!acc.has_follow_bluesky && session?.user?.bluesky_username) || 
+        (!acc.has_follow_mastodon && session?.user?.mastodon_username)
+      );
+
+      for (let i = 0; i < remainingAccounts.length; i += BATCH_SIZE) {
+        const batchAccounts = remainingAccounts.slice(i, i + BATCH_SIZE);
         
-        // Send the accounts as is - no need to reconstruct since they already match MatchingTarget
         console.log('Sending batch to API:', batchAccounts);
         
         const response = await fetch('/api/migrate/send_follow', {
@@ -242,19 +263,21 @@ export default function MigratePage() {
         const result = await response.json();
         console.log('Results from send_follow:', result);
 
-        // Update processed counts based on the actual batch results
-        if (result.mastodon) {
-          const batchMastodonSuccess = result.mastodon.successCount || 0;
-          // Update processedMastodon count
-        }
+        // Update progress based on batch results
+        setMigrationResults(prevResults => {
+          if (!prevResults) return initialResults;
 
-        if (result.bluesky) {
-          const batchBlueskySuccess = result.bluesky.successCount || 0;
-          // Update processedBluesky count
-        }
-
-        // Update progress after each batch
-        // Update migrationResults state
+          return {
+            bluesky: {
+              attempted: prevResults.bluesky.attempted,
+              succeeded: prevResults.bluesky.succeeded + (result.bluesky?.succeeded || 0)
+            },
+            mastodon: {
+              attempted: prevResults.mastodon.attempted,
+              succeeded: prevResults.mastodon.succeeded + (result.mastodon?.succeeded || 0)
+            }
+          };
+        });
       }
 
       // Migration completed
@@ -266,7 +289,6 @@ export default function MigratePage() {
     } catch (error) {
       console.error('Error during migration:', error);
       setIsMigrating(false);
-      // You might want to show an error modal here
     }
   };
 
@@ -282,10 +304,22 @@ export default function MigratePage() {
           
           <div className="mt-[600px] bg-[#2a39a9]">
             <Suspense fallback={<LoadingIndicator msg="Loading..." />}>
+              {/* {console.log("MigratePage - isAutomaticReconnect:", session.user)} */}
               {isAutomaticReconnect ? (
                 <AutomaticReconnexion
                   results={migrationResults || { bluesky: { attempted: 0, succeeded: 0 }, mastodon: { attempted: 0, succeeded: 0 } }}
                   onPause={toggleAutomaticReconnect}
+                  session={{
+                    user: {
+                      bluesky_username: session?.user?.bluesky_username ?? null,
+                      mastodon_username: session?.user?.mastodon_username ?? null
+                    }
+                  }}
+                  stats={{
+                    bluesky_matches: stats?.bluesky_matches ?? 0,
+                    mastodon_matches: stats?.mastodon_matches ?? 0,
+                    matched_following: stats?.matched_following ?? 0
+                  }}
                 />
               ) : showOptions ? (
                 <ReconnexionOptions
