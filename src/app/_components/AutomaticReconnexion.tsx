@@ -9,19 +9,46 @@ interface AutomaticReconnexionProps {
     bluesky: { attempted: number; succeeded: number }
     mastodon: { attempted: number; succeeded: number }
   }
+  session: {
+    user: {
+      bluesky_username: string | null
+      mastodon_username: string | null
+    }
+  }
+  stats: {
+    bluesky_matches: number
+    mastodon_matches: number
+    matched_following: number
+  }
 }
 
 export default function AutomaticReconnexion({
   onPause,
-  results
+  results,
+  session,
+  stats
 }: AutomaticReconnexionProps) {
   const t = useTranslations('AutomaticReconnexion')
 
-  // Calculer les pourcentages de progression
-  const blueskyProgress = results.bluesky.attempted === 0 ? 0 : 
-    (results.bluesky.succeeded / results.bluesky.attempted) * 100
-  const mastodonProgress = results.mastodon.attempted === 0 ? 0 :
-    (results.mastodon.succeeded / results.mastodon.attempted) * 100
+  // Calculer les pourcentages de progression en utilisant les matches spécifiques
+  const blueskyProgress = stats.bluesky_matches === 0 ? 0 : 
+    (results.bluesky.succeeded / stats.bluesky_matches) * 100
+  const mastodonProgress = stats.mastodon_matches === 0 ? 0 :
+    (results.mastodon.succeeded / stats.mastodon_matches) * 100
+
+  // Show progress bars only when user HAS the account
+  const showBlueskyBar = !!session.user.bluesky_username
+  const showMastodonBar = !!session.user.mastodon_username
+
+  console.log("AutomaticReconnexion - Debug:", {
+    session,
+    results,
+    stats,
+    showBlueskyBar,
+    showMastodonBar,
+    blueskyProgress,
+    mastodonProgress
+  })
 
   return (
     <div className="flex flex-col space-y-8 w-full max-w-3xl mx-auto">
@@ -54,32 +81,36 @@ export default function AutomaticReconnexion({
           <h3 className="font-bold text-sm">{t('accountsToConnect')}</h3>
           <div className="space-y-4">
             {/* Bluesky progress */}
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>{t('blueskyAccounts')}</span>
-                <span>{results.bluesky.succeeded}/{results.bluesky.attempted}</span>
+            {showBlueskyBar && (
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>{t('blueskyAccounts')}</span>
+                  <span>{results.bluesky.succeeded}/{stats.bluesky_matches}</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2.5">
+                  <div 
+                    className="bg-[#d6356f] h-2.5 rounded-full transition-all duration-500 ease-out"
+                    style={{ width: `${blueskyProgress}%` }}
+                  />
+                </div>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-2.5">
-                <div 
-                  className="bg-[#d6356f] h-2.5 rounded-full transition-all duration-500 ease-out"
-                  style={{ width: `${blueskyProgress}%` }}
-                />
-              </div>
-            </div>
+            )}
 
             {/* Mastodon progress */}
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>{t('mastodonAccounts')}</span>
-                <span>{results.mastodon.succeeded}/{results.mastodon.attempted}</span>
+            {showMastodonBar && (
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>{t('mastodonAccounts')}</span>
+                  <span>{results.mastodon.succeeded}/{stats.mastodon_matches}</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2.5">
+                  <div 
+                    className="bg-[#d6356f] h-2.5 rounded-full transition-all duration-500 ease-out"
+                    style={{ width: `${mastodonProgress}%` }}
+                  />
+                </div>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-2.5">
-                <div 
-                  className="bg-[#d6356f] h-2.5 rounded-full transition-all duration-500 ease-out"
-                  style={{ width: `${mastodonProgress}%` }}
-                />
-              </div>
-            </div>
+            )}
           </div>
         </div>
       </div>
