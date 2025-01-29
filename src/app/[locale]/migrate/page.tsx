@@ -331,6 +331,12 @@ export default function MigratePage() {
                   matches={accountsToProcess}
                   onStartMigration={handleStartMigration}
                   onToggleAutomaticReconnect={handleAutomaticReconnection}
+                  session={{
+                    user: {
+                      bluesky_username: session?.user?.bluesky_username ?? null,
+                      mastodon_username: session?.user?.mastodon_username ?? null
+                    }
+                  }}
                 />
               )}
             </Suspense>
