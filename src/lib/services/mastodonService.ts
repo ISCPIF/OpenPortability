@@ -135,16 +135,8 @@ export class MastodonService implements IMastodonService {
     userInstance: string,
     targets: Array<MastodonTarget>
   ): Promise<MastodonBatchFollowResult> {
-    // console.log(' [MastodonService.batchFollow] Starting batch follow with:', {
-    //   userInstance,
-    //   targetsCount: targets.length,
-    //   targets
-    // });
-
     const results = await Promise.all(
       targets.map(async (target) => {
-        // console.log(' [MastodonService.batchFollow] Processing target:', target);
-        
         const result = await this.followAccount(
           accessToken,
           userInstance,
@@ -152,12 +144,6 @@ export class MastodonService implements IMastodonService {
           target.instance,
           target.id
         );
-
-        // console.log(' [MastodonService.batchFollow] Result for target:', {
-        //   target,
-        //   success: result.success,
-        //   error: result.error
-        // });
 
         return {
           target,
@@ -167,16 +153,21 @@ export class MastodonService implements IMastodonService {
       })
     );
 
-    const hasErrors = results.some(r => !r.success);
-    // console.log(' [MastodonService.batchFollow] Batch processing completed:', {
-    //   totalProcessed: results.length,
-    //   successCount: results.filter(r => r.success).length,
-    //   hasErrors
-    // });
+    const succeeded = results.filter(r => r.success).length;
+    const failures = results
+      .filter(r => !r.success)
+      .map(r => ({ 
+        handle: `${r.target.username}@${r.target.instance}`,
+        error: r.error 
+      }));
 
     return {
-      success: !hasErrors,
-      results
+      attempted: results.length,
+      succeeded,
+      failures,
+      successfulHandles: results
+        .filter(r => r.success)
+        .map(r => `${r.target.username}@${r.target.instance}`)
     };
   }
 }
