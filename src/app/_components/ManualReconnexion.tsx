@@ -5,61 +5,95 @@ import { useTranslations } from 'next-intl';
 import { motion } from 'framer-motion';
 import { plex } from '@/app/fonts/plex';
 import AccountToMigrate from './AccountToMigrate';
+import { MatchingTarget } from '@/lib/types/matching';
 
-interface Match  {
-  twitter_id: string
-  bluesky_handle: string | null
-  mastodon_handle?: string | null
-  mastodon_username?: string | null
-  mastodon_instance?: string | null
-  relationship_type: 'follower' | 'following'
-  mapping_date: string | null
-  has_follow_bluesky: boolean
-  has_follow_mastodon: boolean
-}
-
+type Match = MatchingTarget;
 
 interface ManualReconnexionProps {
   matches: Match[];
   onStartMigration: (selectedAccounts: string[]) => void;
   onToggleAutomaticReconnect: () => void;
+  session: {
+    user: {
+      bluesky_username: string | null
+      mastodon_username: string | null
+    }
+  }
 }
 
 export default function ManualReconnexion({ 
   matches, 
   onStartMigration,
-  onToggleAutomaticReconnect 
+  onToggleAutomaticReconnect,
+  session
 }: ManualReconnexionProps) {
   const t = useTranslations('ManualReconnexion');
   const [selectedAccounts, setSelectedAccounts] = useState<Set<string>>(new Set());
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const itemsPerPage = 50;
 
-  console.log("currentMatches -->", matches)
-  const handleToggleAccount = (twitterId: string) => {
+  // Filter matches based on user's connected accounts
+  const filteredMatches = matches.filter(match => {
+    if (match.bluesky_handle && !session.user.bluesky_username) {
+      return false;
+    }
+    if ((match.mastodon_handle || match.mastodon_username) && !session.user.mastodon_username) {
+      return false;
+    }
+    return true;
+  });
+
+  // console.log("currentMatches -->", filteredMatches)
+
+  const handleToggleAccount = (targetTwitterId: string) => {
+    if (!targetTwitterId) {
+      console.error('Attempted to toggle account with undefined target_twitter_id');
+      return;
+    }
+    
+    console.log('Before toggle - Selected accounts:', Array.from(selectedAccounts));
+    console.log('Toggling account:', targetTwitterId);
+    
+    const newSet = new Set(selectedAccounts);
+    if (newSet.has(targetTwitterId)) {
+      console.log('Removing account from selection');
+      newSet.delete(targetTwitterId);
+    } else {
+      console.log('Adding account to selection');
+      newSet.add(targetTwitterId);
+    }
+    
+    console.log('After toggle - Selected accounts:', Array.from(newSet));
+    setSelectedAccounts(newSet);
+  };
+
+  const handleSelectAll = () => {
+    const currentPageMatches = currentMatches.map(match => match.target_twitter_id).filter(Boolean);
     setSelectedAccounts(prev => {
       const newSet = new Set(prev);
-      if (newSet.has(twitterId)) {
-        newSet.delete(twitterId);
+      const allCurrentSelected = currentPageMatches.every(id => newSet.has(id));
+      
+      if (allCurrentSelected) {
+        // Unselect all on current page
+        currentPageMatches.forEach(id => newSet.delete(id));
       } else {
-        newSet.add(twitterId);
+        // Select all on current page
+        currentPageMatches.forEach(id => newSet.add(id));
       }
       return newSet;
     });
   };
 
-  const handleSelectAll = () => {
-    if (selectedAccounts.size === matches.length) {
-      setSelectedAccounts(new Set());
-    } else {
-      setSelectedAccounts(new Set(matches.map(match => match.twitter_id)));
-    }
-  };
-
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const currentMatches = matches.slice(startIndex, endIndex);
-  const totalPages = Math.ceil(matches.length / itemsPerPage);
+  const currentMatches = filteredMatches.slice(startIndex, endIndex);
+  const totalPages = Math.ceil(filteredMatches.length / itemsPerPage);
+
+  console.log("currentMatches detailed -->", currentMatches.map(m => ({
+    target_twitter_id: m.target_twitter_id,
+    bluesky: m.bluesky_handle,
+    mastodon: m.mastodon_handle
+  })));
 
   return (
     <div className="w-full max-w-4xl mx-auto bg-[#1A237E] rounded-lg p-6">
@@ -90,7 +124,11 @@ export default function ManualReconnexion({
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              onClick={() => onStartMigration(Array.from(selectedAccounts))}
+              onClick={() => {
+                // Convert Set to array of strings (target_twitter_ids)
+                const selectedAccountIds = Array.from(selectedAccounts);
+                onStartMigration(selectedAccountIds);
+              }}
               className="bg-[#d6356f] text-white px-6 py-2 rounded-full font-bold hover:bg-[#FF1F59] transition-colors"
             >
               {t('connect', { count: selectedAccounts.size })}
@@ -99,20 +137,29 @@ export default function ManualReconnexion({
         </div>
 
         <div className="space-y-2">
-          {currentMatches.map((match) => (
-            <AccountToMigrate
-              key={match.twitter_id}
-              twitterId={match.twitter_id}
-              blueskyHandle={match.bluesky_handle}
-              mastodonHandle={match.mastodon_handle || null}
-              mastodonUsername={match.mastodon_username || null}
-              mastodonInstance={match.mastodon_instance || null}
-              isSelected={selectedAccounts.has(match.twitter_id)}
-              onToggle={() => handleToggleAccount(match.twitter_id)}
-              hasFollowBluesky={match.has_follow_bluesky}
-              hasFollowMastodon={match.has_follow_mastodon}
-            />
-          ))}
+          {currentMatches.map((match) => {
+            const targetTwitterId = match.target_twitter_id;
+            if (!targetTwitterId) {
+              console.error('Match missing target_twitter_id:', match);
+              return null;
+            }
+            
+            // console.log(`Rendering account ${targetTwitterId}, isSelected:`, selectedAccounts.has(targetTwitterId));
+            return (
+              <AccountToMigrate
+                key={targetTwitterId}
+                twitterId={targetTwitterId}
+                blueskyHandle={match.bluesky_handle}
+                mastodonHandle={match.mastodon_handle || null}
+                mastodonUsername={match.mastodon_username || null}
+                mastodonInstance={match.mastodon_instance || null}
+                isSelected={selectedAccounts.has(targetTwitterId)}
+                onToggle={() => handleToggleAccount(targetTwitterId)}
+                hasFollowBluesky={match.has_follow_bluesky}
+                hasFollowMastodon={match.has_follow_mastodon}
+              />
+            );
+          })}
         </div>
 
         {totalPages > 1 && (

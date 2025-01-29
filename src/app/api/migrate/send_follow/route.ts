@@ -130,8 +130,10 @@ export async function POST(request: Request) {
           userId,
           mastodonAccounts.map(acc => acc.target_twitter_id),
           'mastodon',
-          results.mastodon.success,
-          results.mastodon.error
+          results.mastodon.succeeded > 0,  
+          results.mastodon.failures.length > 0 
+            ? results.mastodon.failures.map(f => f.error).join('; ') 
+            : undefined
         )
       }
     }

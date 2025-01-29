@@ -50,18 +50,18 @@ export class MastodonService implements IMastodonService {
     const cleanTargetInstance = targetInstance.replace('https://', '');
     const cleanUsername = targetUsername.split('@')[0];
 
-    // console.log(' [MastodonService.followAccount] Starting follow process:', {
-    //   userInstance: cleanUserInstance,
-    //   targetUsername: cleanUsername,
-    //   targetInstance: cleanTargetInstance,
-    //   accountId
-    // });
+    console.log(' [MastodonService.followAccount] Starting follow process:', {
+      userInstance: cleanUserInstance,
+      targetUsername: cleanUsername,
+      targetInstance: cleanTargetInstance,
+      accountId
+    });
 
     try {
       // Always search first for cross-instance follows
       if (cleanUserInstance !== cleanTargetInstance) {
         const searchUrl = `https://${cleanUserInstance}/api/v1/accounts/search?q=${cleanUsername}@${cleanTargetInstance}&resolve=true&limit=1`;
-        // console.log(' [MastodonService.followAccount] Searching account with URL:', searchUrl);
+        console.log(' [MastodonService.followAccount] Searching account with URL:', searchUrl);
 
         const searchResponse = await fetch(searchUrl, {
           headers: {
@@ -83,7 +83,7 @@ export class MastodonService implements IMastodonService {
         }
 
         const accounts = await searchResponse.json();
-        // console.log(' [MastodonService.followAccount] Number of accounts found:', accounts.length);
+        console.log(' [MastodonService.followAccount] Number of accounts found:', accounts.length);
 
         const accountToFollow = accounts.find(acc =>
           acc.acct === `${cleanUsername}@${cleanTargetInstance}` ||
@@ -102,6 +102,11 @@ export class MastodonService implements IMastodonService {
         // Use the resolved ID instead of the provided one
         const resolvedId = accountToFollow.id;
         const success = await this.followAccountById(accessToken, cleanUserInstance, resolvedId);
+
+        console.log(' [MastodonService.followAccount] Follow resolved account:', {
+          success,
+          error: success ? undefined : 'Failed to follow resolved account'
+        });
         return { success, error: success ? undefined : 'Failed to follow resolved account' };
       } 
       // For same-instance follows, we can use the provided ID directly
