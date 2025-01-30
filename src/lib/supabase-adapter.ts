@@ -8,6 +8,8 @@ import type {
   VerificationToken
 } from "next-auth/adapters"
 import type { Profile } from "next-auth"
+import { encrypt, decrypt } from './encryption';
+import { auth } from '@/app/auth';
 
 export interface CustomAdapterUser extends Omit<AdapterUser, 'image'> {
   has_onboarded: boolean
@@ -459,8 +461,7 @@ export function decodeJwt(token: string): { exp: number } | null {
   }
 }
 
-export async function linkAccount(account: AdapterAccount): Promise<void>
-{
+export async function linkAccount(account: AdapterAccount): Promise<void> {
   console.log("\n=== [Adapter] linkAccount ===")
   console.log("→ Linking account:", JSON.stringify(account, null, 2))
   
@@ -481,12 +482,12 @@ export async function linkAccount(account: AdapterAccount): Promise<void>
       type: account.type,
       provider: account.provider,
       provider_account_id: account.providerAccountId,
-      refresh_token: account.refresh_token,
-      access_token: account.access_token,
+      refresh_token: account.refresh_token ? encrypt(account.refresh_token) : null,
+      access_token: account.access_token ? encrypt(account.access_token) : null,
       expires_at,  // Utiliser l'expiration décodée du JWT
       token_type: account.token_type,
       scope: account.scope,
-      id_token: account.id_token,
+      id_token: account.id_token ? encrypt(account.id_token) : null,
       session_state: account.session_state,
     }], {
       onConflict: 'provider,provider_account_id',
@@ -721,11 +722,26 @@ export async function unlinkAccount(
   console.log("Provider:", account.provider)
   console.log("Provider Account ID:", account.providerAccountId)
 
-  // Get the user by account
-  const user = await getUserByAccount(account)
-  if (!user) {
+  const session = await auth()
+  if (!session?.user?.id) {
     throw new UnlinkError("User not found", "NOT_FOUND", 404)
   }
+
+  // if (account.provider == "mastodon")
+  // {
+    const user = await getUser(session.user.id)
+    if (!user) {
+      throw new UnlinkError("User not found", "NOT_FOUND", 404)
+    }
+  // }
+  // else 
+  // {
+  //   const user = await getUserByAccount(account)
+  //   if (!user) {
+  //     throw new UnlinkError("User not found", "NOT_FOUND", 404)
+  //   }
+  // }
+
 
   await unlinkAccountImpl(user.id, account.provider as 'twitter' | 'bluesky' | 'mastodon')
 }

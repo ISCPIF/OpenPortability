@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { signIn } from "next-auth/react"
 import { SiMastodon } from 'react-icons/si'
 import { plex } from "@/app/fonts/plex"
-import { ChevronDown, Construction, Plus, Search, X } from 'lucide-react'
+import { ChevronDown, Plus, Search, X } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
 interface MastodonLoginButtonProps {
@@ -14,6 +14,7 @@ interface MastodonLoginButtonProps {
   className?: string
   onClick?: () => void
   showForm?: boolean
+  // prompt?: string
 }
 
 const itemVariants = {
@@ -108,17 +109,13 @@ export default function MastodonLoginButton({
 
     try {
       onLoadingChange(true)
-      // Détermine l'URL de redirection basée sur l'URL courante
-      const currentPath = window.location.pathname
-      const callbackUrl = currentPath.includes('/reconnect') ? '/reconnect' : '/dashboard'
+      const callbackUrl = window.location.pathname.includes('/reconnect') ? '/reconnect' : '/dashboard'
 
       const result = await signIn("mastodon", {
         redirect: false,
-        callbackUrl,
-      }, { instance: instance.trim() })
-
-      console.log("RESULSSSS OAUTH")
-      console.log(result)
+        callbackUrl: callbackUrl
+      }, { instance: instance.trim()})
+      console.log("SignIn result:", result)
 
       if (result?.error) {
         onError(result.error)

@@ -3,6 +3,7 @@ import { AccountRepository } from '../repositories/accountRepository';
 import { Provider, RefreshResult, TokenData, TokenUpdate } from '../types/account';
 import { supabaseAdapter } from '../supabase-adapter';
 import { supabase } from '../supabase';
+import { decrypt } from '../encryption';
 
 export class AccountService {
   private repository: AccountRepository;
@@ -19,18 +20,23 @@ export class AccountService {
       return { success: false, error: 'No Bluesky account found', requiresReauth: true };
     }
 
+    console.log(' [AccountService.verifyAndRefreshBlueskyToken] Account found:', account);
     const agent = new BskyAgent({ service: 'https://bsky.social' });
     try {
+      // Déchiffrer les tokens avant de les utiliser
+      const accessToken = decrypt(account.access_token);
+      const refreshToken = decrypt(account.refresh_token);
+      
       await agent.resumeSession({
-        accessJwt: account.access_token,
-        refreshJwt: account.refresh_token,
+        accessJwt: accessToken,
+        refreshJwt: refreshToken,
         handle: account.provider_account_id.split('.')[0],
         did: account.provider_account_id,
         active: true
       });
 
-      // Si le token a été rafraîchi par l'agent, mettons à jour la BD
-      if (agent.session && agent.session?.accessJwt !== account.access_token) {
+      // Si le token a été rafraîchi par l'agent, mettons à jour la BD avec les nouveaux tokens chiffrés
+      if (agent.session && agent.session?.accessJwt !== accessToken) {
         await this.repository.updateTokens(userId, 'bluesky', {
           access_token: agent.session.accessJwt,
           refresh_token: agent.session.refreshJwt,
@@ -59,6 +65,10 @@ export class AccountService {
 
     if (!account.scope?.includes('follow')) {
       console.warn(' [AccountService.verifyAndRefreshMastodonToken] Account scope does not include "follow" permission:', userId);
+      
+      // Supprimer le compte de la table accounts uniquement
+      // await this.repository.deleteAccount(userId, 'mastodon');
+      
       return { success: false, error: 'Missing follow permission', requiresReauth: true };
     }
 

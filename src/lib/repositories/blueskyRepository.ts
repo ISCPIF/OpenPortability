@@ -5,6 +5,7 @@ import {
 } from '../types/bluesky'
 import { supabaseAdapter, CustomAdapterUser } from '../supabase-adapter'
 import { supabase } from '../supabase'
+import { encrypt } from '../encryption'
 
 export class BlueskyRepository implements IBlueskyRepository {
   async getUserByBlueskyId(did: string): Promise<CustomAdapterUser | null> {
@@ -19,8 +20,8 @@ export class BlueskyRepository implements IBlueskyRepository {
       provider: 'bluesky',
       type: 'oauth',
       providerAccountId: blueskyData.did,
-      access_token: blueskyData.accessJwt,
-      refresh_token: blueskyData.refreshJwt,
+      access_token: encrypt(blueskyData.accessJwt),
+      refresh_token: encrypt(blueskyData.refreshJwt),
       token_type: 'bearer',
       userId,
       scope: undefined

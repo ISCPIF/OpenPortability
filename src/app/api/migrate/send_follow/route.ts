@@ -7,6 +7,7 @@ import { BlueskyRepository } from '@/lib/repositories/blueskyRepository'
 import { MatchingService } from '@/lib/services/matchingService'
 import { supabase } from '@/lib/supabase'
 import { MatchingTarget } from '@/lib/types/matching'
+import { decrypt } from '@/lib/encryption'
 
 export async function POST(request: Request) {
   try {
@@ -74,8 +75,8 @@ export async function POST(request: Request) {
         });
 
         await blueskyService.resumeSession({
-          accessJwt: blueskyAccount.access_token,
-          refreshJwt: blueskyAccount.refresh_token,
+          accessJwt: decrypt(blueskyAccount.access_token),
+          refreshJwt: decrypt(blueskyAccount.refresh_token),
           handle: blueskyAccount.username,
           did: blueskyAccount.provider_account_id
         });

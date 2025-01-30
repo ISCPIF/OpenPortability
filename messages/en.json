@@ -496,6 +496,10 @@
     },
     "close": "Close"
   },
+  "refreshToken": {
+    "title": "Reconnection needed",
+    "description": "To continue using our services, please reconnect to your accounts"
+  },
   "SuccessAutomaticReconnexion": {
     "congratulations": "Congratulations",
     "secondObjective": "You've completed the 2nd objective and reconnected with {count} accounts. You've reached your destination!",

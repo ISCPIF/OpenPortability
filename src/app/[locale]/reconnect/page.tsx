@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react'
 import { useSession } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
+import { useRouter, redirect } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import dynamic from 'next/dynamic'
 import { plex } from '@/app/fonts/plex'
@@ -13,6 +13,7 @@ import { MatchingTarget, MatchingStats } from '@/lib/types/matching'
 import { UserCompleteStats, GlobalStats } from '@/lib/types/stats'
 import { time } from 'console'
 import Link from 'next/link'
+import DashboardLoginButtons from '@/app/_components/DashboardLoginButtons'
 
 // Dynamic imports for heavy components
 const MigrateSea = dynamic(() => import('@/app/_components/MigrateSea'), {
@@ -39,10 +40,6 @@ const ManualReconnexion = dynamic(() => import('@/app/_components/ManualReconnex
   loading: () => <div className="flex justify-center"><LoadingIndicator msg="Manual" /></div>
 })
 
-const RefreshTokenModale = dynamic(() => import('@/app/_components/RefreshTokenModale'), {
-  ssr: false
-})
-
 // type GlobalStats = {
 //   connections: {
 //     followers: number;
@@ -66,13 +63,12 @@ export default function MigratePage() {
   const { data: session, status } = useSession()
   const router = useRouter()
   const t = useTranslations('migrate')
+  const tRefresh = useTranslations('refreshToken')
   const [userProfile, setUserProfile] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isMigrating, setIsMigrating] = useState(false)
   const [showOptions, setShowOptions] = useState(true)
   const [isAutomaticReconnect, setIsAutomaticReconnect] = useState(false)
-  const [showSuccessModal, setShowSuccessModal] = useState(false)
-  const [showRefreshTokenModal, setShowRefreshTokenModal] = useState(false)
   const [invalidTokenProviders, setInvalidTokenProviders] = useState<string[]>([])
   const [accountsToProcess, setAccountsToProcess] = useState<MatchingTarget[]>([])
   const [selectedAccounts, setSelectedAccounts] = useState<Set<string>>(new Set())
@@ -81,53 +77,49 @@ export default function MigratePage() {
   const [globalStats, setGlobalStats] = useState<GlobalStats | undefined>(undefined)
   const [showModaleResults, setShowModaleResults] = useState(false)
   const [migrationResults, setMigrationResults] = useState<{ bluesky: { attempted: number; succeeded: number }; mastodon: { attempted: number; succeeded: number } } | null>(null)
-  const [missingProviders, setMissingProviders] = useState<string[]>([])
+  const [missingProviders, setMissingProviders] = useState<('bluesky' | 'mastodon')[]>([])
   const [isReconnectionComplete, setIsReconnectionComplete] = useState(false)
+  const [mastodonInstances, setMastodonInstances] = useState<string[]>([])
 
-  // useEffect(() => {
-  //   if (status === 'unauthenticated') {
-  //     router.push('/')
-  //   }
-  //   // Set loading to false when the session check is complete
-  //   setIsLoading(false)
-  // }, [status, router])
+  // Ajout d'un useEffect pour vérifier les tokens au chargement
+  useEffect(() => {
+    const verifyTokens = async () => {
+      try {
+        const response = await fetch('/api/auth/refresh', {
+          method: 'POST',
+          headers: {
+            'Cache-Control': 'no-cache'
+          }
+        })
+        const data = await response.json()
 
-
-  // Memoized token check function
-  const checkTokens = async () => {
-    try {
-      const response = await fetch('/api/auth/refresh', {
-        method: 'POST',
-        headers: {
-          'Cache-Control': 'no-cache'
+        if (!data.success && data.providers) {
+          setMissingProviders(data.providers)
         }
-      })
-      const data = await response.json()
-
-      if (!data.success) {
-        setInvalidTokenProviders(data.providers || [])
-        setShowRefreshTokenModal(true)
-        return false
+      } catch (error) {
+        console.error('Error verifying tokens:', error)
       }
-
-      return true
-    } catch (error) {
-      console.error('Error checking tokens:', error)
-      return false
     }
-  }
+
+    verifyTokens()
+  }, []) // Ce useEffect s'exécute une seule fois au chargement
 
   useEffect(() => {
-    if (!session?.user?.id || !session.user?.has_onboarded) {
-      return
+
+    console.log("USE EFFECT")
+    if (!session?.user?.id || !session.user?.has_onboarded || (!session.user.mastodon_id && !session.user.bluesky_id)) {
+      // redirect (`/dashboard`)
+      return 
     }
 
     const checkUserProfile = async () => {
       setUserProfile(session.user)
 
       // Parallel API calls
-      const [tokensCheck, matchesResponse, statsResponse] = await Promise.all([
-        checkTokens(),
+
+      console.log("CHECKING USER PROFILE")
+      const [matchesResponse, statsResponse] = await Promise.all([
+        // checkTokens(),
         fetch('/api/migrate/matching_found', {
           headers: {
             'Cache-Control': 'no-cache'
@@ -204,6 +196,45 @@ export default function MigratePage() {
 
     console.log("session from /migrate", session)
   }, [session?.user?.id, session?.user?.has_onboarded])
+
+  useEffect(() => {
+    const fetchMastodonInstances = async () => {
+      try {
+        const response = await fetch('/api/auth/mastodon')
+        const data = await response.json()
+        if (data.success) {
+          setMastodonInstances(data.instances)
+        }
+      } catch (error) {
+        console.error('Error fetching Mastodon instances:', error)
+      }
+    }
+
+    fetchMastodonInstances()
+  }, [])
+
+  const checkTokens = async () => {
+    try {
+      const response = await fetch('/api/auth/refresh', {
+        method: 'POST',
+        headers: {
+          'Cache-Control': 'no-cache'
+        }
+      })
+      const data = await response.json()
+
+      if (!data.success) {
+        setInvalidTokenProviders(data.providers || [])
+        return false
+      }
+
+      return true
+    } catch (error) {
+      console.error('Error checking tokens:', error)
+      return false
+    }
+  }
+
 
   if (isLoading) {
     return (
@@ -322,7 +353,6 @@ export default function MigratePage() {
         if (response.status === 500 && response.error === 'InvalidToken') {
           console.log('Invalid token detected during migration');
           setInvalidTokenProviders(['bluesky']);
-          setShowRefreshTokenModal(true);
           return;
         }
 
@@ -417,20 +447,37 @@ export default function MigratePage() {
           </div>
 
           
-          <div className="bg-[#2a39a9]">
-            <Suspense fallback={<LoadingIndicator msg="Loading..." />}>
-            {isReconnectionComplete && session && stats ? (
-                <SuccessAutomaticReconnexion
-                  session={{
-                    user: {
-                      twitter_username: session.user.twitter_username ?? "",
-                      bluesky_username: session.user.bluesky_username ?? "",
-                      mastodon_username: session.user.mastodon_username ?? ""
-                    }
+          <div className="bg-[#2a39a9] mt-4">
+            {missingProviders.length > 0 ? (
+              <div className="bg-[#2a39a9] rounded-xl p-8 max-w-md mx-auto border border-white">
+                <h2 className="text-2xl font-semibold mb-4 text-white">{tRefresh('title')}</h2>
+                <p className="text-blue-100 mb-6">{tRefresh('description')}</p>
+                
+                <DashboardLoginButtons
+                  connectedServices={{
+                    bluesky: !missingProviders.includes('bluesky'),
+                    mastodon: !missingProviders.includes('mastodon'),
+                    twitter: true
                   }}
-                  stats={stats}
-                  onSuccess={refreshStats}
+                  hasUploadedArchive={true}
+                  onLoadingChange={setIsLoading}
+                  mastodonInstances={mastodonInstances}
                 />
+              </div>
+            ) : (
+              <Suspense fallback={<LoadingIndicator msg="Loading..." />}>
+                {isReconnectionComplete && session && stats ? (
+                    <SuccessAutomaticReconnexion
+                      session={{
+                        user: {
+                          twitter_username: session.user.twitter_username ?? "",
+                          bluesky_username: session.user.bluesky_username ?? "",
+                          mastodon_username: session.user.mastodon_username ?? ""
+                        }
+                      }}
+                      stats={stats}
+                      onSuccess={refreshStats}
+                    />
               ) : stats?.matches?.bluesky?.notFollowed === 0 && stats?.matches?.mastodon?.notFollowed === 0 ? (
                 <SuccessAutomaticReconnexion
                   session={{
@@ -442,9 +489,9 @@ export default function MigratePage() {
                   }}
                   stats={stats}
                   onSuccess={refreshStats}
-                />
-              ) : isAutomaticReconnect ? (
-                <AutomaticReconnexion
+                        />
+                      ) : isAutomaticReconnect ? (
+                        <AutomaticReconnexion
                   results={migrationResults || { bluesky: { attempted: 0, succeeded: 0 }, mastodon: { attempted: 0, succeeded: 0 } }}
                   onPause={toggleAutomaticReconnect}
                   session={{
@@ -465,9 +512,9 @@ export default function MigratePage() {
                   onAutomatic={handleAutomaticReconnection}
                   onManual={handleManualReconnection}
                   globalStats={globalStats}
-                />
-              ) : (
-                <ManualReconnexion
+                        />
+                      ) : (
+                        <ManualReconnexion
                   matches={accountsToProcess}
                   onStartMigration={handleStartMigration}
                   onToggleAutomaticReconnect={handleAutomaticReconnection}
@@ -477,24 +524,11 @@ export default function MigratePage() {
                       mastodon_username: session?.user?.mastodon_username ?? null
                     }
                   }}
-                />
-              )}
-            </Suspense>
+                        />
+                      )}
+              </Suspense>
+            )}
           </div>
-
-          {showRefreshTokenModal && (
-            <RefreshTokenModale
-              onClose={() => setShowRefreshTokenModal(false)}
-              providers={invalidTokenProviders}
-              onReconnectMastodon={() => {
-                setShowRefreshTokenModal(false)
-                const mastodonButton = document.querySelector('[data-testid="mastodon-login-button"]')
-                if (mastodonButton) {
-                  (mastodonButton as HTMLElement).click()
-                }
-              }}
-            />
-          )}
 
           <Footer />
         </div>

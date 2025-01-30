@@ -1,0 +1,10 @@
+version: '3.8'
+services:
+  migration:
+    build:
+      context: .
+      dockerfile: Dockerfile.migration
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    env_file:
+      - ./scripts/.env
