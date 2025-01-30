@@ -3,7 +3,8 @@
       "logout": "Déconnexion",
       "profile": {
         "username": "@{username}"
-      }
+      },
+      "returnToFirstStep": "Retourner à la première étape"
     },
     "connectedAccounts": {
       "connectedWith": "Vous êtes connecté avec {services} ",
@@ -492,15 +493,26 @@
     "secondObjective": "Vous avez terminé le 2ème objectif et vous vous êtes reconnectés à {count} comptes. Vous êtes arrivés à bon port !",
     "notification": "Nous continuerons à vous informer si de nouveaux comptes peuvent être reconnectés, par mail ou par le réseau de votre choix, selon vos préférences.",
     "stats": {
-      "blueskyFollowing": "Abonnements retrouvés sur Bluesky",
-      "mastodonFollowing": "Abonnements retrouvés sur Mastodon"
+      "blueskyFollowing": "Reconnexions sur Bluesky",
+      "mastodonFollowing": "Reconnexions sur Mastodon"
     },
     "firstObjective": "1er objectif réussi, vous êtes inscrit.e pour le voyage !"
   },
   "launchReconnection": {
-    "firstObjective": "1er objectif réussi @{username} ! La 2ème étape est en vue : lancez la reconnexion",
-    "inviteMessage": "N'oubliez pas d'inviter vos abonnés à s'inscrire sur OpenPortability. En 1 minute ils pourront être reconnectés à votre compte, même sans leur archive. Restez à l'affût de belles surprises vous attendent !",
-    "launchButton": "Lancez votre reconnexion avec {count} comptes!",
+    "firstObjective": {
+      "before": "Bravo",
+      "after": ", première étape franchie !"
+    },
+    "inviteMessage": "Nous avons retrouvé vos contacts, il est temps de les reconnecter !",
+    "launchButton": "RECONNECTER {count} COMPTES",
+    "blueskyConnectionMessage": {
+      "before": "Nous avons trouvé",
+      "after": "comptes à suivre sur Bluesky, connectez-vous pour récupérer vos followings"
+    },
+    "mastodonConnectionMessage": {
+      "before": "Nous avons trouvé",
+      "after": "comptes à suivre sur Mastodon, connectez-vous pour récupérer vos followings"
+    },
     "stats": {
       "twitterAccounts": "Comptes Twitter",
       "totalImported": "Total importés"

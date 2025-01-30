@@ -46,9 +46,11 @@ export default function SuccessAutomaticReconnexion({
   onSuccess,
 }: SuccessAutomaticReconnexionProps) {
   const t = useTranslations('SuccessAutomaticReconnexion');
-  const totalReconnected = (session.user.bluesky_username ? stats.matches.bluesky.total : 0) + 
-                          (session.user.mastodon_username ? stats.matches.mastodon.total : 0);
+  const totalReconnected = (session.user.bluesky_username ? stats.matches.bluesky.hasFollowed : 0) + 
+                          (session.user.mastodon_username ? stats.matches.mastodon.hasFollowed : 0);
 
+
+  console.log("stats from SuccessAutomaticReconnexion", totalReconnected)
   useEffect(() => {
     // Appeler onSuccess une seule fois au montage du composant
     onSuccess();
@@ -108,7 +110,7 @@ export default function SuccessAutomaticReconnexion({
                     />
                   </div>
                   <p className="text-sm text-[#ebece7]">{t('stats.blueskyFollowing')}</p>
-                  <p className="text-2xl font-bold text-[#ebece7]">{stats.matches.bluesky.total}</p>
+                  <p className="text-2xl font-bold text-[#ebece7]">{stats.matches.bluesky.hasFollowed}</p>
                 </div>
               </div>
             )}
@@ -124,7 +126,7 @@ export default function SuccessAutomaticReconnexion({
                     />
                   </div>
                   <p className="text-sm text-[#ebece7]">{t('stats.mastodonFollowing')}</p>
-                  <p className="text-2xl font-bold text-[#ebece7]">{stats.matches.mastodon.total}</p>
+                  <p className="text-2xl font-bold text-[#ebece7]">{stats.matches.mastodon.hasFollowed}</p>
                 </div>
               </div>
             )}

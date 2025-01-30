@@ -346,24 +346,26 @@
     },
     "footer": {
         "hosted": {
+            "text": "Esta plataforma está alojada por {cnrs}.",
             "cnrs": "CNRS/ISC-PIF",
-            "hqx": "OpenPortability",
-            "text": "Esta plataforma es hospedada por el {cnrs}."
+            "hqx": "OpenPortability"
         },
-        "copyright": " {year} OpenPortability. Todos los derechos reservados."
+        "copyright": " {year} OpenPortability. Todos los derechos reservados.",
+        "privacy": "Política de privacidad"
     },
     "partageButton": {
         "share": "Compartir",
-        "shareOn": "Comparto en {platform}"
+        "shareOn": "Compartir en {platform}"
     },
     "header": {
         "logout": "Cerrar sesión",
         "profile": {
             "username": "@{username}"
-        }
+        },
+        "returnToFirstStep": "Volver al primer paso"
     },
     "connectedAccounts": {
-        "connectedWith": "Está conectado con {services} ",
+        "connectedWith": "Estás conectado con {services} ",
         "and": "y",
         "services": {
             "twitter": "Twitter/X",

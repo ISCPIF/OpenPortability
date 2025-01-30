@@ -73,7 +73,11 @@ export default function LaunchReconnection({
 
         <div className="flex flex-col justify-center">
           <h2 className={`${plex.className} text-3xl font-bold mb-4 text-[#ebece7]`}>
-            {t('firstObjective', { username: session.user.twitter_username })}
+            {t('firstObjective.before')}{' '}
+            <span className="text-[#d6356f]">
+              @{session.user.twitter_username}
+            </span>
+            {t('firstObjective.after')}
           </h2>
         </div>
 
@@ -83,12 +87,35 @@ export default function LaunchReconnection({
             {t('inviteMessage')}
           </p>
 
-          <Link 
-            href="/reconnect"
-            className={`${plex.className} inline-block px-6 py-3 bg-[#d6356f] text-[#ebece7] font-bold p-4 rounded-full hover:bg-[#d6356f]/90 transition-colors duration-300 mb-8`}
-          >
-            {totalMatches > 0 ? t('launchButton', { count: formatNumber(totalMatches) }) : t('launchButton', { count: 0 })}
-          </Link>
+          {/* Messages pour les services non connectés avec des matches */}
+          {!session.user.bluesky_username && userStats.matches.bluesky.notFollowed > 0 && (
+            <p className={`${plex.className} text-lg text-[#ebece7] mb-4`}>
+              {t('blueskyConnectionMessage.before')}{' '}
+              <span className="text-[#d6356f] font-bold">
+                {formatNumber(userStats.matches.bluesky.notFollowed)}
+              </span>{' '}
+              {t('blueskyConnectionMessage.after')}
+            </p>
+          )}
+          {!session.user.mastodon_username && userStats.matches.mastodon.notFollowed > 0 && (
+            <p className={`${plex.className} text-lg text-[#ebece7] mb-4`}>
+              {t('mastodonConnectionMessage.before')}{' '}
+              <span className="text-[#d6356f] font-bold">
+                {formatNumber(userStats.matches.mastodon.notFollowed)}
+              </span>{' '}
+              {t('mastodonConnectionMessage.after')}
+            </p>
+          )}
+
+          {/* Afficher le bouton uniquement s'il y a des comptes à reconnecter */}
+          {totalMatches > 0 && (
+            <Link 
+              href="/reconnect"
+              className={`${plex.className} inline-block px-6 py-3 bg-[#d6356f] text-[#ebece7] font-bold p-4 rounded-full hover:bg-[#d6356f]/90 transition-colors duration-300 mb-8`}
+            >
+              {t('launchButton', { count: formatNumber(totalMatches) })}
+            </Link>
+          )}
         </div>
 
         {/* Troisième ligne : Badge 2 et stats */}
