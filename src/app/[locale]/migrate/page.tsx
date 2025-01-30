@@ -16,6 +16,14 @@ const MigrateSea = dynamic(() => import('@/app/_components/MigrateSea'), {
   loading: () => <div className="animate-pulse bg-blue-900/50 h-[600px]" />
 })
 
+const MigrateStats = dynamic(() => import('@/app/_components/MigrateStats'), {
+  loading: () => <div className="animate-pulse bg-blue-900/50 h-24" />
+})
+
+const SuccessAutomaticReconnexion = dynamic(() => import('@/app/_components/SuccessAutomaticReconnexion'), {
+  loading: () => <LoadingIndicator msg="Loading success view" />
+})
+
 const AutomaticReconnexion = dynamic(() => import('@/app/_components/AutomaticReconnexion'), {
   loading: () => <LoadingIndicator msg="Automatic" />
 })
@@ -33,11 +41,42 @@ const RefreshTokenModale = dynamic(() => import('@/app/_components/RefreshTokenM
 })
 
 type Stats = {
-  total_following: number;
-  matched_following: number;
-  bluesky_matches: number;
-  mastodon_matches: number;
-}
+  connections: {
+    followers: number;
+    following: number;
+  };
+  matches: {
+    bluesky: {
+      total: number;
+      hasFollowed: number;
+      notFollowed: number;
+    };
+    mastodon: {
+      total: number;
+      hasFollowed: number;
+      notFollowed: number;
+    };
+  };
+};
+
+type GlobalStats = {
+  connections: {
+    followers: number;
+    following: number;
+  };
+  matches: {
+    bluesky: {
+      total: number;
+      hasFollowed: number;
+      notFollowed: number;
+    };
+    mastodon: {
+      total: number;
+      hasFollowed: number;
+      notFollowed: number;
+    };
+  };
+};
 
 export default function MigratePage() {
   const { data: session, status, update: updateSession } = useSession()
@@ -55,9 +94,11 @@ export default function MigratePage() {
   const [selectedAccounts, setSelectedAccounts] = useState<Set<string>>(new Set())
   const [activeTab, setActiveTab] = useState<'mastodon' | 'bluesky'>('bluesky')
   const [stats, setStats] = useState<Stats | null>(null)
+  const [globalStats, setGlobalStats] = useState<GlobalStats | null>(null)
   const [showModaleResults, setShowModaleResults] = useState(false)
   const [migrationResults, setMigrationResults] = useState<{ bluesky: { attempted: number; succeeded: number }; mastodon: { attempted: number; succeeded: number } } | null>(null)
   const [missingProviders, setMissingProviders] = useState<string[]>([])
+  const [isReconnectionComplete, setIsReconnectionComplete] = useState(false)
 
   // Memoized token check function
   const checkTokens = async () => {
@@ -92,9 +133,14 @@ export default function MigratePage() {
       setUserProfile(session.user)
 
       // Parallel API calls
-      const [tokensCheck, matchesResponse] = await Promise.all([
+      const [tokensCheck, matchesResponse, statsResponse] = await Promise.all([
         checkTokens(),
         fetch('/api/migrate/matching_found', {
+          headers: {
+            'Cache-Control': 'no-cache'
+          }
+        }),
+        fetch('/api/stats/total', {
           headers: {
             'Cache-Control': 'no-cache'
           }
@@ -102,6 +148,7 @@ export default function MigratePage() {
       ])
 
       const matchesData = await matchesResponse.json()
+      const statsData: GlobalStats = await statsResponse.json()
       console.log("****************************************",matchesData)
       
       if (matchesData.error) {
@@ -117,23 +164,45 @@ export default function MigratePage() {
       
       // Use reduce for better performance with large datasets
       const stats = matches.reduce((acc, match) => {
-        const toFollowBluesky = match.bluesky_handle && !match.has_follow_bluesky ? 1 : 0
-        const toFollowMastodon = match.mastodon_username && !match.has_follow_mastodon ? 1 : 0
-        
         return {
-          total_following: acc.total_following + toFollowBluesky + toFollowMastodon,
-          matched_following: acc.matched_following + (match.has_follow_bluesky || match.has_follow_mastodon ? 1 : 0),
-          bluesky_matches: acc.bluesky_matches + (match.bluesky_handle ? 1 : 0),
-          mastodon_matches: acc.mastodon_matches + (match.mastodon_username ? 1 : 0)
-        }
+          connections: {
+            followers: 0, // This will be updated from the global stats
+            following: acc.connections.following + (match.bluesky_handle || match.mastodon_username ? 1 : 0)
+          },
+          matches: {
+            bluesky: {
+              total: acc.matches.bluesky.total + (match.bluesky_handle ? 1 : 0),
+              hasFollowed: acc.matches.bluesky.hasFollowed + (match.has_follow_bluesky ? 1 : 0),
+              notFollowed: acc.matches.bluesky.notFollowed + (match.bluesky_handle && !match.has_follow_bluesky ? 1 : 0)
+            },
+            mastodon: {
+              total: acc.matches.mastodon.total + (match.mastodon_username ? 1 : 0),
+              hasFollowed: acc.matches.mastodon.hasFollowed + (match.has_follow_mastodon ? 1 : 0),
+              notFollowed: acc.matches.mastodon.notFollowed + (match.mastodon_username && !match.has_follow_mastodon ? 1 : 0)
+            }
+          }
+        };
       }, {
-        total_following: 0,
-        matched_following: 0,
-        bluesky_matches: 0,
-        mastodon_matches: 0
-      })
+        connections: {
+          followers: 0,
+          following: 0
+        },
+        matches: {
+          bluesky: {
+            total: 0,
+            hasFollowed: 0,
+            notFollowed: 0
+          },
+          mastodon: {
+            total: 0,
+            hasFollowed: 0,
+            notFollowed: 0
+          }
+        }
+      });
 
       setStats(stats)
+      setGlobalStats(statsData)
       console.log("****************************************",stats)
       setIsLoading(false)
     }
@@ -182,7 +251,7 @@ export default function MigratePage() {
       }
       
       setIsAutomaticReconnect(value);
-      await updateSession(); // Met à jour la session avec les nouvelles données
+      // await updateSession(); // Met à jour la session avec les nouvelles données
     } catch (error) {
       console.error('Error updating automatic reconnect:', error);
     }
@@ -280,17 +349,45 @@ export default function MigratePage() {
         });
       }
 
+      // Update user stats after migration is complete
+      try {
+        await fetch('/api/update/user_stats', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+      } catch (error) {
+        console.error('Error updating user stats:', error);
+      }
+
       // Migration completed
-      setShowSuccessModal(true);
+      setIsReconnectionComplete(true);
       setIsMigrating(false);
       
       // Refresh the session to update follow status
-      await updateSession();
+      // await updateSession();
     } catch (error) {
       console.error('Error during migration:', error);
       setIsMigrating(false);
     }
   };
+
+  const refreshStats = async () => {
+    try {
+      const response = await fetch('/api/stats')
+      if (response.ok) {
+        const newStats = await response.json()
+        console.log("API response stats:", newStats)
+        setStats({
+          connections: newStats.connections,
+          matches: newStats.matches
+        })
+      }
+    } catch (error) {
+      console.error('Error refreshing stats:', error)
+    }
+  }
 
   return (
     <main className="min-h-screen bg-[#2a39a9]">
@@ -299,13 +396,39 @@ export default function MigratePage() {
           <Header />
           
           <Suspense fallback={<div className="animate-pulse bg-blue-900/50 h-[600px]" />}>
-            <MigrateSea stats={stats}/>
+            <MigrateSea />
           </Suspense>
+
+          <div className="relative">
+            <Suspense fallback={<div className="animate-pulse bg-blue-900/50 h-24" />}>
+              <MigrateStats 
+                stats={stats} 
+                session={{
+                  user: {
+                    twitter_username: session?.user?.twitter_username ?? "",
+                    bluesky_username: session?.user?.bluesky_username ?? "",
+                    mastodon_username: session?.user?.mastodon_username ?? ""
+                  }
+                }}
+              />
+            </Suspense>
+          </div>
           
-          <div className="mt-[600px] bg-[#2a39a9]">
+          <div className="bg-[#2a39a9]">
             <Suspense fallback={<LoadingIndicator msg="Loading..." />}>
-              {/* {console.log("MigratePage - isAutomaticReconnect:", session.user)} */}
-              {isAutomaticReconnect ? (
+            {isReconnectionComplete && session && stats ? (
+                <SuccessAutomaticReconnexion
+                  session={{
+                    user: {
+                      twitter_username: session.user.twitter_username ?? "",
+                      bluesky_username: session.user.bluesky_username ?? "",
+                      mastodon_username: session.user.mastodon_username ?? ""
+                    }
+                  }}
+                  stats={stats}
+                  onSuccess={refreshStats}
+                />
+              ) : isAutomaticReconnect ? (
                 <AutomaticReconnexion
                   results={migrationResults || { bluesky: { attempted: 0, succeeded: 0 }, mastodon: { attempted: 0, succeeded: 0 } }}
                   onPause={toggleAutomaticReconnect}
@@ -316,15 +439,16 @@ export default function MigratePage() {
                     }
                   }}
                   stats={{
-                    bluesky_matches: stats?.bluesky_matches ?? 0,
-                    mastodon_matches: stats?.mastodon_matches ?? 0,
-                    matched_following: stats?.matched_following ?? 0
+                    bluesky_matches: stats?.matches.bluesky.total ?? 0,
+                    mastodon_matches: stats?.matches.mastodon.total ?? 0,
+                    matched_following: stats?.connections.following ?? 0
                   }}
                 />
               ) : showOptions ? (
                 <ReconnexionOptions
                   onAutomatic={handleAutomaticReconnection}
                   onManual={handleManualReconnection}
+                  globalStats={globalStats}
                 />
               ) : (
                 <ManualReconnexion

@@ -11,7 +11,7 @@ import BlueSkyLogin from '@/app/_components/BlueSkyLogin';
 import ConnectedAccounts from '@/app/_components/ConnectedAccounts';
 import MatchedBlueSkyProfiles from '@/app/_components/MatchedBlueSkyProfiles';
 import UploadResults from '@/app/_components/UploadResults';
-import ProgressSteps from '@/app/_components/ProgressSteps';
+import LaunchReconnection from '@/app/_components/LaunchReconnection';
 import DahsboardSea from '@/app/_components/DashboardSea';
 import { useSession, signIn } from 'next-auth/react';
 import { motion } from 'framer-motion';
@@ -27,9 +27,15 @@ import { AnimatePresence } from 'framer-motion';
 import notificationIcon from '../../../../public/newSVG/notif.svg';
 import Footer from '@/app/_components/Footer';
 import { useTranslations } from 'next-intl';
+import { GlobalStats, UserCompleteStats } from '@/lib/types/stats';
 
 type MatchedProfile = {
   bluesky_username: string
+}
+
+type DashboardStats = {
+  userStats: UserCompleteStats;
+  globalStats: GlobalStats;
 }
 
 export default function DashboardPage() {
@@ -38,11 +44,38 @@ export default function DashboardPage() {
   const params = useParams();
   const t = useTranslations('dashboard');
 
-  const [stats, setStats] = useState({
-    matchedCount: 0,
-    totalUsers: 0,
-    following: 0,
-    followers: 0,
+  const [stats, setStats] = useState<DashboardStats>({
+    userStats: {
+      connections: {
+        followers: 0,
+        following: 0,
+      },
+      matches: {
+        bluesky: {
+          total: 0,
+          hasFollowed: 0,
+          notFollowed: 0,
+        },
+        mastodon: {
+          total: 0,
+          hasFollowed: 0,
+          notFollowed: 0,
+        }
+      },
+      updated_at: new Date().toISOString()
+    },
+    globalStats: {
+      users: {
+        total: 0,
+        onboarded: 0
+      },
+      connections: {
+        followers: 0,
+        following: 0,
+        withHandle: 0
+      },
+      updated_at: new Date().toISOString()
+    }
   });
   const [matchedProfiles, setMatchedProfiles] = useState<MatchedProfile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -97,12 +130,24 @@ export default function DashboardPage() {
     const fetchStats = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch('/api/stats');
-        if (!response.ok) {
+        const [userStatsResponse, globalStatsResponse] = await Promise.all([
+          fetch('/api/stats'),
+          fetch('/api/stats/total')
+        ]);
+
+        if (!userStatsResponse.ok || !globalStatsResponse.ok) {
           throw new Error('Failed to fetch stats');
         }
-        const data = await response.json();
-        setStats(data);
+
+        const [userStats, globalStats] = await Promise.all([
+          userStatsResponse.json(),
+          globalStatsResponse.json()
+        ]);
+
+        setStats({
+          userStats,
+          globalStats
+        });
       } catch (error) {
         console.error('Error fetching stats:', error);
       } finally {
@@ -229,19 +274,21 @@ export default function DashboardPage() {
             </div>
 
             <div className="mb-4 md:mb-8 relative z-10">
-              <ProgressSteps
-                hasTwitter={hasTwitter}
-                hasBluesky={hasBluesky}
-                hasMastodon={hasMastodon}
-                hasOnboarded={hasOnboarded}
-                stats={stats}
-                isShared={isShared}
-                onProgressChange={setProgress}
-                setIsModalOpen={setIsModalOpen}
+              <LaunchReconnection
+                session={{
+                  user: {
+                    twitter_username: session.user.twitter_username || '',
+                    bluesky_username: session.user.bluesky_username,
+                    mastodon_username: session.user.mastodon_username
+                  }
+                }}
+                totalProcessed={stats.globalStats.users.total}
+                totalInDatabase={stats.globalStats.connections.following}
+                userStats={stats.userStats}
               />
             </div>
 
-            {stats && session?.user?.has_onboarded && (
+            {/* {stats && session?.user?.has_onboarded && (
               <div className="relative z-10">
                 <UploadResults
                   stats={stats}
@@ -257,7 +304,7 @@ export default function DashboardPage() {
                   bluesky_username={session?.user?.bluesky_username || undefined}
                 />
               </div>
-            )}
+            )} */}
             {(connectedServicesCount < 3 || !hasOnboarded) &&
               <div className="flex flex-col sm:flex-row justify-center gap-4 relative z-10 bg-white/5 backdrop-blur-sm rounded-2xl p-4">
                 {connectedServicesCount < 3 && (
