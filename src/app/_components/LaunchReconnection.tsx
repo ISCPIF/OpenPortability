@@ -84,7 +84,7 @@ export default function LaunchReconnection({
           </p>
 
           <Link 
-            href="/migrate"
+            href="/reconnect"
             className={`${plex.className} inline-block px-6 py-3 bg-[#d6356f] text-[#ebece7] font-bold p-4 rounded-full hover:bg-[#d6356f]/90 transition-colors duration-300 mb-8`}
           >
             {totalMatches > 0 ? t('launchButton', { count: formatNumber(totalMatches) }) : t('launchButton', { count: 0 })}

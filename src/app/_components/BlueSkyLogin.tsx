@@ -82,7 +82,7 @@ export default function BlueSkyLogin({ onLoginComplete }: BlueSkyLoginProps) {
 
       if (result?.ok) {
         console.log('Redirecting to dashboard...');
-        const redirectPath = pathname?.includes('/migrate') ? '/migrate' : '/dashboard';
+        const redirectPath = pathname?.includes('/reconnect') ? '/reconnect' : '/dashboard';
         
         // Appeler onLoginComplete avant la redirection
         if (onLoginComplete) {
