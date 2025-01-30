@@ -110,7 +110,7 @@ export default function MastodonLoginButton({
       onLoadingChange(true)
       // Détermine l'URL de redirection basée sur l'URL courante
       const currentPath = window.location.pathname
-      const callbackUrl = currentPath.includes('/migrate') ? '/migrate' : '/dashboard'
+      const callbackUrl = currentPath.includes('/reconnect') ? '/reconnect' : '/dashboard'
 
       const result = await signIn("mastodon", {
         redirect: false,
