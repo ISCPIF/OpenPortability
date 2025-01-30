@@ -1,0 +1,32 @@
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Initialiser le projet
+RUN npm init -y && \
+    npm pkg set type="module" && \
+    npm pkg set scripts.start="node --loader ts-node/esm scripts/encrypt-existing-tokens.ts"
+
+# Installer les dépendances nécessaires
+RUN npm install dotenv @supabase/supabase-js typescript ts-node @types/node
+
+# Créer tsconfig.json
+RUN echo '{\
+    "compilerOptions": {\
+      "target": "ESNext",\
+      "module": "ESNext",\
+      "moduleResolution": "NodeNext",\
+      "esModuleInterop": true,\
+      "strict": true\
+    }\
+  }' > tsconfig.json
+
+# Copier les fichiers nécessaires
+COPY scripts/encrypt-existing-tokens.ts ./scripts/
+COPY scripts/.env ./scripts/.env
+
+# Ajouter l'option host.docker.internal pour Linux
+RUN mkdir -p /etc/nginx/conf.d
+RUN echo "127.0.0.1 host.docker.internal" >> /etc/hosts
+
+CMD ["npm", "start"]

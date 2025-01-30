@@ -22,6 +22,8 @@ export async function POST(req: Request) {
       )
     }
 
+    
+
     const profile = await blueskyService.getProfile(authResult.data.handle)
 
     // Vérification si l'utilisateur existe avec cet ID Bluesky

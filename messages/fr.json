@@ -477,6 +477,10 @@
     "chooseManualy": "vos followings la reconnexion",
     "switchToManual": "Cliquez ici pour choisir manuellement"
   },
+  "refreshToken": {
+    "title": "Reconnexion nécessaire",
+    "description": "Pour continuer à utiliser nos services, veuillez vous reconnecter à vos comptes"
+  },
   "refreshTokenModal": {
     "title": "Reconnexion nécessaire",
     "description": "Votre session a expiré pour {provider}. Veuillez vous reconnecter pour continuer.",

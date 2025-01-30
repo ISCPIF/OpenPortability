@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/app/auth"
 import { AccountService } from "@/lib/services/accountService"
+import { unlinkAccount } from "@/lib/supabase-adapter"
 
 export async function POST(request: Request) {
   try {
@@ -15,7 +16,7 @@ export async function POST(request: Request) {
     
     // Vérifier Bluesky si l'utilisateur a un compte
     if (session.user.bluesky_username) {
-      // console.log('🔄 [POST /api/auth/refresh] Checking Bluesky token for user:', session.user.bluesky_username)
+      console.log('🔄 [POST /api/auth/refresh] Checking Bluesky token for user:', session.user.bluesky_username)
       results.bluesky = await accountService.verifyAndRefreshBlueskyToken(session.user.id)
       if (results.bluesky.requiresReauth) {
         invalidProviders.push('bluesky')
@@ -28,6 +29,11 @@ export async function POST(request: Request) {
       results.mastodon = await accountService.verifyAndRefreshMastodonToken(session.user.id)
       if (results.mastodon.requiresReauth) {
         invalidProviders.push('mastodon')
+        // Déconnecter le compte Mastodon pour permettre une reconnexion
+        // await unlinkAccount({
+        //   provider: "mastodon",
+        //   providerAccountId: session.user.id
+        // })
       }
     }
 
