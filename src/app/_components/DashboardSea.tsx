@@ -7,7 +7,6 @@ import { useParams } from 'next/navigation';
 
 import logo from '../../../public/logo/logo-openport-rose.svg';
 
-
 import seaBackground from '../../../public/sea.svg';
 import Boat from './Boat';
 
@@ -19,9 +18,10 @@ import progress100 from '../../../public/progress/progress-100.svg';
 
 interface SeaProps {
   progress: number;
+  showAllBoats?: boolean;
 }
 
-export default function Sea({ progress }: SeaProps) {
+export default function Sea({ progress, showAllBoats = false }: SeaProps) {
   const t = useTranslations('dashboardSea');
   const params = useParams();
   const locale = params.locale as string;
@@ -60,6 +60,18 @@ export default function Sea({ progress }: SeaProps) {
   };
 
   const Boats = ({ progress }: { progress: number }) => {
+    if (showAllBoats) {
+      return (
+        <>
+          <Boat model={1} top={65} left={46.5} scale={1} />
+          <Boat model={2} top={85} left={6.5} scale={1.2} zindex={10} />
+          <Boat model={3} top={75} left={26.5} scale={1.2} />
+          <Boat model={4} top={80} left={66.5} scale={1.5} />
+          <Boat model={8} top={90} left={86.5} scale={2} />
+        </>
+      );
+    }
+
     if (progress === 0)
       return (
         <>
@@ -120,7 +132,7 @@ export default function Sea({ progress }: SeaProps) {
         </div>
       </div>
       <Boats progress={progress} />
-      <ProgressImage progress={progress} />
+      {!showAllBoats && <ProgressImage progress={progress} />}
     </div>
   );
 }

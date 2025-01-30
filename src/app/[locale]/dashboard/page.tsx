@@ -28,6 +28,7 @@ import notificationIcon from '../../../../public/newSVG/notif.svg';
 import Footer from '@/app/_components/Footer';
 import { useTranslations } from 'next-intl';
 import { GlobalStats, UserCompleteStats } from '@/lib/types/stats';
+import ProgressSteps from '@/app/_components/ProgressSteps';
 
 type MatchedProfile = {
   bluesky_username: string
@@ -225,7 +226,10 @@ export default function DashboardPage() {
         <Header />
       </div>
       <div className="absolute inset-0 w-full h-full pointer-events-none">
-        <DahsboardSea progress={progress} />
+        <DahsboardSea 
+          progress={progress} 
+          showAllBoats={!!(session?.user?.has_onboarded && (session?.user?.mastodon_username || session?.user?.bluesky_username))}
+        />
       </div>
 
       <AnimatePresence>
@@ -256,36 +260,53 @@ export default function DashboardPage() {
       <div className="relative min-h-[calc(100vh-4rem)] pt-80">
         <div className="container mx-auto px-4">
           <div className="max-w-2xl mx-auto">
-            <div className="text-center mb-8 md:mb-10 relative z-10">
-              {progress === 100 ? (
-                <div className="space-y-2 mt-12">
-                  <h2 className={`${plex.className} text-xl font-semibold text-indigo-100 text-balance`}>
-                    {t('migrationStep.completed1')}
-                  </h2>
-                  <p className={`${plex.className} text-indigo-200 text-balance whitespace-pre-line`}>
-                    {t('migrationStep.completed2', { count: daysLeft }).split('\n').join('\n')}
-                  </p>
-                </div>
-              ) : (
-                <h2 className={`${plex.className} text-xl font-semibold text-indigo-100 mt-16`}>
-                  {t('migrationStep.nextSteps')}
-                </h2>
-              )}
-            </div>
 
             <div className="mb-4 md:mb-8 relative z-10">
-              <LaunchReconnection
-                session={{
-                  user: {
-                    twitter_username: session.user.twitter_username || '',
-                    bluesky_username: session.user.bluesky_username,
-                    mastodon_username: session.user.mastodon_username
-                  }
-                }}
-                totalProcessed={stats.globalStats.users.total}
-                totalInDatabase={stats.globalStats.connections.following}
-                userStats={stats.userStats}
-              />
+              {session?.user?.has_onboarded && (session?.user?.mastodon_username || session?.user?.bluesky_username) ? (
+                <LaunchReconnection
+                  session={{
+                    user: {
+                      twitter_username: session.user.twitter_username || '',
+                      bluesky_username: session.user.bluesky_username,
+                      mastodon_username: session.user.mastodon_username
+                    }
+                  }}
+                  totalProcessed={stats.globalStats.users.total}
+                  totalInDatabase={stats.globalStats.connections.following}
+                  userStats={stats.userStats}
+                />
+              ) : (
+                <>
+                  <div className="text-center mb-8 md:mb-10 relative z-10">
+                    {progress === 100 ? (
+                      <div className="space-y-2 mt-12">
+                        <h2 className={`${plex.className} text-xl font-semibold text-indigo-100 text-balance`}>
+                          {t('migrationStep.completed1')}
+                        </h2>
+                        <p className={`${plex.className} text-indigo-200 text-balance whitespace-pre-line`}>
+                          {t('migrationStep.completed2', { count: daysLeft }).split('\n').join('\n')}
+                        </p>
+                      </div>
+                    ) : (
+                      <h2 className={`${plex.className} text-xl font-semibold text-indigo-100 mt-16`}>
+                        {t('migrationStep.nextSteps')}
+                      </h2>
+                    )}
+                  </div>
+                  <ProgressSteps
+                    hasTwitter={!!session?.user?.twitter_id}
+                    hasBluesky={!!session?.user?.bluesky_id}
+                    hasMastodon={!!session?.user?.mastodon_id}
+                    hasOnboarded={!!session?.user?.has_onboarded}
+                    stats={{
+                      following: stats.userStats.connections.following,
+                      followers: stats.userStats.connections.followers
+                    }}
+                    isShared={isShared}
+                    onProgressChange={setProgress}
+                  />
+                </>
+              )}
             </div>
 
             {/* {stats && session?.user?.has_onboarded && (

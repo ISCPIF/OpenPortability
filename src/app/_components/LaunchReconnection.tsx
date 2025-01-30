@@ -41,10 +41,10 @@ export default function LaunchReconnection({
     // Calculate total matches based on connected accounts
     let total = 0;
     if (session.user.bluesky_username) {
-      total += userStats.matches.bluesky.total;
+      total += userStats.matches.bluesky.notFollowed;
     }
     if (session.user.mastodon_username) {
-      total += userStats.matches.mastodon.total;
+      total += userStats.matches.mastodon.notFollowed;
     }
     setTotalMatches(total);
   }, [userStats, session.user.bluesky_username, session.user.mastodon_username]);
