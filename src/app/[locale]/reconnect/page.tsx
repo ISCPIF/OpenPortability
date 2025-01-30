@@ -10,6 +10,9 @@ import Header from '@/app/_components/Header'
 import LoadingIndicator from '@/app/_components/LoadingIndicator'
 import Footer from '@/app/_components/Footer'
 import { MatchingTarget, MatchingStats } from '@/lib/types/matching'
+import { UserCompleteStats, GlobalStats } from '@/lib/types/stats'
+import { time } from 'console'
+import Link from 'next/link'
 
 // Dynamic imports for heavy components
 const MigrateSea = dynamic(() => import('@/app/_components/MigrateSea'), {
@@ -21,65 +24,46 @@ const MigrateStats = dynamic(() => import('@/app/_components/MigrateStats'), {
 })
 
 const SuccessAutomaticReconnexion = dynamic(() => import('@/app/_components/SuccessAutomaticReconnexion'), {
-  loading: () => <LoadingIndicator msg="Loading success view" />
+  loading: () => <div className="flex justify-center"><LoadingIndicator msg="Loading success view" /></div>
 })
 
 const AutomaticReconnexion = dynamic(() => import('@/app/_components/AutomaticReconnexion'), {
-  loading: () => <LoadingIndicator msg="Automatic" />
+  loading: () => <div className="flex justify-center"><LoadingIndicator msg="Automatic" /></div>
 })
 
 const ReconnexionOptions = dynamic(() => import('@/app/_components/ReconnexionOptions'), {
-  loading: () => <LoadingIndicator msg="Reconnection options" />
+  loading: () => <div className="flex justify-center"><LoadingIndicator msg="Reconnection options" /></div>
 })
 
 const ManualReconnexion = dynamic(() => import('@/app/_components/ManualReconnexion'), {
-  loading: () => <LoadingIndicator msg="Manual" />
+  loading: () => <div className="flex justify-center"><LoadingIndicator msg="Manual" /></div>
 })
 
 const RefreshTokenModale = dynamic(() => import('@/app/_components/RefreshTokenModale'), {
   ssr: false
 })
 
-type Stats = {
-  connections: {
-    followers: number;
-    following: number;
-  };
-  matches: {
-    bluesky: {
-      total: number;
-      hasFollowed: number;
-      notFollowed: number;
-    };
-    mastodon: {
-      total: number;
-      hasFollowed: number;
-      notFollowed: number;
-    };
-  };
-};
-
-type GlobalStats = {
-  connections: {
-    followers: number;
-    following: number;
-  };
-  matches: {
-    bluesky: {
-      total: number;
-      hasFollowed: number;
-      notFollowed: number;
-    };
-    mastodon: {
-      total: number;
-      hasFollowed: number;
-      notFollowed: number;
-    };
-  };
-};
+// type GlobalStats = {
+//   connections: {
+//     followers: number;
+//     following: number;
+//   };
+//   matches: {
+//     bluesky: {
+//       total: number;
+//       hasFollowed: number;
+//       notFollowed: number;
+//     };
+//     mastodon: {
+//       total: number;
+//       hasFollowed: number;
+//       notFollowed: number;
+//     };
+//   };
+// };
 
 export default function MigratePage() {
-  const { data: session, status, update: updateSession } = useSession()
+  const { data: session, status } = useSession()
   const router = useRouter()
   const t = useTranslations('migrate')
   const [userProfile, setUserProfile] = useState<any>(null)
@@ -93,12 +77,21 @@ export default function MigratePage() {
   const [accountsToProcess, setAccountsToProcess] = useState<MatchingTarget[]>([])
   const [selectedAccounts, setSelectedAccounts] = useState<Set<string>>(new Set())
   const [activeTab, setActiveTab] = useState<'mastodon' | 'bluesky'>('bluesky')
-  const [stats, setStats] = useState<Stats | null>(null)
-  const [globalStats, setGlobalStats] = useState<GlobalStats | null>(null)
+  const [stats, setStats] = useState<UserCompleteStats | null>(null)
+  const [globalStats, setGlobalStats] = useState<GlobalStats | undefined>(undefined)
   const [showModaleResults, setShowModaleResults] = useState(false)
   const [migrationResults, setMigrationResults] = useState<{ bluesky: { attempted: number; succeeded: number }; mastodon: { attempted: number; succeeded: number } } | null>(null)
   const [missingProviders, setMissingProviders] = useState<string[]>([])
   const [isReconnectionComplete, setIsReconnectionComplete] = useState(false)
+
+  // useEffect(() => {
+  //   if (status === 'unauthenticated') {
+  //     router.push('/')
+  //   }
+  //   // Set loading to false when the session check is complete
+  //   setIsLoading(false)
+  // }, [status, router])
+
 
   // Memoized token check function
   const checkTokens = async () => {
@@ -211,6 +204,14 @@ export default function MigratePage() {
 
     console.log("session from /migrate", session)
   }, [session?.user?.id, session?.user?.has_onboarded])
+
+  if (isLoading) {
+    return (
+      <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
+        <LoadingIndicator msg={t('loading')} />
+      </div>
+    )
+  }
 
   // Fonction pour vérifier les tokens
   const handleAutomaticMode = async () => {
@@ -381,7 +382,8 @@ export default function MigratePage() {
         console.log("API response stats:", newStats)
         setStats({
           connections: newStats.connections,
-          matches: newStats.matches
+          matches: newStats.matches,
+          updated_at: "2024-01-30"
         })
       }
     } catch (error) {
@@ -413,6 +415,7 @@ export default function MigratePage() {
               />
             </Suspense>
           </div>
+
           
           <div className="bg-[#2a39a9]">
             <Suspense fallback={<LoadingIndicator msg="Loading..." />}>
@@ -423,6 +426,18 @@ export default function MigratePage() {
                       twitter_username: session.user.twitter_username ?? "",
                       bluesky_username: session.user.bluesky_username ?? "",
                       mastodon_username: session.user.mastodon_username ?? ""
+                    }
+                  }}
+                  stats={stats}
+                  onSuccess={refreshStats}
+                />
+              ) : stats?.matches?.bluesky?.notFollowed === 0 && stats?.matches?.mastodon?.notFollowed === 0 ? (
+                <SuccessAutomaticReconnexion
+                  session={{
+                    user: {
+                      twitter_username: session?.user?.twitter_username ?? "",
+                      bluesky_username: session?.user?.bluesky_username ?? "",
+                      mastodon_username: session?.user?.mastodon_username ?? ""
                     }
                   }}
                   stats={stats}
@@ -445,6 +460,7 @@ export default function MigratePage() {
                   }}
                 />
               ) : showOptions ? (
+                
                 <ReconnexionOptions
                   onAutomatic={handleAutomaticReconnection}
                   onManual={handleManualReconnection}

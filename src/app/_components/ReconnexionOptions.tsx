@@ -8,6 +8,7 @@ import { FaPlay } from "react-icons/fa";
 import { useEffect, useState } from 'react';
 import BSIcon from '../../../public/newSVG/BS.svg';
 import MastoIcon from '../../../public/newSVG/masto.svg';
+import { GlobalStats } from '@/lib/types/stats';
 
 const formatNumber = (num: number | undefined | null): string => {
   if (num === undefined || num === null) return '0';
@@ -17,18 +18,7 @@ const formatNumber = (num: number | undefined | null): string => {
 interface ReconnexionOptionsProps {
   onAutomatic: () => void;
   onManual: () => void;
-  globalStats?: {
-    users: {
-      total: number;
-      onboarded: number;
-    };
-    connections: {
-      followers: number;
-      following: number;
-      withHandle: number;
-    };
-    updated_at: string;
-  };
+  globalStats?: GlobalStats;
 }
 
 export default function ReconnexionOptions({ onAutomatic, onManual, globalStats }: ReconnexionOptionsProps) {
