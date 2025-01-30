@@ -1,3 +1,34 @@
+export interface PlatformStats {
+  total: number;
+  hasFollowed: number;
+  notFollowed: number;
+}
+
+export interface UserCompleteStats {
+  connections: {
+    followers: number;
+    following: number;
+  };
+  matches: {
+    bluesky: PlatformStats;
+    mastodon: PlatformStats;
+  };
+  updated_at: string;
+}
+
+export interface GlobalStats {
+  users: {
+    total: number;
+    onboarded: number;
+  };
+  connections: {
+    followers: number;
+    following: number;
+    withHandle: number;
+  };
+  updated_at: string;
+}
+
 export interface ReconnectionStats {
   connections: number;
   blueskyMappings: number;
