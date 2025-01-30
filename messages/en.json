@@ -3,7 +3,8 @@
       "logout": "Sign out",
       "profile": {
         "username": "@{username}"
-      }
+      },
+      "returnToFirstStep": "Return to first step"
     },
     "connectedAccounts": {
       "connectedWith": "You are connected with {services} ",
@@ -335,28 +336,21 @@
   },
 "support": {
     "modal": {
-      "title": "A problem occured ?",
+      "title": "Having an issue?",
       "description": "Send us a message and we'll get back to you as soon as possible.",
-      "error": {
-        "send": "Error sending message",
-        "unknown": "An unexpected error occurred"
-      },
       "form": {
         "email": {
-          "label": "Your email address",
+          "label": "Your email",
           "placeholder": "example@email.com"
         },
-        "subject": {
-          "label": "Subject",
-          "placeholder": "Your subject"
-        },
         "message": {
-          "label": "Message",
-          "placeholder": "Your message"
+          "label": "Your message",
+          "placeholder": "Describe your issue..."
         },
-        "submit": "Send",
-        "submitting": "Sending..."
-      }
+        "submit": "Send message"
+      },
+      "success": "Message sent successfully!",
+      "error": "An error occurred while sending your message."
     }
   },
   "errorModal": {
