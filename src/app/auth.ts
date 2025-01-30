@@ -61,7 +61,11 @@ export const { auth, signIn, signOut, handlers } = NextAuth(async req => {
       mastodonProvider.issuer = issuer;
       mastodonProvider.clientId = res.client_id;
       mastodonProvider.clientSecret = res.client_secret;
-      mastodonProvider.authorization = `${issuer}/oauth/authorize?scope=read write:follows`;
+      const authParams = new URLSearchParams({
+        scope: "read write:follows",
+        force_login: "true",
+      });
+      mastodonProvider.authorization = `${issuer}/oauth/authorize?${authParams.toString()}`;
       mastodonProvider.token = `${issuer}/oauth/token`;
       mastodonProvider.userinfo = `${issuer}/api/v1/accounts/verify_credentials`;
     }
