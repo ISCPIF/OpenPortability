@@ -1,5 +1,5 @@
 import { StatsRepository } from "@/lib/repositories/statsRepository";
-import { StatsResponse, ReconnectionStats, UserStats } from "@/lib/types/stats";
+import { UserCompleteStats, GlobalStats, ReconnectionStats } from "@/lib/types/stats";
 
 export class StatsService {
     private repository: StatsRepository;
@@ -8,59 +8,29 @@ export class StatsService {
       this.repository = repository;
     }
     
-    async getTotalStats(): Promise<StatsResponse> {
-      const [followersResult, followingResult, sourcesResult] = await Promise.all([
-        this.repository.getFollowersCount(),
-        this.repository.getFollowingCount(),
-        this.repository.getSourcesCount()
-      ]);
+    async getGlobalStats(): Promise<GlobalStats> {
+      return this.repository.getGlobalStats();
+    }
 
-      return {
-        total_followers: followersResult.data?.count ?? 0,
-        total_following: followingResult.data?.count ?? 0,
-        total_sources: sourcesResult.count ?? 0
-      };
+    async getUserStats(userId: string): Promise<UserCompleteStats> {
+      return this.repository.getUserCompleteStats(userId);
     }
 
     async getReconnectionStats(): Promise<ReconnectionStats> {
-        try {
-          const [
-            followersData,
-            followingData,
-            targetsWithHandleData,
-            sourcesData
-          ] = await Promise.all([
-            this.repository.getFollowersCount(),
-            this.repository.getFollowingCount(),
-            this.repository.getTargetsWithHandleCount(),
-            this.repository.getSourcesCount()
-          ]);
-    
-          const followersCount = followersData.data?.count ?? 0;
-          const followingCount = followingData.data?.count ?? 0;
-          const targetsWithHandleCount = targetsWithHandleData.data?.count ?? 0;
+      const globalStats = await this.repository.getGlobalStats();
+      
+      return {
+        connections: globalStats.connections.followers + globalStats.connections.following,
+        blueskyMappings: globalStats.connections.withHandle,
+        sources: globalStats.users.total
+      };
+    }
 
-          console.log("📊 [ReconnectionStats] targetsWithHandleCount :", targetsWithHandleCount, "Following count:", followingCount, "Bluesky mappings count:", targetsWithHandleCount);
-          const sourcesCount = sourcesData.count ?? 0;
-          return {
-            connections: Number(followersCount) + Number(followingCount),
-            blueskyMappings: Number(targetsWithHandleCount),
-            sources: Number(sourcesCount)
-          };
-        } catch (error) {
-          throw error;
-        }
-      }
+    async refreshUserStats(userId: string): Promise<void> {
+      return this.repository.refreshUserStatsCache(userId);
+    }
 
-    async getUserStats(userId: string): Promise<UserStats> {
-        const [following, followers] = await Promise.all([
-          this.repository.getSourcesTargetsByUserId(userId),
-          this.repository.getSourcesFollowersByUserId(userId)
-        ]);
-        
-        return {
-          following,
-          followers
-        };
-      }
-  }
+    async refreshGlobalStats(): Promise<void> {
+      return this.repository.refreshGlobalStatsCache();
+    }
+}

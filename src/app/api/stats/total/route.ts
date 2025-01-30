@@ -13,12 +13,11 @@ export async function GET() {
     const repository = new StatsRepository();
     const statsService = new StatsService(repository);
 
-    console.log("statsService:", statsService)
-    const stats = await statsService.getTotalStats();
+    const stats = await statsService.getGlobalStats();
     
     return NextResponse.json(stats);
   } catch (error) {
-    // Gestion des erreurs
+    console.error('Error fetching global stats:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

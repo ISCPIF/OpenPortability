@@ -46,9 +46,9 @@ const Footer = memo(() => {
           <div className="text-sm text-slate-300 font-space-grotesk">
             {content}
           </div>
-          <div className="text-xs text-slate-400 font-space-grotesk">
-            {t('copyright', { year })}
-          </div>
+          <FooterLink href="/privacy_policy">
+              <span className="text-xs">{t('privacy')}</span>
+          </FooterLink>
           <div className="flex gap-4 mt-2 items-center">
             <FooterLink href="https://github.com/ISCPIF/OpenPortability">
               <Github className="w-5 h-5" />
@@ -69,7 +69,11 @@ const Footer = memo(() => {
               />
             </FooterLink>
           </div>
+          <div className="text-xs text-slate-400 font-space-grotesk">
+            {t('copyright', { year })}
+          </div>
         </div>
+        
       </div>
       <SupportModal 
         isOpen={isSupportModalOpen}

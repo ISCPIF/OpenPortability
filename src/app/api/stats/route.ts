@@ -12,8 +12,14 @@ export async function GET() {
 
     if (!session?.user?.has_onboarded) {
       return NextResponse.json({
-        following: 0,
-        followers: 0
+        connections: {
+          followers: 0,
+          following: 0
+        },
+        matches: {
+          bluesky: { total: 0, hasFollowed: 0, notFollowed: 0 },
+          mastodon: { total: 0, hasFollowed: 0, notFollowed: 0 }
+        }
       });
     }
 

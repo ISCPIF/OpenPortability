@@ -9,40 +9,40 @@ import { useEffect, useState } from 'react';
 import BSIcon from '../../../public/newSVG/BS.svg';
 import MastoIcon from '../../../public/newSVG/masto.svg';
 
-const formatNumber = (num: number): string => {
+const formatNumber = (num: number | undefined | null): string => {
+  if (num === undefined || num === null) return '0';
   return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 };
 
 interface ReconnexionOptionsProps {
   onAutomatic: () => void;
   onManual: () => void;
-}
-
-interface ReconnectionStats {
-  connections: number;
-  blueskyMappings: number;
-  sources: number;
-}
-
-export default function ReconnexionOptions({ onAutomatic, onManual }: ReconnexionOptionsProps) {
-  const t = useTranslations('ReconnexionOptions');
-  const [stats, setStats] = useState<ReconnectionStats | null>(null);
-
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const response = await fetch('/api/stats/reconnections');
-        if (response.ok) {
-          const data = await response.json();
-          setStats(data);
-        }
-      } catch (error) {
-        console.error('Error fetching reconnection stats:', error);
-      }
+  globalStats?: {
+    users: {
+      total: number;
+      onboarded: number;
     };
+    connections: {
+      followers: number;
+      following: number;
+      withHandle: number;
+    };
+    updated_at: string;
+  };
+}
 
-    fetchStats();
-  }, []);
+export default function ReconnexionOptions({ onAutomatic, onManual, globalStats }: ReconnexionOptionsProps) {
+  const t = useTranslations('ReconnexionOptions');
+
+  console.log("****************************************",globalStats)
+
+  // Calculate total connections safely
+  const totalConnections = globalStats ? 
+    (globalStats.connections?.followers || 0) + (globalStats.connections?.following || 0) : 0;
+
+  // Get other stats safely
+  const mappings = globalStats?.connections?.withHandle || 0;
+  const sources = globalStats?.users?.onboarded || 0;
 
   return (
     <div className="flex flex-col items-center w-full max-w-2xl mx-auto">
@@ -89,13 +89,17 @@ export default function ReconnexionOptions({ onAutomatic, onManual }: Reconnexio
         <div className="mt-12 flex justify-center space-x-12">
           {/* Connexions totales */}
           <div className="bg-[#1A237E] rounded-lg p-4 text-center text-white min-w-[140px]">
-            <div className="text-4xl font-bold mb-2">{stats ? formatNumber(stats.connections) : 0}</div>
+            <div className="text-4xl font-bold mb-2">
+              {formatNumber(totalConnections)}
+            </div>
             <div className={`${plex.className} text-sm`}>{t('stats.connections')}</div>
           </div>
 
           {/* Mappings Bluesky */}
           <div className="bg-[#1A237E] rounded-lg p-4 text-center text-white min-w-[140px]">
-            <div className="text-4xl font-bold mb-2">{stats ? formatNumber(stats.blueskyMappings) : 0}</div>
+            <div className="text-4xl font-bold mb-2">
+              {formatNumber(mappings)}
+            </div>
             <div className={`${plex.className} text-sm`}>{t('stats.bluesky')}</div>
             <div className="flex justify-center gap-2 mb-2">
               <Image src={BSIcon} alt="Bluesky" width={24} height={24} />
@@ -105,7 +109,9 @@ export default function ReconnexionOptions({ onAutomatic, onManual }: Reconnexio
 
           {/* Sources */}
           <div className="bg-[#1A237E] rounded-lg p-4 text-center text-white min-w-[140px]">
-            <div className="text-4xl font-bold mb-2">{stats ? formatNumber(stats.sources) : 0}</div>
+            <div className="text-4xl font-bold mb-2">
+              {formatNumber(sources)}
+            </div>
             <div className={`${plex.className} text-sm`}>{t('stats.networks')}</div>
           </div>
         </div>
