@@ -46,10 +46,10 @@ export default function SignIn() {
     })
   }, [session, status])
 
-  // Log des changements d'état de chargement
-  useEffect(() => {
-    console.log('[SignIn] Loading State:', isLoading)
-  }, [isLoading])
+  // // Log des changements d'état de chargement
+  // useEffect(() => {
+  //   console.log('[SignIn] Loading State:', isLoading)
+  // }, [isLoading])
 
   useEffect(() => {
     if (session) {

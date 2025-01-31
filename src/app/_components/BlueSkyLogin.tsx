@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { BskyAgent } from '@atproto/api';
 import { signIn } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -19,6 +19,8 @@ export default function BlueSkyLogin({ onLoginComplete }: BlueSkyLoginProps) {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const t = useTranslations('blueskyLogin');
+  const pathname = usePathname();
+
 
   const locale = useLocale();
 
@@ -61,12 +63,12 @@ export default function BlueSkyLogin({ onLoginComplete }: BlueSkyLoginProps) {
       });
 
       const data = await response.json();
-      
+
       if (!data.success) {
         setError(data.error);
         return;
       }
-      
+
       const result = await signIn('bluesky', {
         ...data.user,
         redirect: false
@@ -80,7 +82,14 @@ export default function BlueSkyLogin({ onLoginComplete }: BlueSkyLoginProps) {
 
       if (result?.ok) {
         console.log('Redirecting to dashboard...');
-        router.push(`/${locale}/dashboard`);
+        const redirectPath = pathname?.includes('/reconnect') ? '/reconnect' : '/dashboard';
+        
+        // Appeler onLoginComplete avant la redirection
+        if (onLoginComplete) {
+          onLoginComplete(data.agent);
+        }
+
+        router.push(`/${locale}${redirectPath}`);
       } else {
         console.log('Sign in failed:', result);
       }
@@ -93,85 +102,85 @@ export default function BlueSkyLogin({ onLoginComplete }: BlueSkyLoginProps) {
       clearSensitiveData();
     }
   };
-
-  const containerVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { 
-      opacity: 1, 
-      y: 0,
-      transition: { duration: 0.4, ease: "easeOut" }
-    },
-    exit: { 
-      opacity: 0,
-      y: -20,
-      transition: { duration: 0.3 }
-    }
-  };
-
-  const inputVariants = {
-    focus: { scale: 1.02, transition: { duration: 0.2 } },
-    blur: { scale: 1, transition: { duration: 0.2 } }
-  };
-
   return (
     <motion.div
-      variants={containerVariants}
-      initial="hidden"
-      animate="visible"
-      exit="exit"
-      className="w-full max-w-md mx-auto backdrop-blur-lg bg-white p-8 rounded-2xl shadow-xl"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="w-full"
     >
-      <div className="flex flex-col items-center gap-6 mb-8">
-          <h2 className={`${plex.className} text-xl font-bold bg-gradient-to-r from-sky-400 via-blue-500 to-purple-500 text-transparent bg-clip-text`}>
+      <div className="flex flex-col items-center gap-4 mb-6">
+        <div className="flex items-center gap-3">
+          <SiBluesky className="w-10 h-10 text-sky-400" />
+          <h2 className={`${plex.className} text-2xl font-bold bg-gradient-to-r from-sky-400 to-blue-500 text-transparent bg-clip-text`}>
             {t('title')}
           </h2>
+          <button
+            type="button"
+            className="relative group"
+            aria-label="Informations sur la connexion"
+          >
+            <div className="w-6 h-6 flex items-center justify-center rounded-full border border-gray-500 text-gray-400 hover:text-sky-400 hover:border-sky-400">
+              ?
+            </div>
+            <div className="invisible group-hover:visible absolute z-10 w-72 p-4 bg-gray-800 rounded-lg shadow-lg -right-2 mt-2 text-sm text-gray-300">
+              <p className="mb-2">{t('tooltip.info')}</p>
+              <p>
+                {t('tooltip.noAccount')}{' '}
+                <a
+                  href="https://bsky.app/signup"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sky-400 hover:text-sky-300"
+                >
+                  {t('tooltip.createAccount')}
+                </a>
+              </p>
+            </div>
+          </button>
+        </div>
+
+        <p className={`${plex.className} text-gray-300 text-center max-w-md text-sm`}>
+          {t('description')}
+        </p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-4">
           <div>
-            <label htmlFor="identifier" className={`${plex.className} block text-sm font-medium text-gray-500 mb-2`}>
+            <label htmlFor="identifier" className={`${plex.className} block text-sm font-medium text-gray-200 mb-1`}>
               {t('form.identifier.label')}
             </label>
-              <input
-                ref={identifierRef}
-                type="text"
-                id="identifier"
-                placeholder={t('form.identifier.placeholder')}
-                className={`${plex.className} w-full pl-11 pr-4 py-3 bg-white/10 border-2 border-gray-300/20 rounded-xl
-                           focus:ring-2 focus:ring-sky-400 focus:border-transparent
-                           placeholder-gray-400 text-black transition-all duration-200`}
-                disabled={isLoading}
-              />
-            {/* </motion.div> */}
+            <input
+              ref={identifierRef}
+              type="text"
+              id="identifier"
+              placeholder={t('form.identifier.placeholder')}
+              className={`${plex.className} w-full px-4 py-2 bg-white/10 border border-gray-300/20 rounded-lg 
+                         focus:ring-2 focus:ring-sky-400 focus:border-transparent
+                         placeholder-gray-400 text-white transition-all duration-200`}
+              disabled={isLoading}
+            />
           </div>
-          
           <div>
-            <label htmlFor="password" className={`${plex.className} block text-sm font-medium text-gray-600 mb-2`}>
+            <label htmlFor="password" className={`${plex.className} block text-sm font-medium text-gray-200 mb-1`}>
               {t('form.password.label')}
             </label>
-            <motion.div 
-              className="relative"
-              variants={inputVariants}
-              whileFocus="focus"
-              initial="blur"
-            >
-              <input
-                ref={passwordRef}
-                type="password"
-                id="password"
-                placeholder={t('form.password.placeholder')}
-                className={`${plex.className} w-full pl-11 pr-4 py-3 bg-white/10 border-2 border-gray-300/20 rounded-xl
-                           focus:ring-2 focus:ring-sky-400 focus:border-transparent
-                           placeholder-gray-400 text-black transition-all duration-200`}
-                disabled={isLoading}
-              />
-            </motion.div>
-            <p className={`${plex.className} mt-2 text-xs text-gray-400`}>
+            <input
+              ref={passwordRef}
+              type="password"
+              id="password"
+              placeholder={t('form.password.placeholder')}
+              className={`${plex.className} w-full px-4 py-2 bg-white/10 border border-gray-300/20 rounded-lg 
+                         focus:ring-2 focus:ring-sky-400 focus:border-transparent
+                         placeholder-gray-400 text-white transition-all duration-200`}
+              disabled={isLoading}
+            />
+            <p className={`${plex.className} mt-1 text-xs text-gray-400`}>
               {t('form.password.help')}{' '}
               <a 
                 href="https://bsky.app/settings/app-passwords" 
-                target="_blank"
+                target="_blank" 
                 rel="noopener noreferrer"
                 className="text-sky-400 hover:text-sky-300 ml-1"
               >

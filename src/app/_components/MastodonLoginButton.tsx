@@ -14,6 +14,7 @@ interface MastodonLoginButtonProps {
   className?: string
   onClick?: () => void
   showForm?: boolean
+  // prompt?: string
 }
 
 const itemVariants = {
@@ -108,10 +109,13 @@ export default function MastodonLoginButton({
 
     try {
       onLoadingChange(true)
+      const callbackUrl = window.location.pathname.includes('/reconnect') ? '/reconnect' : '/dashboard'
+
       const result = await signIn("mastodon", {
         redirect: false,
-        callbackUrl: '/dashboard'
-      }, { instance: instance.trim() })
+        callbackUrl: callbackUrl
+      }, { instance: instance.trim()})
+      console.log("SignIn result:", result)
 
       if (result?.error) {
         onError(result.error)

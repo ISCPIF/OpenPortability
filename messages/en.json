@@ -3,7 +3,8 @@
       "logout": "Sign out",
       "profile": {
         "username": "@{username}"
-      }
+      },
+      "returnToFirstStep": "Return to first step"
     },
     "connectedAccounts": {
       "connectedWith": "You are connected with {services} ",
@@ -44,8 +45,8 @@
       "description": "By uploading your Twitter/X files, you confirm that:",
       "conditions": {
         "ownership": "You are the legitimate owner of this data.",
-        "cnrsUsage": "You agree that the provided data will be used by the National Center for Scientific Research (CNRS) as part of the HelloQuitX operation.",
-        "profileCreation": "You understand that this data will be used to create your profile on HelloQuitX."
+        "cnrsUsage": "You agree that the provided data will be used by the National Center for Scientific Research (CNRS) as part of the OpenPortability operation.",
+        "profileCreation": "You understand that this data will be used to create your profile on OpenPortability."
       },
       "buttons": {
         "cancel": "Cancel",
@@ -81,11 +82,12 @@
     },
     "footer": {
         "hosted": {
-          "text": "This platform is hosted by {cnrs} and developed in partnership with {hqx}",
+          "text": "This platform is hosted by {cnrs}.",
           "cnrs": "CNRS/ISC-PIF",
-          "hqx": "HelloQuitX"
+          "hqx": "OpenPortability"
         },
-        "copyright": " {year} HelloQuitX. All rights reserved."
+        "copyright": " {year} OpenPortability. All rights reserved.",
+        "privacy": "Privacy Policy"
       },
     "loginButtons": {
     "twitter": {
@@ -179,7 +181,7 @@
     "subtitle": "Start by connecting with Twitter/X to migrate your data",
     "loading": "Loading information...",
     "logo": {
-      "alt": "HelloQuitX Logo"
+      "alt": "OpenPortability Logo"
     },
     "logoCNRS": {
       "alt": "CNRS, French National Centre for Scientific Research"
@@ -191,25 +193,24 @@
     "addSocialNetworkDescription": "Connect to other social networks to enhance your experience",
     "migrationStep": {
       "completed1": "Congratulations! You’ve completed the first of the two migration steps.",
-      "completed2": "Make sure your X followers also register on this platform, and come back on #January20 to activate your reconnection.",
-      "daysLeft": "{count} days to go!",
+      "completed2": "Don't forget to invite your subscribers to register on OpenPortability. In 1min they'll be reconnected to your account, even without their archive.\nPhase 2 is arriving in just a few days! According to your preferences, you’ll receive a notification by email or can follow our launch on X, BlueSky, and Mastodon.\nStay tuned—exciting surprises await!",
       "nextSteps": "Complete the following steps to sail to new shores!"
     },
     "importButton": "Import my Twitter/X archive",
     "shareModal": {
       "title": "Share your journey",
       "shareOn": "Share on {platform}",
-      "shareText": "The X exodus is massive! Don't lose any of your followers. Thanks to #HelloQuitX I've registered {count} new passengers for a journey to #BlueSky & #Mastodon. Join us and automatically find your communities on #January20!"
+      "shareText": "I’ve just done my #eXit! the X exodus is massive. Don't lose any of your followers. Thanks to #OpenPortability I've registered {count} new passengers for a journey to #BlueSky & #Mastodon. Join us on https://openportability.org and automatically find your communities on #January20!"
     },
     "newsletter": {
       "title": "Stay Informed",
       "description": "Sign up to follow the project's progress and be notified of new features.",
-      "subscribe": "Stay informed of the next steps of the HelloQuitX project",
+      "subscribe": "Stay informed of the next steps of the OpenPortability project",
       "subscribed": "You are subscribed to the newsletter!",
       "emailLabel": "Your email address",
       "emailPlaceholder": "example@email.com",
-      "acceptHQX": "I want to receive updates from HelloQuitX",
-      "acceptOEP": "I would like to be informed about other initiatives from [On est prêt](https://www.onestpret.com), who supports HelloQuitX",
+      "acceptHQX": "I want to receive updates from OpenPortability",
+      "acceptOEP": "I would like to be informed about other initiatives from [On est prêt](https://www.onestpret.com), who supports OpenPortability",
       "subscribing": "Subscribing...",
       "confirmSubscribe": "Confirm subscription"
     },
@@ -220,9 +221,9 @@
     }
 },
   "dashboardSea": {
-    "welcome": "Welcome aboard HelloQuitX!",
+    "welcome": "Welcome aboard OpenPortability!",
     "logo": {
-      "alt": "HelloQuitX Logo"
+      "alt": "OpenPortability Logo"
     },
     "logoCNRS": {
       "alt": "CNRS, French National Centre for Scientific Research"
@@ -240,7 +241,7 @@
     "loading-indic" : "Loading your data...",
     "loading-uploading": "Stay on the page, import in progress",
     "logo": {
-      "alt": "HelloQuitX Logo"
+      "alt": "OpenPortability Logo"
     },
     "logoCNRS": {
       "alt": "CNRS, French National Centre for Scientific Research"
@@ -269,7 +270,7 @@
   },
   "largeFiles": {
     "logo": {
-      "alt": "HelloQuitX Logo"
+      "alt": "OpenPortability Logo"
     },
     "logoCNRS": {
       "alt": "CNRS, French National Centre for Scientific Research"
@@ -323,40 +324,33 @@
     "deleteAccount": "Delete my account",
     "deleteConfirm": {
       "title": "Delete Account",
-      "message": "Are you sure you want to delete your account? This action cannot be undone and will result in the deletion of:\n\n• All your imported data\n• All your linked accounts (Twitter/X, BlueSky, Mastodon)\n• Your HelloQuitX profile",
+      "message": "Are you sure you want to delete your account? This action cannot be undone and will result in the deletion of:\n\n• All your imported data\n• All your linked accounts (Twitter/X, BlueSky, Mastodon)\n• Your OpenPortability profile",
       "cancel": "Cancel",
       "confirm": "Yes, delete my account"
     },
     "notifications": {
       "title": "Notifications",
-      "hqxNewsletter": "Receive updates from HelloQuitX",
+      "hqxNewsletter": "Receive updates from OpenPortability",
       "oepNewsletter": "Be informed about On est prêt initiatives"
     }  
   },
 "support": {
     "modal": {
-      "title": "A problem occured ?",
+      "title": "Having an issue?",
       "description": "Send us a message and we'll get back to you as soon as possible.",
-      "error": {
-        "send": "Error sending message",
-        "unknown": "An unexpected error occurred"
-      },
       "form": {
         "email": {
-          "label": "Your email address",
+          "label": "Your email",
           "placeholder": "example@email.com"
         },
-        "subject": {
-          "label": "Subject",
-          "placeholder": "Your subject"
-        },
         "message": {
-          "label": "Message",
-          "placeholder": "Your message"
+          "label": "Your message",
+          "placeholder": "Describe your issue..."
         },
-        "submit": "Send",
-        "submitting": "Sending..."
-      }
+        "submit": "Send message"
+      },
+      "success": "Message sent successfully!",
+      "error": "An error occurred while sending your message."
     }
   },
   "errorModal": {
@@ -388,12 +382,12 @@
   },
   "firstSeen": {
     "title": "Welcome!",
-    "description": "You are about to onboard with HelloQuitX to reference your various different digital identities and duplicate your community on other networks. The whole operation will take you 5 minutes and will have no impact on your X account. Starting January 20th, your BlueSky and Mastodon accounts will start receiving new followers automatically.\nTo ensure everything goes smoothly, we offer to guide you --in some cases the process requires several steps-- and inform you about upcoming features (such as importing your X messages to BlueSky or Mastodon).\nBy joining us, you authorize us to contact you via BlueSky and Mastodon. We also recommend that you provide us with your email address to allow us to contact you regarding your future campaigns.\nThis contact will be used sparingly and you can opt out of the support program at any time.",
+    "description": "You are about to onboard with OpenPortability to reference your various different digital identities and duplicate your community on other networks. The whole operation will take you 5 minutes and will have no impact on your X account. Starting January 20th, your BlueSky and Mastodon accounts will start receiving new followers automatically.\nTo ensure everything goes smoothly, we offer to guide you --in some cases the process requires several steps-- and inform you about upcoming features (such as importing your X messages to BlueSky or Mastodon).\nBy joining us, you authorize us to contact you via BlueSky and Mastodon. We also recommend that you provide us with your email address to allow us to contact you regarding your future campaigns.\nThis contact will be used sparingly and you can opt out of the support program at any time.",
     "newsletter": {
-      "subtitle": "I would like to be accompagnied by HelloQuitX",
+      "subtitle": "I would like to be accompagnied by OpenPortability",
       "emailLabel": "Enter your email to stay informed (optional):",
       "emailPlaceholder": "Username@domain.com",
-      "consent": "I want to stay informed about upcoming operations from On Est prêt, who accompanies HelloQuitX",
+      "consent": "I want to stay informed about upcoming operations from On Est prêt, who accompanies OpenPortability",
       "researchConsent": "I agree to share my connection graph with CNRS for research purposes. It will be processed in an aggregated manner. No personal data will be made public.",
       "errors": {
         "missingEmail": "Missing Email"
@@ -401,7 +395,7 @@
     },
     "cta": "SUBMIT",
     "dismiss": "Don't show this message again"
-},
+  },
 "migrate": {
     "title": "Migrate your subscriptions",
     "matches_found": "matches found",
@@ -413,7 +407,8 @@
     "startMigration": "Start migration",
     "migrating": "Migrating..."
   },
-"ReconnexionOptions": {
+  "ReconnexionOptions": {
+    "title": "Choose how you want to reconnect to your followings",
     "buttons": {
       "automatic": "RECONNECT ME AUTOMATICALLY",
       "manual": "I CHOOSE ACCOUNTS TO RECONNECT"
@@ -423,9 +418,9 @@
       "manual": "HelloQuittex will show you in detail the accounts found on Bluesky and Mastodon so you can choose whether to connect or not"
     },
     "stats": {
-      "connections": "connections",
-      "bluesky": "on Bluesky",
-      "networks": "sources"
+      "connections": "imported connections",
+      "bluesky": "connections that can be activated on Bluesky and Mastodon",
+      "networks": "users with at least one connection that can be activated"
     }
   },
   "migrateSea": {
@@ -436,8 +431,12 @@
       "bluesky": "{count} on Bluesky",
       "mastodon": "{count} on Mastodon"
     },
-    "title": "It's time for the #GreatReconnection!",
-    "matchMessage": "{matchCount} passengers were found during your first migration step!\nNow is the time to activate the connection with those you want to\njoin on your new networks."
+    "title": "the #GreatReconnection!",
+    "matchMessage": "{matchCount} passengers were found during your first migration step!\nNow is the time to activate the connection with those you want to\njoin on your new networks.",
+    "stats": {
+      "awaitingConnection": "of your followed accounts are\nawaiting connection!",
+      "alreadyTransferred": "subscribers have already been\ntransferred!"
+    }
   },
   "ManualReconnexion": {
     "title": "Manual Reconnection",
@@ -477,5 +476,53 @@
     "migrationCompleteStats": "Successfully reconnected {count} accounts",
     "minimize": "Minimize",
     "close": "Close"
+  },
+  "AutomaticReconnexion": {
+    "reconnectionInProgress": "Automatic reconnection activated",
+    "chooseManualy": "your followings to reconnect",
+    "switchToManual": "Click here to choose manualy",
+    "accountsToConnect": "Accounts to connect",
+    "blueskyAccounts": "Bluesky accounts",
+    "mastodonAccounts": "Mastodon accounts"
+  },
+  "refreshTokenModal": {
+    "title": "Reconnection Required",
+    "description": "Your session has expired for {provider}. Please reconnect to continue.",
+    "descriptionMultiple": "Your session has expired for the following services: {providers}. Please reconnect to continue.",
+    "details": {
+      "bluesky": "Your BlueSky session has expired. For security reasons, we only use temporary access tokens that need to be renewed regularly.",
+      "mastodon": "We need additional permissions to enable reconnection with your followers. Please reconnect to authorize these new features.",
+      "both": "• BlueSky: Session expired (temporary tokens)\n• Mastodon: Permission update required"
+    },
+    "close": "Close"
+  },
+  "refreshToken": {
+    "title": "Reconnection needed",
+    "description": "To continue using our services, please reconnect to your accounts"
+  },
+  "SuccessAutomaticReconnexion": {
+    "congratulations": "Congratulations",
+    "secondObjective": "You've completed the 2nd objective and reconnected with {count} accounts. You've reached your destination!",
+    "notification": "We'll continue to notify you if new accounts can be reconnected, by email or through your preferred network, according to your preferences.",
+    "stats": {
+      "blueskyFollowing": "Followings found on Bluesky",
+      "mastodonFollowing": "Followings found on Mastodon"
+    },
+    "firstObjective": "1st objective completed, you're registered for the journey!"
+  },
+  "launchReconnection": {
+    "firstObjective": "First objective completed @{username}! The second step is in sight: launch the reconnection",
+    "inviteMessage": "Don't forget to invite your followers to sign up on OpenPortability. In 1 minute they can be reconnected to your account, even without their archive. Stay tuned for great surprises!",
+    "launchButton": "Launch your reconnection with {count} accounts!",
+    "stats": {
+      "twitterAccounts": "Twitter Accounts",
+      "totalImported": "Total imported"
+    }
+  },
+  "privacy_policy": {
+    "title": "Data Protection Information Notice",
+    "subtitle": "Complex Systems Institute Paris Ile de France | January 2025",
+    "content": "<h2>CNRS ISC PIF</h2><p>Data protection information notice for scientific research Project Open Portability</p><p>Social networks, particularly Twitter (now X), have from the beginning been privileged objects of research, especially in the field of computational social sciences.</p><p>A historic transition is underway in the social network landscape. The centralized model, embodied by X (formerly Twitter), is experiencing a massive exodus of users to alternative platforms like BlueSky and Mastodon. Several million accounts have migrated in just a few weeks, marking a major shift towards decentralized and open networks.</p><p>This transition is a major social, economic, and technological phenomenon that may modify the global digital space, particularly in Europe, and could allow Europe to regain some digital sovereignty.</p><h2>I. Project and Processing Description</h2><p>The research objectives are as follows: analyze the difference between open and closed micro-blogging digital environments from the perspective of social dynamics and online debates. Study as a case study the ongoing migration between X and spaces based on open protocols AT Protocol and Activity Pub, and study the appropriation of decentralized digital spaces over time (5-year horizon).</p><p>The OpenPortability project involves:</p><ul><li>Data collection for data portability between social networks</li><li>Data collection for creating a snapshot of X network's social structure</li><li>Data collection for creating snapshots of alternative networks' social structures</li><li>Data portability</li><li>Data processing and analysis</li></ul><h2>II. Data Collection, Recipients, and Retention</h2><p>Data collected directly from individuals and processed are:</p><ul><li>Digital identifiers on social networks (username ID)</li><li>Social network profile names</li><li>Email addresses</li></ul><p>Bluesky's personal data protection policy can be found at: <link>https://bsky.social/about/support/privacy-policy</link></p><p>Mastodon's personal data protection policy can be accessed at <link>https://joinmastodon.org/servers</link></p><h2>III. Security Measures</h2><p>To ensure data confidentiality and protection, measures are taken in accordance with the State's information systems security policy, applied to CNRS. Data is hosted in France on CNRS servers.</p><h2>IV. Exercise of Your Rights</h2><p>You can access and obtain a copy of your data, object to the processing of this data, or have it rectified. You also have the right to limit the processing of your data. You can exercise these rights by contacting the data controller at the Complex Systems Institute-Paris Ile de France, located at 113 rue Nationale 75013 Paris, or through the contact form available at <link>https://openportability.org/</link></p><p>You can also contact the CNRS Data Protection Officer (DPO) at: CNRS - Data Protection Service, 2 rue Jean Zay, 54519 Vandoeuvre-lès-Nancy - dpd.demandes@cnrs.fr.</p><p>If you believe your Information Technology and Civil Liberties rights are not being respected, you can file a complaint online with the CNIL, 3 Place de Fontenoy, TSA 80715 – 75334 Paris Cedex 07 (<link>https://www.cnil.fr/</link>).</p>",
+    "backToSignIn": "Back to the OpenPortability Plateform"
   }
 }

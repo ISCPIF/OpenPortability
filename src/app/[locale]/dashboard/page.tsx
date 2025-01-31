@@ -11,7 +11,7 @@ import BlueSkyLogin from '@/app/_components/BlueSkyLogin';
 import ConnectedAccounts from '@/app/_components/ConnectedAccounts';
 import MatchedBlueSkyProfiles from '@/app/_components/MatchedBlueSkyProfiles';
 import UploadResults from '@/app/_components/UploadResults';
-import ProgressSteps from '@/app/_components/ProgressSteps';
+import LaunchReconnection from '@/app/_components/LaunchReconnection';
 import DahsboardSea from '@/app/_components/DashboardSea';
 import { useSession, signIn } from 'next-auth/react';
 import { motion } from 'framer-motion';
@@ -27,9 +27,16 @@ import { AnimatePresence } from 'framer-motion';
 import notificationIcon from '../../../../public/newSVG/notif.svg';
 import Footer from '@/app/_components/Footer';
 import { useTranslations } from 'next-intl';
+import { GlobalStats, UserCompleteStats } from '@/lib/types/stats';
+import ProgressSteps from '@/app/_components/ProgressSteps';
 
 type MatchedProfile = {
   bluesky_username: string
+}
+
+type DashboardStats = {
+  userStats: UserCompleteStats;
+  globalStats: GlobalStats;
 }
 
 export default function DashboardPage() {
@@ -38,11 +45,38 @@ export default function DashboardPage() {
   const params = useParams();
   const t = useTranslations('dashboard');
 
-  const [stats, setStats] = useState({
-    matchedCount: 0,
-    totalUsers: 0,
-    following: 0,
-    followers: 0,
+  const [stats, setStats] = useState<DashboardStats>({
+    userStats: {
+      connections: {
+        followers: 0,
+        following: 0,
+      },
+      matches: {
+        bluesky: {
+          total: 0,
+          hasFollowed: 0,
+          notFollowed: 0,
+        },
+        mastodon: {
+          total: 0,
+          hasFollowed: 0,
+          notFollowed: 0,
+        }
+      },
+      updated_at: new Date().toISOString()
+    },
+    globalStats: {
+      users: {
+        total: 0,
+        onboarded: 0
+      },
+      connections: {
+        followers: 0,
+        following: 0,
+        withHandle: 0
+      },
+      updated_at: new Date().toISOString()
+    }
   });
   const [matchedProfiles, setMatchedProfiles] = useState<MatchedProfile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -97,12 +131,24 @@ export default function DashboardPage() {
     const fetchStats = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch('/api/stats');
-        if (!response.ok) {
+        const [userStatsResponse, globalStatsResponse] = await Promise.all([
+          fetch('/api/stats'),
+          fetch('/api/stats/total')
+        ]);
+
+        if (!userStatsResponse.ok || !globalStatsResponse.ok) {
           throw new Error('Failed to fetch stats');
         }
-        const data = await response.json();
-        setStats(data);
+
+        const [userStats, globalStats] = await Promise.all([
+          userStatsResponse.json(),
+          globalStatsResponse.json()
+        ]);
+
+        setStats({
+          userStats,
+          globalStats
+        });
       } catch (error) {
         console.error('Error fetching stats:', error);
       } finally {
@@ -176,9 +222,14 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-[#2a39a9] mt-4 relative w-full max-w-[80rem] m-auto">
-      <Header />
+      <div className="relative z-40">
+        <Header />
+      </div>
       <div className="absolute inset-0 w-full h-full pointer-events-none">
-        <DahsboardSea progress={progress} />
+        <DahsboardSea 
+          progress={progress} 
+          showAllBoats={!!(session?.user?.has_onboarded && (session?.user?.mastodon_username || session?.user?.bluesky_username))}
+        />
       </div>
 
       <AnimatePresence>
@@ -209,40 +260,56 @@ export default function DashboardPage() {
       <div className="relative min-h-[calc(100vh-4rem)] pt-80">
         <div className="container mx-auto px-4">
           <div className="max-w-2xl mx-auto">
-            <div className="text-center mb-8 md:mb-10 relative z-10">
-              {progress === 100 ? (
-                <div className="space-y-2 mt-12">
-                  <h2 className={`${plex.className} text-xl font-semibold text-indigo-100 text-balance`}>
-                    {t('migrationStep.completed1')}
-                  </h2>
-                  <p className={`${plex.className} text-indigo-200 text-balance`}>
-                    {t('migrationStep.completed2', { count: daysLeft })}
-                  </p>
-                  <p className={`${plex.className} text-indigo-200`}>
-                    {t('migrationStep.daysLeft', { count: daysLeft })}
-                  </p>
-                </div>
+
+            <div className="mb-4 md:mb-8 relative z-10">
+              {session?.user?.has_onboarded && (session?.user?.mastodon_username || session?.user?.bluesky_username) ? (
+                <LaunchReconnection
+                  session={{
+                    user: {
+                      twitter_username: session.user.twitter_username || '',
+                      bluesky_username: session.user.bluesky_username,
+                      mastodon_username: session.user.mastodon_username
+                    }
+                  }}
+                  totalProcessed={stats.globalStats.users.total}
+                  totalInDatabase={stats.globalStats.connections.following}
+                  userStats={stats.userStats}
+                />
               ) : (
-                <h2 className={`${plex.className} text-xl font-semibold text-indigo-100 mt-16`}>
-                  {t('migrationStep.nextSteps')}
-                </h2>
+                <>
+                  <div className="text-center mb-8 md:mb-10 relative z-10">
+                    {progress === 100 ? (
+                      <div className="space-y-2 mt-12">
+                        <h2 className={`${plex.className} text-xl font-semibold text-indigo-100 text-balance`}>
+                          {t('migrationStep.completed1')}
+                        </h2>
+                        <p className={`${plex.className} text-indigo-200 text-balance whitespace-pre-line`}>
+                          {t('migrationStep.completed2', { count: daysLeft }).split('\n').join('\n')}
+                        </p>
+                      </div>
+                    ) : (
+                      <h2 className={`${plex.className} text-xl font-semibold text-indigo-100 mt-16`}>
+                        {t('migrationStep.nextSteps')}
+                      </h2>
+                    )}
+                  </div>
+                  <ProgressSteps
+                    hasTwitter={!!session?.user?.twitter_id}
+                    hasBluesky={!!session?.user?.bluesky_id}
+                    hasMastodon={!!session?.user?.mastodon_id}
+                    hasOnboarded={!!session?.user?.has_onboarded}
+                    stats={{
+                      following: stats.userStats.connections.following,
+                      followers: stats.userStats.connections.followers
+                    }}
+                    isShared={isShared}
+                    onProgressChange={setProgress}
+                  />
+                </>
               )}
             </div>
 
-            <div className="mb-4 md:mb-8 relative z-10">
-              <ProgressSteps
-                hasTwitter={hasTwitter}
-                hasBluesky={hasBluesky}
-                hasMastodon={hasMastodon}
-                hasOnboarded={hasOnboarded}
-                stats={stats}
-                isShared={isShared}
-                onProgressChange={setProgress}
-                setIsModalOpen={setIsModalOpen}
-              />
-            </div>
-
-            {stats && session?.user?.has_onboarded && (
+            {/* {stats && session?.user?.has_onboarded && (
               <div className="relative z-10">
                 <UploadResults
                   stats={stats}
@@ -258,7 +325,7 @@ export default function DashboardPage() {
                   bluesky_username={session?.user?.bluesky_username || undefined}
                 />
               </div>
-            )}
+            )} */}
             {(connectedServicesCount < 3 || !hasOnboarded) &&
               <div className="flex flex-col sm:flex-row justify-center gap-4 relative z-10 bg-white/5 backdrop-blur-sm rounded-2xl p-4">
                 {connectedServicesCount < 3 && (

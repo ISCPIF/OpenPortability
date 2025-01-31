@@ -9,7 +9,6 @@ import { isTwitterProfile, isMastodonProfile, isBlueskyProfile } from "./auth"
 import type { AdapterAccountType } from "next-auth/adapters"
 import type { CustomAdapterUser } from '@/lib/supabase-adapter'
 import { authClient } from '@/lib/supabase'
-import { BskyAgent } from '@atproto/api'
 
 import { auth } from "./auth"
 
