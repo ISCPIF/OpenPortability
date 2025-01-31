@@ -24,15 +24,19 @@ export class UserService {
         throw new Error('Invalid email format');
       }
       update.email = data.email.trim().toLowerCase();
-      update.oep_accepted = true;
     }
 
-    if (!data.email && data.acceptHQX) {
-      update.hqx_newsletter = true;
+    // Handle all boolean fields explicitly
+    if (typeof data.acceptHQX !== 'undefined') {
+      update.hqx_newsletter = data.acceptHQX;
     }
 
-    if (data.research_accepted) {
-      update.research_accepted = true;
+    if (typeof data.acceptOEP !== 'undefined') {
+      update.oep_accepted = data.acceptOEP;
+    }
+
+    if (typeof data.research_accepted !== 'undefined') {
+      update.research_accepted = data.research_accepted;
     }
 
     await this.repository.updateUser(userId, update);
