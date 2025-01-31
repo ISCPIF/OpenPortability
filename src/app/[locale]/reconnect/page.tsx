@@ -393,7 +393,9 @@ export default function MigratePage() {
       }
 
       // Migration completed
-      setIsReconnectionComplete(true);
+      if (isAutomaticReconnect) {
+        setIsReconnectionComplete(true);
+      }
       setIsMigrating(false);
       
       // Refresh the session to update follow status
