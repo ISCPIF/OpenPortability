@@ -177,7 +177,7 @@
     "redirecting": "Redirecting to dashboard..."
   },
   "signin": {
-    "title": "Ready to travel to new shores?",
+    "title": "Ready to travel to new horizons?",
     "subtitle": "Start by connecting with Twitter/X to migrate your data",
     "loading": "Loading information...",
     "logo": {
@@ -194,7 +194,7 @@
     "migrationStep": {
       "completed1": "Congratulations! You’ve completed the first of the two migration steps.",
       "completed2": "Don't forget to invite your subscribers to register on OpenPortability. In 1min they'll be reconnected to your account, even without their archive.\nPhase 2 is arriving in just a few days! According to your preferences, you’ll receive a notification by email or can follow our launch on X, BlueSky, and Mastodon.\nStay tuned—exciting surprises await!",
-      "nextSteps": "Complete the following steps to sail to new shores!"
+      "nextSteps": "Complete the following steps to sail to new horizons!"
     },
     "importButton": "Import my Twitter/X archive",
     "shareModal": {
@@ -328,6 +328,10 @@
       "cancel": "Cancel",
       "confirm": "Yes, delete my account"
     },
+    "newsletter": "OpenPortability Newsletter",
+    "research": "CNRS research program",
+    "oepNewsletter": "Be informed about On est prêt initiatives",
+    "preferencesUpdated": "Preferences updated",
     "notifications": {
       "title": "Notifications",
       "hqxNewsletter": "Receive updates from OpenPortability",
@@ -382,7 +386,8 @@
   },
   "firstSeen": {
     "title": "Welcome!",
-    "description": "You are about to onboard with OpenPortability to reference your various different digital identities and duplicate your community on other networks. The whole operation will take you 5 minutes and will have no impact on your X account. Starting January 20th, your BlueSky and Mastodon accounts will start receiving new followers automatically.\nTo ensure everything goes smoothly, we offer to guide you --in some cases the process requires several steps-- and inform you about upcoming features (such as importing your X messages to BlueSky or Mastodon).\nBy joining us, you authorize us to contact you via BlueSky and Mastodon. We also recommend that you provide us with your email address to allow us to contact you regarding your future campaigns.\nThis contact will be used sparingly and you can opt out of the support program at any time.",
+    "description": "You are about to exercise your right to data portability from X to BlueSky and/or Mastodon while participating in a research project on social networks. It will take you 5min.\n\nOpenPortability will reference your digital identities and help you gradually recreate your community on BlueSky and/or Mastodon, without impacting your X account.\n\nAs other users register on OpenPortability, the links referenced on X will be recreated on BlueSky or Mastodon with their agreement. Encourage your subscribers to do the same!\n\nThis \"copy\" of your social network may take several days.\n\nBy using OpenPortability, you agree to your data being processed in accordance with the {lien} and consent to the possible transfer of your data outside the European Union (e.g. BlueSky servers).",
+    "privacyPolicyLink": "our privacy policy",
     "newsletter": {
       "subtitle": "I would like to be accompagnied by OpenPortability",
       "emailLabel": "Enter your email to stay informed (optional):",
@@ -394,7 +399,8 @@
       }
     },
     "cta": "SUBMIT",
-    "dismiss": "Don't show this message again"
+    "dismiss": "By clicking on 'submit', I certify that I have read the above conditions and agree to them. You must accept the terms of use to continue on the OpenPortability platform"
+
   },
 "migrate": {
     "title": "Migrate your subscriptions",
@@ -511,13 +517,25 @@
     "firstObjective": "1st objective completed, you're registered for the journey!"
   },
   "launchReconnection": {
-    "firstObjective": "First objective completed @{username}! The second step is in sight: launch the reconnection",
+    "firstObjective": {
+      "before": "First objective completed",
+      "after": "! The second step is in sight: launch the reconnection"
+    },
     "inviteMessage": "Don't forget to invite your followers to sign up on OpenPortability. In 1 minute they can be reconnected to your account, even without their archive. Stay tuned for great surprises!",
+    "blueskyConnectionMessage": {
+      "before": "Connect your Bluesky account to automatically reconnect with",
+      "after": "accounts!"
+    },
+    "mastodonConnectionMessage": {
+      "before": "Connect your Mastodon account to automatically reconnect with",
+      "after": "accounts!"
+    },
     "launchButton": "Launch your reconnection with {count} accounts!",
     "stats": {
-      "twitterAccounts": "Twitter Accounts",
+      "twitterAccounts": "Twitter accounts",
       "totalImported": "Total imported"
-    }
+    },
+    "alreadyReconnected": "We have already reconnected you with {count} accounts. Come back later to continue your reconnection!"
   },
   "privacy_policy": {
     "title": "Data Protection Information Notice",
