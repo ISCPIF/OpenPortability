@@ -260,7 +260,7 @@
     },
     "signin": {
         "loading": "Cargando información...",
-        "title": "¿Listo/a para viajar a nuevas costas?",
+        "title": "¿Listo/a para viajar a nuevas horizontes?",
         "subtitle": "Comience por conectarse a Twitter/X para migrar sus datos",
         "logo": {
             "alt": "OpenPortability Logo"
@@ -299,7 +299,7 @@
         "notifications": {
             "title": "Notificaciones",
             "hqxNewsletter": "Recibir actualizaciones de OpenPortability",
-            "oepNewsletter": "Estar informado de las iniciativas On est prêt"
+            "oepNewsletter": "Recibir información sobre iniciativas On est prêt"
         },
         "deleteConfirm": {
             "cancel": "Cancelar",
@@ -307,7 +307,11 @@
             "message": "¿Está seguro/a de querer eliminar su cuenta? Esta acción es irreversible e implicará la supresión de:\n\n• Todos sus datos importados\n• Todas sus cuentas ligadas (Twitter/X, BlueSky, Mastodon)\n• Su perfil OpenPortability",
             "confirm": "Sí, eliminar mi cuenta"
         },
-        "deleteAccount": "Eliminar mi cuenta"
+        "deleteAccount": "Eliminar mi cuenta",
+        "newsletter": "Recibir boletín informativo",
+        "oepNewsletter": "Recibir información sobre iniciativas On est prêt",
+        "research": "Participar en el programa de investigación",
+        "preferencesUpdated": "Preferencias actualizadas"
     },
     "dashboardSea": {
         "welcome": "¡Bienvenido/a a bordo de OpenPortability!",
@@ -412,17 +416,35 @@
             }
         },
         "cta": "ENVIAR",
-        "dismiss": "No mostrar más este mensaje",
-        "description": "Está al punto de embarcarse con OpenPortability para referenciar sus distintas identidades en linea y duplicar su comunidad en otras redes. El total de la operación le tomará 5 minutos y no tendrá impacto sobre su cuenta X. A partir del 20 de enero, sus cuentas BlueSky y Mastodon comenzarán a recibir automáticamente nuevos suscriptores.\nPara que todo vaya bien, le ofrecemos guiar --en algunos casos el proceso requiere de varias etapas-- e informar sobre las funcionalidades que serán publicadas próximamente (como importar sus mensajes X en BlueSky o Mastodon).\nEmbarcando con nosotros, nos autoriza a contactarlo/a por BlueSky o Mastodon. Le recomendamos además dejarno su email, para permitirnos contactarlo/a en sus futuras campañas.\nEste contacto será utilizado con moderación y puede optar por bajarse del programa en cualquier momento."
+        "dismiss": "Debe aceptar las condiciones de uso para continuar en la plataforma OpenPortability",
+        "description": "Está al punto de embarcarse con OpenPortability para referenciar sus distintas identidades en linea y duplicar su comunidad en otras redes. El total de la operación le tomará 5 minutos y no tendrá impacto sobre su cuenta X. A partir del 20 de enero, sus cuentas BlueSky y Mastodon comenzarán a recibir automáticamente nuevos suscriptores.\nPara que todo vaya bien, le ofrecemos guiar --en algunos casos el proceso requiere de varias etapas-- e informar sobre las funcionalidades que serán publicadas próximamente (como importar sus mensajes X en BlueSky o Mastodon).\nEmbarcando con nosotros, nos autoriza a contactarlo/a por BlueSky o Mastodon. Le recomendamos además dejarno su email, para permitirnos contactarlo/a en sus futuras campañas.\nEste contacto será utilizado con moderación y puede optar por bajarse del programa en cualquier momento. {lien}",
+        "privacyPolicyLink": " Para más información, consulte nuestra política de privacidad"
+
     },
     "launchReconnection": {
-        "firstObjective": "¡Primer objetivo completado @{username}! El segundo paso está a la vista: inicia la reconexión",
-        "inviteMessage": "No olvides invitar a tus seguidores a registrarse en OpenPortability. En 1 minuto podrán reconectarse a tu cuenta, incluso sin su archivo. ¡Mantente atento a grandes sorpresas!",
+        "firstObjective": {
+            "before": "¡Primer objetivo completado",
+            "after": "! El segundo paso está a la vista: inicia la reconexión"
+        },
+        "inviteMessage": "No olvides invitar a tus seguidores a registrarse en OpenPortability. En 1 minuto pueden reconectarse a tu cuenta, incluso sin su archivo. ¡Mantente atento a grandes sorpresas!",
+        "blueskyConnectionMessage": {
+            "before": "Conecta tu cuenta de Bluesky para reconectar automáticamente con",
+            "after": "cuentas!"
+        },
+        "mastodonConnectionMessage": {
+            "before": "Conecta tu cuenta de Mastodon para reconectar automáticamente con",
+            "after": "cuentas!"
+        },
         "launchButton": "¡Inicia tu reconexión con {count} cuentas!",
         "stats": {
             "twitterAccounts": "Cuentas de Twitter",
             "totalImported": "Total importado"
-        }
+        },
+        "title": "Reconexión Automática",
+        "description": "Hemos encontrado {count} cuentas que puedes reconectar automáticamente.",
+        "button": "INICIAR RECONEXIÓN AUTOMÁTICA",
+        "loading": "Reconexión en curso...",
+        "alreadyReconnected": "Ya te hemos reconectado con {count} cuentas. ¡Vuelve más tarde para continuar tu reconexión!"
     },
     "privacy_policy": {
         "title": "Aviso de Información sobre Protección de Datos",

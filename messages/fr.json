@@ -163,7 +163,7 @@
     "redirecting": "Redirection vers le tableau de bord..."
   },
   "signin": {
-    "title": "Prêt à migrer vers de nouveaux rivages ?",
+    "title": "Prêt à migrer vers de nouveaux horizons ?",
     "subtitle": "Commencez par vous connecter avec Twitter/X pour migrer vos données",
     "loading": "Chargement des informations…",
     "logo": {
@@ -180,7 +180,7 @@
     "migrationStep": {
       "completed1": "Bravo ! Vous avez terminé la première des deux étapes de la migration.",
       "completed2": "N'oubliez par d'inviter vos abonnés à s’inscrire sur OpenPortability. En 1min ils pourront être reconnectés à votre compte, même sans leur archive.\nLa phase 2 de la reconnexion interviendra dans quelques jours. Selon vos préférences, vous recevrez une notification par e-mail ou pourrez suivre le lancement sur nos comptes X, BlueSky et Mastodon.\nRestez à l’affût, de belles surprises vous attendent !",
-      "nextSteps": "Effectuez les étapes suivantes pour voguer vers de nouveaux rivages !"
+      "nextSteps": "Effectuez les étapes suivantes pour voguer vers de nouveaux horizons !"
     },
     "importButton": "Importer mon archive Twitter/X",
     "shareModal": {
@@ -315,6 +315,10 @@
       "cancel": "Annuler",
       "confirm": "Oui, supprimer mon compte"
     },
+    "newsletter": "Newsletter OpenPortability",
+    "research": "Programme de recherche CNRS",
+    "oepNewsletter" : "Newsletter On Est Prêts",
+    "preferencesUpdated": "Préférences mises à jour",
     "notifications": {
       "title": "Notifications",
       "hqxNewsletter": "Recevoir les updates de OpenPortability",
@@ -376,7 +380,8 @@
   },
   "firstSeen": {
     "title": "Bienvenue !",
-    "description": "Vous êtes sur le point d'embarquer avec OpenPortability afin de référencer vos différentes identités numériques et dupliquer votre communauté sur d'autres réseaux. L'ensemble de l'opération vous prendra 5 min et n'aura pas d'impact sur votre compte X. À partir du 20 Janvier, vos comptes BlueSky et Mastodon commenceront à recevoir automatiquement de nouveaux abonnés.\nAfin que tout se passe bien, nous vous proposons de vous accompagner --dans certains cas le processus requiert plusieurs étapes-- et de vous informer des fonctionnalités qui seront publiées prochainement (comme le fait d'importer ses messages X sur BlueSky ou Mastodon).\nEn embarquant avec nous, vous nous autorisez à vous contacter par BlueSky et Mastodon. Nous vous recommondons de plus à nous laisser votre e-mail afin de nous permettre de vous contacter sur la suite de vos campagnes.\nCe contact sera utilisé avec parcimonie et vous pourrez sortir du programme d'accompagnement à tout moment.",
+    "description": "Vous êtes sur le point d'exercer votre droit à la portabilité de vos données depuis X vers BlueSky et/ou Mastodon tout en participant à un projet de recherche sur les réseaux sociaux. Cela vous prendra 5min.\n\nOpenPortability va référencer vos identités numériques et vous aider à recréer progressivement votre communauté sur BlueSky et/ou Mastodon, sans impact sur votre compte X.\n\nAu fur et à mesure que d'autres utilisateurs s'inscriront sur OpenPortability les liens référencés sur X seront recréés sur BlueSky ou Mastodon avec leur accord. N'hésitez pas à encourager vos abonnés à faire de même !\n\nCette \"copie\" de votre réseau social peut prendre plusieurs jours.\n\nEn utilisant OpenPortability, vous acceptez que vos données soient traitées conformément à {lien} et consentez au transfert éventuel de vos données en dehors de l'Union européenne (ex. serveurs BlueSky).",
+    "privacyPolicyLink": "la note d'information sur la protection des données",
     "newsletter": {
       "subtitle": "Je souhaite être accompagné.e par OpenPortability.",
       "emailLabel": "Inscrivez votre mail pour rester informé.e (optionnel) :",
@@ -387,8 +392,8 @@
         "missingEmail": "E-mail manquant"
       }
     },
-    "cta": "ENVOYER",
-    "dismiss": "Ne plus afficher ce message"
+    "cta": "SOUMETTRE",
+    "dismiss": "En cliquant sur 'soumettre', j'atteste que j'ai lu les conditions ci-dessus et j’y consens. Vous devez accepter les conditions d'utilisation pour continuer sur la plateforme OpenPortability"
   },
   "migrate": {
     "title": "Migration de vos abonnements",
@@ -494,7 +499,7 @@
   },
   "SuccessAutomaticReconnexion": {
     "congratulations": "Un grand bravo",
-    "secondObjective": "Vous avez terminé le 2ème objectif et vous vous êtes reconnectés à {count} comptes. Vous êtes arrivés à bon port !",
+    "secondObjective": "Vous avez terminé le 2ème objectif et vous vous êtes reconnecté à {count} comptes. Vous êtes arrivé à bon port !",
     "notification": "Nous continuerons à vous informer si de nouveaux comptes peuvent être reconnectés, par mail ou par le réseau de votre choix, selon vos préférences.",
     "stats": {
       "blueskyFollowing": "Reconnexions sur Bluesky",
@@ -520,7 +525,8 @@
     "stats": {
       "twitterAccounts": "Comptes Twitter",
       "totalImported": "Total importés"
-    }
+    },
+    "alreadyReconnected": "Nous vous avons déjà reconnecté avec {count} comptes. Revenez plus tard pour poursuivre votre reconnexion !"
   },
   "privacy_policy": {
     "title": "Note d'information sur la protection des données",

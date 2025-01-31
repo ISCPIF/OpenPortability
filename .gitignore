@@ -54,11 +54,17 @@ backup.sql
 /cleanup
 /worker_refreshtoken/node_modules
 
-docker-compose.yml
-Dockerfile
-/nginx
-nginx.conf
 
 /cerbots
 /coverage
 /scripts
+docker-compose.migration.yml
+Dockerfile.migration
+docker-compose.yml
+Dockerfile
+reload.docker-compose.yml
+
+/nginx
+nginx.conf
+/nginx/certs
+!Dockerfile

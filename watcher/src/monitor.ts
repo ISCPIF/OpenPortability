@@ -5,6 +5,25 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+export interface PlatformStats {
+  total: number;
+  hasFollowed: number;
+  notFollowed: number;
+}
+
+interface UserCompleteStats {
+  connections: {
+    followers: number;
+    following: number;
+  };
+  matches: {
+    bluesky: PlatformStats;
+    mastodon: PlatformStats;
+  };
+  updated_at: string;
+}
+
+
 const logger = winston.createLogger({
   level: 'info',
   format: winston.format.json(),
@@ -101,11 +120,24 @@ class TelegramMonitor {
         throw failedCountError;
       }
 
+      // Récupérer les stats globales
+      const globalStats = await this.getGlobalStats();
+
       // Construire le message de rapport
       let message = `📊 Rapport de surveillance\n\n`;
       message += `👥 Utilisateurs inscrits: ${userCount}\n`;
       message += `📥 Tâches d'import totales: ${jobCount}\n`;
-      message += `❌ Tâches en erreur: ${failedCount}`;
+      message += `❌ Tâches en erreur: ${failedCount}\n\n`;
+      
+      message += `🌐 Statistiques globales:\n`;
+      message += `➡️ Total followers: ${globalStats.total_followers}\n`;
+      message += `➡️ Total following: ${globalStats.total_following}\n\n`;
+      message += `🟦 Bluesky:\n`;
+      message += `   • Total: ${globalStats.total_bluesky}\n`;
+      message += `   • Suivis: ${globalStats.bluesky_followed}\n`;
+      message += `🐘 Mastodon:\n`;
+      message += `   • Total: ${globalStats.total_mastodon}\n`;
+      message += `   • Suivis: ${globalStats.mastodon_followed}`;
 
       await this.sendAlert(message);
       logger.info('Rapport envoyé');
@@ -114,6 +146,48 @@ class TelegramMonitor {
       logger.error('Error checking updates:', errorMessage);
       await this.sendAlert(`🔴 Erreur lors de la génération du rapport: ${errorMessage}`);
     }
+  }
+
+  private async getGlobalStats() {
+    const { data, error } = await this.supabasePublic
+      .from('user_stats_cache')
+      .select('stats');
+
+    if (error) {
+      logger.error('Erreur lors de la récupération des stats globales:', error);
+      throw error;
+    }
+
+    interface GlobalStats {
+      total_followers: number;
+      total_following: number;
+      total_bluesky: number;
+      bluesky_followed: number;
+      total_mastodon: number;
+      mastodon_followed: number;
+    }
+
+    // Calculer les totaux à partir des stats de chaque utilisateur
+    const totals = data.reduce((acc: GlobalStats, row: { stats: UserCompleteStats }) => {
+      const stats = row.stats;
+      return {
+        total_followers: (acc.total_followers || 0) + (stats.connections?.followers || 0),
+        total_following: (acc.total_following || 0) + (stats.connections?.following || 0),
+        total_bluesky: (acc.total_bluesky || 0) + (stats.matches?.bluesky?.total || 0),
+        bluesky_followed: (acc.bluesky_followed || 0) + (stats.matches?.bluesky?.hasFollowed || 0),
+        total_mastodon: (acc.total_mastodon || 0) + (stats.matches?.mastodon?.total || 0),
+        mastodon_followed: (acc.mastodon_followed || 0) + (stats.matches?.mastodon?.hasFollowed || 0)
+      };
+    }, {
+      total_followers: 0,
+      total_following: 0,
+      total_bluesky: 0,
+      bluesky_followed: 0,
+      total_mastodon: 0,
+      mastodon_followed: 0
+    });
+
+    return totals;
   }
 
   private async sendAlert(message: string) {

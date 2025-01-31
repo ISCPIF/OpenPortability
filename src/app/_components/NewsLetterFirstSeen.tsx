@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, ChevronDown } from 'lucide-react'
 import { useTranslations } from 'next-intl'
@@ -8,8 +8,10 @@ import { plex } from '@/app/fonts/plex'
 import Image from 'next/image'
 import Badge from '../../../public/newSVG/HQX-badge.svg'
 import { usePathname } from 'next/navigation'
-import { Globe } from 'lucide-react';
+import { Globe } from 'lucide-react'
 import { isValidEmail } from '@/lib/utils'
+import { Switch } from '@headlessui/react'
+import Link from 'next/link'
 
 interface NewsLetterFirstSeenProps {
   userId: string
@@ -27,6 +29,30 @@ export default function NewsLetterFirstSeen({ userId, onSubscribe, onClose }: Ne
   const t = useTranslations('firstSeen')
   const pathname = usePathname()
 
+  useEffect(() => {
+    const fetchPreferences = async () => {
+      console.log('Fetching preferences...');
+      try {
+        const response = await fetch('/api/newsletter', { method: 'GET' });
+        console.log('Response status:', response.status);
+        if (response.ok) {
+          const responseData = await response.json();
+          console.log('Preferences data:', responseData);
+          // Access the nested data object
+          const preferences = responseData.data;
+          // Force boolean values with !!
+          setAcceptResearch(!!preferences.research_accepted);
+          setAcceptOEP(!!preferences.oep_accepted);
+          console.log('Set research to:', !!preferences.research_accepted);
+          console.log('Set OEP to:', !!preferences.oep_accepted);
+        }
+      } catch (error) {
+        console.error('Error fetching preferences:', error);
+      }
+    };
+    fetchPreferences();
+  }, []);
+
   const languages = [
     { code: 'fr', name: 'FR' },
     { code: 'en', name: 'EN' },
@@ -38,6 +64,17 @@ export default function NewsLetterFirstSeen({ userId, onSubscribe, onClose }: Ne
     const newPath = pathname.replace(`/${currentLocale}`, `/${locale}`)
     window.location.href = newPath
   }
+
+  const handleSwitchChange = async (type: 'research' | 'oep', value: boolean) => {
+    console.log(`🔄 Switch changed: ${type} = ${value}`);
+    if (type === 'research') {
+      setAcceptResearch(value);
+      console.log('✅ Updated research to:', value);
+    } else {
+      setAcceptOEP(value);
+      console.log('✅ Updated OEP to:', value);
+    }
+  };
 
   const updatePreferences = async (submit: boolean) => {
     try {
@@ -58,6 +95,10 @@ export default function NewsLetterFirstSeen({ userId, onSubscribe, onClose }: Ne
         return
       }
 
+      // Get the current state values at the time of submission
+      const currentResearch = acceptResearch;
+      const currentOEP = acceptOEP;
+
       // Si c'est un submit, on continue avec la requête POST normale
       const response = await fetch(`/api/newsletter`, {
         method: 'POST',
@@ -67,8 +108,8 @@ export default function NewsLetterFirstSeen({ userId, onSubscribe, onClose }: Ne
         body: JSON.stringify({
           email,
           acceptHQX: true,
-          acceptOEP,
-          research_accepted: acceptResearch,
+          acceptOEP: currentOEP,
+          research_accepted: currentResearch,
           have_seen_newsletter: true
         }),
       })
@@ -99,7 +140,6 @@ export default function NewsLetterFirstSeen({ userId, onSubscribe, onClose }: Ne
   return (
     <div className="bg-white rounded-2xl p-8 max-w-2xl w-full relative max-h-[90vh] overflow-y-auto">
       <div className="absolute top-4 right-4 flex items-center gap-2">
-        {/* Language Selector */}
         {/* Language Selector */}
         <div className="relative mr-6">
           <button
@@ -144,15 +184,6 @@ export default function NewsLetterFirstSeen({ userId, onSubscribe, onClose }: Ne
             )}
           </AnimatePresence>
         </div>
-
-        <button
-          onClick={handleDismiss}
-          className="p-2 rounded-full hover:bg-gray-100 text-gray-500 hover:text-gray-700
-                  transition-all duration-200 z-10"
-          aria-label="Close"
-        >
-          <X className="w-6 h-6" />
-        </button>
       </div>
 
       <div className="flex flex-col items-center gap-1">
@@ -164,19 +195,53 @@ export default function NewsLetterFirstSeen({ userId, onSubscribe, onClose }: Ne
           className="mb-1"
         />
 
-        <h2 className={`${plex.className} text-xl font-semibold text-center text-gray-900`}>
-          {t('title')}
-        </h2>
-
-        <div className="space-y-4 text-center text-sm">
-          {t('description').split('\n').map((paragraph, index) => (
-            <p key={index} className="text-gray-700">
-              {paragraph}
-            </p>
-          ))}
+        <div className="text-center">
+          <h2 className="text-2xl font-semibold mb-2">{t('title')}</h2>
+          <div className="text-sm text-gray-600 text-center">
+            {t.raw('description').split('\n').map((line, index) => {
+              const parts = line.split(/\{(lien)\}/);
+              return (
+                <p key={index} className="mb-3">
+                  {parts.map((part, partIndex) => {
+                    if (part === 'lien') {
+                      return (
+                        <Link 
+                          key={partIndex}
+                          href={`/${currentLocale}/privacy_policy`} 
+                          className="text-blue-600 hover:underline"
+                        >
+                          {t('privacyPolicyLink')}
+                        </Link>
+                      );
+                    }
+                    return <span key={partIndex}>{part}</span>;
+                  })}
+                </p>
+              );
+            })}
+          </div>
         </div>
 
         <div className="w-full max-w-xl bg-gray-100 p-6 rounded-lg space-y-4">
+
+        <div className="flex items-center space-x-3">
+              <Switch
+                checked={acceptResearch}
+                onChange={(newValue) => handleSwitchChange('research', newValue)}
+                className={`${
+                  acceptResearch ? 'bg-blue-600' : 'bg-gray-200'
+                } relative inline-flex h-[24px] w-[44px] shrink-0 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2`}
+              >
+                <span
+                  className={`${
+                    acceptResearch ? 'translate-x-[22px]' : 'translate-x-[2px]'
+                  } inline-block h-[20px] w-[20px] transform rounded-full bg-white transition-transform`}
+                />
+              </Switch>
+              <span className="text-sm text-gray-700">
+              {t('newsletter.researchConsent')}
+              </span>
+            </div>
           <div className="space-y-2 text-center text-sm">
             <p className="text-gray-600 text-sm">{t('newsletter.subtitle')}</p>
           </div>
@@ -188,46 +253,41 @@ export default function NewsLetterFirstSeen({ userId, onSubscribe, onClose }: Ne
               </label>
               <input
                 type="email"
+                placeholder={t('newsletter.emailPlaceholder')}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder={t('newsletter.emailPlaceholder')}
-                className="w-full px-4 py-2 border border-gray-300 text-sm rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black placeholder:text-gray-400"
               />
             </div>
 
-            <div className="flex items-start gap-2">
-              <input
-                type="checkbox"
+            <div className="flex items-center space-x-3">
+              <Switch
                 checked={acceptOEP}
-                onChange={(e) => setAcceptOEP(e.target.checked)}
-                className="mt-1"
-              />
-              <label className="text-sm text-gray-600">
-                {t('newsletter.consent')}
-              </label>
-            </div>
-
-            <div className="flex items-start gap-2">
-              <input
-                type="checkbox"
-                checked={acceptResearch}
-                onChange={(e) => setAcceptResearch(e.target.checked)}
-                className="mt-1"
-              />
-              <label className="text-sm text-gray-600">
-                {t('newsletter.researchConsent')}
-              </label>
+                onChange={(newValue) => handleSwitchChange('oep', newValue)}
+                className={`${
+                  acceptOEP ? 'bg-blue-600' : 'bg-gray-200'
+                } relative inline-flex h-[24px] w-[44px] shrink-0 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2`}
+              >
+                <span
+                  className={`${
+                    acceptOEP ? 'translate-x-[22px]' : 'translate-x-[2px]'
+                  } inline-block h-[20px] w-[20px] transform rounded-full bg-white transition-transform`}
+                />
+              </Switch>
+              <span className="text-sm text-gray-700">
+              {t('newsletter.consent')}
+              </span>
             </div>
 
             {error && (
-              <p className="text-red-500 text-sm">{error}</p>
+              <p className="text-red-500 text-sm mt-2">{error}</p>
             )}
           </div>
         </div>
 
         <button
           onClick={handleSubmit}
-          disabled={isLoading || !isValidEmail(email)}
+          disabled={isLoading}
           className="mt-2 px-6 py-3 bg-[#46489B] text-white rounded-lg font-semibold hover:bg-opacity-90 
                     transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
         >
@@ -242,7 +302,7 @@ export default function NewsLetterFirstSeen({ userId, onSubscribe, onClose }: Ne
         </button>
 
         <button
-          onClick={handleDismiss}
+          // onClick={}
           className="text-gray-500 hover:text-gray-700 text-sm"
         >
           {t('dismiss')}

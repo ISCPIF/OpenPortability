@@ -55,22 +55,18 @@ export default function UploadResults({
   setIsLoading,
   setIsModalOpen,
 }: UploadResultsProps) {
-  const [totalUsers, setTotalUsers] = useState<number>(stats.totalUsers);
   const { data: session } = useSession();
-
-  if (!session) {
-    return null;
-  }
+  const t = useTranslations('uploadResults');
+  const tShare = useTranslations('dashboard');  
+  const [totalUsers, setTotalUsers] = useState<number>(stats.totalUsers);
+  const [totalStats, setTotalStats] = useState<TotalStats | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   // Calculate completion status
   const totalSteps = 4; 
   const completedSteps = [hasTwitter, hasBluesky, hasMastodon, hasOnboarded].filter(Boolean).length;
   const isThreeQuartersComplete = completedSteps >= (totalSteps * 0.75);
-  const t = useTranslations('uploadResults');
   const username = twitter_username || mastodon_username || bluesky_username || '';
-  const [totalStats, setTotalStats] = useState<TotalStats | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const tShare = useTranslations();
 
   useEffect(() => {
     if (setIsLoading) {
@@ -99,6 +95,31 @@ export default function UploadResults({
   if (!session) {
     return null;
   }
+
+  const handleShare = async (platform: string) => {
+    const shareText = tShare.raw('shareModal.shareText', { count: stats.followers + stats.following });
+    let shareUrl = '';
+    
+    switch (platform) {
+      case 'mastodon':
+        shareUrl = `${session.user.mastodon_instance}/share?text=${encodeURIComponent(shareText)}`;
+        break;
+      case 'bluesky':
+        shareUrl = `https://bsky.app/intent/compose?text=${encodeURIComponent(shareText)}`;
+        break;
+      case 'twitter':
+        shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`;
+        break;
+    }
+
+    if (shareUrl) {
+      window.open(shareUrl, '_blank');
+    }
+
+    if (onShare) {
+      onShare(shareUrl, platform);
+    }
+  };
 
   const totalProcessed = stats.followers + stats.following;
   const totalInDatabase = totalStats ? totalStats.total_followers + totalStats.total_following : 0;
@@ -160,30 +181,7 @@ export default function UploadResults({
               bluesky: hasBluesky,
               mastodon: hasMastodon
             }}
-            onShare={async (platform) => {
-              let shareText = tShare('dashboard.shareModal.shareText', { count: stats.followers + stats.following });
-              let shareUrl = '';
-              
-              switch (platform) {
-                case 'mastodon':
-                  shareUrl = `${session.user.mastodon_instance}/share?text=${encodeURIComponent(shareText)}`;
-                  break;
-                case 'bluesky':
-                  shareUrl = `https://bsky.app/intent/compose?text=${encodeURIComponent(shareText)}`;
-                  break;
-                case 'twitter':
-                  shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`;
-                  break;
-              }
-
-              if (shareUrl) {
-                window.open(shareUrl, '_blank');
-              }
-
-              if (onShare) {
-                onShare(shareUrl, platform);
-              }
-            }} 
+            onShare={handleShare}
           />
         </div>
 

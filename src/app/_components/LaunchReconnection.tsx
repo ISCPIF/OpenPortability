@@ -35,18 +35,26 @@ export default function LaunchReconnection({
   userStats,
 }: LaunchReconnectionProps) {
   const [totalMatches, setTotalMatches] = useState<number>(0);
+  const [totalHasFollowed, setTotalHasFollowed] = useState<number>(0);
   const t = useTranslations('launchReconnection');
 
   useEffect(() => {
-    // Calculate total matches based on connected accounts
+    // Calculate total matches and hasFollowed based on connected accounts
     let total = 0;
+    let hasFollowed = 0;
     if (session.user.bluesky_username) {
       total += userStats.matches.bluesky.notFollowed;
+      hasFollowed += userStats.matches.bluesky.hasFollowed;
     }
     if (session.user.mastodon_username) {
       total += userStats.matches.mastodon.notFollowed;
+      hasFollowed += userStats.matches.mastodon.hasFollowed;
     }
     setTotalMatches(total);
+    setTotalHasFollowed(hasFollowed);
+
+    console.log("TOTALS", total, hasFollowed)
+    console.log("USER STATS", userStats)
   }, [userStats, session.user.bluesky_username, session.user.mastodon_username]);
 
   return (
@@ -108,14 +116,15 @@ export default function LaunchReconnection({
           )}
 
           {/* Afficher le bouton uniquement s'il y a des comptes à reconnecter */}
-          {totalMatches > 0 && (
-            <Link 
-              href="/reconnect"
-              className={`${plex.className} inline-block px-6 py-3 bg-[#d6356f] text-[#ebece7] font-bold p-4 rounded-full hover:bg-[#d6356f]/90 transition-colors duration-300 mb-8`}
-            >
-              {t('launchButton', { count: formatNumber(totalMatches) })}
-            </Link>
-          )}
+          <Link 
+            href="/reconnect"
+            className={`${plex.className} inline-block p-6 bg-[#d6356f] text-[#ebece7] font-bold rounded-xl hover:bg-[#d6356f]/90 transition-colors duration-300 mb-8`}
+          >
+            {totalMatches > 0 
+              ? t('launchButton', { count: formatNumber(totalMatches) })
+              : t('alreadyReconnected', { count: formatNumber(totalHasFollowed) })
+            }
+          </Link>
         </div>
 
         {/* Troisième ligne : Badge 2 et stats */}
