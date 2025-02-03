@@ -254,7 +254,7 @@ export default function NewsLetterFirstSeen({ userId, onSubscribe, onClose }: Ne
               <input
                 type="email"
                 placeholder={t('newsletter.emailPlaceholder')}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />

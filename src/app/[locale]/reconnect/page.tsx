@@ -393,9 +393,9 @@ export default function MigratePage() {
       }
 
       // Migration completed
-      if (isAutomaticReconnect) {
+      // if (isAutomaticReconnect) {
         setIsReconnectionComplete(true);
-      }
+      // }
       setIsMigrating(false);
       
       // Refresh the session to update follow status
@@ -480,18 +480,18 @@ export default function MigratePage() {
                       stats={stats}
                       onSuccess={refreshStats}
                     />
-              ) : stats?.matches?.bluesky?.notFollowed === 0 && stats?.matches?.mastodon?.notFollowed === 0 ? (
-                <SuccessAutomaticReconnexion
-                  session={{
-                    user: {
-                      twitter_username: session?.user?.twitter_username ?? "",
-                      bluesky_username: session?.user?.bluesky_username ?? "",
-                      mastodon_username: session?.user?.mastodon_username ?? ""
-                    }
-                  }}
-                  stats={stats}
-                  onSuccess={refreshStats}
-                        />
+              // ) : stats?.matches?.bluesky?.notFollowed === 0 && stats?.matches?.mastodon?.notFollowed === 0 ? (
+              //   <SuccessAutomaticReconnexion
+              //     session={{
+              //       user: {
+              //         twitter_username: session?.user?.twitter_username ?? "",
+              //         bluesky_username: session?.user?.bluesky_username ?? "",
+              //         mastodon_username: session?.user?.mastodon_username ?? ""
+              //       }
+              //     }}
+              //     stats={stats}
+              //     onSuccess={refreshStats}
+              //           />
                       ) : isAutomaticReconnect ? (
                         <AutomaticReconnexion
                   results={migrationResults || { bluesky: { attempted: 0, succeeded: 0 }, mastodon: { attempted: 0, succeeded: 0 } }}

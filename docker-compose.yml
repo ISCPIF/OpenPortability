@@ -18,7 +18,13 @@ services:
         - "3000:3000" 
       volumes:
         - shared-tmp:/app/tmp
-
+        - .:/app
+        - ./messages:/app/messages
+      deploy:
+        resources:
+          limits:
+            cpus: '2'
+            memory: 4G
   worker:
     build:
       context: ./worker

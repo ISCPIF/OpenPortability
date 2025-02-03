@@ -49,7 +49,7 @@ export default async function RootLayout({ children, params }: Props) {
     <html lang={locale} className={`${inter.variable} ${spaceGrotesk.variable}`}>
       <body className={`${geistSans.variable} ${geistMono.variable} ${inter.className} antialiased bg-gray-800`}>
         <NextIntlClientProvider messages={messages} locale={locale}>
-          <Providers>
+          <Providers session={session}>
             <main className="min-h-screen">
               <MotionConfig reducedMotion="user">
                 {children}
