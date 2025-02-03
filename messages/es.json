@@ -463,7 +463,8 @@
             "blueskyFollowing": "Reconexiones en Bluesky",
             "mastodonFollowing": "Reconexiones en Mastodon"
         },
-        "firstObjective": "¡Primer objetivo logrado, estás inscrito/a para el viaje!"
+        "firstObjective": "¡Primer objetivo logrado, estás inscrito para el viaje!",
+        "goToDashboard": "Volver al panel"
     },
     "migrateSea": {
         "logo": {
@@ -527,14 +528,29 @@
     },
     "refreshTokenModal": {
         "title": "Reconexión Requerida",
-        "description": "Tu sesión ha expirado para {provider}. Por favor, reconéctate para continuar.",
-        "descriptionMultiple": "Tu sesión ha expirado para los siguientes servicios: {providers}. Por favor, reconéctate para continuar.",
+        "description": "Tu sesión ha expirado para {provider}. Por favor, vuelve a conectarte para continuar.",
+        "descriptionMultiple": "Tu sesión ha expirado para los siguientes servicios: {providers}. Por favor, vuelve a conectarte para continuar.",
         "details": {
-            "bluesky": "Tu sesión de BlueSky ha expirado. Por razones de seguridad, solo utilizamos tokens de acceso temporales que necesitan ser renovados regularmente.",
-            "mastodon": "Necesitamos permisos adicionales para habilitar la reconexión con tus seguidores. Por favor, reconéctate para autorizar estas nuevas funciones.",
+            "bluesky": "Tu sesión de BlueSky ha expirado. Por razones de seguridad, solo utilizamos tokens de acceso temporales que necesitan renovarse regularmente.",
+            "mastodon": "Necesitamos permisos adicionales para habilitar la reconexión con tus seguidores. Por favor, vuelve a conectarte para autorizar estas nuevas funciones.",
             "both": "• BlueSky: Sesión expirada (tokens temporales)\n• Mastodon: Actualización de permisos requerida"
         },
         "close": "Cerrar"
+    },
+    "refreshToken": {
+        "title": "Reconexión necesaria",
+        "description": "Para continuar usando nuestros servicios, por favor vuelve a conectarte a tus cuentas"
+    },
+    "migrate": {
+        "title": "Migrar tus suscripciones",
+        "matches_found": "coincidencias encontradas",
+        "followers": "Seguidores",
+        "following": "Siguiendo",
+        "loading": "Cargando tus coincidencias",
+        "selectAll": "Seleccionar todo",
+        "deselectAll": "Deseleccionar todo",
+        "startMigration": "Iniciar migración",
+        "migrating": "Migrando..."
     },
     "AccountToMigrate": {
         "followOnBluesky": "Seguir en Bluesky",

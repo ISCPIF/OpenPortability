@@ -7,7 +7,8 @@ import { plex } from '@/app/fonts/plex';
 import { motion } from 'framer-motion';
 import { Users, Globe } from 'lucide-react';
 import BadgeSuccessOne from '../../../public/v2/badge-success-1.svg';
-import BadgeSuccessTwo from '../../../public/v2/badge-success-2-OFF.svg';
+import BadgeSuccessTwo from '../../../public/v2/badge-success-2.svg';
+import BadgeSuccessTwoOff from '../../../public/v2/badge-success-2-OFF.svg';
 import { useEffect, useState } from 'react';
 import { UserCompleteStats } from '@/lib/types/stats';
 
@@ -131,8 +132,8 @@ export default function LaunchReconnection({
         <div className="flex items-center">
           <div className="relative w-32 h-32">
             <Image
-              src={BadgeSuccessTwo}
-              alt="Success Badge Two OFF"
+              src={totalHasFollowed > 0 ? BadgeSuccessTwo : BadgeSuccessTwoOff}
+              alt={totalHasFollowed > 0 ? "Success Badge Two" : "Success Badge Two OFF"}
               fill
               className="object-contain"
             />
