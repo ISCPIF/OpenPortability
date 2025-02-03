@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { BskyAgent } from '@atproto/api';
 import { signIn } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -19,6 +19,8 @@ export default function BlueSkyLogin({ onLoginComplete }: BlueSkyLoginProps) {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const t = useTranslations('blueskyLogin');
+  const pathname = usePathname();
+
 
   const locale = useLocale();
 
@@ -38,7 +40,10 @@ export default function BlueSkyLogin({ onLoginComplete }: BlueSkyLoginProps) {
     setIsLoading(true);
 
     try {
-      const identifier = identifierRef.current?.value;
+      let identifier = identifierRef.current?.value.trim();
+      if (identifier?.[0] === "@") {
+        identifier = identifier.slice(1);
+      }
       const password = passwordRef.current?.value;
 
       if (!identifier || !password) {
@@ -58,14 +63,12 @@ export default function BlueSkyLogin({ onLoginComplete }: BlueSkyLoginProps) {
       });
 
       const data = await response.json();
-      console.log('Bluesky API response:', data);
-      
-      if (!response.ok) {
-        throw new Error(data.error || t('form.errors.default'));
+
+      if (!data.success) {
+        setError(data.error);
+        return;
       }
 
-      // Then sign in with NextAuth using the returned user data
-      console.log('Signing in with credentials:', data.user);
       const result = await signIn('bluesky', {
         ...data.user,
         redirect: false
@@ -79,7 +82,14 @@ export default function BlueSkyLogin({ onLoginComplete }: BlueSkyLoginProps) {
 
       if (result?.ok) {
         console.log('Redirecting to dashboard...');
-        router.push(`/${locale}/dashboard`);
+        const redirectPath = pathname?.includes('/reconnect') ? '/reconnect' : '/dashboard';
+        
+        // Appeler onLoginComplete avant la redirection
+        if (onLoginComplete) {
+          onLoginComplete(data.agent);
+        }
+
+        router.push(`/${locale}${redirectPath}`);
       } else {
         console.log('Sign in failed:', result);
       }
