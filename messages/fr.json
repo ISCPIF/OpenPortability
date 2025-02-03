@@ -505,6 +505,7 @@
       "blueskyFollowing": "Reconnexions sur Bluesky",
       "mastodonFollowing": "Reconnexions sur Mastodon"
     },
+    "goToDashboard": "Retourner au tableau de bord",
     "firstObjective": "1er objectif réussi, vous êtes inscrit.e pour le voyage !"
   },
   "launchReconnection": {

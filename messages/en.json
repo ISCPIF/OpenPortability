@@ -514,7 +514,8 @@
       "blueskyFollowing": "Followings found on Bluesky",
       "mastodonFollowing": "Followings found on Mastodon"
     },
-    "firstObjective": "1st objective completed, you're registered for the journey!"
+    "firstObjective": "1st objective completed, you're registered for the journey!",
+    "goToDashboard": "Return to dashboard"
   },
   "launchReconnection": {
     "firstObjective": {
