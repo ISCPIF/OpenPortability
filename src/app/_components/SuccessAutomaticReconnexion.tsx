@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { plex } from '@/app/fonts/plex';
+import Link from 'next/link';
 import { motion } from 'framer-motion';
 import BadgeSuccessTwo from '../../../public/v2/badge-success-2.svg';
 import BadgeSuccessOne from '../../../public/v2/badge-success-1.svg';
@@ -93,6 +94,7 @@ export default function SuccessAutomaticReconnexion({
             {t('notification')}
           </p>
 
+
           <div className={`${
             session.user.bluesky_username && session.user.mastodon_username
               ? 'grid grid-cols-2 gap-8'
@@ -131,6 +133,18 @@ export default function SuccessAutomaticReconnexion({
               </div>
             )}
           </div>
+
+          {/* {((session.user.bluesky_username ? stats.matches.bluesky.notFollowed : 0) + 
+            (session.user.mastodon_username ? stats.matches.mastodon.notFollowed : 0)) > 0 && ( */}
+              <div className="mt-12 flex justify-center w-full">
+              <Link 
+                href="/dashboard" 
+                className="inline-block w-fit px-4 py-2 bg-[#d6356f] text-[#ebece7] rounded-full hover:bg-[#c02d61] transition-colors mb-4"
+              >
+                {t('goToDashboard')}
+              </Link>
+            </div>
+          {/* // )} */}
         </div>
 
         {/* Troisième ligne : Badge 1 et Message du premier objectif */}
@@ -150,6 +164,8 @@ export default function SuccessAutomaticReconnexion({
             {t('firstObjective')}
           </p>
         </div>
+
+        
       </div>
     </motion.div>
   );

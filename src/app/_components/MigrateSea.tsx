@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import { plex, caveat } from '@/app/fonts/plex';
+import localFont from 'next/font/local';
 import { useTranslations } from 'next-intl';
 import { useParams } from 'next/navigation';
 import { FaCheck } from "react-icons/fa";
@@ -11,6 +12,11 @@ import seaBackground from '../../../public/sea.svg';
 import arrowGrowth from '../../../public/v2/uil_arrow-growth.svg';
 import chainon from '../../../public/v2/chainon.svg';
 import Boat from './Boat';
+
+const syneTactile = localFont({
+  src: '../fonts/SyneTactile-Regular.ttf',
+  display: 'swap',
+});
 
 interface SeaProps {
   stats?: {
@@ -35,7 +41,7 @@ function MigrateStats({ stats }: MigrateStatsProps) {
 
   return (
     <div className="w-full mt-[250px] bg-[#2a39a9]">
-      <h1 className={`${caveat.className} text-[5rem] text-[#d6356f] z-[15] text-center font-bold`}>
+      <h1 className={`${syneTactile.className} text-[5rem] text-[#d6356f] z-[15] text-center font-bold`}>
         {t('title')}
       </h1>
 

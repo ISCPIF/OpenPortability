@@ -472,7 +472,7 @@ export default function MigratePage() {
                     <SuccessAutomaticReconnexion
                       session={{
                         user: {
-                          twitter_username: session.user.twitter_username ?? "",
+                          twitter_username: session.user?.twitter_username || session.user?.bluesky_username || session.user?.mastodon_username || '',
                           bluesky_username: session.user.bluesky_username ?? "",
                           mastodon_username: session.user.mastodon_username ?? ""
                         }
