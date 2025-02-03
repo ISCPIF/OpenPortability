@@ -20,6 +20,11 @@ export class AccountService {
       return { success: false, error: 'No Bluesky account found', requiresReauth: true };
     }
 
+    if (!account.access_token || !account.refresh_token) {
+      console.warn(' [AccountService.verifyAndRefreshBlueskyToken] Missing tokens for user:', userId);
+      return { success: false, error: 'Missing tokens', requiresReauth: true };
+    }
+
     console.log(' [AccountService.verifyAndRefreshBlueskyToken] Account found:', account);
     const agent = new BskyAgent({ service: 'https://bsky.social' });
     try {
