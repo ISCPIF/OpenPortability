@@ -260,7 +260,7 @@
     },
     "signin": {
         "loading": "Cargando información...",
-        "title": "¿Listo/a para viajar a nuevas horizontes?",
+        "title": "¿Listo/a para viajar a nuevos horizontes?",
         "subtitle": "Comience por conectarse a Twitter/X para migrar sus datos",
         "logo": {
             "alt": "OpenPortability Logo"
@@ -369,7 +369,7 @@
         "returnToFirstStep": "Volver al primer paso"
     },
     "connectedAccounts": {
-        "connectedWith": "Estás conectado con {services} ",
+        "connectedWith": "Estás conectado/a con {services}",
         "and": "y",
         "services": {
             "twitter": "Twitter/X",
@@ -451,5 +451,95 @@
         "subtitle": "Instituto de Sistemas Complejos París Ile de France | Enero 2025",
         "content": "<h2>CNRS ISC PIF</h2><p>Aviso de información sobre protección de datos en el marco de la investigación científica Proyecto Open Portability</p><p>Las redes sociales, y en particular Twitter (ahora X), han sido desde el principio objetos de investigación privilegiados, especialmente en el campo de las ciencias sociales computacionales.</p><p>Una transición histórica está en curso en el panorama de las redes sociales. El modelo centralizado, encarnado por X (anteriormente Twitter), está experimentando una fuga masiva de usuarios hacia plataformas alternativas como BlueSky y Mastodon. Varios millones de cuentas han migrado en pocas semanas, marcando un cambio importante hacia redes descentralizadas y abiertas.</p><p>Esta transición es un fenómeno social, económico y tecnológico importante que podría modificar el espacio digital global, particularmente en Europa, y podría permitir que Europa recupere cierta soberanía digital.</p><h2>I. Descripción del Proyecto y del Tratamiento</h2><p>Los objetivos de la investigación son los siguientes: analizar la diferencia entre entornos digitales abiertos y cerrados de tipo micro-blogging desde el punto de vista de las dinámicas sociales y los debates en línea. Estudiar como caso de estudio la migración en curso entre X y espacios basados en los protocolos abiertos AT Protocol y Activity Pub, y estudiar la apropiación de espacios digitales descentralizados en el tiempo (horizonte 5 años).</p><p>El proyecto OpenPortability implica:</p><ul><li>Recopilación de datos para la portabilidad de datos entre redes sociales</li><li>Recopilación de datos para realizar una fotografía de la estructura social de la red X</li><li>Recopilación de datos para realizar fotografías de las estructuras sociales de las redes alternativas</li><li>Portabilidad de datos</li><li>Procesamiento y análisis de datos</li></ul><h2>II. Recopilación de Datos, Destinatarios y Conservación</h2><p>Los datos recopilados directamente de las personas y procesados son:</p><ul><li>Identificadores digitales en redes sociales (ID de nombre de usuario)</li><li>Nombres de perfil en redes sociales</li><li>Direcciones de correo electrónico</li></ul><p>La política de protección de datos personales de Bluesky se encuentra en: <link>https://bsky.social/about/support/privacy-policy</link></p><p>La política de protección de datos personales de Mastodon está disponible en <link>https://joinmastodon.org/servers</link></p><h2>III. Medidas de Seguridad</h2><p>Para garantizar la confidencialidad y protección de los datos, se toman medidas en aplicación de la política de seguridad de los sistemas de información del Estado, aplicada al CNRS. Los datos se alojan en Francia en los servidores del CNRS.</p><h2>IV. Ejercicio de sus Derechos</h2><p>Puede acceder y obtener una copia de sus datos, oponerse al tratamiento de estos datos o solicitar su rectificación. También tiene derecho a la limitación del tratamiento de sus datos. Puede ejercer estos derechos contactando al responsable del tratamiento en el Instituto de Sistemas Complejos-París Ile de France, ubicado en 113 rue Nationale 75013 París, o a través del formulario de contacto disponible en <link>https://openportability.org/</link></p><p>También puede contactar al Delegado de Protección de Datos (DPD) del CNRS en: CNRS - Servicio de protección de datos, 2 rue Jean Zay, 54519 Vandoeuvre-lès-Nancy - dpd.demandes@cnrs.fr.</p><p>Si considera que sus derechos de Informática y Libertades no se respetan, puede presentar una reclamación en línea ante la CNIL, 3 Place de Fontenoy, TSA 80715 – 75334 París Cedex 07 (<link>https://www.cnil.fr/</link>).</p>",
         "backToSignIn": "Volver al inicio de sesión"
+    },
+    "SuccessAutomaticReconnexion": {
+        "congratulations": "¡Felicitaciones!",
+        "secondObjective": "Has completado el segundo objetivo y te has reconectado con {count} cuentas. ¡Has llegado a tu destino!",
+        "notification": "Continuaremos notificándote si nuevas cuentas pueden ser reconectadas, por correo electrónico o a través de tu red preferida, según tus preferencias.",
+        "stats": {
+            "reconnectedAccounts": "Cuentas reconectadas",
+            "totalAccounts": "Total de cuentas",
+            "remainingAccounts": "Cuentas restantes",
+            "blueskyFollowing": "Reconexiones en Bluesky",
+            "mastodonFollowing": "Reconexiones en Mastodon"
+        },
+        "firstObjective": "¡Primer objetivo logrado, estás inscrito/a para el viaje!"
+    },
+    "migrateSea": {
+        "logo": {
+            "alt": "Logo HelloQuittex"
+        },
+        "matchDetails": {
+            "bluesky": "{count} en Bluesky",
+            "mastodon": "{count} en Mastodon"
+        },
+        "title": "¡La #GranReconexión!",
+        "matchMessage": "¡Se encontraron {matchCount} pasajeros durante tu primer paso de migración!\nAhora es el momento de activar la conexión con aquellos que quieres\nunirte en tus nuevas redes.",
+        "stats": {
+            "awaitingConnection": "de tus cuentas seguidas están\nesperando conexión!",
+            "alreadyTransferred": "suscriptores ya han sido\ntransferidos!"
+        }
+    },
+    "ReconnexionOptions": {
+        "title": "Elige cómo quieres reconectarte con tus seguidos",
+        "buttons": {
+            "automatic": "RECONECTARME AUTOMÁTICAMENTE",
+            "manual": "ELIJO LAS CUENTAS A RECONECTAR"
+        },
+        "descriptions": {
+            "automatic": "HelloQuittex te reconectará con todos tus seguidores de X durante 30 días",
+            "manual": "HelloQuittex te mostrará en detalle las cuentas encontradas en Bluesky y Mastodon para que puedas elegir si conectarte o no"
+        },
+        "stats": {
+            "connections": "conexiones importadas",
+            "bluesky": "conexiones que pueden ser activadas en Bluesky y Mastodon",
+            "networks": "usuarios con al menos una conexión que puede ser activada"
+        }
+    },
+    "reconnexionModal": {
+        "title": "¡Acabas de activar la conexión con {count} cuentas!",
+        "message": "Felicitaciones, tu reconexión está completa, has llegado a salvo.",
+        "stayInformed": "MANTENTE INFORMADO/A SOBRE NUEVAS CONEXIONES",
+        "progressTitle": "Reconexión en progreso: {succeeded} de {total} cuentas",
+        "progressMessage": "Por favor espera mientras reconectamos tus cuentas...",
+        "migrationInProgress": "Reconexión en progreso...",
+        "migrationComplete": "¡Reconexión completada!",
+        "migrationProgress": "{current} de {total} cuentas reconectadas",
+        "migrationCompleteStats": "Se reconectaron exitosamente {count} cuentas",
+        "minimize": "Minimizar",
+        "close": "Cerrar"
+    },
+    "Migrate": {
+        "migrationInProgress": "Reconexión en progreso...",
+        "migrationComplete": "¡Reconexión completada!",
+        "migrationProgress": "{current} de {total} cuentas reconectadas",
+        "migrationCompleteStats": "Se reconectaron exitosamente {count} cuentas",
+        "minimize": "Minimizar",
+        "close": "Cerrar"
+    },
+    "AutomaticReconnexion": {
+        "reconnectionInProgress": "Reconexión automática activada",
+        "chooseManualy": "tus seguidos para reconectar",
+        "switchToManual": "Haz clic aquí para elegir manualmente",
+        "accountsToConnect": "Cuentas para conectar",
+        "blueskyAccounts": "Cuentas de Bluesky",
+        "mastodonAccounts": "Cuentas de Mastodon"
+    },
+    "refreshTokenModal": {
+        "title": "Reconexión Requerida",
+        "description": "Tu sesión ha expirado para {provider}. Por favor, reconéctate para continuar.",
+        "descriptionMultiple": "Tu sesión ha expirado para los siguientes servicios: {providers}. Por favor, reconéctate para continuar.",
+        "details": {
+            "bluesky": "Tu sesión de BlueSky ha expirado. Por razones de seguridad, solo utilizamos tokens de acceso temporales que necesitan ser renovados regularmente.",
+            "mastodon": "Necesitamos permisos adicionales para habilitar la reconexión con tus seguidores. Por favor, reconéctate para autorizar estas nuevas funciones.",
+            "both": "• BlueSky: Sesión expirada (tokens temporales)\n• Mastodon: Actualización de permisos requerida"
+        },
+        "close": "Cerrar"
+    },
+    "AccountToMigrate": {
+        "followOnBluesky": "Seguir en Bluesky",
+        "followOnMastodon": "Seguir en Mastodon",
+        "followedOnBluesky": "Seguido en Bluesky",
+        "followedOnMastodon": "Seguido en Mastodon"
     }
 }
