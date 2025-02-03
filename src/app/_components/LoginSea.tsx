@@ -3,29 +3,26 @@
 import Image from 'next/image';
 
 import { plex } from '@/app/fonts/plex';
-
-import logoHQX from '../../../public/logoxHQX/HQX-blanc-FR.svg'
+import { useParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import seaBackground from '../../../public/sea-wave.svg';
 import Boat from './Boat';
-
-import progress0 from '../../../public/progress/progress-0.svg';
-import progress25 from '../../../public/progress/progress-25.svg';
-import progress50 from '../../../public/progress/progress-50.svg';
-import progress75 from '../../../public/progress/progress-75.svg';
-import progress100 from '../../../public/progress/progress-100.svg';
+import logo from '../../../public/logo/logo-openport-blanc.svg';
+;
 
 interface SeaProps {
   progress: number;
 }
 
 export default function LoginSea() {
-
+  const t = useTranslations('signin');
+  const params = useParams();
   return (
     <div className="absolute top-0 left-0 w-full h-[35rem]">
       <Image src={seaBackground} fill alt="" className="object-cover"></Image>
       <Image
-        src={logoHQX}
-        alt=""
+        src={logo}
+        alt={t('logo.alt')}
         width={306}
         height={125}
         className="mx-auto lg:mt-8 relative"

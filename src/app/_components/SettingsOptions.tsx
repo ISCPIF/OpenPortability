@@ -1,16 +1,77 @@
 'use client'
 
-import { Fragment, useState } from 'react'
+import { Fragment, useState, useEffect } from 'react'
 import { Menu, Transition, Dialog } from '@headlessui/react'
 import { signOut } from 'next-auth/react'
 import { IoEllipsisVertical } from 'react-icons/io5'
 import { useTranslations } from 'next-intl'
-import { Trash2 } from 'lucide-react'
+import { Trash2, CheckCircle2 } from 'lucide-react'
 import { plex } from '@/app/fonts/plex'
+import { Switch } from '@headlessui/react'
 
 export default function SettingsOptions() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const [acceptOEP, setAcceptOEP] = useState(false)
+  const [acceptResearch, setAcceptResearch] = useState(false)
+  const [acceptOEPNewsletter, setAcceptOEPNewsletter] = useState(false)
+  const [showSuccess, setShowSuccess] = useState(false)
   const t = useTranslations('settings')
+
+  useEffect(() => {
+    const fetchPreferences = async () => {
+      try {
+        const response = await fetch('/api/newsletter', { method: 'GET' });
+        if (response.ok) {
+          const responseData = await response.json();
+          const preferences = responseData.data;
+          setAcceptResearch(!!preferences.research_accepted);
+          setAcceptOEP(!!preferences.oep_accepted);
+          setAcceptOEPNewsletter(!!preferences.oep_newsletter);
+        }
+      } catch (error) {
+        console.error('Error fetching preferences:', error);
+      }
+    };
+    fetchPreferences();
+  }, []);
+
+  const handleSwitchChange = async (type: 'research' | 'oep' | 'oepNewsletter', value: boolean) => {
+    try {
+      setIsLoading(true);
+      const response = await fetch('/api/newsletter', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          acceptOEP: type === 'oep' ? value : acceptOEP,
+          research_accepted: type === 'research' ? value : acceptResearch,
+          oep_newsletter: type === 'oepNewsletter' ? value : acceptOEPNewsletter,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update preferences');
+      }
+
+      if (type === 'research') {
+        setAcceptResearch(value);
+      } else if (type === 'oep') {
+        setAcceptOEP(value);
+      } else {
+        setAcceptOEPNewsletter(value);
+      }
+      
+      // Show success message
+      setShowSuccess(true);
+      setTimeout(() => setShowSuccess(false), 3000);
+    } catch (error) {
+      console.error('Error updating preferences:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleDeleteAccount = () => {
     setShowDeleteConfirm(true)
@@ -49,8 +110,68 @@ export default function SettingsOptions() {
           leaveFrom="transform opacity-100 scale-100"
           leaveTo="transform opacity-0 scale-95"
         >
-          <Menu.Items className="absolute right-0 mt-2 w-48 origin-top-right rounded-xl bg-gradient-to-br from-gray-900/90 to-gray-800/90 backdrop-blur-xl border border-white/10 shadow-lg focus:outline-none z-50">
-            <div className="px-1 py-1">
+          <Menu.Items className="absolute right-0 mt-2 w-72 origin-top-right rounded-xl bg-gradient-to-br from-gray-900/90 to-gray-800/90 backdrop-blur-xl border border-white/10 shadow-lg focus:outline-none z-50">
+            <div className="px-3 py-2">
+              <h1>NOTIFICATION OPTIONS</h1>
+              {showSuccess && (
+                <div className="flex items-center gap-2 text-xs text-green-400 mb-2 bg-green-500/10 p-2 rounded-lg">
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>{t('preferencesUpdated')}</span>
+                </div>
+              )}
+              <div className="border-b border-white/10 pb-2 mb-2">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs text-white/60">{t('newsletter')}</span>
+                  <Switch
+                    disabled={isLoading}
+                    checked={acceptOEP}
+                    onChange={(value) => handleSwitchChange('oep', value)}
+                    className={`${
+                      acceptOEP ? 'bg-blue-600' : 'bg-gray-700'
+                    } relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2`}
+                  >
+                    <span
+                      className={`${
+                        acceptOEP ? 'translate-x-5' : 'translate-x-1'
+                      } inline-block h-3 w-3 transform rounded-full bg-white transition-transform`}
+                    />
+                  </Switch>
+                </div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs text-white/60">{t('oepNewsletter')}</span>
+                  <Switch
+                    disabled={isLoading}
+                    checked={acceptOEPNewsletter}
+                    onChange={(value) => handleSwitchChange('oepNewsletter', value)}
+                    className={`${
+                      acceptOEPNewsletter ? 'bg-blue-600' : 'bg-gray-700'
+                    } relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2`}
+                  >
+                    <span
+                      className={`${
+                        acceptOEPNewsletter ? 'translate-x-5' : 'translate-x-1'
+                      } inline-block h-3 w-3 transform rounded-full bg-white transition-transform`}
+                    />
+                  </Switch>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-white/60">{t('research')}</span>
+                  <Switch
+                    disabled={isLoading}
+                    checked={acceptResearch}
+                    onChange={(value) => handleSwitchChange('research', value)}
+                    className={`${
+                      acceptResearch ? 'bg-blue-600' : 'bg-gray-700'
+                    } relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2`}
+                  >
+                    <span
+                      className={`${
+                        acceptResearch ? 'translate-x-5' : 'translate-x-1'
+                      } inline-block h-3 w-3 transform rounded-full bg-white transition-transform`}
+                    />
+                  </Switch>
+                </div>
+              </div>
               <Menu.Item>
                 {({ active }) => (
                   <button

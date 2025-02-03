@@ -47,8 +47,24 @@ next-env.d.ts
 *.crt
 *.pem
 *.csr
-nginx/certs/*.crt
-nginx/certs/*.key
 backup.sql
 
-workervolumes/db/data
+/tests
+/volumes
+/cleanup
+/worker_refreshtoken/node_modules
+
+
+/cerbots
+/coverage
+/scripts
+docker-compose.migration.yml
+Dockerfile.migration
+docker-compose.yml
+Dockerfile
+reload.docker-compose.yml
+
+/nginx
+nginx.conf
+/nginx/certs
+!Dockerfile
