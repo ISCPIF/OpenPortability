@@ -136,6 +136,9 @@ export default function DashboardPage() {
           fetch('/api/stats/total')
         ]);
 
+        console.log("USER STATS RESPONSE ", userStatsResponse)
+        console.log("GLOBAL STATS RESPONSE ", globalStatsResponse)
+
         if (!userStatsResponse.ok || !globalStatsResponse.ok) {
           throw new Error('Failed to fetch stats');
         }

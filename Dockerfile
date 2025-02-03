@@ -30,11 +30,13 @@
 FROM node:18-alpine
 WORKDIR /app
 
-# Copier tous les fichiers du projet
-COPY . .
+# Copier uniquement les fichiers nécessaires pour npm install
+COPY package*.json ./
+COPY tsconfig*.json ./
+COPY next.config.js ./
 
-# Installer les dépendances
-RUN npm install
+# Installer les dépendances avec cache
+RUN npm ci
 
 # Set environment variables
 ENV NODE_ENV=development
