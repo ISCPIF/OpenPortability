@@ -468,7 +468,7 @@
     },
     "migrateSea": {
         "logo": {
-            "alt": "Logo HelloQuittex"
+            "alt": "Logo OpenPortability"
         },
         "matchDetails": {
             "bluesky": "{count} en Bluesky",
@@ -488,8 +488,8 @@
             "manual": "ELIJO LAS CUENTAS A RECONECTAR"
         },
         "descriptions": {
-            "automatic": "HelloQuittex te reconectará con todos tus seguidores de X durante 30 días",
-            "manual": "HelloQuittex te mostrará en detalle las cuentas encontradas en Bluesky y Mastodon para que puedas elegir si conectarte o no"
+            "automatic": "OpenPortability te reconectará con todos tus seguidores de X durante 30 días",
+            "manual": "OpenPortability te mostrará en detalle las cuentas encontradas en Bluesky y Mastodon para que puedas elegir si conectarte o no"
         },
         "stats": {
             "connections": "conexiones importadas",
