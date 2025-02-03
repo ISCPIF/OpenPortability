@@ -419,8 +419,8 @@
       "manual": "JE CHOISIS LES COMPTES À RECONNECTER"
     },
     "descriptions": {
-      "automatic": "HelloQuittex vous reconnectera avec tous vos abonnés venant de X pendant 30 jours",
-      "manual": "HelloQuittex vous proposera en détail les comptes trouvés sur Bluesky et Mastodon pour que vous puissiez choisir de vous connecter ou non"
+      "automatic": "OpenPortability vous reconnectera avec tous vos abonnés venant de X pendant 30 jours",
+      "manual": "OpenPortability vous proposera en détail les comptes trouvés sur Bluesky et Mastodon pour que vous puissiez choisir de vous connecter ou non"
     },
     "stats": {
       "connections": "connexions importées",
@@ -430,7 +430,7 @@
   },
   "migrateSea": {
     "logo": {
-      "alt": "Logo HelloQuittex"
+      "alt": "Logo OpenPortability"
     },
     "matchDetails": {
       "bluesky": "{count} sur Bluesky",

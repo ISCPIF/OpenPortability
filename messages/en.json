@@ -420,8 +420,8 @@
       "manual": "I CHOOSE ACCOUNTS TO RECONNECT"
     },
     "descriptions": {
-      "automatic": "HelloQuittex will reconnect you with all your followers from X for 30 days",
-      "manual": "HelloQuittex will show you in detail the accounts found on Bluesky and Mastodon so you can choose whether to connect or not"
+      "automatic": "OpenPortability will reconnect you with all your followers from X for 30 days",
+      "manual": "OpenPortability will show you in detail the accounts found on Bluesky and Mastodon so you can choose whether to connect or not"
     },
     "stats": {
       "connections": "imported connections",
@@ -431,7 +431,7 @@
   },
   "migrateSea": {
     "logo": {
-      "alt": "HelloQuittex Logo"
+      "alt": "OpenPortability Logo"
     },
     "matchDetails": {
       "bluesky": "{count} on Bluesky",
