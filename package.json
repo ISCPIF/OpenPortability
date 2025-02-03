@@ -1,5 +1,5 @@
 {
-  "name": "goodbyex",
+  "name": "openportability",
   "version": "0.1.0",
   "private": true,
   "engines": {
@@ -21,6 +21,7 @@
     "@zip.js/zip.js": "^2.7.54",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "crypto-js": "^4.2.0",
     "fflate": "^0.8.2",
     "framer-motion": "^11.13.4",
     "jszip": "^3.10.1",
@@ -28,12 +29,14 @@
     "next": "15.0.3",
     "next-auth": "^5.0.0-beta.25",
     "next-intl": "^3.26.3",
+    "nodemailer": "^6.9.16",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-icons": "^5.4.0",
     "tailwind-merge": "^2.5.5"
   },
   "devDependencies": {
+    "@types/crypto-js": "^4.2.2",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",

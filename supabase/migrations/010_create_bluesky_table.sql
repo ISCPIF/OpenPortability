@@ -1,6 +1,8 @@
 -- Create followers table to store Twitter followers
 create table if not exists "public"."followers" (
-    "twitter_id" text primary key
+    "twitter_id" text primary key,
+    "bluesky_handle" text,
+    "bluesky_did" text
 );
 
 -- Enable RLS on followers
@@ -18,6 +20,9 @@ create policy "Authenticated users can create followers"
 create table if not exists "public"."sources_followers" (
     "source_id" uuid references public.sources(id) on delete cascade,
     "follower_id" text references public.followers(twitter_id) on delete cascade,
+    "bluesky_handle" text,
+    "has_follow_bluesky" boolean DEFAULT false,
+    "followed_at_bluesky" timestamp with time zone,
     primary key (source_id, follower_id)
 );
 

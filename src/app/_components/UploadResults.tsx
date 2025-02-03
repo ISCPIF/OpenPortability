@@ -1,18 +1,16 @@
 'use client'
 
-import { motion } from 'framer-motion';
 import { Ship, Users, Globe } from 'lucide-react';
 import PartageButton from './PartageButton';
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { plex } from '../fonts/plex';
 import { useTranslations } from 'next-intl';
+import { useSession } from "next-auth/react"
 
-
-interface UploadResultsProps {
-  followerCount: number;
-  followingCount: number;
-}
+const formatNumber = (num: number): string => {
+  return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+};
 
 interface TotalStats {
   total_followers: number;
@@ -21,25 +19,24 @@ interface TotalStats {
 }
 
 interface UploadResultsProps {
-  showRedirectMessage?: boolean;
-  onShare: (url: string, platform: string) => void;
   stats: {
     totalUsers: number;
     following: number;
     followers: number;
   };
+  onShare: (url: string, platform: string) => void;
+  setIsModalOpen: (isOpen: boolean) => void;
   hasTwitter?: boolean;
   hasBluesky?: boolean;
   hasMastodon?: boolean;
   hasOnboarded?: boolean;
   userId?: string;
-  twitterId?: string;
   twitter_username?: string;
   mastodon_username?: string;
   bluesky_username?: string;
   isLoading?: boolean;
   setIsLoading?: (loading: boolean) => void;
-  setIsModalOpen: (open: boolean) => void;
+  showRedirectMessage?: boolean;
 }
 
 export default function UploadResults({ 
@@ -51,27 +48,25 @@ export default function UploadResults({
   hasMastodon = false,
   hasOnboarded = false,
   userId,
-  twitterId,
   twitter_username,
   mastodon_username,
   bluesky_username,
   isLoading,
   setIsLoading,
   setIsModalOpen,
-  followerCount,
-  followingCount 
 }: UploadResultsProps) {
+  const { data: session } = useSession();
+  const t = useTranslations('uploadResults');
+  const tShare = useTranslations('dashboard');  
   const [totalUsers, setTotalUsers] = useState<number>(stats.totalUsers);
+  const [totalStats, setTotalStats] = useState<TotalStats | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   // Calculate completion status
   const totalSteps = 4; 
   const completedSteps = [hasTwitter, hasBluesky, hasMastodon, hasOnboarded].filter(Boolean).length;
   const isThreeQuartersComplete = completedSteps >= (totalSteps * 0.75);
-  const t = useTranslations('uploadResults');
   const username = twitter_username || mastodon_username || bluesky_username || '';
-  const [totalStats, setTotalStats] = useState<TotalStats | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
 
   useEffect(() => {
     if (setIsLoading) {
@@ -97,18 +92,41 @@ export default function UploadResults({
     fetchTotalStats();
   }, [t]);
 
+  if (!session) {
+    return null;
+  }
+
+  const handleShare = async (platform: string) => {
+    const shareText = tShare.raw('shareModal.shareText', { count: stats.followers + stats.following });
+    let shareUrl = '';
+    
+    switch (platform) {
+      case 'mastodon':
+        shareUrl = `${session.user.mastodon_instance}/share?text=${encodeURIComponent(shareText)}`;
+        break;
+      case 'bluesky':
+        shareUrl = `https://bsky.app/intent/compose?text=${encodeURIComponent(shareText)}`;
+        break;
+      case 'twitter':
+        shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`;
+        break;
+    }
+
+    if (shareUrl) {
+      window.open(shareUrl, '_blank');
+    }
+
+    if (onShare) {
+      onShare(shareUrl, platform);
+    }
+  };
+
   const totalProcessed = stats.followers + stats.following;
   const totalInDatabase = totalStats ? totalStats.total_followers + totalStats.total_following : 0;
   const totalReady = totalStats ? totalStats.total_sources : 0;
 
-  // console.log('totalInDatabase', totalInDatabase);
-  // console.log('totalProcessed', totalProcessed);
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      className={`w-full max-w-2xl mx-auto mb-8 ${plex.className}`}
-    >
+    <div className={`w-full max-w-2xl mx-auto mb-8 ${plex.className}`}>
       <div className="bg-gradient-to-br from-green-500/10 via-emerald-500/10 to-teal-500/10 
                     backdrop-blur-xl rounded-2xl border border-white/10 shadow-xl p-6 space-y-6">
         <div className="space-y-4">
@@ -124,7 +142,7 @@ export default function UploadResults({
         </div>
 
         <p className="text-white/80 text-center">
-          {t('importSuccess', { count: stats.following + stats.followers })}
+          {t('importSuccess', { count: formatNumber(stats.following + stats.followers) })}
         </p>
 
         <div className="flex justify-center gap-4">
@@ -135,7 +153,7 @@ export default function UploadResults({
             <div>
               <p className="text-sm text-white/60">{t('stats.twitterAccounts.label')}</p>
               <p className="text-2xl font-bold text-white">
-                {totalProcessed}
+                {formatNumber(totalProcessed)}
               </p>
             </div>
           </div>
@@ -147,22 +165,24 @@ export default function UploadResults({
             <div>
               <p className="text-sm text-white/60">{t('stats.totalImported.label')}</p>
               <p className="text-2xl font-bold text-white">
-                {totalInDatabase}
+                {formatNumber(totalInDatabase)}
               </p>
             </div>
           </div>
+        </div>
 
-          <div className="bg-black/20 rounded-xl p-4 flex items-center gap-4">
-            <div className="bg-pink-500/20 p-2 rounded-full">
-              <Users className="w-5 h-5 text-pink-400" />
-            </div>
-            <div>
-              <p className="text-sm text-white/60">{t('stats.readyTravelers.label')}</p>
-              <p className="text-2xl font-bold text-white">
-                {totalReady}
-              </p>
-            </div>
-          </div>
+        <p className="text-white/80 text-center">
+          {t('inviteFriends')}
+        </p>
+        <div className={`flex items-center justify-center transition-opacity duration-300 ${isThreeQuartersComplete ? 'opacity-100' : 'opacity-70'}`}>
+          <PartageButton 
+            providers={{
+              twitter: hasTwitter,
+              bluesky: hasBluesky,
+              mastodon: hasMastodon
+            }}
+            onShare={handleShare}
+          />
         </div>
         {/* </div> */}
 
@@ -174,15 +194,11 @@ export default function UploadResults({
         </div>
 
         {showRedirectMessage && (
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="text-sm text-white/60 text-center mt-4"
-          >
+          <p className="text-sm text-white/60 text-center mt-4">
             {t('redirecting')}
-          </motion.p>
+          </p>
         )}
       </div>
-    </motion.div>
+    </div>
   );
 }

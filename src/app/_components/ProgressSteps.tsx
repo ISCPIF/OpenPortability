@@ -1,65 +1,56 @@
 'use client'
 
 import { useState, useEffect } from 'react';
-import { CheckCircle } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { supabase } from '@/lib/supabase';
 import { useTranslations } from 'next-intl';
+import Image from 'next/image';
 
-function ProgressStep({ 
-  step, 
-  title, 
-  description, 
-  isCompleted, 
-  isLast = false,
-  onClick
-}: { 
+import stepsOKIcon from '../../../public/newSVG/steps-OK.svg'
+import stepsInitIcon from '../../../public/newSVG/steps-Init.svg'
+import stepsPartialIcon from '../../../public/newSVG/steps-partiel.svg'
+
+function ProgressStep({
+  step,
+  title,
+  description,
+  isCompleted,
+  isPartiallyCompleted = false,
+  isLast = false
+}: {
   step: number;
   title: string;
-  description: string;
+  description?: string;
   isCompleted: boolean;
+  isPartiallyCompleted?: boolean;
   isLast?: boolean;
-  onClick?: () => void;
 }) {
   return (
-    <div className="flex-1 relative">
-      {/* Ligne de connexion */}
-      {!isLast && (
-        <div 
-          className={`absolute left-[50%] top-6 h-0.5 w-full
-            ${isCompleted ? 'bg-gradient-to-r from-pink-500 to-purple-500' : 'bg-white/10'}`} 
-        />
-      )}
-      
-      {/* Contenu de l'étape */}
-      <div 
-        className={`relative flex flex-col items-center text-center px-4
-          ${onClick ? 'cursor-pointer group' : ''}`}
-        onClick={onClick}
+    <div className="flex-1 relative flex flex-col items-center">
+      <div
+        className={`w-8 h-8 rounded-full flex items-center justify-center mb-3
+          ${isCompleted
+            ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-lg shadow-pink-500/20'
+            : 'bg-white/5 text-white/40 border border-white/10'}`}
       >
-        {/* Cercle avec numéro ou check */}
-        <div 
-          className={`w-12 h-12 rounded-full flex items-center justify-center mb-3 z-10
-            transition-all duration-300 ease-out
-            ${isCompleted 
-              ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white shadow-lg shadow-pink-500/20' 
-              : 'bg-white/5 text-white/40 border border-white/10'}
-            ${onClick ? 'group-hover:scale-110' : ''}`}
-        >
-          {isCompleted ? <CheckCircle className="w-6 h-6" /> : step}
-        </div>
-        
-        {/* Texte */}
-        <div className="max-w-[150px]">
-          <h3 className={`font-medium mb-1 text-sm
-            ${isCompleted ? 'text-white' : 'text-white/60'}`}>
-            {title}
-          </h3>
+        {isCompleted ?
+          <Image src={stepsOKIcon} alt="Completed" width={32} height={32} /> :
+          isPartiallyCompleted ?
+            <Image src={stepsPartialIcon} alt="Not started" width={32} height={32} /> :
+            <Image src={stepsInitIcon} alt="Not started" width={32} height={32} />}
+      </div>
+
+      {/* Texte */}
+      <div className="text-center px-2">
+        <h3 className={`font-medium mb-1 text-sm
+          ${isCompleted ? 'text-white' : 'text-white/60'}`}>
+          {title}
+        </h3>
+        {description &&
           <p className={`text-xs leading-tight
-            ${isCompleted ? 'text-white/80' : 'text-white/40'}`}>
+          ${isCompleted ? 'text-white/80' : 'text-white/40'}`}>
             {description}
-          </p>
-        </div>
+          </p>}
       </div>
     </div>
   );
@@ -74,18 +65,16 @@ interface ProgressStepsProps {
     following: number;
     followers: number;
   };
-  setIsModalOpen: (open: boolean) => void;
   isShared: boolean;
   onProgressChange?: (progress: number) => void;
 }
 
-export default function ProgressSteps({ 
-  hasTwitter, 
-  hasBluesky, 
+export default function ProgressSteps({
+  hasTwitter,
+  hasBluesky,
   hasMastodon,
   hasOnboarded,
   stats,
-  setIsModalOpen,
   isShared: initialIsShared,
   onProgressChange
 }: ProgressStepsProps) {
@@ -95,22 +84,13 @@ export default function ProgressSteps({
 
   useEffect(() => {
     async function checkShareStatus() {
-      // console.log('🔍 Checking share status...');
       if (!session?.user?.id) {
         console.log('❌ No user session found');
         return;
       }
       const userId = session.user.id;
-      // console.log('👤 User ID type:', typeof userId);
-      // console.log('👤 User ID value:', userId);
-      // console.log('👤 User session:', {
-      //   id: session.user.id,
-      //   email: session.user.email,
-      // });
 
       try {
-        // console.log('📊 Fetching share events...');
-        
         const response = await fetch('/api/share', {
           method: 'GET',
           headers: {
@@ -122,13 +102,9 @@ export default function ProgressSteps({
           throw new Error('Failed to fetch share events');
         }
 
-        const { data } = await response.json();
-        console.log('📦 Share events:', data);
-
-        // Vérifier qu'au moins un partage est réussi
-        const hasShared = Array.isArray(data) && data.length > 0 && data.some(event => event.success);
-        console.log('✅ Share status:', hasShared ? 'Has shared' : 'Has not shared');
-        setHasSuccessfulShare(hasShared);
+        const { hasShares } = await response.json();
+        console.log('✅ Share status:', hasShares ? 'Has shared' : 'Has not shared');
+        setHasSuccessfulShare(hasShares);
       } catch (error) {
         console.error('❌ Failed to check share status:', error);
       }
@@ -173,39 +149,36 @@ export default function ProgressSteps({
 
   return (
     <div className="bg-black/20 backdrop-blur-lg rounded-2xl p-8">
-      <div className="flex items-start gap-4">
+      <div className="grid grid-cols-2 md:flex md:flex-row items-start gap-4">
         <ProgressStep
           step={1}
           title={t('dashboard.title')}
-          description={t('dashboard.description')}
           isCompleted={true}
         />
-        
+
         <ProgressStep
           step={2}
           title={t('socialNetworks.title')}
-          description={t('socialNetworks.description')}
-          isCompleted={getConnectedAccountsCount() >= 2}
+          isPartiallyCompleted={getConnectedAccountsCount() === 2}
+          isCompleted={getConnectedAccountsCount() === 3}
         />
-        
+
         <ProgressStep
           step={3}
           title={t('import.title')}
           description={
             hasOnboarded
               ? t('import.description.withStats', { following: stats.following, followers: stats.followers })
-              : t('import.description.noStats')
+              : ""
           }
           isCompleted={hasOnboarded}
         />
-        
+
         <ProgressStep
           step={4}
           title={t('share.title')}
-          description={t('share.description')}
           isCompleted={hasSuccessfulShare}
           isLast={true}
-          onClick={() => setIsModalOpen(true)}
         />
       </div>
     </div>
