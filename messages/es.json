@@ -438,7 +438,7 @@
         "launchButton": "¡Inicia tu reconexión con {count} cuentas!",
         "stats": {
             "twitterAccounts": "Cuentas de Twitter",
-            "totalImported": "Total importado"
+            "totalImported": "Conexiones de Twitter/X cartografiadas"
         },
         "title": "Reconexión Automática",
         "description": "Hemos encontrado {count} cuentas que puedes reconectar automáticamente.",

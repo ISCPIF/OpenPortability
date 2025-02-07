@@ -151,7 +151,7 @@
             "value": "{count}"
             },
             "totalImported": {
-            "label": "Total importé",
+            "label": "Connextions Twitter/X cartographiées",
             "value": "{count} comptes importés"
             },
             "readyTravelers": {
