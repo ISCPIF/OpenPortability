@@ -226,20 +226,20 @@ export default function NewsLetterFirstSeen({ userId, onSubscribe, onClose }: Ne
 
         <div className="flex items-center space-x-3">
               <Switch
-                checked={acceptResearch}
-                onChange={(newValue) => handleSwitchChange('research', newValue)}
+                checked={acceptOEP}
+                onChange={(newValue) => handleSwitchChange('oep', newValue)}
                 className={`${
-                  acceptResearch ? 'bg-blue-600' : 'bg-gray-200'
+                  acceptOEP ? 'bg-blue-600' : 'bg-gray-200'
                 } relative inline-flex h-[24px] w-[44px] shrink-0 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2`}
               >
                 <span
                   className={`${
-                    acceptResearch ? 'translate-x-[22px]' : 'translate-x-[2px]'
+                    acceptOEP ? 'translate-x-[22px]' : 'translate-x-[2px]'
                   } inline-block h-[20px] w-[20px] transform rounded-full bg-white transition-transform`}
                 />
               </Switch>
               <span className="text-sm text-gray-700">
-              {t('newsletter.researchConsent')}
+              {t('newsletter.consent')}
               </span>
             </div>
           <div className="space-y-2 text-center text-sm">
@@ -262,22 +262,23 @@ export default function NewsLetterFirstSeen({ userId, onSubscribe, onClose }: Ne
 
             <div className="flex items-center space-x-3">
               <Switch
-                checked={acceptOEP}
-                onChange={(newValue) => handleSwitchChange('oep', newValue)}
+                checked={acceptResearch}
+                onChange={(newValue) => handleSwitchChange('research', newValue)}
                 className={`${
-                  acceptOEP ? 'bg-blue-600' : 'bg-gray-200'
+                  acceptResearch ? 'bg-blue-600' : 'bg-gray-200'
                 } relative inline-flex h-[24px] w-[44px] shrink-0 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2`}
               >
                 <span
                   className={`${
-                    acceptOEP ? 'translate-x-[22px]' : 'translate-x-[2px]'
+                    acceptResearch ? 'translate-x-[22px]' : 'translate-x-[2px]'
                   } inline-block h-[20px] w-[20px] transform rounded-full bg-white transition-transform`}
                 />
               </Switch>
               <span className="text-sm text-gray-700">
-              {t('newsletter.consent')}
+              {t('newsletter.researchConsent')}
               </span>
             </div>
+
 
             {error && (
               <p className="text-red-500 text-sm mt-2">{error}</p>

@@ -27,7 +27,7 @@ export default function LoginSea() {
         height={125}
         className="mx-auto lg:mt-8 relative"
       />
-      <Boat model={1} top={66} left={30} scale={0.7} />
+      <Boat model={6} top={66} left={30} scale={0.7} />
     </div>
   );
 }
