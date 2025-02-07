@@ -474,7 +474,7 @@
             "bluesky": "{count} en Bluesky",
             "mastodon": "{count} en Mastodon"
         },
-        "title": "¡La #GranReconexión!",
+        "title": "Hacia una nueva era digital",
         "matchMessage": "¡Se encontraron {matchCount} pasajeros durante tu primer paso de migración!\nAhora es el momento de activar la conexión con aquellos que quieres\nunirte en tus nuevas redes.",
         "stats": {
             "awaitingConnection": "de tus cuentas seguidas están\nesperando conexión!",
