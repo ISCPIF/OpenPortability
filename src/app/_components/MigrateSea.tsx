@@ -84,8 +84,8 @@ export default function MigrateSea({ stats }: SeaProps) {
     return (
       <>
         <Boat model={3} top={140} left={40} scale={2} zindex={20} />
-        <Boat model={2} top={190} left={15} scale={1.2} zindex={20} />
-        <Boat model={4} top={140} left={75} scale={1.2} zindex={20} />
+        <Boat model={2} top={180} left={15} scale={1.2} zindex={20} />
+        <Boat model={4} top={170} left={75} scale={1.2} zindex={20} />
       </>
     );
   };

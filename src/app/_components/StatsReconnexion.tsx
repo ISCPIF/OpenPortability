@@ -31,7 +31,7 @@ export default function StatsReconnexion({ globalStats }: StatsReconnexionProps)
     <div className="mt-12 w-full grid grid-cols-3 gap-8 ">
       {/* Connexions totales */}
       <div className="bg-[#1A237E] rounded-lg p-4 text-center text-white">
-        <div className="text-4xl font-bold mb-2 mt-4">
+        <div className="text-2xl font-bold mb-2 mt-8">
           {formatNumber(totalConnections)}
         </div>
         <div className={`${plex.className} text-sm`}>{t('stats.connections')}</div>

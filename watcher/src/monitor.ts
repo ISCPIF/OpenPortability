@@ -23,7 +23,6 @@ interface UserCompleteStats {
   updated_at: string;
 }
 
-
 const logger = winston.createLogger({
   level: 'info',
   format: winston.format.json(),
@@ -125,19 +124,28 @@ class TelegramMonitor {
 
       // Construire le message de rapport
       let message = `📊 Rapport de surveillance\n\n`;
-      message += `👥 Utilisateurs inscrits: ${userCount}\n`;
-      message += `📥 Tâches d'import totales: ${jobCount}\n`;
-      message += `❌ Tâches en erreur: ${failedCount}\n\n`;
       
-      message += `🌐 Statistiques globales:\n`;
-      message += `➡️ Total followers: ${globalStats.total_followers}\n`;
-      message += `➡️ Total following: ${globalStats.total_following}\n\n`;
-      message += `🟦 Bluesky:\n`;
-      message += `   • Total: ${globalStats.total_bluesky}\n`;
-      message += `   • Suivis: ${globalStats.bluesky_followed}\n`;
-      message += `🐘 Mastodon:\n`;
-      message += `   • Total: ${globalStats.total_mastodon}\n`;
-      message += `   • Suivis: ${globalStats.mastodon_followed}`;
+      message += `👥 Utilisateurs\n`;
+      message += `• Total: ${globalStats.users.total}\n`;
+      message += `• Onboardés: ${globalStats.users.onboarded}\n\n`;
+      
+      message += `� Tâches d'import\n`;
+      message += `• Total: ${jobCount}\n`;
+      message += `• En erreur: ${failedCount}\n\n`;
+      
+      message += `🌐 Connexions\n`;
+      message += `• Followers: ${globalStats.connections.followers}\n`;
+      message += `• Following: ${globalStats.connections.following}\n\n`;
+      
+      message += `🟦 Bluesky\n`;
+      message += `• En attente: ${globalStats.connections.withHandleBluesky}\n`;
+      message += `• Reconnectés: ${globalStats.connections.followedOnBluesky}\n\n`;
+      
+      message += `🐘 Mastodon\n`;
+      message += `• En attente: ${globalStats.connections.withHandleMastodon}\n`;
+      message += `• Reconnectés: ${globalStats.connections.followedOnMastodon}\n\n`;
+      
+      message += `🕒 Mis à jour: ${new Date(globalStats.updated_at).toLocaleString('fr-FR')}`;
 
       await this.sendAlert(message);
       logger.info('Rapport envoyé');
@@ -150,44 +158,17 @@ class TelegramMonitor {
 
   private async getGlobalStats() {
     const { data, error } = await this.supabasePublic
-      .from('user_stats_cache')
-      .select('stats');
+      .from('global_stats_cache')
+      .select('stats')
+      .eq('id', true)
+      .single();
 
     if (error) {
       logger.error('Erreur lors de la récupération des stats globales:', error);
       throw error;
     }
 
-    interface GlobalStats {
-      total_followers: number;
-      total_following: number;
-      total_bluesky: number;
-      bluesky_followed: number;
-      total_mastodon: number;
-      mastodon_followed: number;
-    }
-
-    // Calculer les totaux à partir des stats de chaque utilisateur
-    const totals = data.reduce((acc: GlobalStats, row: { stats: UserCompleteStats }) => {
-      const stats = row.stats;
-      return {
-        total_followers: (acc.total_followers || 0) + (stats.connections?.followers || 0),
-        total_following: (acc.total_following || 0) + (stats.connections?.following || 0),
-        total_bluesky: (acc.total_bluesky || 0) + (stats.matches?.bluesky?.total || 0),
-        bluesky_followed: (acc.bluesky_followed || 0) + (stats.matches?.bluesky?.hasFollowed || 0),
-        total_mastodon: (acc.total_mastodon || 0) + (stats.matches?.mastodon?.total || 0),
-        mastodon_followed: (acc.mastodon_followed || 0) + (stats.matches?.mastodon?.hasFollowed || 0)
-      };
-    }, {
-      total_followers: 0,
-      total_following: 0,
-      total_bluesky: 0,
-      bluesky_followed: 0,
-      total_mastodon: 0,
-      mastodon_followed: 0
-    });
-
-    return totals;
+    return data.stats;
   }
 
   private async sendAlert(message: string) {
