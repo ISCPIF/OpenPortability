@@ -12,10 +12,10 @@ import boat6 from '../../../public/boats/boat-6.svg';
 import boat7 from '../../../public/boats/boat-7.svg';
 import boat8 from '../../../public/boats/boat-8.svg';
 import boat9 from '../../../public/boats/boat-9.svg';
-import boat10 from '../../../public/boats/boat-10.svg';
-import boat11 from '../../../public/boats/boat-11.svg';
-import boat12 from '../../../public/boats/boat-12.svg';
-import boat13 from '../../../public/boats/boat-13.svg';
+// import boat10 from '../../../public/boats/boat-10.svg';
+// import boat11 from '../../../public/boats/boat-11.svg';
+// import boat12 from '../../../public/boats/boat-12.svg';
+// import boat13 from '../../../public/boats/boat-13.svg';
 
 interface BoatProps {
   model: number;
@@ -63,14 +63,14 @@ export default function Boat({
         return boat8;
       case 9:
         return boat9;
-      case 10:
-        return boat10;
-      case 11:
-        return boat11;
-      case 12:
-        return boat12;
-      case 13:
-        return boat13;
+      // case 10:
+      //   return boat10;
+      // case 11:
+      //   return boat11;
+      // case 12:
+      //   return boat12;
+      // case 13:
+      //   return boat13;
     }
   };
 
