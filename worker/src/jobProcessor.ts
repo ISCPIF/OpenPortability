@@ -565,38 +565,46 @@ async function processFollowing(following: any[], userId: string, workerId: stri
     // Créer la source si elle n'existe pas
     await ensureSourceExists(userId, workerId);
 
-    // D'abord, insérer les targets
-    const { data: targetsData, error: targetsError } = await supabase
-      .from('targets')
-      .upsert(
-        following.map((item: any) => ({
-          twitter_id: item.following.accountId,
-        })),
-        { onConflict: 'twitter_id' }
-      );
+    // Process in smaller batches to avoid timeouts
+    const BATCH_SIZE = 50; // Consistent with follower processing
+    for (let i = 0; i < following.length; i += BATCH_SIZE) {
+      const batch = following.slice(i, i + BATCH_SIZE);
+      
+      // First create targets for this batch
+      const { error: targetsError } = await supabase
+        .from('targets')
+        .upsert(
+          batch.map((item: any) => ({
+            twitter_id: item.following.accountId,
+          })),
+          { onConflict: 'twitter_id' }
+        );
 
-    if (targetsError) {
-      console.error(` [Worker ${workerId}] Error inserting targets:`, targetsError);
-      throw new Error(`Failed to insert targets: ${targetsError.message || JSON.stringify(targetsError)}`);
+      if (targetsError) {
+        console.error(` [Worker ${workerId}] Error inserting targets:`, targetsError);
+        throw new Error(`Failed to insert targets: ${targetsError.message}`);
+      }
+
+      // Then create relations for this batch
+      const { error: relationsError } = await supabase
+        .from('sources_targets')
+        .upsert(
+          batch.map((item: any) => ({
+            source_id: userId,
+            target_twitter_id: item.following.accountId,
+          })),
+          { onConflict: 'source_id,target_twitter_id' }
+        );
+
+      if (relationsError) {
+        console.error(` [Worker ${workerId}] Error inserting following relations:`, relationsError);
+        throw new Error(`Failed to insert relations: ${relationsError.message}`);
+      }
+
+      console.log(` [Worker ${workerId}] Created ${batch.length} target relations for batch ${Math.floor(i/BATCH_SIZE) + 1}/${Math.ceil(following.length/BATCH_SIZE)}`);
     }
 
-    // Ensuite, créer les relations
-    const { data: relationsData, error: relationsError } = await supabase
-      .from('sources_targets')
-      .upsert(
-        following.map((item: any) => ({
-          source_id: userId,
-          target_twitter_id: item.following.accountId,
-        })),
-        { onConflict: 'source_id,target_twitter_id' }
-      );
-
-    if (relationsError) {
-      console.error(` [Worker ${workerId}] Error inserting following relations:`, relationsError);
-      throw new Error(`Failed to insert relations: ${relationsError.message || JSON.stringify(relationsError)}`);
-    }
-
-    console.log(` [Worker ${workerId}] Created ${following.length} target relations`);
+    console.log(` [Worker ${workerId}] Successfully processed all ${following.length} following relations`);
   } catch (error) {
     console.error(` [Worker ${workerId}] Error in processFollowing:`, error);
     throw error;

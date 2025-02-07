@@ -60,7 +60,6 @@ backup.sql
 /scripts
 docker-compose.migration.yml
 Dockerfile.migration
-docker-compose.yml
 Dockerfile
 reload.docker-compose.yml
 
