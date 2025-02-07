@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, redirect } from 'next/navigation';
 import { BskyAgent } from '@atproto/api';
 import { signIn } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -57,22 +57,27 @@ export default function BlueSkyLogin({ onLoginComplete }: BlueSkyLoginProps) {
         setError(data.error);
         return;
       }
+      const redirectPath = window.location.pathname.includes('/reconnect') 
+      ? `/${locale}/reconnect`
+      : `/${locale}/dashboard`;
 
       const result = await signIn('bluesky', {
         ...data.user,
-        redirect: false
+        redirect: true,
+        callbackUrl: redirectPath
+
       });
 
       if (result?.error) {
         throw new Error(result.error);
       }
 
-      if (result?.ok) {
-        const redirectPath = window.location.pathname.includes('/reconnect') 
-          ? `/${locale}/reconnect`
-          : `/${locale}/dashboard`;
-        router.push(redirectPath);
-      }
+      // if (result?.ok) {
+      //   const redirectPath = window.location.pathname.includes('/reconnect') 
+      //     ? `/${locale}/reconnect`
+      //     : `/${locale}/dashboard`;
+      //   redirect(redirectPath);
+      // }
 
     } catch (err) {
       setError(err instanceof Error ? err.message : t('form.errors.default'));
