@@ -219,7 +219,7 @@
         "shareModal": {
             "title": "Compartir mi viaje",
             "shareOn": "Compartir en {platform}",
-            "shareText": "¡Acabo de hacer mi #eXit! El éxodo de X es masivo. No pierdas ninguno de tus seguidores. Gracias a #OpenPortability registré {count} nuevos pasajeros para un viaje a #BlueSky y #Mastodon. ¡Únete y encuentra tu comunidad el #20deEnero vía https://openportability.org !"
+            "shareText": "¡🚨#eXode en progreso! Acabo de registrarme en #OpenPortability para seguir en contacto con mi comunidad en BlueSky/Mastodon. ¡Se han añadido {count} conexiones pendientes! En sólo 1 minuto, tú también puedes asegurarte de no perder a tus suscriptores! ➡️ https://OpenPortability.org"
         },
         "newsletter": {
             "title": "Seguir informado/a",
@@ -350,9 +350,9 @@
     },
     "footer": {
         "hosted": {
-            "text": "Esta plataforma está alojada por {cnrs}.",
-            "cnrs": "CNRS/ISC-PIF",
-            "hqx": "OpenPortability"
+          "text": "Esta plataforma es parte de un proyecto de investigación del mismo nombre. Está alojada por el {cnrs}. Es abierta y utilizable por todos",
+          "cnrs": "CNRS/ISC-PIF",
+          "hqx": "OpenPortability"
         },
         "copyright": " {year} OpenPortability. Todos los derechos reservados.",
         "privacy": "Política de privacidad"

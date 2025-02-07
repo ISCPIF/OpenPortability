@@ -86,3 +86,8 @@ networks:
 
 volumes:
   shared-tmp:
+    driver: local
+    driver_opts:
+      type: tmpfs
+      device: tmpfs
+      o: "noexec"
