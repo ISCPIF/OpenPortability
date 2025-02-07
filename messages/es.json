@@ -350,9 +350,9 @@
     },
     "footer": {
         "hosted": {
-          "text": "Esta plataforma es parte de un proyecto de investigación del mismo nombre. Está alojada por el {cnrs}. Es abierta y utilizable por todos",
+          "text": "Esta plataforma está abierta y puede ser utilizada por todos. Es parte de la investigación {openPortability} del ISC-PIF (CNRS). Está alojada por {cnrs}",
           "cnrs": "CNRS/ISC-PIF",
-          "hqx": "OpenPortability"
+          "openPortability": "OpenPortability"
         },
         "copyright": " {year} OpenPortability. Todos los derechos reservados.",
         "privacy": "Política de privacidad"
