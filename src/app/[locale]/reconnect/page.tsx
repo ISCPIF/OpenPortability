@@ -14,6 +14,7 @@ import { UserCompleteStats, GlobalStats } from '@/lib/types/stats'
 import { time } from 'console'
 import Link from 'next/link'
 import DashboardLoginButtons from '@/app/_components/DashboardLoginButtons'
+import StatsReconnexion from '@/app/_components/StatsReconnexion'
 
 // Dynamic imports for heavy components
 const MigrateSea = dynamic(() => import('@/app/_components/MigrateSea'), {
@@ -480,18 +481,6 @@ export default function MigratePage() {
                       stats={stats}
                       onSuccess={refreshStats}
                     />
-              // ) : stats?.matches?.bluesky?.notFollowed === 0 && stats?.matches?.mastodon?.notFollowed === 0 ? (
-              //   <SuccessAutomaticReconnexion
-              //     session={{
-              //       user: {
-              //         twitter_username: session?.user?.twitter_username ?? "",
-              //         bluesky_username: session?.user?.bluesky_username ?? "",
-              //         mastodon_username: session?.user?.mastodon_username ?? ""
-              //       }
-              //     }}
-              //     stats={stats}
-              //     onSuccess={refreshStats}
-              //           />
                       ) : isAutomaticReconnect ? (
                         <AutomaticReconnexion
                   results={migrationResults || { bluesky: { attempted: 0, succeeded: 0 }, mastodon: { attempted: 0, succeeded: 0 } }}
@@ -530,6 +519,11 @@ export default function MigratePage() {
                       )}
               </Suspense>
             )}
+            <div className="w-full flex justify-center">
+              <div className="max-w-[50rem] w-full">
+                <StatsReconnexion globalStats={globalStats} />
+              </div>
+            </div>
           </div>
 
           <Footer />

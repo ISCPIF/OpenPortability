@@ -3,8 +3,7 @@
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { plex } from '@/app/fonts/plex';
-import BSIcon from '../../../public/newSVG/BS.svg';
-import MastoIcon from '../../../public/newSVG/masto.svg';
+
 import { GlobalStats } from '@/lib/types/stats';
 
 const formatNumber = (num: number | undefined | null): string => {
@@ -19,42 +18,55 @@ interface StatsReconnexionProps {
 export default function StatsReconnexion({ globalStats }: StatsReconnexionProps) {
   const t = useTranslations('ReconnexionOptions');
 
+  console.log("GlobalStats from StatsReconnexion ", globalStats)
+
   // Calculate total connections safely
   const totalConnections = globalStats ? 
     (globalStats.connections?.followers || 0) + (globalStats.connections?.following || 0) : 0;
 
   // Get other stats safely
-  const mappings = globalStats?.connections?.withHandle || 0;
   const sources = globalStats?.users?.onboarded || 0;
 
   return (
-    <div className="mt-12 flex justify-center space-x-12">
+    <div className="mt-12 w-full grid grid-cols-3 gap-8 ">
       {/* Connexions totales */}
-      <div className="bg-[#1A237E] rounded-lg p-4 text-center text-white min-w-[140px]">
-        <div className="text-4xl font-bold mb-2">
+      <div className="bg-[#1A237E] rounded-lg p-4 text-center text-white">
+        <div className="text-4xl font-bold mb-2 mt-4">
           {formatNumber(totalConnections)}
         </div>
         <div className={`${plex.className} text-sm`}>{t('stats.connections')}</div>
       </div>
 
-      {/* Mappings Bluesky */}
-      <div className="bg-[#1A237E] rounded-lg p-4 text-center text-white min-w-[140px]">
-        <div className="text-4xl font-bold mb-2">
-          {formatNumber(mappings)}
+      {/* Mappings Bluesky et Mastodon */}
+      <div className="bg-[#1A237E] rounded-lg p-4 text-center text-white">
+        <div className="mb-4">
+          <div className="text-2xl font-bold">
+            {formatNumber(globalStats?.connections?.withHandleBluesky || 0)}
+          </div>
+          <div className={`${plex.className} text-sm`}>{t('stats.bluesky')}</div>
         </div>
-        <div className={`${plex.className} text-sm`}>{t('stats.bluesky')}</div>
-        <div className="flex justify-center gap-2 mb-2">
-          <Image src={BSIcon} alt="Bluesky" width={24} height={24} />
-          <Image src={MastoIcon} alt="Mastodon" width={24} height={24} />
+        <div>
+          <div className="text-2xl font-bold">
+            {formatNumber(globalStats?.connections?.withHandleMastodon || 0)}
+          </div>
+          <div className={`${plex.className} text-sm`}>{t('stats.mastodon')}</div>
         </div>
       </div>
 
-      {/* Sources */}
-      <div className="bg-[#1A237E] rounded-lg p-4 text-center text-white min-w-[140px]">
-        <div className="text-4xl font-bold mb-2">
-          {formatNumber(sources)}
+      {/* Followed Stats */}
+      <div className="bg-[#1A237E] rounded-lg p-4 text-center text-white">
+        <div className="mb-4">
+          <div className="text-2xl font-bold">
+            {formatNumber(globalStats?.connections?.followedOnBluesky || 0)}
+          </div>
+          <div className={`${plex.className} text-sm`}>{t('stats.followedBluesky')}</div>
         </div>
-        <div className={`${plex.className} text-sm`}>{t('stats.networks')}</div>
+        <div>
+          <div className="text-2xl font-bold">
+            {formatNumber(globalStats?.connections?.followedOnMastodon || 0)}
+          </div>
+          <div className={`${plex.className} text-sm`}>{t('stats.followedMastodon')}</div>
+        </div>
       </div>
     </div>
   );
