@@ -136,8 +136,8 @@ export default function DashboardPage() {
           fetch('/api/stats/total')
         ]);
 
-        console.log("USER STATS RESPONSE ", userStatsResponse)
-        console.log("GLOBAL STATS RESPONSE ", globalStatsResponse)
+        // console.log("USER STATS RESPONSE ", userStatsResponse)
+        // console.log("GLOBAL STATS RESPONSE ", globalStatsResponse)
 
         if (!userStatsResponse.ok || !globalStatsResponse.ok) {
           throw new Error('Failed to fetch stats');
@@ -152,6 +152,8 @@ export default function DashboardPage() {
           userStats,
           globalStats
         });
+
+        console.log("STATS ", globalStats)
       } catch (error) {
         console.error('Error fetching stats:', error);
       } finally {
@@ -275,7 +277,7 @@ export default function DashboardPage() {
                     }
                   }}
                   totalProcessed={stats.globalStats.users.total}
-                  totalInDatabase={stats.globalStats.connections.following}
+                  totalInDatabase={stats.globalStats.connections.following + stats.globalStats.connections.followers}
                   userStats={stats.userStats}
                 />
               ) : (
