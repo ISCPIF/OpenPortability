@@ -82,9 +82,9 @@
     },
     "footer": {
       "hosted": {
-        "text": "This platform is part of a research project of the same name. It is hosted by {cnrs}. It is open and usable by all",
+        "text": "This platform is open and usable by everyone. It is part of the {openPortability} research project at ISC-PIF (CNRS). It is hosted by {cnrs}",
         "cnrs": "CNRS/ISC-PIF",
-        "hqx": "OpenPortability"
+        "openPortability": "OpenPortability"
       },
         "copyright": " {year} OpenPortability. All rights reserved.",
         "privacy": "Privacy Policy"
