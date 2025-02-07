@@ -423,9 +423,11 @@
       "manual": "OpenPortability vous proposera en détail les comptes trouvés sur Bluesky et Mastodon pour que vous puissiez choisir de vous connecter ou non"
     },
     "stats": {
-      "connections": "connexions importées",
-      "bluesky": "connexions pouvant être activées sur BlueSky et Mastodon",
-      "networks": "utilisateurs avec au moins une connexion"
+      "connections": "Connexions Twitter/X cartographiées",
+      "bluesky": "Reconnexions en attente sur BlueSky",
+      "mastodon": "Reconnexions en attente sur Mastodon",
+      "followedBluesky": "Reconnexions effectuées sur BlueSky",
+      "followedMastodon": "Reconnexions effectuées sur Mastodon"
     }
   },
   "migrateSea": {

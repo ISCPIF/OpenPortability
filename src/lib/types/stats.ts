@@ -25,6 +25,10 @@ export interface GlobalStats {
     followers: number;
     following: number;
     withHandle: number;
+    withHandleBluesky: number;
+    withHandleMastodon: number;
+    followedOnBluesky: number;
+    followedOnMastodon: number;
   };
   updated_at: string;
 }

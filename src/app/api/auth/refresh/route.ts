@@ -56,14 +56,14 @@ export async function POST(request: Request) {
           providers: invalidProviders,
           // ...results
         }, 
-        { status: 401 }
+        // { status: 401 }
       )
     }
 
     console.log('✅ [POST /api/auth/refresh] All tokens checked successfully:', results)
     return NextResponse.json({ 
       success: true,
-      ...results
+      ...results 
     })
   } catch (error) {
     console.error('❌ [POST /api/auth/refresh]', error)
