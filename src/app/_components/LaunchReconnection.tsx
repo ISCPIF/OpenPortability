@@ -56,6 +56,7 @@ export default function LaunchReconnection({
 
     console.log("TOTALS", total, hasFollowed)
     console.log("USER STATS", userStats)
+    console.log("TOTAL in DATABSE --->", totalInDatabase)
   }, [userStats, session.user.bluesky_username, session.user.mastodon_username]);
 
   return (

@@ -14,6 +14,8 @@ export async function GET() {
     const statsService = new StatsService(repository);
 
     const stats = await statsService.getGlobalStats();
+
+    console.log("GLOBAL STATS ", stats)
     
     return NextResponse.json(stats);
   } catch (error) {
