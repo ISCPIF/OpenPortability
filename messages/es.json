@@ -491,11 +491,13 @@
             "automatic": "OpenPortability te reconectará con todos tus seguidores de X durante 30 días",
             "manual": "OpenPortability te mostrará en detalle las cuentas encontradas en Bluesky y Mastodon para que puedas elegir si conectarte o no"
         },
-        "stats": {
-            "connections": "conexiones importadas",
-            "bluesky": "conexiones que pueden ser activadas en Bluesky y Mastodon",
-            "networks": "usuarios con al menos una conexión que puede ser activada"
-        }
+"stats": {
+      "connections": "Conexiones de Twitter/X cartografiadas",
+      "bluesky": "Reconexiones pendientes en BlueSky",
+      "mastodon": "Reconexiones pendientes en Mastodon",
+      "followedBluesky": "Reconexiones completadas en BlueSky",
+      "followedMastodon": "Reconexiones completadas en Mastodon"
+    }
     },
     "reconnexionModal": {
         "title": "¡Acabas de activar la conexión con {count} cuentas!",
