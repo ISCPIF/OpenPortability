@@ -439,7 +439,7 @@
       "bluesky": "{count} on Bluesky",
       "mastodon": "{count} on Mastodon"
     },
-    "title": "the #GreatReconnection!",
+    "title": "Towards a new digital era",
     "matchMessage": "{matchCount} passengers were found during your first migration step!\nNow is the time to activate the connection with those you want to\njoin on your new networks.",
     "stats": {
       "awaitingConnection": "of your followed accounts are\nawaiting connection!",

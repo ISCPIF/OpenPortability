@@ -438,11 +438,11 @@
       "bluesky": "{count} sur Bluesky",
       "mastodon": "{count} sur Mastodon"
     },
-    "title": "La #GrandeReconnexion !",
+    "title": "Vers une nouvelle ère numérique",
     "matchMessage": "{matchCount} passagers ont été retrouvés lors de votre 1ère étape de migration !\nC'est le moment maintenant d'activer la connexion avec ceux que vous souhaitez\nrejoindre sur vos nouveaux réseaux.",
     "stats": {
       "awaitingConnection": "de vos comptes suivis sont\nen attente de connexion !",
-      "alreadyTransferred": "abonné·e·s ont déjà été\ntransféré·e·s !"
+      "alreadyTransferred": "abonné·e·s ont déjà été\nreconnecté·e·s !"
     }
   },
   "ManualReconnexion": {
