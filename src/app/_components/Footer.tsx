@@ -25,14 +25,23 @@ const Footer = memo(() => {
 
   const hostedText = t.raw('hosted.text');
   const cnrsText = t.raw('hosted.cnrs');
-  const hqxText = t.raw('hosted.hqx');
+  const OpenPortabilityText = t.raw('hosted.openPortability');
+  // const hqxText = t.raw('hosted.hqx');
 
-  const parts = hostedText.split(/\{(cnrs|hqx)\}/);
+  const parts = hostedText.split(/\{(cnrs|hqx|openPortability)\}/);
   const content = parts.map((part: string, index: number) => {
     if (part === 'cnrs') {
       return (
         <FooterLink key="cnrs" href="https://iscpif.fr/">
           {cnrsText}
+        </FooterLink>
+      );
+    }
+    else if (part === 'openPortability')
+    {
+      return (
+        <FooterLink key="openPortability" href="https://iscpif.fr/openportability">
+          {OpenPortabilityText}
         </FooterLink>
       );
     }
