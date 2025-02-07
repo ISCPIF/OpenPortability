@@ -53,7 +53,7 @@ export default function ReconnexionOptions({ onAutomatic, onManual, globalStats 
               <FaPlay className="text-sm" />
             </motion.button>
             <div className="text-white text-2xl">›</div>
-            <div className={`${plex.className} text-sm text-white text-justify flex-1`}>
+            <div className={`${plex.className} text-sm text-white flex-1`}>
               {t('descriptions.automatic')}
             </div>
           </div>
@@ -69,7 +69,7 @@ export default function ReconnexionOptions({ onAutomatic, onManual, globalStats 
               {t('buttons.manual')}
             </motion.button>
             <div className="text-white text-2xl">›</div>
-            <div className={`${plex.className} text-sm text-white text-justify flex-1`}>
+            <div className={`${plex.className} text-sm text-white flex-1`}>
               {t('descriptions.manual')}
             </div>
           </div>

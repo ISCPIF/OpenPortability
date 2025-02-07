@@ -519,7 +519,7 @@ export default function MigratePage() {
                       )}
               </Suspense>
             )}
-            <div className="w-full flex justify-center">
+            <div className="w-full flex justify-center mb-12">
               <div className="max-w-[50rem] w-full">
                 <StatsReconnexion globalStats={globalStats} />
               </div>

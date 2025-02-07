@@ -419,8 +419,8 @@
       "manual": "JE CHOISIS LES COMPTES À RECONNECTER"
     },
     "descriptions": {
-      "automatic": "OpenPortability vous reconnectera avec tous vos abonnés venant de X pendant 30 jours",
-      "manual": "OpenPortability vous proposera en détail les comptes trouvés sur Bluesky et Mastodon pour que vous puissiez choisir de vous connecter ou non"
+      "automatic": "OpenPortability vous reconnectera avec tous vos abonnés venant de X",
+      "manual": "OpenPortability vous permettra de choisir les comptes auxquels vous reconnecter parmi les comptes trouvés sur Bluesky et Mastodon."
     },
     "stats": {
       "connections": "Connexions Twitter/X cartographiées",
@@ -482,11 +482,11 @@
     "blueskyAccounts": "Comptes Bluesky",
     "mastodonAccounts": "Comptes Mastodon",
     "chooseManualy": "vos followings la reconnexion",
-    "switchToManual": "Cliquez ici pour choisir manuellement"
+    "switchToManual": "Je choisis les comptes à reconnecter"
   },
   "refreshToken": {
     "title": "Reconnexion nécessaire",
-    "description": "Pour continuer à utiliser nos services, veuillez vous reconnecter à vos comptes"
+    "description": "Autorisez OpenPortability à lancer la reconnexion via une authentification."
   },
   "refreshTokenModal": {
     "title": "Reconnexion nécessaire",
