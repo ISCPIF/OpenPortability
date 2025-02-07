@@ -482,14 +482,14 @@
         }
     },
     "ReconnexionOptions": {
-        "title": "Elige cómo quieres reconectarte con tus seguidos",
+        "title": "Elige como quieres reconectarte con tus seguidos",
         "buttons": {
             "automatic": "RECONECTARME AUTOMÁTICAMENTE",
             "manual": "ELIJO LAS CUENTAS A RECONECTAR"
         },
         "descriptions": {
-            "automatic": "OpenPortability te reconectará con todos tus seguidores de X durante 30 días",
-            "manual": "OpenPortability te mostrará en detalle las cuentas encontradas en Bluesky y Mastodon para que puedas elegir si conectarte o no"
+            "automatic": "OpenPortability te reconectará con todos tus seguidores de Twitter/X",
+            "manual": "OpenPortability te permitirá elegir con qué cuentas reconectarte entre las cuentas encontradas en Bluesky y Mastodon."
         },
 "stats": {
       "connections": "Conexiones de Twitter/X cartografiadas",
@@ -523,7 +523,7 @@
     "AutomaticReconnexion": {
         "reconnectionInProgress": "Reconexión automática activada",
         "chooseManualy": "tus seguidos para reconectar",
-        "switchToManual": "Haz clic aquí para elegir manualmente",
+        "switchToManual": "Elijo las cuentas para reconectar",
         "accountsToConnect": "Cuentas para conectar",
         "blueskyAccounts": "Cuentas de Bluesky",
         "mastodonAccounts": "Cuentas de Mastodon"
@@ -541,7 +541,7 @@
     },
     "refreshToken": {
         "title": "Reconexión necesaria",
-        "description": "Para continuar usando nuestros servicios, por favor vuelve a conectarte a tus cuentas"
+        "description": "Autoriza a OpenPortability para iniciar la reconexión mediante autenticación."
     },
     "migrate": {
         "title": "Migrar tus suscripciones",
