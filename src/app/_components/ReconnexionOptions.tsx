@@ -75,36 +75,7 @@ export default function ReconnexionOptions({ onAutomatic, onManual, globalStats 
           </div>
         </div>
 
-        {/* Statistiques */}
-        <div className="mt-12 flex justify-center space-x-12">
-          {/* Connexions totales */}
-          <div className="bg-[#1A237E] rounded-lg p-4 text-center text-white min-w-[140px]">
-            <div className="text-4xl font-bold mb-2">
-              {formatNumber(totalConnections)}
-            </div>
-            <div className={`${plex.className} text-sm`}>{t('stats.connections')}</div>
-          </div>
 
-          {/* Mappings Bluesky */}
-          <div className="bg-[#1A237E] rounded-lg p-4 text-center text-white min-w-[140px]">
-            <div className="text-4xl font-bold mb-2">
-              {formatNumber(mappings)}
-            </div>
-            <div className={`${plex.className} text-sm`}>{t('stats.bluesky')}</div>
-            <div className="flex justify-center gap-2 mb-2">
-              <Image src={BSIcon} alt="Bluesky" width={24} height={24} />
-              <Image src={MastoIcon} alt="Mastodon" width={24} height={24} />
-            </div>
-          </div>
-
-          {/* Sources */}
-          <div className="bg-[#1A237E] rounded-lg p-4 text-center text-white min-w-[140px]">
-            <div className="text-4xl font-bold mb-2">
-              {formatNumber(sources)}
-            </div>
-            <div className={`${plex.className} text-sm`}>{t('stats.networks')}</div>
-          </div>
-        </div>
       </div>
     </div>
   );
