@@ -111,33 +111,28 @@ export default function DashboardPage() {
   }, [])
 
   useEffect(() => {
-
-    console.log("SESSION FROM DASHBOARD ",session)
+    // Ne vérifier que lors du montage initial
     if (status === "unauthenticated") {
       router.replace("/auth/signin");
       return;
     }
 
-    if (status !== "loading") {
+    // Ne mettre à jour le loading que si nécessaire
+    if (status === "loading" && !isLoading) {
+      setIsLoading(true);
+    } else if (status !== "loading" && isLoading) {
       setIsLoading(false);
     }
-  }, [status, router]);
-
-  useEffect(() => {
-    update()
-  }, []);
+  }, [status, router, isLoading]);
 
   useEffect(() => {
     const fetchStats = async () => {
+      // Ne pas setIsLoading(true) ici, car cela pourrait causer un re-render
       try {
-        setIsLoading(true);
         const [userStatsResponse, globalStatsResponse] = await Promise.all([
           fetch('/api/stats'),
           fetch('/api/stats/total')
         ]);
-
-        // console.log("USER STATS RESPONSE ", userStatsResponse)
-        // console.log("GLOBAL STATS RESPONSE ", globalStatsResponse)
 
         if (!userStatsResponse.ok || !globalStatsResponse.ok) {
           throw new Error('Failed to fetch stats');
@@ -152,19 +147,16 @@ export default function DashboardPage() {
           userStats,
           globalStats
         });
-
-        console.log("STATS ", globalStats)
       } catch (error) {
         console.error('Error fetching stats:', error);
-      } finally {
-        setIsLoading(false);
       }
     };
 
-    if (session?.user?.id) {
+    // Ne charger les stats que si l'utilisateur est authentifié
+    if (status === "authenticated") {
       fetchStats();
     }
-  }, [session]);
+  }, [status]);
 
   const handleShare = async (url: string, platform: string) => {
     update()
