@@ -8,6 +8,8 @@ import BlueSkyLoginButton from "./BlueSkyLoginButton"
 import BlueSkyLogin from "./BlueSkyLogin"
 import TwitterRateLimit from "./TwitterRateLimit"
 import { plex } from "@/app/fonts/plex"
+import { useTranslations } from 'next-intl'
+
 
 const containerVariants = {
   hidden: { opacity: 0 },
