@@ -26,9 +26,21 @@ shadow_port = 54320
 # The database major version to use. This has to be the same as your remote database's. Run `SHOW
 # server_version;` on the remote database to check.
 major_version = 15
+# Statement timeout in milliseconds (30 seconds)
+
+[db.settings]
+statement_timeout = 30000
+# Terminate replication connections that are inactive longer than specified time
+wal_sender_timeout = '60s'
+work_mem = '16MB'
+maintenance_work_mem = '128MB'
+shared_buffers = '256MB'
+
+# Improve connection handling
+max_connections = 200
 
 [db.pooler]
-enabled = false
+enabled = true
 # Port to use for the local connection pooler.
 port = 54329
 # Specifies when a server connection can be reused by other clients.
@@ -97,10 +109,7 @@ policy = "oneshot"
 inspector_port = 8083
 
 [analytics]
-enabled = true
-port = 54327
-# Configure one of the supported backends: `postgres`, `bigquery`.
-backend = "postgres"
+enabled = false
 
 # Experimental features may be deprecated any time
 [experimental]
@@ -117,4 +126,3 @@ s3_secret_key = "env(S3_SECRET_KEY)"
 
 # The maximum length in bytes of HTTP request headers. (default: 4096)
 # max_header_length = 4096
-

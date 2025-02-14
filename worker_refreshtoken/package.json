@@ -1,0 +1,21 @@
+{
+    "name": "token-refresh-worker",
+    "version": "1.0.0",
+    "description": "Worker pour rafraîchir les tokens Bluesky",
+    "main": "dist/index.js",
+    "scripts": {
+        "dev": "ts-node src/index.ts",
+        "build": "tsc",
+        "start": "node dist/index.js"
+    },
+    "dependencies": {
+        "@atproto/api": "^0.6.23",
+        "@supabase/supabase-js": "^2.39.0",
+        "dotenv": "^16.3.1"
+    },
+    "devDependencies": {
+        "@types/node": "^20.10.4",
+        "ts-node": "^10.9.1",
+        "typescript": "^5.3.3"
+    }
+}

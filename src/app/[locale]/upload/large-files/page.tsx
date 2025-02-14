@@ -9,11 +9,13 @@ import ErrorModal from "../../../_components/ErrorModal";
 import Image from 'next/image';
 import seaBackground from '../../../../public/sea.svg';
 import { plex } from '../../../fonts/plex';
-import logoHQX from '../../../../../public/logoxHQX/HQX-rose-FR.svg';
 import { motion, AnimatePresence } from 'framer-motion';
 import boat1 from '../../../../../public/boats/boat-1.svg';
 import { Loader2 } from 'lucide-react';
 import Footer from "@/app/_components/Footer";
+import logo from '../../../../../public/logo/logo-openport-blanc.svg';
+import LoadingIndicator from '@/app/_components/LoadingIndicator';
+
 
 
 interface JobStatus {
@@ -120,40 +122,52 @@ export default function LargeFilesPage() {
   }, [jobId, followerCount, followingCount]);
 
   // Calculer les pourcentages de progression
-  const followerProgress = jobStatus?.stats?.followers?.processed !== undefined ? 
+  const totalItemCount = followerCount + followingCount;
+  const isSmallUpload = totalItemCount < 2000;
+
+  const followerProgress = jobStatus?.stats?.followers?.processed !== undefined ?
     Math.round((jobStatus.stats.followers.processed / followerCount) * 100) : 0;
-  
-  const followingProgress = jobStatus?.stats?.following?.processed !== undefined ? 
+
+  const followingProgress = jobStatus?.stats?.following?.processed !== undefined ?
     Math.round((jobStatus.stats.following.processed / followingCount) * 100) : 0;
 
   const totalProgress = jobStatus?.stats?.progress || 0;
 
+  // Animation duration based on upload size
+  const animationDuration = isSmallUpload ? 5 : 0.5;
+  const animationEase = isSmallUpload ? "linear" : "easeOut";
+
   if (status === 'loading' || !session) {
-    return <div className="flex justify-center items-center min-h-screen">
-      <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-gray-900"></div>
+    return <div className="min-h-screen bg-[#2a39a9] relative w-full max-w-[90rem] m-auto">
+      <div className="container mx-auto py-12">
+        <div className="container flex flex-col m-auto text-center text-[#E2E4DF]">
+          <div className="m-auto relative my-32 lg:my-40">
+            <LoadingIndicator msg={"Loading..."} />
+          </div>
+        </div>
+      </div>
     </div>;
   }
 
   return (
     <>
-    <div className="min-h-screen bg-[#2a39a9] relative w-full max-w-[90rem] m-auto">
-      <Header />
-      
-      <div className="flex justify-center mt-8 mb-8">
-        <Image
-          src={logoHQX}
-          alt={t('logo.alt')}
-          width={306}
-          height={125}
-          className="mx-auto"
-          priority
-        />
-      </div>
+      <div className="min-h-screen bg-[#2a39a9] relative w-full max-w-[90rem] m-auto">
+        <Header />
+        <div className="flex justify-center mt-8 mb-8">
+          <Image
+            src={logo}
+            alt={t('logo.alt')}
+            width={306}
+            height={125}
+            className="mx-auto"
+            priority
+          />
+        </div>
 
-      <div className="relative">
-        <div className="absolute inset-0 flex flex-col items-center justify-center p-8 mt-44">
+        <div className="relative">
+          <div className="absolute inset-0 flex flex-col items-center justify-center p-8 mt-44">
             {jobStatus && (
-              <div className="text-white">                
+              <div className="text-white">
                 <div className="space-y-6">
                   {/* Global Progress */}
                   <div className="mb-6">
@@ -170,7 +184,10 @@ export default function LargeFilesPage() {
                       <motion.div
                         initial={{ width: 0 }}
                         animate={{ width: `${totalProgress}%` }}
-                        transition={{ duration: 0.5 }}
+                        transition={{
+                          duration: animationDuration,
+                          ease: animationEase
+                        }}
                         className="bg-gradient-to-r from-pink-500 to-purple-500 h-2.5 rounded-full"
                       />
                     </div>
@@ -192,7 +209,10 @@ export default function LargeFilesPage() {
                         <motion.div
                           initial={{ width: 0 }}
                           animate={{ width: `${followerProgress}%` }}
-                          transition={{ duration: 0.5 }}
+                          transition={{
+                            duration: animationDuration,
+                            ease: animationEase
+                          }}
                           className="bg-gradient-to-r from-pink-500 to-purple-500 h-2.5 rounded-full"
                         />
                       </div>
@@ -215,7 +235,10 @@ export default function LargeFilesPage() {
                         <motion.div
                           initial={{ width: 0 }}
                           animate={{ width: `${followingProgress}%` }}
-                          transition={{ duration: 0.5 }}
+                          transition={{
+                            duration: animationDuration,
+                            ease: animationEase
+                          }}
                           className="bg-gradient-to-r from-blue-500 to-cyan-500 h-2.5 rounded-full"
                         />
                       </div>
@@ -230,8 +253,8 @@ export default function LargeFilesPage() {
                     <span className={`px-3 py-1 rounded-full text-sm 
                       ${jobStatus.status === 'completed' ? 'bg-green-500/20 text-green-300' :
                         jobStatus.status === 'processing' ? 'bg-blue-500/20 text-blue-300' :
-                        jobStatus.status === 'failed' ? 'bg-red-500/20 text-red-300' :
-                        'bg-gray-500/20 text-gray-300'}`}
+                          jobStatus.status === 'failed' ? 'bg-red-500/20 text-red-300' :
+                            'bg-gray-500/20 text-gray-300'}`}
                     >
                       {jobStatus.status === 'processing' && (
                         <Loader2 className="w-4 h-4 animate-spin inline-block mr-2" />
@@ -239,7 +262,7 @@ export default function LargeFilesPage() {
                       {t(`status.${jobStatus.status}`)}
                     </span>
                   </div>
-                  
+
                   {jobStatus.status === 'completed' && (
                     <div className="grid grid-cols-2 gap-6 mt-6 text-center">
                       <div className="p-4 bg-black/20 rounded-xl">
@@ -271,9 +294,9 @@ export default function LargeFilesPage() {
                         const locale = params.locale as string || 'fr';
                         router.push(`/${locale}/dashboard`);
                       }}
-                      className="w-full mt-6 bg-gradient-to-r from-pink-500 to-blue-500 text-white py-3 px-4 rounded-xl 
-                               hover:from-pink-600 hover:to-blue-600 transition-all duration-200 
-                               flex items-center justify-center space-x-2"
+                      className="w-full mt-6 bg-white text-gray-800 py-3 px-4 rounded-xl 
+                      hover:bg-gray-50 transition-all duration-200 
+                      flex items-center justify-center space-x-2"
                     >
                       <span className={plex.className}>{t('button.dashboard')}</span>
                       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -284,10 +307,10 @@ export default function LargeFilesPage() {
                 </div>
               </div>
             )}
+          </div>
         </div>
       </div>
-    </div>
-    <Footer />
+      <Footer />
     </>
   );
 }

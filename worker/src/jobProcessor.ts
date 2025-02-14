@@ -12,7 +12,7 @@ dotenv.config();
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-const BATCH_SIZE = 1000;
+const BATCH_SIZE = 500;
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 3000;
 const LOCK_DIR = '/app/tmp/locks';
@@ -467,81 +467,191 @@ export async function processJob(job: ImportJob, workerId: string) {
   }
 }
 
+// Batch processing functions
+async function batch_insert_followers(
+  supabase: any,
+  followersData: any[],
+  relationsData: any[]
+): Promise<{ error: any }> {
+  try {
+    const { error } = await supabase.rpc('batch_insert_followers', {
+      followers_data: followersData,
+      relations_data: relationsData
+    });
+    return { error };
+  } catch (error) {
+    return { error };
+  }
+}
+
+async function batch_insert_targets(
+  supabase: any,
+  targetsData: any[],
+  relationsData: any[]
+): Promise<{ error: any }> {
+  try {
+    const { error } = await supabase.rpc('batch_insert_targets', {
+      targets_data: targetsData,
+      relations_data: relationsData
+    });
+    return { error };
+  } catch (error) {
+    return { error };
+  }
+}
+
 async function processFollowers(followers: any[], userId: string, workerId: string) {
-  // console.log(` [Worker ${workerId}] Processing ${followers.length} follower relations`);
+  console.log(` [Worker ${workerId}] Processing ${followers.length} follower relations`);
 
-  // Créer la source si elle n'existe pas
-  await ensureSourceExists(userId, workerId);
+  try {
+    // Validation checks
+    if (!followers || !Array.isArray(followers)) {
+      throw new Error('Followers data must be an array');
+    }
 
-  // Insérer les followers (table followers)
-  const { error: followersError } = await supabase
-    .from('followers')
-    .upsert(
-      followers.map((item: any) => ({
-        twitter_id: item.follower.accountId,
-      })),
-      { onConflict: 'twitter_id' }
-    );
+    if (followers.length > 0) {
+      const firstItem = followers[0];
+      if (!firstItem?.follower?.accountId) {
+        console.error('Invalid follower data structure:', firstItem);
+        throw new Error('Invalid follower data structure: missing accountId');
+      }
+    }
 
-  if (followersError) {
-    console.error(` [Worker ${workerId}] Error inserting followers:`, followersError);
-    throw followersError;
+    // Create source if it doesn't exist
+    await ensureSourceExists(userId, workerId);
+
+    const CHUNK_SIZE = 50;
+    const MAX_RETRIES = 3;
+    const BASE_DELAY = 500;
+
+    for (let i = 0; i < followers.length; i += CHUNK_SIZE) {
+      const chunk = followers.slice(i, i + CHUNK_SIZE);
+      let retryCount = 0;
+
+      while (retryCount < MAX_RETRIES) {
+        try {
+          // Prepare data for batch insertion
+          const followersToInsert = chunk.map((item: any) => ({
+            twitter_id: item.follower.accountId,
+          }));
+
+          const relationsToInsert = chunk.map((item: any) => ({
+            source_id: userId,
+            follower_id: item.follower.accountId,
+          }));
+
+          // Try batch insert
+          const { error: batchError } = await batch_insert_followers(
+            supabase,
+            followersToInsert,
+            relationsToInsert
+          );
+
+          if (batchError) {
+            throw batchError;
+          }
+
+          // Log success
+          console.log(` [Worker ${workerId}] Processed chunk ${i/CHUNK_SIZE + 1}/${Math.ceil(followers.length/CHUNK_SIZE)}`);
+          break;
+
+        } catch (error) {
+          retryCount++;
+          if (retryCount === MAX_RETRIES) {
+            throw new Error(`Failed after ${MAX_RETRIES} retries: ${error instanceof Error ? error.message : String(error)}`);
+          }
+          // Exponential backoff
+          const delay = Math.pow(2, retryCount) * BASE_DELAY;
+          console.log(` [Worker ${workerId}] Retry ${retryCount}/${MAX_RETRIES} after ${delay}ms`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      }
+
+      // Add delay between chunks
+      await new Promise(resolve => setTimeout(resolve, BASE_DELAY * 2));
+    }
+
+    console.log(` [Worker ${workerId}] Successfully created ${followers.length} follower relations`);
+  } catch (error) {
+    console.error(` [Worker ${workerId}] Error in processFollowers:`, error);
+    throw error;
   }
-
-  // Créer les relations (table sources_followers)
-  const { error: relationsError } = await supabase
-    .from('sources_followers')
-    .upsert(
-      followers.map((item: any) => ({
-        source_id: userId,
-        follower_id: item.follower.accountId,
-      })),
-      { onConflict: 'source_id,follower_id' }
-    );
-
-  if (relationsError) {
-    console.error(` [Worker ${workerId}] Error inserting follower relations:`, relationsError);
-    throw relationsError;
-  }
-
-  // console.log(` [Worker ${workerId}] Created ${followers.length} follower relations`);
 }
 
 async function processFollowing(following: any[], userId: string, workerId: string) {
-  // console.log(` [Worker ${workerId}] Processing ${following.length} following relations`);
+  console.log(` [Worker ${workerId}] Processing ${following.length} following relations`);
 
-  // Créer la source si elle n'existe pas
-  await ensureSourceExists(userId, workerId);
+  try {
+    // Validation checks
+    if (!following || !Array.isArray(following)) {
+      throw new Error('Following data must be an array');
+    }
 
-  // D'abord, insérer les targets
-  const { error: targetsError } = await supabase
-    .from('targets')
-    .upsert(
-      following.map((item: any) => ({
-        twitter_id: item.following.accountId,
-      })),
-      { onConflict: 'twitter_id' }
-    );
+    if (following.length > 0) {
+      const firstItem = following[0];
+      if (!firstItem?.following?.accountId) {
+        console.error('Invalid following data structure:', firstItem);
+        throw new Error('Invalid following data structure: missing accountId');
+      }
+    }
 
-  if (targetsError) {
-    console.error(` [Worker ${workerId}] Error inserting targets:`, targetsError);
-    throw targetsError;
+    // Create source if it doesn't exist
+    await ensureSourceExists(userId, workerId);
+
+    const CHUNK_SIZE = 50;
+    const MAX_RETRIES = 3;
+    const BASE_DELAY = 500;
+
+    for (let i = 0; i < following.length; i += CHUNK_SIZE) {
+      const batch = following.slice(i, i + CHUNK_SIZE);
+      let retryCount = 0;
+
+      while (retryCount < MAX_RETRIES) {
+        try {
+          // Prepare data for batch insertion
+          const targetsToInsert = batch.map((item: any) => ({
+            twitter_id: item.following.accountId,
+          }));
+
+          const relationsToInsert = batch.map((item: any) => ({
+            source_id: userId,
+            target_twitter_id: item.following.accountId,
+          }));
+
+          // Try batch insert
+          const { error: batchError } = await batch_insert_targets(
+            supabase,
+            targetsToInsert,
+            relationsToInsert
+          );
+
+          if (batchError) {
+            throw batchError;
+          }
+
+          // Log success
+          console.log(` [Worker ${workerId}] Created ${batch.length} target relations for batch ${Math.floor(i/CHUNK_SIZE) + 1}/${Math.ceil(following.length/CHUNK_SIZE)}`);
+          break;
+
+        } catch (error) {
+          retryCount++;
+          if (retryCount === MAX_RETRIES) {
+            throw new Error(`Failed after ${MAX_RETRIES} retries: ${error instanceof Error ? error.message : String(error)}`);
+          }
+          // Exponential backoff
+          const delay = Math.pow(2, retryCount) * BASE_DELAY;
+          console.log(` [Worker ${workerId}] Retry ${retryCount}/${MAX_RETRIES} after ${delay}ms`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      }
+
+      // Add delay between chunks
+      await new Promise(resolve => setTimeout(resolve, BASE_DELAY * 2));
+    }
+
+    console.log(` [Worker ${workerId}] Successfully processed all ${following.length} following relations`);
+  } catch (error) {
+    console.error(` [Worker ${workerId}] Error in processFollowing:`, error);
+    throw error;
   }
-
-  // Ensuite, créer les relations
-  const { error: relationsError } = await supabase
-    .from('sources_targets')
-    .upsert(
-      following.map((item: any) => ({
-        source_id: userId,
-        target_twitter_id: item.following.accountId,
-      })),
-      { onConflict: 'source_id,target_twitter_id' }
-    );
-
-  if (relationsError) {
-    console.error(` [Worker ${workerId}] Error inserting following relations:`, relationsError);
-    throw relationsError;
-  }
-  // console.log(` [Worker ${workerId}] Created ${following.length} target relations`);
 }

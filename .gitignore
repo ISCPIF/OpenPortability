@@ -47,8 +47,6 @@ next-env.d.ts
 *.crt
 *.pem
 *.csr
-nginx/certs/*.crt
-nginx/certs/*.key
 backup.sql
 
 /tests

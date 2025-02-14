@@ -8,6 +8,7 @@ import type { AdapterUser } from "next-auth/adapters"
 import { isTwitterProfile, isMastodonProfile, isBlueskyProfile } from "./auth"
 import type { AdapterAccountType } from "next-auth/adapters"
 import type { CustomAdapterUser } from '@/lib/supabase-adapter'
+import { authClient } from '@/lib/supabase'
 
 import { auth } from "./auth"
 
@@ -78,6 +79,24 @@ export const authConfig = {
       try {
         // Vérifier si un utilisateur est déjà connecté
         const session = await auth();
+
+        if (session?.user?.id && account.provider === 'mastodon') {
+          const mastodonProfile = profile as MastodonProfile;
+          const instance = new URL(mastodonProfile.url).origin;
+
+          // Vérifier si un autre utilisateur a déjà ce compte Mastodon
+          const { data: existingUser } = await authClient
+            .from('users')
+            .select('id')
+            .eq('mastodon_id', mastodonProfile.id)
+            .eq('mastodon_instance', instance)
+            .single();
+
+            if (existingUser && existingUser.id !== session.user.id) {
+              console.log("This Mastodon account is already linked to another user");
+              return '/auth/error?error=MastodonAccountAlreadyLinked';
+            }
+        }
         
         // Si on essaie de lier un compte Bluesky
         if (session?.user?.id && account.provider === 'bluesky') {
@@ -110,6 +129,10 @@ async jwt({ token, user, account, profile }) {
         token.has_onboarded = !!user.has_onboarded // Conversion explicite en boolean
         token.hqx_newsletter = !!user.hqx_newsletter
         token.oep_accepted = !!user.oep_accepted
+        token.research_accepted = !!user.research_accepted
+        token.have_seen_newsletter = !!user.have_seen_newsletter
+        token.automatic_reconnect = !!user.automatic_reconnect
+
       }
 
       if (account && profile) {
@@ -176,6 +199,9 @@ async jwt({ token, user, account, profile }) {
               has_onboarded: !!user.has_onboarded,
               hqx_newsletter: !!user.hqx_newsletter,
               oep_accepted: !!user.oep_accepted,
+              research_accepted: !!user.research_accepted,
+              have_seen_newsletter: !!user.have_seen_newsletter,
+              automatic_reconnect: !!user.automatic_reconnect,
               name: token.name || user.name,
               
               // For Twitter and Bluesky, use token values first
@@ -232,6 +258,74 @@ async jwt({ token, user, account, profile }) {
         }
       }
     },
+    // {
+    //   id: "bluesky",
+    //   name: "Bluesky",
+    //   type: "oauth",
+    //   clientId: process.env.BLUESKY_CLIENT_ID,
+    //   issuer: "https://bsky.social",
+    //   authorization: {
+    //     url: "https://app.beta.v2.helloquitx.com/api/auth/bluesky",
+    //     params: { 
+    //       response_type: "code",
+    //       scope: "openid profile email"
+    //     }
+    //   },
+    //   token: {
+    //     url: "https://app.beta.v2.helloquitx.com/api/auth/bluesky",
+    //     async request({ params }) {
+    //       const response = await fetch("/api/auth/bluesky", {
+    //         method: "POST",
+    //         headers: { "Content-Type": "application/json" },
+    //         body: JSON.stringify({
+    //           identifier: params.username,
+    //           password: params.password
+    //         })
+    //       });
+          
+    //       const data = await response.json();
+    //       if (!response.ok) {
+    //         throw new Error(data.error || "Authentication failed");
+    //       }
+          
+    //       return {
+    //         tokens: {
+    //           access_token: data.accessJwt,
+    //           refresh_token: data.refreshJwt,
+    //           did: data.did,
+    //           handle: data.handle
+    //         }
+    //       };
+    //     }
+    //   },
+    //   userinfo: {
+    //     url: "https://app.beta.v2.helloquitx.com/api/auth/bluesky/userinfo",
+    //     async request({ tokens }) {
+    //       const agent = new BskyAgent({ service: 'https://bsky.social' });
+    //       await agent.resumeSession({
+    //         accessJwt: tokens.access_token,
+    //         refreshJwt: tokens.refresh_token,
+    //         did: tokens.did,
+    //         handle: tokens.handle,
+    //         active: true
+    //       });
+          
+    //       const profile = await agent.getProfile({ actor: tokens.did });
+    //       return profile.data;
+    //     }
+    //   },
+    //   profile(profile) {
+    //     return {
+    //       id: profile.did,
+    //       name: profile.displayName || profile.handle,
+    //       email: null,
+    //       image: profile.avatar,
+    //       has_onboarded: false,
+    //       hqx_newsletter: false,
+    //       oep_accepted: false
+    //     }
+    //   }
+    // },
     TwitterProvider({
       clientId: process.env.TWITTER_CLIENT_ID!,
       clientSecret: process.env.TWITTER_CLIENT_SECRET!,
@@ -258,7 +352,10 @@ async jwt({ token, user, account, profile }) {
           profile: profile,
           has_onboarded: false,
           hqx_newsletter: false,
-          oep_accepted: false
+          oep_accepted: false,
+          have_seen_newsletter: false,
+          research_accepted: false,
+          automatic_reconnect: false
         }
       },
       // userinfo: {
@@ -266,11 +363,10 @@ async jwt({ token, user, account, profile }) {
       //   params: { "user.fields": "profile_image_url,description" }
       // }
     }),
-
     MastodonProvider({
-      clientId: process.env.AUTH_MASTODON_ID!,
-      clientSecret: process.env.AUTH_MASTODON_SECRET!,
-      issuer: process.env.AUTH_MASTODON_ISSUER!,
+      id: "mastodon",
+      // This will be rewrited on the fly later on
+      issuer: "https://mastodon.space",
       profile(profile: MastodonProfile) {
         return {
           id: profile.id,
@@ -279,28 +375,12 @@ async jwt({ token, user, account, profile }) {
           profile: profile,
           has_onboarded: false,
           hqx_newsletter: false,
-          oep_accepted: false
+          oep_accepted: false,
+          have_seen_newsletter: false,
+          research_accepted: false,
+          automatic_reconnect: false
         }
-      }
-    }),
-    MastodonProvider({
-      id: "piaille",
-      name: "Piaille",
-      clientId: process.env.AUTH_PIALLE_MASTONDON_ID!,
-      clientSecret: process.env.AUTH_PIAILLE_MASTODON_SECRET!,
-      issuer: process.env.AUTH_PIAILLE_MASTODON_ISSUER!,
-      profile(profile: MastodonProfile) {
-        return {
-          id: profile.id,
-          name: profile.display_name,
-          provider: 'mastodon',
-          profile: profile,
-          has_onboarded: false,
-          hqx_newsletter: false,
-          oep_accepted: false
-        }
-      }
-    })
+    }})
   ],
   pages: {
     signIn: '/auth/signin',

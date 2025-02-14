@@ -20,8 +20,7 @@ import boat1 from '../../../public/boats/boat-1.svg'
 import Footer from "@/app/_components/Footer";
 import LoadingIndicator from '@/app/_components/LoadingIndicator';
 import SupportModal from '../../_components/SupportModale';
-import logoHQXFR from '../../../../public/logoxHQX/HQX-rose-FR.svg';
-import logoHQXEN from '../../../../public/logoxHQX/HQX-pink-UK.svg';
+import logo from '../../../../public/logo/logo-openport-blanc.svg';
 
 const UploadButton = dynamic(() => import('../../_components/UploadButton'), {
   loading: () => <div className="animate-pulse bg-gray-200 h-12 w-48 rounded-lg"></div>,
@@ -48,8 +47,6 @@ export default function UploadPage() {
   const [showSupportModal, setShowSupportModal] = useState(false);
   const t = useTranslations('upload');
   const tSupport = useTranslations('support');
-  const locale = params.locale as string;
-  const logoHQX = locale === 'fr' ? logoHQXFR : logoHQXEN;
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -107,7 +104,7 @@ export default function UploadPage() {
     // Case 1: Standard case (following.js + follower.js)
     const hasStandardFollowing = fileNames.includes('following.js');
     const hasStandardFollower = fileNames.includes('follower.js');
-    
+
     // Case 2: Split files case
     const followerParts = fileArray.filter(f => /follower-part\d+\.js/.test(f.name.toLowerCase()));
     const followingParts = fileArray.filter(f => /following-part\d+\.js/.test(f.name.toLowerCase()));
@@ -149,20 +146,24 @@ export default function UploadPage() {
   const validateFileType = (file: File): boolean => {
     console.log("File Type =", file.type)
     const validTypes = [
-        'application/javascript',
-        'text/javascript', 
-        'application/zip',
-        'application/x-javascript',
-        'text/ecmascript',
-        'application/ecmascript',
-        'application/x-ecmascript',
-        'text/x-javascript',
-        'text/jsx',
-        'text/plain',
-        'module'
+      'application/javascript',
+      'text/javascript',
+      'application/zip',
+      'application/x-javascript',
+      'text/ecmascript',
+      'application/ecmascript',
+      'application/x-ecmascript',
+      'text/x-javascript',
+      'text/jsx',
+      'text/plain',
+      'module',
+      'application/x-zip',
+      'application/x-zip-compressed',
+      'application/octet-stream',
+      'multipart/x-zip'
     ];
     return validTypes.includes(file.type);
- };
+  };
 
   const sanitizeContent = (content: Uint8Array): Uint8Array => {
     const text = new TextDecoder().decode(content);
@@ -175,7 +176,7 @@ export default function UploadPage() {
 
   const mergePartFiles = (files: ExtractedFile[], type: 'follower' | 'following'): { content: Uint8Array; count: number } => {
     console.log(`🔄 Fusion des fichiers ${type}:`, files.map(f => f.name));
-    
+
     // Trier les fichiers par numéro de part
     const sortedFiles = files.sort((a, b) => {
       const numA = parseInt(a.name.match(/part(\d+)/)?.[1] || '0');
@@ -193,7 +194,7 @@ export default function UploadPage() {
       const isLast = index === sortedFiles.length - 1;
       const text = new TextDecoder().decode(file.content);
       console.log(`📖 Traitement de ${file.name}...`);
-      
+
       // Trouver les indices de début et fin
       const startBracket = text.indexOf('[');
       if (startBracket === -1) {
@@ -220,12 +221,12 @@ export default function UploadPage() {
       if (index > 0 && content.trim()) {
         mergedContent += ',';
       }
-      
+
       mergedContent += content;
     });
 
     console.log(`📊 Total ${type}: ${totalCount} entrées`);
-    
+
     // Recréer le contenu avec le bon préfixe
     const finalContent = `window.YTD.${type}.part0 = [${mergedContent}`;
     return {
@@ -244,7 +245,7 @@ export default function UploadPage() {
       // Validation initiale...
       const validationError = validateFiles(files);
       if (validationError) throw new Error(validationError);
-      
+
       // Vérification MIME...
       for (const file of Array.from(files)) {
         if (!validateFileType(file)) {
@@ -255,7 +256,7 @@ export default function UploadPage() {
       let processedFiles: ExtractedFile[] = [];
       const formData = new FormData();
       const fileCounts = { follower: 0, following: 0 };
-      
+
       // Traitement ZIP ou fichiers directs...
       if (files.length === 1 && files[0].name.toLowerCase().endsWith('.zip')) {
         processedFiles = await extractTargetFiles(files[0]);
@@ -274,19 +275,19 @@ export default function UploadPage() {
       // Détecter les fichiers en parties
       const followerParts = processedFiles.filter(f => f.name.toLowerCase().includes('follower-part'));
       const followingParts = processedFiles.filter(f => f.name.toLowerCase().includes('following-part'));
-      
+
       // Traiter les fichiers followers
       if (followerParts.length > 0) {
         console.log('🔄 Fusion des fichiers follower...');
         const { content, count } = mergePartFiles(followerParts, 'follower');
-        
+
         // Valider le contenu fusionné
         const textContent = new TextDecoder().decode(content);
         const validationError = validateTwitterData(textContent, 'follower');
         if (validationError) {
           throw new Error(`Invalid follower data: ${validationError}`);
         }
-        
+
         formData.append('files', new Blob([content], { type: 'application/javascript' }), 'follower.js');
         fileCounts.follower = count;
       } else {
@@ -307,13 +308,13 @@ export default function UploadPage() {
       if (followingParts.length > 0) {
         console.log('� Fusion des fichiers following...');
         const { content, count } = mergePartFiles(followingParts, 'following');
-        
+
         const textContent = new TextDecoder().decode(content);
         const validationError = validateTwitterData(textContent, 'following');
         if (validationError) {
           throw new Error(`Invalid following data: ${validationError}`);
         }
-        
+
         formData.append('files', new Blob([content], { type: 'application/javascript' }), 'following.js');
         fileCounts.following = count;
       } else {
@@ -367,14 +368,67 @@ export default function UploadPage() {
   };
 
   const handleFilesSelected = (files: FileList) => {
+    // Convertir FileList en Array pour un meilleur logging
+    const filesArray = Array.from(files);
+
     console.log('📁 Files selected:', {
       numberOfFiles: files.length,
       firstFileName: files[0]?.name,
       firstFileType: files[0]?.type,
-      firstFileSize: files[0]?.size
+      firstFileSize: `${(files[0]?.size / (1024 * 1024)).toFixed(2)}MB`,
+      allFiles: filesArray.map(f => ({
+        name: f.name,
+        type: f.type,
+        size: `${(f.size / (1024 * 1024)).toFixed(2)}MB`,
+        rawSize: f.size
+      }))
     });
 
-    // Stocker les fichiers et afficher la modale de consentement
+    // Vérifications préalables
+    if (!files || files.length === 0) {
+      console.log('❌ Erreur: Aucun fichier sélectionné');
+      setError('Aucun fichier sélectionné');
+      return;
+    }
+
+    // Vérifier la taille de chaque fichier individuellement
+    for (const file of filesArray) {
+      console.log('📊 Vérification taille fichier:', {
+        fileName: file.name,
+        fileType: file.type,
+        size: `${(file.size / (1024 * 1024)).toFixed(2)}MB`,
+        maxSize: `${(MAX_FILE_SIZE / (1024 * 1024))}MB`,
+        isOverLimit: file.size > MAX_FILE_SIZE
+      });
+
+      if (file.size > MAX_FILE_SIZE) {
+        console.log('❌ Erreur: Fichier trop volumineux');
+        setError(t('errors.fileSize'));
+        return;
+      }
+    }
+
+    // Vérifier les types de fichiers
+    const fileTypes = filesArray.map(f => ({
+      name: f.name,
+      type: f.type,
+      isValid: f.type.startsWith('image/') || f.type.includes('zip')
+    }));
+    console.log('🔍 Vérification des types:', fileTypes);
+
+    // for (const file of filesArray) {
+    //   if (!file.type.startsWith('image/') && !file.type.includes('zip')) {
+    //     console.log('❌ Erreur: Type de fichier invalide', {
+    //       fileName: file.name,
+    //       fileType: file.type
+    //     });
+    //     setError(`Le fichier ${file.name} n'est pas une image ou une archive ZIP`);
+    //     return;
+    //   }
+    // }
+
+    console.log('✅ Toutes les vérifications sont passées, affichage de la modale de consentement');
+    // Si toutes les vérifications sont passées, stocker les fichiers et afficher la modale
     setPendingFiles(files);
     setShowConsent(true);
   };
@@ -396,23 +450,24 @@ export default function UploadPage() {
 
     setShowConsent(false);
     setIsUploading(true);
-    
+
     try {
       await processFiles(pendingFiles);
     } catch (error) {
       handleUploadError(error instanceof Error ? error.message : 'Failed to process files');
-    } finally {
-      setIsUploading(false);
     }
   };
 
-  if (isLoading) {
+  if (isLoading || isUploading) {
     return (
       <div className="min-h-screen bg-[#2a39a9] relative w-full max-w-[90rem] m-auto">
         <div className="container mx-auto py-12">
           <div className="container flex flex-col m-auto text-center text-[#E2E4DF]">
             <div className="m-auto relative my-32 lg:my-40">
-              <LoadingIndicator msg={t('loading-indic')} />
+              <LoadingIndicator
+                msg={isUploading ? t('loading-uploading') : t('loading-indic')}
+                textSize="base"
+              />
             </div>
           </div>
         </div>
@@ -421,10 +476,11 @@ export default function UploadPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#2a39a9] relative w-full max-w-[90rem] m-auto">      <Header />
+    <div className="min-h-screen bg-[#2a39a9] relative w-full max-w-[90rem] m-auto">
+      <Header />
       <div className="relative z-10 pt-12">
         <Image
-          src={logoHQX}
+          src={logo}
           alt={t('logo.alt')}
           width={306}
           height={125}
@@ -432,68 +488,68 @@ export default function UploadPage() {
           priority
         />
       </div>
-      
+
       <div className="flex justify-center items-center min-h-[60vh]">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-black/40 backdrop-blur-xl rounded-xl border border-black/10 shadow-xl p-8 max-w-2xl w-full mx-auto relative"
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-black/40 backdrop-blur-xl rounded-xl border border-black/10 shadow-xl p-8 max-w-2xl w-full mx-auto relative"
+        >
+          <button
+            onClick={() => setShowHelpModal(true)}
+            className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors duration-200"
+            aria-label={t('helpButton')}
           >
-            <button
-              onClick={() => setShowHelpModal(true)}
-              className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors duration-200"
-              aria-label={t('helpButton')}
-            >
-              ?
-            </button>
-            
-            <div className="text-center text-white">
-              <h2 className={`${plex.className} text-2xl font-bold mb-6`}>
-                {t('title')}
-              </h2>
-              <h2 className={`${plex.className} text-1xl font-bold mb-6`}>
-                {t('action')}
-              </h2>
-              <div className="space-y-4">
+            ?
+          </button>
+
+          <div className="text-center text-white">
+            <h2 className={`${plex.className} text-2xl font-bold mb-6`}>
+              {t('title')}
+            </h2>
+            <h2 className={`${plex.className} text-1xl font-bold mb-6`}>
+              {t('action')}
+            </h2>
+            <div className="space-y-4">
               <p className="text-white/80 whitespace-pre-line text-left">
-              {t('description')}
-                </p>
-                
-                {!isUploading && (
-                  <div className="space-y-4">
-                    <UploadButton onFilesSelected={handleFilesSelected} onError={handleUploadError} />
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={() => setShowSupportModal(true)}
-                      className="w-full flex items-center justify-center gap-2 py-3 px-6 bg-white/10 hover:bg-white/20 backdrop-blur-lg rounded-xl text-white"
-                    >
-                      <AlertCircle className="w-5 h-5" />
-                      <span>{tSupport('modal.title')}</span>
-                    </motion.button>
-                  </div>
-                )}
-                
-                {isUploading && (
-                  <div className="flex items-center justify-center space-x-2">
-                    <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white"></div>
-                    <p className="text-white">{t('uploading')}</p>
-                  </div>
-                )}
-              </div>
+                {t('description')}
+              </p>
+
+              {!isUploading && (
+                <div className="space-y-4">
+                  <UploadButton onFilesSelected={handleFilesSelected} onError={handleUploadError} />
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setShowSupportModal(true)}
+                    className="w-full flex items-center justify-center gap-2 py-3 px-6 bg-white/10 hover:bg-white/20 backdrop-blur-lg rounded-xl text-white"
+                  >
+                    <AlertCircle className="w-5 h-5" />
+                    <span>{tSupport('modal.title')}</span>
+                  </motion.button>
+                </div>
+              )}
+
+              {isUploading && (
+                <div className="flex items-center justify-center space-x-2">
+                  <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white"></div>
+                  <p className="text-white">{t('uploading')}</p>
+                </div>
+              )}
             </div>
-            
-          </motion.div>
+          </div>
 
-      {/* Modal de Support */}
-      <SupportModal 
-        isOpen={showSupportModal}
-        onClose={() => setShowSupportModal(false)}
-      />
-            
-          {/* </motion.div> */}
+        </motion.div>
 
-          {/* <motion.button
+        {/* Modal de Support */}
+        <SupportModal
+          isOpen={showSupportModal}
+          onClose={() => setShowSupportModal(false)}
+        />
+
+        {/* </motion.div> */}
+
+        {/* <motion.button
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         onClick={() => setShowSupportModal(true)}
@@ -503,20 +559,21 @@ export default function UploadPage() {
         <span>{tSupport('button')}</span>
       </motion.button> */}
 
-      {/* Modal de Support */}
-      <SupportModal 
-        isOpen={showSupportModal}
-        onClose={() => setShowSupportModal(false)}
-      />
-      </div> 
+        {/* Modal de Support */}
+        <SupportModal
+          isOpen={showSupportModal}
+          onClose={() => setShowSupportModal(false)}
+        />
+      </div>
 
       {/* Modals */}
       <ErrorModal
         message={error || ''}
         onClose={handleCloseError}
         isOpen={!!error}
+        showExtractInstructions={error?.toLowerCase().includes('1 go') || error?.toLowerCase().includes('1gb')}
       />
-      
+
       <ConsentModal
         onAccept={handleConsentAccept}
         onDecline={handleConsentDecline}
@@ -545,7 +602,7 @@ export default function UploadPage() {
           </div>
         </div>
       )}
-     <Footer />
+      <Footer />
     </div>
   );
 }
