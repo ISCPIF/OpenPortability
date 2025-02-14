@@ -51,4 +51,23 @@ nginx/certs/*.crt
 nginx/certs/*.key
 backup.sql
 
-worker
+/tests
+/volumes
+/cleanup
+/worker_refreshtoken/node_modules
+
+
+/cerbots
+/coverage
+/scripts
+docker-compose.migration.yml
+Dockerfile.migration
+Dockerfile
+reload.docker-compose.yml
+
+/nginx
+nginx.conf
+/nginx/certs
+!Dockerfile
+/worker/Dockerfile
+/watcher/Dockerfile
