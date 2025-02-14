@@ -2,20 +2,27 @@ version: '3.8'
 
 services:
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    env_file:
-      - .env.local
-    environment:
-      - NODE_ENV=production
-    restart: always
-    networks:
-      - app_network
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    volumes:
-      - shared-tmp:/app/tmp
+      build:
+        context: .
+        dockerfile: Dockerfile
+      env_file:
+        - .env.local
+      environment:
+        - NODE_ENV=development
+      restart: always
+      networks:
+        - app_network
+        - supabase_network_goodbyex
+      extra_hosts:
+        - "host.docker.internal:host-gateway"
+      ports:
+        - "3000:3000"
+      volumes:
+        # - ./:/app:delegated
+        # - /app/node_modules
+        # - /app/.next
+        - shared-tmp:/app/tmp
+        # - ./public:/app/public
 
   worker:
     build:
@@ -31,6 +38,7 @@ services:
       - NODE_ENV=development
     networks:
       - app_network
+      - supabase_network_goodbyex
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
@@ -51,7 +59,7 @@ services:
     command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
 
   watcher:
-    build: 
+    build:
       context: ./watcher
       dockerfile: Dockerfile
     environment:
@@ -61,6 +69,7 @@ services:
     restart: unless-stopped
     networks:
       - app_network
+      - supabase_network_goodbyex
     extra_hosts:
       - "host.docker.internal:host-gateway"
     healthcheck:
@@ -73,6 +82,14 @@ services:
 networks:
   app_network:
     driver: bridge
+  supabase_network_goodbyex:
+    external: true
 
 volumes:
   shared-tmp:
+    driver: local
+    driver_opts:
+      type: tmpfs
+      device: tmpfs
+      o: "noexec"
+

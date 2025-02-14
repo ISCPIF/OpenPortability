@@ -9,6 +9,9 @@ declare module "next-auth" {
       has_onboarded: boolean
       hqx_newsletter: boolean
       oep_accepted: boolean
+      research_accepted : boolean
+      have_seen_newsletter: boolean
+      automatic_reconnect: boolean
       twitter_id?: string | null
       twitter_username?: string | null
       twitter_image?: string | null
@@ -27,6 +30,9 @@ declare module "next-auth" {
     has_onboarded: boolean
     hqx_newsletter: boolean
     oep_accepted: boolean
+    research_accepted : boolean
+    have_seen_newsletter: boolean
+    automatic_reconnect: boolean
     twitter_id?: string | null
     twitter_username?: string | null
     twitter_image?: string | null
@@ -46,6 +52,9 @@ declare module "next-auth/jwt" {
     has_onboarded: boolean
     hqx_newsletter: boolean
     oep_accepted: boolean
+    research_accepted : boolean
+    have_seen_newsletter: boolean
+    automatic_reconnect: boolean
     twitter_id?: string
     twitter_username?: string
     twitter_image?: string

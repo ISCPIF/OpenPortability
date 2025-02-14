@@ -5,6 +5,24 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+export interface PlatformStats {
+  total: number;
+  hasFollowed: number;
+  notFollowed: number;
+}
+
+interface UserCompleteStats {
+  connections: {
+    followers: number;
+    following: number;
+  };
+  matches: {
+    bluesky: PlatformStats;
+    mastodon: PlatformStats;
+  };
+  updated_at: string;
+}
+
 const logger = winston.createLogger({
   level: 'info',
   format: winston.format.json(),
@@ -101,11 +119,33 @@ class TelegramMonitor {
         throw failedCountError;
       }
 
+      // Récupérer les stats globales
+      const globalStats = await this.getGlobalStats();
+
       // Construire le message de rapport
       let message = `📊 Rapport de surveillance\n\n`;
-      message += `👥 Utilisateurs inscrits: ${userCount}\n`;
-      message += `📥 Tâches d'import totales: ${jobCount}\n`;
-      message += `❌ Tâches en erreur: ${failedCount}`;
+      
+      message += `👥 Utilisateurs\n`;
+      message += `• Total: ${globalStats.users.total}\n`;
+      message += `• Onboardés: ${globalStats.users.onboarded}\n\n`;
+      
+      message += `� Tâches d'import\n`;
+      message += `• Total: ${jobCount}\n`;
+      message += `• En erreur: ${failedCount}\n\n`;
+      
+      message += `🌐 Connexions\n`;
+      message += `• Followers: ${globalStats.connections.followers}\n`;
+      message += `• Following: ${globalStats.connections.following}\n\n`;
+      
+      message += `🟦 Bluesky\n`;
+      message += `• En attente: ${globalStats.connections.withHandleBluesky}\n`;
+      message += `• Reconnectés: ${globalStats.connections.followedOnBluesky}\n\n`;
+      
+      message += `🐘 Mastodon\n`;
+      message += `• En attente: ${globalStats.connections.withHandleMastodon}\n`;
+      message += `• Reconnectés: ${globalStats.connections.followedOnMastodon}\n\n`;
+      
+      message += `🕒 Mis à jour: ${new Date(globalStats.updated_at).toLocaleString('fr-FR')}`;
 
       await this.sendAlert(message);
       logger.info('Rapport envoyé');
@@ -114,6 +154,21 @@ class TelegramMonitor {
       logger.error('Error checking updates:', errorMessage);
       await this.sendAlert(`🔴 Erreur lors de la génération du rapport: ${errorMessage}`);
     }
+  }
+
+  private async getGlobalStats() {
+    const { data, error } = await this.supabasePublic
+      .from('global_stats_cache')
+      .select('stats')
+      .eq('id', true)
+      .single();
+
+    if (error) {
+      logger.error('Erreur lors de la récupération des stats globales:', error);
+      throw error;
+    }
+
+    return data.stats;
   }
 
   private async sendAlert(message: string) {
