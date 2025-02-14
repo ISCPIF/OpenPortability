@@ -5,8 +5,8 @@ import { plex } from '@/app/fonts/plex';
 import { useTranslations } from 'next-intl';
 import { useParams } from 'next/navigation';
 
-import logoHQXFR from '../../../public/logoxHQX/HQX-rose-FR.svg';
-import logoHQXEN from '../../../public/logoxHQX/HQX-pink-UK.svg';
+import logo from '../../../public/logo/logo-openport-rose.svg';
+
 import seaBackground from '../../../public/sea.svg';
 import Boat from './Boat';
 
@@ -18,13 +18,13 @@ import progress100 from '../../../public/progress/progress-100.svg';
 
 interface SeaProps {
   progress: number;
+  showAllBoats?: boolean;
 }
 
-export default function Sea({ progress }: SeaProps) {
+export default function Sea({ progress, showAllBoats = false }: SeaProps) {
   const t = useTranslations('dashboardSea');
   const params = useParams();
   const locale = params.locale as string;
-  const logoHQX = locale === 'fr' ? logoHQXFR : logoHQXEN;
   const ProgressImage = ({ progress }: { progress: number }) => {
     let img;
     let scale = 1;
@@ -46,22 +46,36 @@ export default function Sea({ progress }: SeaProps) {
     }
 
     return (
-      <Image
-        src={img}
-        width={80 * scale}
-        height={82 * scale}
-        alt=""
-        className="absolute"
-        style={{ left: `${left}%`, top: `${top}%`, zIndex: 0 }}
-      ></Image>
+      <div className="relative z-30 top-24">
+        <Image
+          src={img}
+          width={80 * scale}
+          height={82 * scale}
+          alt=""
+          className="absolute"
+          style={{ left: `${left}%`, top: `${top}%`, zIndex: 0 }}
+        ></Image>
+      </div>
     );
   };
 
   const Boats = ({ progress }: { progress: number }) => {
+    if (showAllBoats) {
+      return (
+        <>
+          <Boat model={1} top={65} left={46.5} scale={1} />
+          <Boat model={2} top={85} left={6.5} scale={1.2} zindex={10} />
+          <Boat model={3} top={75} left={26.5} scale={1.2} />
+          <Boat model={4} top={80} left={66.5} scale={1.5} />
+          <Boat model={8} top={90} left={86.5} scale={2} />
+        </>
+      );
+    }
+
     if (progress === 0)
       return (
         <>
-          <Boat model={1} top={65} left={46.5} />
+          <Boat model={1} top={67} left={46.5} />
         </>
       );
     if (progress <= 25)
@@ -100,25 +114,25 @@ export default function Sea({ progress }: SeaProps) {
       );
   };
 
-    return (
-      <div className="absolute top-0 left-0 w-full h-[23rem]">
-        <Image src={seaBackground} fill alt="" className="object-cover"></Image>
-        <div className="relative z-[5] pt-12">
-          <Image
-            src={logoHQX}
-            alt={t('logo.alt')}
-            width={306}
-            height={125}
-            className="mx-auto"
-          />
-          <div className="container flex flex-col mx-auto text-center gap-y-4 px-6 lg:gap-y-8 relative mt-8">
-            <h1 className={`${plex.className} text-2xl lg:text-3xl font-light text-blue-500`}>
-              {t('welcome')}
-            </h1>
-          </div>
+  return (
+    <div className="absolute top-0 left-0 w-full h-[23rem]">
+      <Image src={seaBackground} fill alt="" className="object-cover"></Image>
+      <div className="relative z-[5] pt-12">
+        <Image
+          src={logo}
+          alt={t('logo.alt')}
+          width={306}
+          height={125}
+          className="mx-auto"
+        />
+        <div className="container flex flex-col mx-auto text-center gap-y-4 px-6 lg:gap-y-8 relative mt-1 md:mt-6">
+          <h1 className={`${plex.className} text-2xl lg:text-3xl font-light text-blue-500`}>
+            {t('welcome')}
+          </h1>
         </div>
-        <Boats progress={progress} />
-        <ProgressImage progress={progress} />
       </div>
-    );
-  }
+      <Boats progress={progress} />
+      {!showAllBoats && <ProgressImage progress={progress} />}
+    </div>
+  );
+}

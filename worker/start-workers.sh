@@ -1,17 +1,38 @@
 #!/bin/bash
 
-# Worker 1 - Gère les followers
-export WORKER_ID=worker1
+# Arrays to store PIDs
+declare -a FOLLOWER_PIDS=()
+declare -a FOLLOWING_PIDS=()
+
+# Workers pour les followers
 export JOB_TYPES=followers
-npx ts-node src/index.ts &
-WORKER1_PID=$!
 
-# Worker 2 - Gère les following
-export WORKER_ID=worker2
+for i in {1..10}; do
+  export WORKER_ID=worker${i}_followers
+  npx ts-node src/index.ts &
+  FOLLOWER_PIDS+=($!)
+  echo "Started follower worker $i with PID ${FOLLOWER_PIDS[-1]}"
+done
+
+# Workers pour les following
 export JOB_TYPES=following
-npx ts-node src/index.ts &
-WORKER2_PID=$!
 
-# Attendre que les deux workers se terminent
-wait $WORKER1_PID
-wait $WORKER2_PID
+for i in {1..10}; do
+  export WORKER_ID=worker${i}_following
+  npx ts-node src/index.ts &
+  FOLLOWING_PIDS+=($!)
+  echo "Started following worker $i with PID ${FOLLOWING_PIDS[-1]}"
+done
+
+# Attendre que tous les workers se terminent
+echo "Waiting for follower workers..."
+for pid in "${FOLLOWER_PIDS[@]}"; do
+  wait $pid
+done
+
+echo "Waiting for following workers..."
+for pid in "${FOLLOWING_PIDS[@]}"; do
+  wait $pid
+done
+
+echo "All workers completed"
