@@ -67,3 +67,5 @@ reload.docker-compose.yml
 nginx.conf
 /nginx/certs
 !Dockerfile
+/worker/Dockerfile
+/watcher/Dockerfile
