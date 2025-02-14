@@ -56,7 +56,8 @@ export default function NewsLetterFirstSeen({ userId, onSubscribe, onClose }: Ne
   const languages = [
     { code: 'fr', name: 'FR' },
     { code: 'en', name: 'EN' },
-    { code: 'es', name: 'ES' }
+    { code: 'es', name: 'ES' },
+    { code: 'it', name: 'IT' }
   ];
   const currentLocale = pathname.split('/')[1]
 
