@@ -1,0 +1,547 @@
+{
+  "header": {
+    "logout": "Logga ut",
+    "profile": {
+      "username": "@{username}"
+    },
+    "returnToFirstStep": "Tillbaka till första steget"
+  },
+  "connectedAccounts": {
+    "connectedWith": "Du är ansluten med {services} ",
+    "and": "och",
+    "services": {
+      "twitter": "Twitter/X",
+      "bluesky": "BlueSky",
+      "mastodon": "Mastodon"
+    }
+  },
+  "blueskyLogin": {
+    "title": "Anslut till BlueSky",
+    "description": "Anslut ditt BlueSky-konto för att synka dina data och få den fulla upplevelsen.",
+    "tooltip": {
+      "info": "Vi lagrar aldrig ditt lösenord. Vi använder endast säkra autentiseringstoken från BlueSky.",
+      "noAccount": "Har du inget BlueSky-konto ännu?",
+      "createAccount": "Skapa ett här"
+    },
+    "form": {
+      "identifier": {
+        "label": "BlueSky Identifierare",
+        "placeholder": "användarnamn.bsky.social"
+      },
+      "password": {
+        "label": "Applösenord",
+        "placeholder": "••••••••",
+        "help": "Skapa ett applösenord på"
+      },
+      "submit": "Logga in",
+      "errors": {
+        "missingFields": "Vänligen fyll i alla fält",
+        "default": "Ett fel inträffade"
+      }
+    }
+  },
+  "consentModal": {
+    "title": "Bekräftelse på uppladdning",
+    "description": "Genom att ladda upp dina Twitter/X-filer bekräftar du att:",
+    "conditions": {
+      "ownership": "Du är den rättmätiga ägaren av dessa data.",
+      "cnrsUsage": "Du godkänner att de tillhandahållna uppgifterna används av Nationella Forskningscentret (CNRS) som en del av OpenPortability-operationen.",
+      "profileCreation": "Du förstår att dessa data kommer att användas för att skapa din profil på OpenPortability."
+    },
+    "buttons": {
+      "cancel": "Avbryt",
+      "accept": "Acceptera och fortsätt"
+    }
+  },
+  "dashboardLoginButtons": {
+    "importTwitter": "Importera mitt Twitter/X-arkiv",
+    "addSocialNetwork": "Lägg till ett annat socialt nätverk",
+    "services": {
+      "twitter": "Twitter/X",
+      "mastodon": {
+        "title": "Mastodon",
+        "instance": "På vilken server är ditt konto? (ex. mastodon.social)",
+        "connect": "Anslut",
+        "error": {
+          "required": "Namnet på din server krävs",
+          "unreachable": "Servern är otillgänglig. Kontrollera URL:en och försök igen.",
+          "fetch_instances": "Fel vid hämtning av instanser.",
+          "invalid_format": "Ogiltigt serverformat. Exempel: mastodon.social",
+          "special_chars": "Servern kan inte innehålla specialtecken",
+          "too_long": "Servernamnet är för långt"
+        }
+      },
+      "bluesky": "BlueSky"
+    },
+    "connectedDashboard": {
+      "twitter": "Anslut till Twitter/X",
+      "bluesky": "Anslut till Bluesky",
+      "mastodon": "Anslut till Mastodon"
+    }
+  },
+  "footer": {
+    "hosted": {
+      "text": "Denna plattform är öppen och användbar för alla. Den är en del av {openPortability} forskningsprojektet vid ISC-PIF (CNRS). Den är värdbaserad av {cnrs}",
+      "cnrs": "franska CNRS/ISC-PIF",
+      "openPortability": "OpenPortability"
+    },
+    "copyright": " {year} OpenPortability. Alla rättigheter förbehållna.",
+    "privacy": "Integritetspolicy"
+  },
+  "loginButtons": {
+    "twitter": {
+      "continue": "Fortsätt med Twitter/X",
+      "notDeleted": "Jag har ett Twitter/X-konto"
+    },
+    "deleteAccount": "Jag har redan raderat mitt Twitter/X-konto",
+    "bluesky": {
+      "connect": "Anslut med BlueSky"
+    },
+    "mastodon": {
+      "connect": "Anslut med Mastodon"
+    }
+  },
+  "migrationComplete": {
+    "error": {
+      "title": "Migrationsfel",
+      "retry": "Försök igen",
+      "createAccount": "Skapa konto"
+    },
+    "success": {
+      "title": "Migration slutförd!",
+      "description": "Ditt konto har framgångsrikt migrerats till BlueSky under användarnamnet {handle}",
+      "displayName": "({name})",
+      "viewProfile": "Visa profil"
+    }
+  },
+  "partageButton": {
+    "share": "Dela",
+    "shareOn": "Dela på {platform}"
+  },
+  "progressSteps": {
+    "dashboard": {
+      "title": "Välkommen ombord"
+    },
+    "socialNetworks": {
+      "title": "Länka mina konton på sociala nätverk"
+    },
+    "import": {
+      "title": "Ladda upp mitt X/Twitter-arkiv",
+      "description": {
+        "withStats": "{following} följer, {followers} följare"
+      }
+    },
+    "share": {
+      "title": "Dela med mitt nätverk"
+    }
+  },
+  "successModal": {
+    "title": "Import lyckades!",
+    "following": {
+      "title": "Följer ({count})",
+      "username": "@{username}"
+    },
+    "followers": {
+      "title": "Följare ({count})",
+      "username": "@{username}"
+    },
+    "close": "Stäng"
+  },
+  "uploadButton": {
+    "dropHere": "Släpp din fil här",
+    "uploadInProgress": "Vi analyserar ditt arkiv, vänligen vänta...",
+    "clickOrDrop": "Klicka eller dra ditt arkiv hit",
+    "error": {
+      "uploadFailed": "Uppladdning misslyckades efter flera försök. Försök igen."
+    }
+  },
+  "uploadResults": {
+    "congratulations": "Grattis @{username}, du är registrerad för resan!",
+    "importSuccess": "Din filimport har registrerat {count} nya passagerare!",
+    "stats": {
+      "twitterAccounts": {
+        "label": "Twitter/X-konton",
+        "value": "{count}"
+      },
+      "totalImported": {
+        "label": "Kartlagda Twitter/X-anslutningar",
+        "value": "{count} konton kartlagda"
+      },
+      "readyTravelers": {
+        "label": "Redo att resa",
+        "value": "{count} konton redo"
+      }
+    },
+    "inviteFriends": "Bjud in dina följare att ansluta sig!",
+    "redirecting": "Omdirigerar till instrumentpanelen..."
+  },
+  "signin": {
+    "title": "Redo att resa mot nya horisonter?",
+    "subtitle": "Börja med att ansluta med Twitter/X för att migrera dina data",
+    "loading": "Laddar information...",
+    "logo": {
+      "alt": "OpenPortability Logotyp"
+    },
+    "logoCNRS": {
+      "alt": "CNRS, Franska nationella forskningscentret"
+    }
+  },
+  "dashboard": {
+    "loading": "Laddar dina data...",
+    "addSocialNetwork": "Lägg till socialt nätverk",
+    "addSocialNetworkDescription": "Anslut till andra sociala nätverk för att förbättra din upplevelse",
+    "migrationStep": {
+      "completed1": "Grattis! Du har slutfört det första av två migrationssteg.",
+      "completed2": "Glöm inte att bjuda in dina prenumeranter att registrera sig på OpenPortability. Inom 1 minut kommer de att vara återanslutna till ditt konto, även utan sitt arkiv.\nFas 2 kommer inom några dagar! Enligt dina preferenser kommer du att få en notifikation via e-post eller kan följa vår lansering på X, BlueSky, och Mastodon.\nHåll dig uppdaterad—spännande överraskningar väntar!",
+      "nextSteps": "Slutför följande steg för att segla till nya horisonter!"
+    },
+    "importButton": "Importera mitt Twitter/X-arkiv",
+    "shareModal": {
+      "title": "Dela din resa",
+      "shareOn": "Dela på {platform}",
+      "shareText": "🚨#eXit i progress! Just registrerat för #OpenPortability för att hålla kontakten med mitt community på #BlueSky och #Mastodon. {count} väntande anslutningar har lagts till! På bara 1 minut kan du också säkerställa att du inte tappar dina prenumeranter! ➡️ https://OpenPortability.org"
+    },
+    "newsletter": {
+      "title": "Håll dig informerad",
+      "description": "Registrera dig för att följa projektets framsteg och bli meddelad om nya funktioner.",
+      "subscribe": "Håll dig informerad om nästa steg i HelloQuitX-projektet",
+      "subscribed": "Du är registrerad för nyhetsbrevet!",
+      "emailLabel": "Din e-postadress",
+      "emailPlaceholder": "exempel@epost.com",
+      "acceptHQX": "Jag vill få uppdateringar från HelloQuitX",
+      "acceptOEP": "Jag vill bli informerad om andra initiativ från [On est prêt](https://www.onestpret.com), som stödjer HelloQuitX",
+      "subscribing": "Registrerar...",
+      "confirmSubscribe": "Bekräfta prenumeration"
+    },
+    "tutorial": {
+      "title": "Steg-för-steg handledning",
+      "description": "Lär dig hur du enkelt migrerar från Twitter/X till Mastodon och Bluesky",
+      "watchVideo": "Titta på videon"
+    }
+  },
+  "dashboardSea": {
+    "welcome": "Välkommen ombord på OpenPortability!",
+    "logo": {
+      "alt": "OpenPortability Logotyp"
+    },
+    "logoCNRS": {
+      "alt": "CNRS, Franska nationella forskningscentret"
+    }
+  },
+  "upload": {
+    "title": "Importera ditt Twitter/X-arkiv för att fortsätta resan",
+    "action": "Släpp eller välj dina filer här",
+    "description": "Tre dataformat accepteras:\n- ditt ursprungliga X-arkiv om <1GB (i Zip-format)\n- following.js och follower.js-filer TILLSAMMANS och ozipade,\n- delade versioner av dessa filer för stora arkiv (following-part*.js + follower-part*.js)",
+    "loading": {
+      "default": "Laddar...",
+      "uploading": "Stanna kvar på sidan, din import pågår"
+    },
+    "helpButton": "Hjälp med att få ditt Twitter/X-arkiv",
+    "loading-indic": "Laddar dina data...",
+    "loading-uploading": "Stanna kvar på sidan, import pågår",
+    "logo": {
+      "alt": "OpenPortability Logotyp"
+    },
+    "logoCNRS": {
+      "alt": "CNRS, Franska nationella forskningscentret"
+    },
+    "helpModal": {
+      "title": "Hur får jag mitt Twitter/X-arkiv?",
+      "description": "För att få ditt Twitter/X-arkiv, följ dessa steg:",
+      "steps": [
+        "Logga in på ditt Twitter/X-konto",
+        "Gå till \"Mer\" i vänstermenyn",
+        "Klicka på \"Inställningar och support\" och sedan \"Inställningar och sekretess\"",
+        "Under \"Ditt konto\", välj \"Ladda ner ett arkiv av dina data\"",
+        "Bekräfta ditt lösenord om det efterfrågas",
+        "Klicka på \"Begär arkiv\"",
+        "Twitter/X skickar dig ett e-postmeddelande när ditt arkiv är redo att laddas ner",
+        "När det har laddats ner kan du importera .zip-filen här"
+      ],
+      "note": "Notera: Förberedelsen av Twitter/X-arkivet kan ta upp till 24 timmar."
+    },
+    "errors": {
+      "fileSize": "Filstorleken överstiger 1GB-gränsen",
+      "fileType": "Ogiltig filtyp. Logga upp antingen en ZIP-fil eller following.js och follower.js-filer",
+      "noFiles": "Inga filer valda",
+      "invalidCombination": "Ladda upp antingen en ZIP-fil, following.js + follower.js, eller deras delade versioner (following-part*.js/follower-part*.js)"
+    }
+  },
+  "largeFiles": {
+    "logo": {
+      "alt": "OpenPortability Logotyp"
+    },
+    "logoCNRS": {
+      "alt": "CNRS, Franska nationella forskningscentret"
+    },
+    "progress": {
+      "total": {
+        "title": "Total framsteg",
+        "processed": "{processed} / {total}"
+      },
+      "followers": {
+        "title": "Följare",
+        "processed": "{processed} / {total}"
+      },
+      "following": {
+        "title": "Följer",
+        "processed": "{processed} / {total}"
+      }
+    },
+    "status": {
+      "title": "Status",
+      "pending": "Väntar",
+      "processing": "Bearbetar",
+      "completed": "Slutförd",
+      "failed": "Misslyckades"
+    },
+    "stats": {
+      "followers": "Följare",
+      "following": "Följer"
+    },
+    "button": {
+      "dashboard": "Tillbaka till instrumentpanelen"
+    }
+  },
+  "profile": {
+    "unlinkConfirmation": "Är du säker på att du vill koppla bort ditt {provider}-konto?",
+    "unlinkSuccess": "Ditt {provider}-konto har kopplats bort",
+    "unlinkError": "Ett fel inträffade när {provider}-kontot kopplades bort",
+    "unlinkButton": "Koppla bort {provider}-konto",
+    "providers": {
+      "twitter": "Twitter/X",
+      "bluesky": "Bluesky",
+      "mastodon": "Mastodon"
+    },
+    "errors": {
+      "lastAccount": "Kan inte koppla bort ditt sista anslutna konto",
+      "notLinked": "Inget {provider}-konto är länkat"
+    }
+  },
+  "settings": {
+    "logout": "Logga ut",
+    "deleteAccount": "Radera mitt konto",
+    "deleteConfirm": {
+      "title": "Radera konto",
+      "message": "Är du säker på att du vill radera ditt konto? Denna åtgärd kan inte ångras och kommer att resultera i borttagning av:\n\n• All din importerade data\n• Alla dina länkade konton (Twitter/X, BlueSky, Mastodon)\n• Din OpenPortability-profil",
+      "cancel": "Avbryt",
+      "confirm": "Ja, radera mitt konto"
+    },
+    "newsletter": "OpenPortability Nyhetsbrev",
+    "research": "CNRS forskningsprogram",
+    "oepNewsletter": "Bli informerad om On est prêt- initiativet",
+    "preferencesUpdated": "Inställningar uppdaterade",
+    "notifications": {
+      "title": "Meddelanden",
+      "hqxNewsletter": "Få uppdateringar från OpenPortability",
+      "oepNewsletter": "Bli informerad om On est prêt-initiativet"
+    }
+  },
+  "support": {
+    "modal": {
+      "title": "Har du ett problem?",
+      "description": "Skicka oss ett meddelande så återkommer vi så snart som möjligt.",
+      "form": {
+        "email": {
+          "label": "Din e-postadress",
+          "placeholder": "exempel@epost.com"
+        },
+        "message": {
+          "label": "Ditt meddelande",
+          "placeholder": "Beskriv ditt problem..."
+        },
+        "submit": "Skicka meddelande"
+      },
+      "success": "Meddelandet skickades framgångsrikt!",
+      "error": "Ett fel uppstod vid skickandet av ditt meddelande."
+    }
+  },
+  "errorModal": {
+    "title": "Fel",
+    "close": "Stäng",
+    "extractArchive": {
+      "title": "Så här extraherar du ditt arkiv",
+      "windows": "Windows",
+      "steps": {
+        "windows": {
+          "step1": "Högerklicka på ZIP-filen",
+          "step2": "Välj 'Extrahera alla...'",
+          "step3": "Välj en destinationsmapp",
+          "step4": "Klicka på 'Extrahera'"
+        },
+        "mac": {
+          "step1": "Dubbelklicka på ZIP-filen",
+          "step2": "Filerna extraheras automatiskt"
+        },
+        "linux": {
+          "step1": "Högerklicka på ZIP-filen",
+          "step2": "Välj 'Extrahera här' eller 'Extrahera till...'",
+          "step3": "Välj en destinationsmapp om frågat"
+        }
+      },
+      "mac": "Mac",
+      "linux": "Linux"
+    }
+  },
+  "firstSeen": {
+    "title": "Välkommen!",
+    "description": "Du är på väg att utnyttja din rätt till dataportabilitet från X till BlueSky och/eller Mastodon samtidigt som du deltar i ett forskningsprojekt om sociala nätverk. Det kommer att ta dig 5 minuter.\n\nOpenPortability kommer att referera dina digitala identiteter och hjälpa dig att gradvis återskapa ditt community på BlueSky och/eller Mastodon, utan att påverka ditt X-konto.\n\nNär andra användare registrerar sig på OpenPortability, kommer de länkar som refererats på X att återskapas på BlueSky eller Mastodon med deras medgivande. Uppmuntra dina följare att göra detsamma!\n\nDenna \"kopia\" av ditt sociala nätverk kan ta flera dagar.\n\nGenom att använda OpenPortability godkänner du att dina data behandlas i enlighet med {lien} och samtycker till möjligt överförande av dina data utanför Europeiska unionen (t.ex. BlueSky-servrar).",
+    "privacyPolicyLink": "vår integritetspolicy",
+    "newsletter": {
+      "subtitle": "Jag vill bli följd av OpenPortability",
+      "emailLabel": "Ange din e-post för att hålla dig informerad (valfritt):",
+      "emailPlaceholder": "exempel@epost.com",
+      "consent": "Jag vill hålla mig informerad om kommande operationer från On Est prêt, som följer OpenPortability",
+      "researchConsent": "Jag godkänner att dela min anslutningsgraf med CNRS för forskningsändamål. Den kommer att behandlas i aggregerad form. Inga personuppgifter kommer att offentliggöras.",
+      "errors": {
+        "missingEmail": "Saknad e-post"
+      }
+    },
+    "cta": "SKICKA IN",
+    "dismiss": "Genom att klicka på 'Skicka in' intygar jag att jag har läst ovanstående villkor och godkänner dem. Du måste acceptera användarvillkoren för att kunna fortsätta på OpenPortability-plattformen"
+  },
+  "migrate": {
+    "title": "Migrera dina prenumerationer",
+    "matches_found": "träffar hittade",
+    "followers": "Följare",
+    "following": "Följer",
+    "loading": "Laddar dina träffar",
+    "selectAll": "Välj alla",
+    "deselectAll": "Avmarkera alla",
+    "startMigration": "Starta migration",
+    "migrating": "Migrerar..."
+  },
+  "ReconnexionOptions": {
+    "title": "Välj hur du vill återansluta till dina följande",
+    "buttons": {
+      "automatic": "ÅTERANSLUT MIG AUTOMATISKT",
+      "manual": "JAG VÄLJER KONTON ATT ÅTERANSLUTA"
+    },
+    "descriptions": {
+      "automatic": "OpenPortability kommer att återansluta dig med alla dina följare från Twitter/X.",
+      "manual": "OpenPortability låter dig välja vilka konton du vill återansluta med bland de konton som hittas på Bluesky och Mastodon."
+    },
+    "stats": {
+      "connections": "Kartlagda Twitter/X-anslutningar",
+      "bluesky": "Väntande återanslutningar på BlueSky",
+      "mastodon": "Väntande återanslutningar på Mastodon",
+      "followedBluesky": "Fullständiga återanslutningar på BlueSky",
+      "followedMastodon": "Fullständiga återanslutningar på Mastodon"
+    }
+  },
+  "migrateSea": {
+    "logo": {
+      "alt": "OpenPortability Logo"
+    },
+    "matchDetails": {
+      "bluesky": "{count} på Bluesky",
+      "mastodon": "{count} på Mastodon"
+    },
+    "title": "Mot en ny digital era",
+    "matchMessage": "{matchCount} passagerare hittades under ditt första migrationssteg!\nNu är det dags att aktivera anslutningen med de du vill\nansluta till dina nya nätverk.",
+    "stats": {
+      "awaitingConnection": "av dina följda konton väntar på\nanslutning!",
+      "alreadyTransferred": "prenumeranter har redan överförts!"
+    }
+  },
+  "ManualReconnexion": {
+    "title": "Manuell Återanslutning",
+    "automaticReconnect": "ÅTERANSLUT MIG AUTOMATISKT",
+    "selectAll": "VÄLJ ALLA",
+    "connect": "ANSLUT ({count})",
+    "prev": "Föregående",
+    "next": "Nästa",
+    "xAccountPseudo": "Kontoalias",
+    "mastodonBlueskyCorrespondence": "Mastodon/Bluesky Korrespondens",
+    "followOnBluesky": "Följ på Bluesky",
+    "followOnMastodon": "Följ på Mastodon"
+  },
+  "AccountToMigrate": {
+    "followOnBluesky": "Följ på Bluesky",
+    "followOnMastodon": "Följ på Mastodon",
+    "followedOnBluesky": "Följde på Bluesky",
+    "followedOnMastodon": "Följde på Mastodon"
+  },
+  "reconnexionModal": {
+    "title": "Du har just aktiverat anslutningen med {count} konton!",
+    "message": "Grattis, din återanslutning är klar, du har kommit fram säkert.",
+    "stayInformed": "HÅLL DIG INFORMERAD OM NYA ANSLUTNINGAR",
+    "progressTitle": "Återanslutning pågår:{succeeded} av {total} konton",
+    "progressMessage": "Vänligen vänta medan vi återansluter dina konton...",
+    "migrationInProgress": "Återanslutning pågår...",
+    "migrationComplete": "Återanslutning slutförd!",
+    "migrationProgress": "{current} av {total} konton återanslutna",
+    "migrationCompleteStats": "Framgångsrikt återanslutna {count} konton",
+    "minimize": "Minimera",
+    "close": "Stäng"
+  },
+  "Migrate": {
+    "migrationInProgress": "Återanslutning pågår...",
+    "migrationComplete": "Återanslutning slutförd!",
+    "migrationProgress": "{current} av {total} konton återanslutna",
+    "migrationCompleteStats": "Framgångsrikt återanslutna {count} konton",
+    "minimize": "Minimera",
+    "close": "Stäng"
+  },
+  "AutomaticReconnexion": {
+    "reconnectionInProgress": "Automatisk återanslutning aktiverat",
+    "chooseManualy": "dina följda att återansluta",
+    "switchToManual": "Jag väljer konton att återansluta",
+    "accountsToConnect": "Konton att ansluta",
+    "blueskyAccounts": "Bluesky konton",
+    "mastodonAccounts": "Mastodon konton"
+  },
+  "refreshTokenModal": {
+    "title": "Återanslutning Krävs",
+    "description": "Din session har utgått för {provider}. Vänligen återanslut för att fortsätta.",
+    "descriptionMultiple": "Din session har utgått för följande tjänster:{providers}. Vänligen återanslut för att fortsätta.",
+    "details": {
+      "bluesky": "Din BlueSky-session har utgått. Av säkerhetsskäl använder vi bara tillfälliga access tokens som behöver förnyas regelbundet.",
+      "mastodon": "Vi behöver ytterligare behörigheter för att möjliggöra återanslutning med dina följare. Vänligen återanslut för att godkänna dessa nya funktioner.",
+      "both": "• BlueSky:Session utgått (tillfälliga tokens)\n• Mastodon:Behörighetsuppdatering krävs"
+    },
+    "close": "Stäng"
+  },
+  "refreshToken": {
+    "title": "Återanslutning behövs",
+    "description": "Ge OpenPortability tillåtelse att initiera återanslutning genom autentisering."
+  },
+  "SuccessAutomaticReconnexion": {
+    "congratulations": "Grattis",
+    "secondObjective": "Du har slutfört det andra målet och återanslutit med {count} konton. Du har nått din destination!",
+    "notification": "Vi fortsätter att meddela dig om nya konton kan återanslutas, via e-post eller ditt föredragna nätverk enligt dina preferenser.",
+    "stats": {
+      "blueskyFollowing": "Följare som hittats på Bluesky",
+      "mastodonFollowing": "Följare som hittats på Mastodon"
+    },
+    "firstObjective": "Första målet uppnått, du är registrerad för resan!",
+    "goToDashboard": "Återgå till instrumentpanelen"
+  },
+  "launchReconnection": {
+    "firstObjective": {
+      "before": "Första målet uppnått",
+      "after": "! Det andra steget är i sikte:starta återanslutningen"
+    },
+    "inviteMessage": "Glöm inte att bjuda in dina följare att registrera sig på OpenPortability. På 1 minut kan de återanslutas till ditt konto, även utan sitt arkiv. Håll utkik för spännande överraskningar!",
+    "blueskyConnectionMessage": {
+      "before": "Anslut ditt Bluesky-konto för att automatiskt återansluta med",
+      "after": "konton!"
+    },
+    "mastodonConnectionMessage": {
+      "before": "Anslut ditt Mastodon-konto för att automatiskt återansluta med",
+      "after": "konton!"
+    },
+    "launchButton": "Starta din återanslutning med {count} konton!",
+    "stats": {
+      "twitterAccounts": "Twitter/X-konton",
+      "totalImported": "Totalt importerade"
+    },
+    "alreadyReconnected": "Vi har redan återanslutit dig med {count} konton. Kom tillbaka senare för att fortsätta din återanslutning!"
+  },
+  "privacy_policy": {
+    "title": "Dataskyddsinformation",
+    "subtitle": "Institutet för komplicerade system Paris Ile de France | Januari 2025",
+    "content": "<h2>CNRS ISC PIF</h2><p>Dataskyddsinformation för det vetenskapliga forskningsprojektet Open Portability</p><p>Sociala nätverk, särskilt Twitter (nu X), har från början varit privilegierade forskningsobjekt, särskilt inom området för beräkningsmässiga samhällsvetenskaper.</p><p>En historisk övergång pågår i det sociala nätverkets rådande landskap. Den centraliserade modellen, som X (tidigare Twitter) står för, upplever en massiv användarövergång till alternativa plattformar som BlueSky och Mastodon. Flera miljoner konton har migrerat på bara några veckor, vilket markerar ett stort skifte mot decentraliserade och öppna nätverk.</p><p>Denna övergång är ett betydande socialt, ekonomiskt och teknologiskt fenomen som kan modifiera det globala digitala rummet, särskilt i Europa, och kan låta Europa återfå en del digital suveränitet.</p><h2>I. Projekt- och Behandlingsbeskrivning</h2><p>Forskningsmålen är följande:analysera skillnaden mellan öppna och stängda mikrobloggningsmiljöer utifrån sociala dynamiker och online-debatter. Studera som ett fallstudie den pågående migrationen mellan X och utrymmen baserade på öppna protokoll, AT-protokollet och Activity Pub, och studera tillägnandet av decentraliserade digitala utrymmen över tid (5-års horisont).</p><p>OpenPortability-projektet involverar:</p><ul><li>Datainsamling för dataportabilitet mellan sociala nätverk</li><li>Datainsamling för att skapa en översikt av X nätverkets sociala struktur</li><li>Datainsamling för att skapa översikter av alternativa nätverks sociala strukturer</li><li>Dataportabilitet</li><li>Databehandling och analys</li></ul><h2>II. Datainsamling, Mottagare och Förvaring</h2><p>Data som samlas in direkt från individer och behandlas är:</p><ul><li>Digitala identifierare på sociala nätverk (användarnamn ID)</li><li>Profilnamn på sociala nätverk</li><li>E-postadresser</li></ul><p>Blueskys policy för skydd av personuppgifter finns på:<link>https://bsky.social/about/support/privacy-policy</link></p><p>Mastodons policy för skydd av personuppgifter kan nås på <link>https://joinmastodon.org/servers</link></p><h2>III. Säkerhetsåtgärder</h2><p>För att säkerställa datas konfidentialitet och skydd vidtas åtgärder i enlighet med Statens informationssystemssäkerhetspolicy, tillämpad på CNRS. Data lagras i Frankrike på CNRS-servrar.</p><h2>IV. Utövande av Dina Rättigheter</h2><p>Du kan få tillgång till och erhålla en kopia av dina data, motsätta dig behandlingen av dessa data eller få dem rättade. Du har också rätten att begränsa behandlingen av dina data. Du kan utöva dessa rättigheter genom att kontakta datakontrollaren vid Institutet för Komplicerade System-Paris Ile de France, med adressen 113 rue Nationale 75013 Paris, eller via kontaktformuläret tillgängligt på <link>https://openportability.org/</link></p><p>Du kan också kontakta CNRS:s dataskyddsombud (DPO) på:CNRS - Dataskyddstjänst, 2 rue Jean Zay, 54519 Vandoeuvre-lès-Nancy - dpd.demandes@cnrs.fr.</p><p>Om du anser att dina rättigheter av Informationsteknik och Medborgerliga Friheter inte respekteras, kan du lämna in ett klagomål online till CNIL, 3 Place de Fontenoy, TSA 80715 – 75334 Paris Cedex 07 (<link>https://www.cnil.fr/</link>).</p>",
+    "backToSignIn": "Tillbaka till OpenPortability-plattformen"
+  }
+}
