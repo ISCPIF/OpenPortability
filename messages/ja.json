@@ -1,0 +1,480 @@
+{
+    "header": {
+        "logout": "サインアウト",
+        "profile": {
+            "username": "@{username}"
+        }
+    },
+    "connectedAccounts": {
+        "connectedWith": "{services}に接続済み ",
+        "and": "と",
+        "services": {
+            "twitter": "Twitter/X",
+            "bluesky": "BlueSky",
+            "mastodon": "Mastodon"
+        }
+    },
+    "blueskyLogin": {
+        "title": "BlueSkyに接続",
+        "description": "BlueSkyアカウントに接続しデータを同期することで、機能を最大限にご活用ください。",
+        "tooltip": {
+            "info": "私たちがあなたのパスワードを保存することはありません。BlueSkyが提供する安全な認証トークンのみを使用しています。",
+            "noAccount": "まだBlueSkyのアカウントをお持ちではありませんか？",
+            "createAccount": "アカウントを作成する"
+        },
+        "form": {
+            "identifier": {
+                "label": "BlueSky Identifier",
+                "placeholder": "username.bsky.social"
+            },
+            "password": {
+                "label": "パスワード",
+                "placeholder": "••••••••",
+                "help": "のパスワードを作成する"
+            },
+            "submit": "サインイン",
+            "errors": {
+                "missingFields": "すべての項目をご記入ください",
+                "default": "エラーが発生しました"
+            }
+        }
+    },
+    "consentModal": {
+        "title": "アップロードの確認",
+        "description": "Twitter/Xのファイルをアップロードすることで、以下を承認したことになります：",
+        "conditions": {
+            "ownership": "あなたがこのデータの正当な所有者です。",
+            "cnrsUsage": "提供されたデータが、HelloQuitXプロジェクトの一環としてフランス国立科学研究センター（CNRS）によって使用されることに同意します。",
+            "profileCreation": "このデータがHelloQuitXでのプロフィール作成に使用されることに同意します。"
+        },
+        "buttons": {
+            "cancel": "取消",
+            "accept": "同意して進む"
+        }
+    },
+    "dashboardLoginButtons": {
+        "importTwitter": "Twitter/Xアーカイブをインポート",
+        "services": {
+            "twitter": "Twitter/X",
+            "mastodon": {
+                "title": "Mastodon",
+                "instance": "あなたのアカウントはどこでホストされていますか？（例：mastodon.social）",
+                "connect": "接続",
+                "error": {
+                    "required": "サーバー名は必須です",
+                    "unreachable": "インスタンスに接続できません。URLを確認して再試行してください。",
+                    "fetch_instances": "インスタンスの取得中にエラーが発生しました。",
+                    "invalid_format": "無効なインスタンス形式です。例：mastodon.social",
+                    "special_chars": "インスタンス名に特殊な文字や記号を含めることはできません",
+                    "too_long": "インスタンス名が長すぎます"
+                }
+            },
+            "bluesky": "BlueSky"
+        },
+        "addSocialNetwork": "別のSNSを追加",
+        "connectedDashboard": {
+            "twitter": "Twitter/Xに接続",
+            "bluesky": "Blueskyに接続",
+            "mastodon": "Mastodonに接続"
+        }
+    },
+    "footer": {
+        "hosted": {
+            "cnrs": "CNRS/ISC-PIF",
+            "text": "このプラットフォームは{cnrs}によってホストされ、{hqx}とのパートナーシップで開発されました",
+            "hqx": "HelloQuitX"
+        },
+        "copyright": " {year} HelloQuitX. All rights reserved."
+    },
+    "errorModal": {
+        "title": "エラー",
+        "close": "閉じる",
+        "extractArchive": {
+            "windows": "Windows",
+            "steps": {
+                "windows": {
+                    "step1": "ZIPファイルを右クリック",
+                    "step2": "「すべて展開」を選択",
+                    "step3": "保存先フォルダを選択",
+                    "step4": "「展開」をクリック"
+                },
+                "mac": {
+                    "step1": "ZIPファイルをダブルクリック",
+                    "step2": "ファイルは自動的に展開されます"
+                },
+                "linux": {
+                    "step1": "ZIPファイルを右クリック",
+                    "step2": "「ここに展開」または「展開先を指定」 を選択",
+                    "step3": "求められた場合は、保存先フォルダを選択"
+                }
+            },
+            "title": "アーカイブを展開する方法",
+            "mac": "Mac",
+            "linux": "Linux"
+        }
+    },
+    "loginButtons": {
+        "deleteAccount": "すでにTwitter/Xのアカウントを削除しました",
+        "twitter": {
+            "continue": "Twitter/Xで続行",
+            "notDeleted": "Twitter/Xのアカウントを持っています"
+        },
+        "bluesky": {
+            "connect": "BlueSkyで接続"
+        },
+        "mastodon": {
+            "connect": "Mastodonで接続"
+        }
+    },
+    "migrationComplete": {
+        "error": {
+            "createAccount": "アカウントを作成",
+            "title": "移行エラー",
+            "retry": "再試行"
+        },
+        "success": {
+            "title": "移行完了！",
+            "displayName": "({name})",
+            "viewProfile": "プロフィールを見る",
+            "description": "アカウントは、{handle}というハンドル名でBlueSkyに正常に移行されました"
+        }
+    },
+    "partageButton": {
+        "share": "シェア",
+        "shareOn": "{platform}でシェア"
+    },
+    "progressSteps": {
+        "dashboard": {
+            "title": "ようこそ"
+        },
+        "socialNetworks": {
+            "title": "自身のSNSアカウント同士を繋げる"
+        },
+        "import": {
+            "title": "X/Twitterアーカイブをアップロード",
+            "description": {
+                "withStats": "{following} フォロー中、 {followers} フォロワー"
+            }
+        },
+        "share": {
+            "title": "コミュニティでシェアする"
+        }
+    },
+    "successModal": {
+        "following": {
+            "title": "フォロー中 ({count})",
+            "username": "@{username}"
+        },
+        "title": "インポートが成功しました！",
+        "close": "閉じる",
+        "followers": {
+            "title": "フォロワー ({count})",
+            "username": "@{username}"
+        }
+    },
+    "uploadButton": {
+        "clickOrDrop": "クリックするか、アーカイブをドラッグしてここに置いてください",
+        "error": {
+            "uploadFailed": "アップロードに失敗しました。もう一度お試しください。"
+        },
+        "uploadInProgress": "アーカイブを分析中、しばらくお待ちください...",
+        "dropHere": "ここにファイルをドラッグ＆ドロップしてください"
+    },
+    "uploadResults": {
+        "congratulations": "おめでとうございます、@{username}さん！あなたの旅の準備が完了しました！",
+        "stats": {
+            "totalImported": {
+                "label": "合計インポート数",
+                "value": "{count}件のアカウントがインポートされました"
+            },
+            "readyTravelers": {
+                "label": "出発準備完了",
+                "value": "{count}件のアカウント準備完了"
+            },
+            "twitterAccounts": {
+                "label": "Twitter/X アカウント",
+                "value": "{count}"
+            }
+        },
+        "importSuccess": "ファイルのインポートで、{count}人の新しいユーザーが登録されました！",
+        "redirecting": "ダッシュボードにリダイレクト中...",
+        "inviteFriends": "フォロワーを招待しよう！"
+    },
+    "signin": {
+        "title": "新しい世界へ旅立つ準備はできていますか？",
+        "subtitle": "Twitter/Xに接続して、データの移行を始めましょう",
+        "loading": "情報をロード中...",
+        "logo": {
+            "alt": "HelloQuitX Logo"
+        },
+        "logoCNRS": {
+            "alt": "フランス国立科学研究センター（CNRS）"
+        }
+    },
+    "dashboard": {
+        "migrationStep": {
+            "daysLeft": "あと{count}日！",
+            "nextSteps": "新しい世界へ旅立つために、以下のステップを完了しましょう！",
+            "completed1": "おめでとうございます！2つの移行ステップのうち、最初のステップを完了しました。",
+            "completed2": "あなたのXのフォロワーにもこのプラットフォームに登録してもらいましょう。そして#1月20日にあなたのネットワークを再構築しましょう。"
+        },
+        "addSocialNetworkDescription": "他のSNSと接続して、より充実した体験をお楽しみください",
+        "shareModal": {
+            "title": "あなたの経験をシェア",
+            "shareOn": "{platform}でシェア",
+            "shareText": "#eXit 完了！Xからの移行は大規模に進行中です。この流れの中でフォロワーを失わないようにしましょう。#HelloQuitXを利用して、{count}人の新しい仲間が#BlueSkyと#Mastodonへの旅に登録されました。https://app.helloquitx.com に参加して、1月20日に自動で自分のコミュニティを見つけましょう！"
+        },
+        "newsletter": {
+            "acceptOEP": "HelloQuitXをサポートしている[On est prêt](https://www.onestpret.com)の他の取り組みについても知りたい",
+            "subscribing": "登録中...",
+            "title": "最新情報をチェック",
+            "description": "プロジェクトの進捗をフォローし、新しい機能のお知らせを受信するにはサインアップしてください。",
+            "subscribe": "HelloQuitXプロジェクトの今後の展開をチェック",
+            "subscribed": "ニュースレターに登録しました！",
+            "emailLabel": "メールアドレス",
+            "emailPlaceholder": "example@email.com",
+            "acceptHQX": "HelloQuitXからの最新情報を受け取りたい",
+            "confirmSubscribe": "登録を確認"
+        },
+        "loading": "データをロード中...",
+        "importButton": "Twitter/Xアーカイブをインポート",
+        "tutorial": {
+            "title": "手順ごとの解説",
+            "description": "Twitter/XからMastodonおよびBlueskyへの簡単な移行方法を学ぼう",
+            "watchVideo": "動画を見る"
+        },
+        "addSocialNetwork": "SNSを追加"
+    },
+    "upload": {
+        "helpButton": "Twitter/Xアーカイブ取得のヘルプ",
+        "loading-indic": "データをロード中...",
+        "helpModal": {
+            "description": "Twitter/Xアーカイブを取得するには以下の手順をお試しください:",
+            "steps": [
+                "Twitter/Xアカウントにログイン",
+                "左のメニュー内「もっと見る」を選択",
+                "",
+                "「アカウント」内、「データのアーカイブをダウンロード」を選択",
+                "パスワードの確認を求められた場合は入力",
+                "",
+                "アーカイブのダウンロードが可能になると、Twitter/Xからメールが届きます",
+                "ダウンロードが完了したら、.zipファイルをインポートできます"
+            ],
+            "note": "注意：Twitter/Xのアーカイブの準備には最大で24時間かかる場合があります。",
+            "title": "Twitter/Xアーカイブを取得する方法"
+        },
+        "errors": {
+            "noFiles": "ファイルが選択されていません",
+            "invalidCombination": "ZIPファイル、following.js + follower.js、またはその分割版（following-part*.js/follower-part*.js）のいずれかをアップロードしてください",
+            "fileSize": "ファイルサイズが1GBの上限を超えています",
+            "fileType": "ファイル形式が正しくありません。ZIPファイル、またはfollowing.jsとfollower.jsの両方をアップロードしてください"
+        },
+        "title": "Twitter/Xのアーカイブをインポートして、次のステップへ進みましょう",
+        "action": "ここにファイルをドラッグするか、選択してください",
+        "loading": {
+            "default": "ロード中...",
+            "uploading": "ページを移動せずにお待ちください、インポートが進行中です"
+        },
+        "loading-uploading": "ページを離れないでください。インポート中です",
+        "logo": {
+            "alt": "HelloQuiX Logo"
+        },
+        "logoCNRS": {
+            "alt": "フランス国立科学研究センター（CNRS）"
+        },
+        "description": "以下のデータ形式のみに対応しています\n- オリジナルのXアーカイブ（1GB未満、Zip形式）\n- following.js と follower.js （両ファイルまとめて、解凍済みのもの）\n- 大容量アーカイブにおける上記ファイルの分割版（following-part*.js + follower-part*.js）"
+    },
+    "largeFiles": {
+        "progress": {
+            "followers": {
+                "processed": "{processed} / {total}",
+                "title": "フォロワー"
+            },
+            "following": {
+                "title": "フォロー中",
+                "processed": "{processed} / {total}"
+            },
+            "total": {
+                "processed": "{processed} / {total}",
+                "title": "進捗状況"
+            }
+        },
+        "logo": {
+            "alt": "HelloQuitX Logo"
+        },
+        "logoCNRS": {
+            "alt": "フランス国立科学研究センター（CNRS）"
+        },
+        "stats": {
+            "following": "フォロー中",
+            "followers": "フォロワー"
+        },
+        "status": {
+            "processing": "処理中",
+            "completed": "完了",
+            "title": "ステータス",
+            "pending": "処理待ち",
+            "failed": "失敗"
+        },
+        "button": {
+            "dashboard": "ダッシュボードに戻る"
+        }
+    },
+    "profile": {
+        "providers": {
+            "twitter": "Twitter/X",
+            "bluesky": "Bluesky",
+            "mastodon": "Mastodon"
+        },
+        "unlinkConfirmation": "本当に{provider}アカウントのリンクを解除してもよろしいですか？",
+        "unlinkSuccess": "{provider}アカウントのリンクを正常に解除しました",
+        "unlinkError": "{provider}アカウントのリンク解除中にエラーが発生しました",
+        "errors": {
+            "lastAccount": "接続されている最後1つのアカウントのリンクを解除することはできません",
+            "notLinked": "{provider}アカウントはリンクされていません"
+        },
+        "unlinkButton": "{provider}アカウントのリンクを解除"
+    },
+    "settings": {
+        "deleteConfirm": {
+            "message": "本当にアカウントを削除しますか？この操作は取り消すことができません。削除される内容は次の通りです：\n\n- インポートした全てのデータ\n- リンクされた全てのアカウント（Twitter/X、BlueSky、Mastodon）\n- あなたのHelloQuitXプロファイル",
+            "cancel": "取消",
+            "title": "アカウントを削除",
+            "confirm": "はい、アカウントを削除します"
+        },
+        "logout": "サインアウト",
+        "deleteAccount": "アカウントを削除する",
+        "notifications": {
+            "title": "通知",
+            "hqxNewsletter": "HelloQuitXからの最新情報を受け取る",
+            "oepNewsletter": "On est prêtの活動に関する情報を得る"
+        }
+    },
+    "dashboardSea": {
+        "welcome": "HelloQuitXにようこそ！",
+        "logo": {
+            "alt": "HelloQuitX Logo"
+        },
+        "logoCNRS": {
+            "alt": "フランス国立科学研究センター（CNRS）"
+        }
+    },
+    "support": {
+        "modal": {
+            "title": "問題が発生しましたか？",
+            "form": {
+                "subject": {
+                    "placeholder": "件名",
+                    "label": "件名"
+                },
+                "message": {
+                    "label": "本文",
+                    "placeholder": "本文"
+                },
+                "submit": "送信",
+                "submitting": "送信中...",
+                "email": {
+                    "label": "メールアドレス",
+                    "placeholder": "example@email.com"
+                }
+            },
+            "error": {
+                "unknown": "予期せぬエラーが発生しました",
+                "send": "メッセージ送信エラー"
+            },
+            "description": "ご連絡いただければ、迅速に対応いたします。"
+        }
+    },
+    "firstSeen": {
+        "title": "ようこそ！",
+        "newsletter": {
+            "subtitle": "HelloQuitXのサポートを受け取る",
+            "emailLabel": "最新情報を受け取るためにメールアドレスを入力（任意）:",
+            "emailPlaceholder": "Username@domain.com",
+            "consent": "HelloQuitXを支援するOn Est prêtの今後の活動について情報を得る",
+            "researchConsent": "研究目的のために自分のソーシャルグラフをフランス国立科学研究センター（CNRS）と共有することに同意します。データは集計された形で処理されます。個人情報は公開されません。",
+            "errors": {
+                "missingEmail": "メールアドレスが入力されていません"
+            }
+        },
+        "cta": "送信",
+        "dismiss": "このメッセージを今後表示しない",
+        "description": "HelloQuitXに登録し、SNS上のデジタルアイデンティティを統合して、他のSNS上でコミュニティを再構築する準備が整いました。この操作は5分ほどで完了し、Xアカウントには影響を与えません。1月20日以降、あなたのBlueSkyおよびMastodonアカウントは自動的に新しいフォロワーを受け取るようになります。\nすべてがスムーズに進むように、操作ガイドを提供しています。場合によっては、いくつかのステップが必要なことがあります。また、今後の機能（例えば、X上のポストのBlueSkyやMastodonへのインポートなど）についてもお知らせいたします。\nHelloQuitXの機能をご利用いただくことで、BlueSkyやMastodonを通じて連絡を取ることを許可したことになります。また、最新情報を受け取れるよう、メールアドレスの登録もお勧めします。\nこの連絡先情報は適切に使用され、HelloQuitXのサポートプログラムからはいつでも退会できます。"
+    },
+    "migrate": {
+        "followers": "",
+        "matches_found": "",
+        "title": "",
+        "deselectAll": "",
+        "selectAll": "",
+        "startMigration": "",
+        "loading": "",
+        "following": "",
+        "migrating": ""
+    },
+    "ReconnexionOptions": {
+        "buttons": {
+            "automatic": "",
+            "manual": ""
+        },
+        "descriptions": {
+            "automatic": "",
+            "manual": ""
+        },
+        "stats": {
+            "connections": "",
+            "networks": "",
+            "bluesky": ""
+        }
+    },
+    "migrateSea": {
+        "logo": {
+            "alt": ""
+        },
+        "matchDetails": {
+            "mastodon": "",
+            "bluesky": ""
+        },
+        "matchMessage": "",
+        "title": ""
+    },
+    "ManualReconnexion": {
+        "connect": "",
+        "automaticReconnect": "",
+        "selectAll": "",
+        "xAccountPseudo": "",
+        "next": "",
+        "followOnBluesky": "",
+        "followOnMastodon": "",
+        "prev": "",
+        "title": "",
+        "mastodonBlueskyCorrespondence": ""
+    },
+    "AccountToMigrate": {
+        "followOnBluesky": "",
+        "followedOnBluesky": "",
+        "followOnMastodon": "",
+        "followedOnMastodon": ""
+    },
+    "reconnexionModal": {
+        "title": "",
+        "progressTitle": "",
+        "stayInformed": "",
+        "progressMessage": "",
+        "message": "",
+        "migrationComplete": "",
+        "close": "",
+        "migrationInProgress": "",
+        "migrationCompleteStats": "",
+        "migrationProgress": "",
+        "minimize": ""
+    },
+    "Migrate": {
+        "migrationCompleteStats": "",
+        "migrationProgress": "",
+        "minimize": "",
+        "close": "",
+        "migrationInProgress": "",
+        "migrationComplete": ""
+    }
+}

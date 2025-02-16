@@ -1,0 +1,480 @@
+{
+    "connectedAccounts": {
+        "services": {
+            "bluesky": "BlueSky",
+            "twitter": "Twitter",
+            "mastodon": "Mastodon"
+        },
+        "connectedWith": "Accedeches a {services} ✨",
+        "and": "e"
+    },
+    "header": {
+        "logout": "Pechar sesión",
+        "profile": {
+            "username": "@{username}"
+        }
+    },
+    "blueskyLogin": {
+        "title": "Accede a BlueSky",
+        "form": {
+            "identifier": {
+                "placeholder": "",
+                "label": ""
+            },
+            "password": {
+                "label": "",
+                "help": "",
+                "placeholder": ""
+            },
+            "submit": "",
+            "errors": {
+                "default": "",
+                "missingFields": ""
+            }
+        },
+        "tooltip": {
+            "createAccount": "",
+            "noAccount": "",
+            "info": ""
+        },
+        "description": ""
+    },
+    "migrate": {
+        "matches_found": "",
+        "followers": "",
+        "title": "",
+        "deselectAll": "",
+        "migrating": "",
+        "following": "",
+        "startMigration": "",
+        "selectAll": "",
+        "loading": ""
+    },
+    "ReconnexionOptions": {
+        "descriptions": {
+            "automatic": "",
+            "manual": ""
+        },
+        "stats": {
+            "connections": "",
+            "networks": "",
+            "bluesky": ""
+        },
+        "buttons": {
+            "automatic": "",
+            "manual": ""
+        }
+    },
+    "migrateSea": {
+        "matchDetails": {
+            "bluesky": "",
+            "mastodon": ""
+        },
+        "title": "",
+        "matchMessage": "",
+        "logo": {
+            "alt": ""
+        }
+    },
+    "ManualReconnexion": {
+        "selectAll": "",
+        "prev": "",
+        "connect": "",
+        "followOnBluesky": "",
+        "mastodonBlueskyCorrespondence": "",
+        "automaticReconnect": "",
+        "next": "",
+        "title": "",
+        "followOnMastodon": "",
+        "xAccountPseudo": ""
+    },
+    "AccountToMigrate": {
+        "followedOnMastodon": "",
+        "followedOnBluesky": "",
+        "followOnBluesky": "",
+        "followOnMastodon": ""
+    },
+    "reconnexionModal": {
+        "message": "",
+        "migrationInProgress": "",
+        "progressMessage": "",
+        "migrationComplete": "",
+        "migrationCompleteStats": "",
+        "minimize": "",
+        "migrationProgress": "",
+        "close": "",
+        "progressTitle": "",
+        "title": "",
+        "stayInformed": ""
+    },
+    "Migrate": {
+        "migrationComplete": "",
+        "minimize": "",
+        "migrationCompleteStats": "",
+        "close": "",
+        "migrationProgress": "",
+        "migrationInProgress": ""
+    },
+    "loginButtons": {
+        "twitter": {
+            "notDeleted": "",
+            "continue": ""
+        },
+        "bluesky": {
+            "connect": ""
+        },
+        "deleteAccount": "",
+        "mastodon": {
+            "connect": ""
+        }
+    },
+    "migrationComplete": {
+        "error": {
+            "title": "",
+            "retry": "",
+            "createAccount": ""
+        },
+        "success": {
+            "title": "",
+            "displayName": "",
+            "description": "",
+            "viewProfile": ""
+        }
+    },
+    "progressSteps": {
+        "dashboard": {
+            "title": ""
+        },
+        "socialNetworks": {
+            "title": ""
+        },
+        "import": {
+            "title": "",
+            "description": {
+                "withStats": ""
+            }
+        },
+        "share": {
+            "title": ""
+        }
+    },
+    "partageButton": {
+        "share": "",
+        "shareOn": ""
+    },
+    "successModal": {
+        "following": {
+            "username": "",
+            "title": ""
+        },
+        "followers": {
+            "title": "",
+            "username": ""
+        },
+        "title": "",
+        "close": ""
+    },
+    "uploadButton": {
+        "clickOrDrop": "",
+        "error": {
+            "uploadFailed": ""
+        },
+        "dropHere": "",
+        "uploadInProgress": ""
+    },
+    "uploadResults": {
+        "congratulations": "",
+        "inviteFriends": "",
+        "stats": {
+            "readyTravelers": {
+                "value": "",
+                "label": ""
+            },
+            "twitterAccounts": {
+                "value": "",
+                "label": ""
+            },
+            "totalImported": {
+                "label": "",
+                "value": ""
+            }
+        },
+        "redirecting": "",
+        "importSuccess": ""
+    },
+    "signin": {
+        "subtitle": "",
+        "title": "",
+        "loading": "",
+        "logoCNRS": {
+            "alt": ""
+        },
+        "logo": {
+            "alt": ""
+        }
+    },
+    "dashboard": {
+        "addSocialNetwork": "",
+        "migrationStep": {
+            "daysLeft": "",
+            "nextSteps": "",
+            "completed2": "",
+            "completed1": ""
+        },
+        "addSocialNetworkDescription": "",
+        "loading": "",
+        "importButton": "",
+        "shareModal": {
+            "title": "",
+            "shareText": "",
+            "shareOn": ""
+        },
+        "tutorial": {
+            "watchVideo": "",
+            "title": "",
+            "description": ""
+        },
+        "newsletter": {
+            "acceptOEP": "",
+            "description": "",
+            "subscribe": "",
+            "title": "",
+            "subscribed": "",
+            "acceptHQX": "",
+            "subscribing": "",
+            "confirmSubscribe": "",
+            "emailLabel": "",
+            "emailPlaceholder": ""
+        }
+    },
+    "upload": {
+        "title": "",
+        "action": "",
+        "loading-indic": "",
+        "helpModal": {
+            "steps": [
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                ""
+            ],
+            "title": "",
+            "description": "",
+            "note": ""
+        },
+        "description": "",
+        "errors": {
+            "fileSize": "",
+            "fileType": "",
+            "invalidCombination": "",
+            "noFiles": ""
+        },
+        "loading": {
+            "uploading": "",
+            "default": ""
+        },
+        "logo": {
+            "alt": ""
+        },
+        "logoCNRS": {
+            "alt": ""
+        },
+        "helpButton": "",
+        "loading-uploading": ""
+    },
+    "dashboardSea": {
+        "logo": {
+            "alt": ""
+        },
+        "logoCNRS": {
+            "alt": ""
+        },
+        "welcome": ""
+    },
+    "errorModal": {
+        "extractArchive": {
+            "steps": {
+                "mac": {
+                    "step2": "",
+                    "step1": ""
+                },
+                "windows": {
+                    "step4": "",
+                    "step1": "",
+                    "step2": "",
+                    "step3": ""
+                },
+                "linux": {
+                    "step1": "",
+                    "step2": "",
+                    "step3": ""
+                }
+            },
+            "windows": "",
+            "mac": "",
+            "linux": "",
+            "title": ""
+        },
+        "title": "",
+        "close": ""
+    },
+    "settings": {
+        "deleteAccount": "",
+        "notifications": {
+            "oepNewsletter": "",
+            "title": "",
+            "hqxNewsletter": ""
+        },
+        "logout": "",
+        "deleteConfirm": {
+            "title": "",
+            "cancel": "",
+            "confirm": "",
+            "message": ""
+        }
+    },
+    "largeFiles": {
+        "logo": {
+            "alt": ""
+        },
+        "progress": {
+            "following": {
+                "title": "",
+                "processed": ""
+            },
+            "total": {
+                "processed": "",
+                "title": ""
+            },
+            "followers": {
+                "title": "",
+                "processed": ""
+            }
+        },
+        "status": {
+            "failed": "",
+            "completed": "",
+            "pending": "",
+            "title": "",
+            "processing": ""
+        },
+        "stats": {
+            "following": "",
+            "followers": ""
+        },
+        "logoCNRS": {
+            "alt": ""
+        },
+        "button": {
+            "dashboard": ""
+        }
+    },
+    "support": {
+        "modal": {
+            "form": {
+                "subject": {
+                    "placeholder": "",
+                    "label": ""
+                },
+                "submitting": "",
+                "email": {
+                    "label": "",
+                    "placeholder": ""
+                },
+                "message": {
+                    "label": "",
+                    "placeholder": ""
+                },
+                "submit": ""
+            },
+            "title": "",
+            "error": {
+                "unknown": "",
+                "send": ""
+            },
+            "description": ""
+        }
+    },
+    "dashboardLoginButtons": {
+        "services": {
+            "mastodon": {
+                "instance": "",
+                "title": "",
+                "error": {
+                    "special_chars": "",
+                    "too_long": "",
+                    "invalid_format": "",
+                    "unreachable": "",
+                    "fetch_instances": "",
+                    "required": ""
+                },
+                "connect": ""
+            },
+            "bluesky": "",
+            "twitter": ""
+        },
+        "connectedDashboard": {
+            "mastodon": "",
+            "bluesky": "",
+            "twitter": ""
+        },
+        "importTwitter": "",
+        "addSocialNetwork": ""
+    },
+    "profile": {
+        "providers": {
+            "bluesky": "",
+            "twitter": "",
+            "mastodon": ""
+        },
+        "errors": {
+            "notLinked": "",
+            "lastAccount": ""
+        },
+        "unlinkConfirmation": "",
+        "unlinkButton": "",
+        "unlinkError": "",
+        "unlinkSuccess": ""
+    },
+    "firstSeen": {
+        "cta": "",
+        "newsletter": {
+            "errors": {
+                "missingEmail": ""
+            },
+            "researchConsent": "",
+            "subtitle": "",
+            "consent": "",
+            "emailLabel": "",
+            "emailPlaceholder": ""
+        },
+        "dismiss": "",
+        "title": "",
+        "description": ""
+    },
+    "consentModal": {
+        "title": "",
+        "buttons": {
+            "cancel": "",
+            "accept": ""
+        },
+        "conditions": {
+            "profileCreation": "",
+            "cnrsUsage": "",
+            "ownership": ""
+        },
+        "description": ""
+    },
+    "footer": {
+        "copyright": "",
+        "hosted": {
+            "text": "",
+            "hqx": "",
+            "cnrs": ""
+        }
+    }
+}
