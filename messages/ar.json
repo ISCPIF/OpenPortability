@@ -1,0 +1,484 @@
+{
+    "successModal": {
+        "followers": {
+            "username": "@{username}",
+            "title": ""
+        },
+        "following": {
+            "username": "@{username}",
+            "title": ""
+        },
+        "close": "أغلق",
+        "title": ""
+    },
+    "dashboardLoginButtons": {
+        "services": {
+            "bluesky": "بلوسكاي",
+            "twitter": "تويتر",
+            "mastodon": {
+                "title": "ماستدون",
+                "instances": {
+                    "piaille": "piaille.fr",
+                    "mastodon": "mastodon.social"
+                },
+                "connect": "",
+                "instance": "",
+                "error": {
+                    "too_long": "",
+                    "fetch_instances": "",
+                    "special_chars": "",
+                    "unreachable": "",
+                    "required": "",
+                    "invalid_format": ""
+                }
+            }
+        },
+        "addSocialNetwork": "",
+        "connectedDashboard": {
+            "twitter": "",
+            "bluesky": "",
+            "mastodon": ""
+        },
+        "importTwitter": ""
+    },
+    "partageButton": {
+        "share": "شارك",
+        "shareOn": ""
+    },
+    "largeFiles": {
+        "status": {
+            "completed": "اكتمل",
+            "processing": "المعالجة جارية",
+            "title": "منشورات",
+            "failed": "فشل",
+            "pending": ""
+        },
+        "button": {
+            "dashboard": ""
+        },
+        "progress": {
+            "following": {
+                "title": "",
+                "processed": ""
+            },
+            "total": {
+                "title": "",
+                "processed": ""
+            },
+            "followers": {
+                "processed": "",
+                "title": ""
+            }
+        },
+        "logoCNRS": {
+            "alt": ""
+        },
+        "logo": {
+            "alt": ""
+        },
+        "stats": {
+            "following": "",
+            "followers": ""
+        }
+    },
+    "profile": {
+        "providers": {
+            "mastodon": "ماستدون",
+            "twitter": "تويتر",
+            "bluesky": "بلوسكاي"
+        },
+        "unlinkConfirmation": "",
+        "unlinkError": "",
+        "errors": {
+            "notLinked": "",
+            "lastAccount": ""
+        },
+        "unlinkButton": "",
+        "unlinkSuccess": ""
+    },
+    "blueskyLogin": {
+        "form": {
+            "password": {
+                "label": "كلمة سر التطبيق",
+                "placeholder": "••••••••",
+                "help": ""
+            },
+            "identifier": {
+                "placeholder": "username.bsky.social",
+                "label": ""
+            },
+            "submit": "لِج",
+            "errors": {
+                "default": "",
+                "missingFields": ""
+            }
+        },
+        "description": "",
+        "tooltip": {
+            "createAccount": "",
+            "noAccount": "",
+            "info": ""
+        },
+        "title": ""
+    },
+    "progressSteps": {
+        "share": {
+            "title": "مُشارَكة"
+        },
+        "socialNetworks": {
+            "title": "الشبكات الاجتماعية"
+        },
+        "import": {
+            "title": "استيراد",
+            "description": {
+                "withStats": ""
+            }
+        },
+        "dashboard": {
+            "title": "لوح المراقبة"
+        }
+    },
+    "header": {
+        "profile": {
+            "username": "@{username}"
+        },
+        "logout": "خروج"
+    },
+    "connectedAccounts": {
+        "services": {
+            "mastodon": "ماستدون",
+            "bluesky": "بلوسكاي",
+            "twitter": ""
+        },
+        "connectedWith": "",
+        "and": ""
+    },
+    "consentModal": {
+        "buttons": {
+            "cancel": "ألغِ",
+            "accept": ""
+        },
+        "title": "",
+        "description": "",
+        "conditions": {
+            "profileCreation": "",
+            "cnrsUsage": "",
+            "ownership": ""
+        }
+    },
+    "migrationComplete": {
+        "error": {
+            "retry": "المحاولة مجددًا",
+            "createAccount": "إنشاء حساب",
+            "title": ""
+        },
+        "success": {
+            "displayName": "({name})",
+            "viewProfile": "عرض الملف التعريفي",
+            "description": "",
+            "title": ""
+        }
+    },
+    "footer": {
+        "hosted": {
+            "hqx": "HelloQuitX",
+            "cnrs": "CNRS/ISC-PIF",
+            "text": ""
+        },
+        "copyright": ""
+    },
+    "uploadResults": {
+        "stats": {
+            "twitterAccounts": {
+                "value": "{count}",
+                "label": ""
+            },
+            "totalImported": {
+                "label": "",
+                "value": ""
+            },
+            "readyTravelers": {
+                "label": "",
+                "value": ""
+            }
+        },
+        "congratulations": "",
+        "redirecting": "",
+        "inviteFriends": "",
+        "importSuccess": ""
+    },
+    "errorModal": {
+        "close": "أغلق",
+        "title": "",
+        "extractArchive": {
+            "steps": {
+                "windows": {
+                    "step4": "",
+                    "step1": "",
+                    "step3": "",
+                    "step2": ""
+                },
+                "mac": {
+                    "step1": "",
+                    "step2": ""
+                },
+                "linux": {
+                    "step1": "",
+                    "step3": "",
+                    "step2": ""
+                }
+            },
+            "title": "",
+            "windows": "",
+            "linux": "",
+            "mac": ""
+        }
+    },
+    "dashboard": {
+        "newsletter": {
+            "subscribing": "جار التسجيل…",
+            "emailPlaceholder": "example@email.com",
+            "subscribe": "",
+            "acceptHQX": "",
+            "confirmSubscribe": "",
+            "acceptOEP": "",
+            "emailLabel": "",
+            "subscribed": "",
+            "title": "",
+            "description": ""
+        },
+        "importButton": "",
+        "migrationStep": {
+            "daysLeft": "",
+            "nextSteps": "",
+            "completed1": "",
+            "completed2": ""
+        },
+        "shareModal": {
+            "shareOn": "",
+            "shareText": "",
+            "title": ""
+        },
+        "loading": "",
+        "tutorial": {
+            "title": "",
+            "description": "",
+            "watchVideo": ""
+        },
+        "addSocialNetworkDescription": "",
+        "addSocialNetwork": ""
+    },
+    "settings": {
+        "deleteConfirm": {
+            "cancel": "ألغِ",
+            "title": "",
+            "confirm": "",
+            "message": ""
+        },
+        "notifications": {
+            "title": "الإشعارات",
+            "oepNewsletter": "",
+            "hqxNewsletter": ""
+        },
+        "deleteAccount": "",
+        "logout": ""
+    },
+    "loginButtons": {
+        "twitter": {
+            "continue": "",
+            "notDeleted": ""
+        },
+        "deleteAccount": "",
+        "bluesky": {
+            "connect": ""
+        },
+        "mastodon": {
+            "connect": ""
+        }
+    },
+    "uploadButton": {
+        "dropHere": "",
+        "clickOrDrop": "",
+        "uploadInProgress": "",
+        "error": {
+            "uploadFailed": ""
+        }
+    },
+    "signin": {
+        "subtitle": "",
+        "title": "",
+        "loading": "",
+        "logoCNRS": {
+            "alt": ""
+        },
+        "logo": {
+            "alt": ""
+        }
+    },
+    "migrate": {
+        "title": "",
+        "migrating": "",
+        "deselectAll": "",
+        "matches_found": "",
+        "followers": "",
+        "selectAll": "",
+        "following": "",
+        "loading": "",
+        "startMigration": ""
+    },
+    "migrateSea": {
+        "matchDetails": {
+            "mastodon": "",
+            "bluesky": ""
+        },
+        "title": "",
+        "matchMessage": "",
+        "logo": {
+            "alt": ""
+        }
+    },
+    "ReconnexionOptions": {
+        "descriptions": {
+            "manual": "",
+            "automatic": ""
+        },
+        "stats": {
+            "bluesky": "",
+            "networks": "",
+            "connections": ""
+        },
+        "buttons": {
+            "manual": "",
+            "automatic": ""
+        }
+    },
+    "ManualReconnexion": {
+        "title": "",
+        "prev": "",
+        "next": "",
+        "xAccountPseudo": "",
+        "mastodonBlueskyCorrespondence": "",
+        "followOnMastodon": "",
+        "selectAll": "",
+        "automaticReconnect": "",
+        "followOnBluesky": "",
+        "connect": ""
+    },
+    "reconnexionModal": {
+        "stayInformed": "",
+        "message": "",
+        "migrationProgress": "",
+        "migrationComplete": "",
+        "migrationInProgress": "",
+        "close": "",
+        "progressTitle": "",
+        "title": "",
+        "minimize": "",
+        "migrationCompleteStats": "",
+        "progressMessage": ""
+    },
+    "Migrate": {
+        "migrationProgress": "",
+        "migrationCompleteStats": "",
+        "migrationComplete": "",
+        "migrationInProgress": "",
+        "close": "",
+        "minimize": ""
+    },
+    "support": {
+        "modal": {
+            "form": {
+                "submitting": "",
+                "subject": {
+                    "placeholder": "",
+                    "label": ""
+                },
+                "submit": "",
+                "message": {
+                    "placeholder": "",
+                    "label": ""
+                },
+                "email": {
+                    "label": "",
+                    "placeholder": ""
+                }
+            },
+            "error": {
+                "send": "",
+                "unknown": ""
+            },
+            "description": "",
+            "title": ""
+        }
+    },
+    "upload": {
+        "helpModal": {
+            "title": "",
+            "steps": [
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                "",
+                ""
+            ],
+            "note": "",
+            "description": ""
+        },
+        "description": "",
+        "loading-indic": "",
+        "logo": {
+            "alt": ""
+        },
+        "helpButton": "",
+        "loading": {
+            "default": "",
+            "uploading": ""
+        },
+        "errors": {
+            "fileType": "",
+            "invalidCombination": "",
+            "fileSize": "",
+            "noFiles": ""
+        },
+        "action": "",
+        "loading-uploading": "",
+        "logoCNRS": {
+            "alt": ""
+        },
+        "title": ""
+    },
+    "firstSeen": {
+        "newsletter": {
+            "errors": {
+                "missingEmail": ""
+            },
+            "subtitle": "",
+            "emailPlaceholder": "",
+            "consent": "",
+            "researchConsent": "",
+            "emailLabel": ""
+        },
+        "dismiss": "",
+        "title": "",
+        "cta": "",
+        "description": ""
+    },
+    "dashboardSea": {
+        "logo": {
+            "alt": ""
+        },
+        "logoCNRS": {
+            "alt": ""
+        },
+        "welcome": ""
+    },
+    "AccountToMigrate": {
+        "followOnMastodon": "",
+        "followedOnBluesky": "",
+        "followedOnMastodon": "",
+        "followOnBluesky": ""
+    }
+}
