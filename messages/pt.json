@@ -1,0 +1,248 @@
+{
+    "header": {
+        "logout": "Sair",
+        "returnToFirstStep": "Retornar para a primeira etapa",
+        "profile": {
+            "username": "@{username}"
+        }
+    },
+    "connectedAccounts": {
+        "connectedWith": "Você está conectada com {services} ",
+        "and": "e",
+        "services": {
+            "twitter": "Twitter/X",
+            "bluesky": "BlueSky",
+            "mastodon": "Mastodon"
+        }
+    },
+    "footer": {
+        "hosted": {
+            "hqx": "OpenPortability",
+            "text": "Essa plataforma é hospedada pelo {cnrs}.",
+            "cnrs": "CNRS/ISC-PIF"
+        },
+        "copyright": " {year} OpenPortability. Todos os direitos reservados.",
+        "privacy": "Política de privacidade"
+    },
+    "dashboardLoginButtons": {
+        "importTwitter": "Importar meu arquivo do Twitter/X",
+        "services": {
+            "mastodon": {
+                "error": {
+                    "too_long": "O nome da instância é muito longo",
+                    "required": "O nome de seu servidor é obrigatório",
+                    "unreachable": "A instância não pode ser acessada. Verifique o URL e tente novamente.",
+                    "fetch_instances": "Erro ao buscar instâncias.",
+                    "special_chars": "A instância não pode conter caracteres especiais",
+                    "invalid_format": "Formato de instância inválido. Exemplo: mastodon.social"
+                },
+                "instance": "Onde sua conta está hospedada? (por exemplo, mastodon.social)",
+                "connect": "Conectar",
+                "title": "Mastodon"
+            },
+            "twitter": "Twitter/X",
+            "bluesky": "BlueSky"
+        },
+        "addSocialNetwork": "Adicionar outra rede social",
+        "connectedDashboard": {
+            "twitter": "Conecte-se ao Twitter/X",
+            "bluesky": "Conecte-se ao Bluesky",
+            "mastodon": "Conecte-se ao Mastodon"
+        }
+    },
+    "loginButtons": {
+        "twitter": {
+            "continue": "Continuar com o Twitter/X",
+            "notDeleted": "Tenho uma conta no Twitter/X"
+        },
+        "deleteAccount": "Já excluí minha conta do Twitter/X",
+        "mastodon": {
+            "connect": "Conecte-se com o Mastodon"
+        },
+        "bluesky": {
+            "connect": "Conecte-se com o BlueSky"
+        }
+    },
+    "migrationComplete": {
+        "success": {
+            "displayName": "({name})",
+            "title": "Migração concluída!",
+            "description": "Sua conta foi migrada com sucesso para o BlueSky com o identificador {handle}",
+            "viewProfile": "Exibir perfil"
+        },
+        "error": {
+            "retry": "Tente novamente",
+            "title": "Erro de migração",
+            "createAccount": "Criar conta"
+        }
+    },
+    "consentModal": {
+        "conditions": {
+            "cnrsUsage": "Você concorda que os dados fornecidos serão usados pelo Centro Nacional de Pesquisa Científica (CNRS) como parte da operação do OpenPortability.",
+            "ownership": "Você é o proprietário legítimo desses dados.",
+            "profileCreation": "Você entende que esses dados serão usados para criar seu perfil no OpenPortability."
+        },
+        "title": "Confirmação de upload",
+        "buttons": {
+            "cancel": "Cancelar",
+            "accept": "Aceitar e continuar"
+        },
+        "description": "Ao fazer o upload de seus arquivos Twitter/X, você confirma que:"
+    },
+    "progressSteps": {
+        "dashboard": {
+            "title": "Bem-vinda a bordo"
+        },
+        "import": {
+            "title": "Carregar meu arquivo do X/Twitter",
+            "description": {
+                "withStats": "{following} seguindo, {followers} seguidores"
+            }
+        },
+        "share": {
+            "title": "Compartilhar com minha comunidade"
+        },
+        "socialNetworks": {
+            "title": "Vincular minhas contas de redes sociais"
+        }
+    },
+    "uploadResults": {
+        "stats": {
+            "twitterAccounts": {
+                "label": "Contas do Twitter/X",
+                "value": "{count}"
+            },
+            "totalImported": {
+                "label": "Total importado",
+                "value": "{count} contas importadas"
+            },
+            "readyTravelers": {
+                "label": "Pronto para viajar",
+                "value": "{count} contas prontas"
+            }
+        },
+        "inviteFriends": "Convide seus seguidores para se juntarem a você!",
+        "redirecting": "Redirecionando para o painel de controle...",
+        "importSuccess": "A importação do seu arquivo registrou {count} novos passageiros!",
+        "congratulations": "Parabéns @{username}, você está registrado para a jornada!"
+    },
+    "blueskyLogin": {
+        "tooltip": {
+            "info": "Nunca armazenamos sua senha. Usamos apenas tokens de autenticação seguros fornecidos pelo BlueSky.",
+            "noAccount": "Ainda não tem uma conta no BlueSky?",
+            "createAccount": "Crie uma aqui"
+        },
+        "title": "Conecte-se ao BlueSky",
+        "description": "Conecte sua conta BlueSky para sincronizar seus dados e aproveitar a experiência completa.",
+        "form": {
+            "identifier": {
+                "placeholder": "username.bsky.social",
+                "label": "Identificador no BlueSky"
+            },
+            "password": {
+                "label": "Senha do aplicativo",
+                "help": "Crie uma senha de aplicativo em"
+            },
+            "errors": {
+                "missingFields": "Por favor, preencha todos os campos",
+                "default": "Ocorreu um erro"
+            },
+            "submit": "Fazer login"
+        }
+    },
+    "successModal": {
+        "title": "Importação bem-sucedida!",
+        "following": {
+            "title": "Seguindo ({count})",
+            "username": "@{username}"
+        },
+        "followers": {
+            "title": "Seguidores ({count})",
+            "username": "@{username}"
+        },
+        "close": "Fechar"
+    },
+    "partageButton": {
+        "share": "Compartilhar",
+        "shareOn": "Compartilhar em {plataforma}"
+    },
+    "uploadButton": {
+        "dropHere": "Envie seu arquivo aqui",
+        "uploadInProgress": "Estamos analisando seu arquivo, aguarde...",
+        "clickOrDrop": "Clique ou arraste seu arquivo para cá",
+        "error": {
+            "uploadFailed": "O upload falhou após várias tentativas. Por favor, tente novamente."
+        }
+    },
+    "signin": {
+        "title": "Pronto para viajar para novos horizontes?",
+        "subtitle": "Comece conectando-se ao Twitter/X para migrar seus dados",
+        "loading": "Carregando informações...",
+        "logo": {
+            "alt": "Logo da OpenPortability"
+        },
+        "logoCNRS": {
+            "alt": "CNRS, Centro Nacional de Pesquisa Científica da França"
+        }
+    },
+    "dashboard": {
+        "loading": "Carregando seus dados...",
+        "migrationStep": {
+            "completed1": "Parabéns! Você concluiu a primeira das duas etapas de migração.",
+            "nextSteps": "Conclua as etapas a seguir para navegar rumo a novos horizontes!",
+            "completed2": "Não se esqueça de convidar seus assinantes a se registrarem no OpenPortability. Em 1 minuto, eles serão reconectados à sua conta, mesmo sem o arquivo deles.\nA Fase 2 chegará em apenas alguns dias! De acordo com suas preferências, você receberá uma notificação por e-mail ou poderá acompanhar nosso lançamento no X, BlueSky e Mastodon.\nFique ligado - surpresas emocionantes o aguardam!"
+        },
+        "importButton": "Importar meu arquivo do Twitter/X",
+        "shareModal": {
+            "title": "Compartilhe sua jornada",
+            "shareOn": "Compartilhar em {plataforma}",
+            "shareText": "Acabei de fazer meu #eXit! O êxodo do X é enorme. Não perca nenhum de seus seguidores. Graças à #OpenPortability, registrei {contagem} de novos passageiros para uma viagem ao #BlueSky & #Mastodon. Junte-se a nós em https://openportability.org e encontre automaticamente suas comunidades em #January20!"
+        },
+        "newsletter": {
+            "title": "Mantenha-se informada",
+            "description": "Registre-se para acompanhar o progresso do projeto e ser notificada sobre novos recursos.",
+            "subscribe": "Mantenha-se informada sobre as próximas etapas do projeto OpenPortability",
+            "subscribed": "Você se inscreveu no boletim informativo!",
+            "emailLabel": "Seu endereço de e-mail",
+            "acceptHQX": "Desejo receber atualizações do OpenPortability",
+            "subscribing": "Inscrevendo-se...",
+            "emailPlaceholder": "exemplo@email.com",
+            "confirmSubscribe": "Confirmar assinatura",
+            "acceptOEP": "Gostaria de receber informações sobre outras iniciativas da [On est prêt] (https://www.onestpret.com), que apoia a OpenPortability"
+        },
+        "tutorial": {
+            "title": "Explicação do tutorial passo a passo",
+            "watchVideo": "Assista ao vídeo",
+            "description": "Saiba como migrar facilmente do Twitter/X para o Mastodon e o Bluesky"
+        },
+        "addSocialNetwork": "Adicionar rede social",
+        "addSocialNetworkDescription": "Conecte-se a outras redes sociais para aprimorar sua experiência"
+    },
+    "upload": {
+        "helpButton": "Ajuda para obter seu arquivo do Twitter/X",
+        "loading-indic": "Carregando seus dados...",
+        "loading-uploading": "Permanecer na página, importação em andamento",
+        "logo": {
+            "alt": "Logo da OpenPortability"
+        },
+        "logoCNRS": {
+            "alt": "CNRS, Centro Nacional de Pesquisa Científica da França"
+        },
+        "title": "Importe seu arquivo do Twitter/X para continuar sua jornada",
+        "loading": {
+            "uploading": "Permaneça na página, pois sua importação está em andamento",
+            "default": "Carregando..."
+        },
+        "action": "Solte ou selecione seus arquivos aqui",
+        "description": "São aceitos três formatos de dados:\n- seu arquivo X original se for < 1 GB (em formato Zip)\n- arquivos following.js e follower.js JUNTOS e descompactados,\n- versões divididas desses arquivos para arquivos grandes (following-part*.js + follower-part*.js)"
+    },
+    "dashboardSea": {
+        "welcome": "Bem-vinda a bordo da OpenPortability!",
+        "logo": {
+            "alt": "Logo da OpenPortability"
+        },
+        "logoCNRS": {
+            "alt": "CNRS, Centro Nacional de Pesquisa Científica da França"
+        }
+    }
+}
