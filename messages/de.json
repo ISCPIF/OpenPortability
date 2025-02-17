@@ -18,7 +18,7 @@
             "hqx": "OpenPortability",
             "cnrs": "CNRS/ISC-PIF"
         },
-        "copyright": " © {year} OpenPortability. Alle Rechte vorbehalten.",
+        "copyright": "  {year} OpenPortability. Alle Rechte vorbehalten.",
         "privacy": "Datenschutz"
     },
     "blueskyLogin": {
@@ -334,14 +334,14 @@
         }
     },
     "signin": {
-        "title": "Bereit, um zu neuen Ufern aufzubrechen?",
-        "subtitle": "Beginne mit einer Verbindung zu Twitter/X, um deine Daten zu migrieren",
-        "loading": "Lade Informationen ...",
-        "logoCNRS": {
-            "alt": "CNRS, Nationales Zentrum für wissenschaftliche Forschung"
-        },
+        "title": "Bereit für neue Horizonte?",
+        "subtitle": "Beginne mit der Verbindung zu Twitter/X, um deine Daten zu migrieren",
+        "loading": "Informationen werden geladen...",
         "logo": {
             "alt": "OpenPortability Logo"
+        },
+        "logoCNRS": {
+            "alt": "CNRS, Nationales Zentrum für wissenschaftliche Forschung"
         }
     },
     "settings": {
