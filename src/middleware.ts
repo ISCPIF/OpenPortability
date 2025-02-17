@@ -2,7 +2,7 @@ import createMiddleware from 'next-intl/middleware';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-const locales = ['fr', 'en', 'es', 'it'];
+const locales = ['fr', 'en', 'es', 'it', 'de', 'sv'];
 const defaultLocale = 'en';
 
 // Create the i18n middleware
