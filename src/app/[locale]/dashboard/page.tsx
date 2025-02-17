@@ -391,7 +391,9 @@ export default function DashboardPage() {
                     {t('tutorial.title')}
                   </h2>
                   <motion.a
-                    href="https://vimeo.com/1044334098?share=copy"
+                    href={params.locale === 'fr' 
+                      ? "https://indymotion.fr/w/jLkPjkhtjaSQ9htgyu8FXR"
+                      : "https://indymotion.fr/w/nQZrRgP3ceQKQV3ZuDJBAZ"}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="group inline-flex items-center gap-3 text-indigo-200 hover:text-white transition-colors"
