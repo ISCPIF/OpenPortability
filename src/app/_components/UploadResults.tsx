@@ -184,6 +184,14 @@ export default function UploadResults({
             onShare={handleShare}
           />
         </div>
+        {/* </div> */}
+
+        <p className="text-white/80 text-center">
+          {t('inviteFriends')}
+        </p>
+        <div className={`flex items-center justify-center transition-opacity duration-300 ${isThreeQuartersComplete ? 'opacity-100' : 'opacity-70'}`}>
+          <PartageButton onClick={() => setIsModalOpen(true)} />
+        </div>
 
         {showRedirectMessage && (
           <p className="text-sm text-white/60 text-center mt-4">

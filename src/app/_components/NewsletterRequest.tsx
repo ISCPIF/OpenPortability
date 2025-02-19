@@ -146,21 +146,22 @@ export default function NewsletterRequest({ userId, onSubscribe, onClose }: News
           <label className="flex items-start gap-2 text-slate-300 cursor-pointer">
             <input
               type="checkbox"
-              checked={acceptOEP}
-              onChange={(e) => setAcceptOEP(e.target.checked)}
-              className="mt-1"
-            />
-            <span className="text-sm">{renderCheckboxLabel(t('acceptOEP'))}</span>
-          </label>
-
-          <label className="flex items-start gap-2 text-slate-300 cursor-pointer">
-            <input
-              type="checkbox"
               checked={acceptResearch}
               onChange={(e) => setAcceptResearch(e.target.checked)}
               className="mt-1"
             />
             <span className="text-sm">{renderCheckboxLabel(tt('newsletter.researchConsent'))}</span>
+          </label>
+
+
+          <label className="flex items-start gap-2 text-slate-300 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={acceptOEP}
+              onChange={(e) => setAcceptOEP(e.target.checked)}
+              className="mt-1"
+            />
+            <span className="text-sm">{renderCheckboxLabel(t('acceptOEP'))}</span>
           </label>
         </div>
 
