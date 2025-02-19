@@ -1,0 +1,480 @@
+{
+    "successModal": {
+        "title": "Η εισαγωγή ολοκληρώθηκε με επιτυχία!",
+        "close": "Κλείσιμο",
+        "following": {
+            "username": "@{username}",
+            "title": "Ακολουθείτε ({count})"
+        },
+        "followers": {
+            "title": "Σας ακολουθούν ({count})",
+            "username": "@{username}"
+        }
+    },
+    "signin": {
+        "loading": "Φόρτωση πληροφοριών...",
+        "subtitle": "Συνδεθείτε στο Twitter/X για να μεταφέρετε τα δεδομένα σας",
+        "title": "Ετοιμες οι βαλίτσες για ταξίδια σε νέα μέρη;",
+        "logo": {
+            "alt": "Λογότυπος του HelloQuitX"
+        },
+        "logoCNRS": {
+            "alt": "CNRS, Εθνικό Κέντρο Επιστημονικών Ερευνών της Γαλλίας"
+        }
+    },
+    "settings": {
+        "logout": "Αποσύνδεση",
+        "notifications": {
+            "oepNewsletter": "Ενημερωθείτε για τις πρωτοβουλίες μας «On est prêt»",
+            "hqxNewsletter": "Λάβετε νέα από το HelloQuitX",
+            "title": "Ειδοποιήσεις"
+        },
+        "deleteConfirm": {
+            "message": "Σίγουρα θέλετε να διαγράψετε το λογαριασμό σας; Αυτή η δράση δεν μπορεί να αναιρεθεί και θα οδηγήσει στη διαγραφή των παρακάτω:\n\n• όλων των δεδομένων σας που έχουν εισαχθεί\n• όλων των συνδεδομένων λογαριασμών σας (Twitter/X, BlueSky, Mastodon)\n•του προφίλ σας στο HelloQuitX",
+            "title": "Διαγραφή λογαριασμού",
+            "cancel": "Ακύρωση",
+            "confirm": "Ναι, διαγράψτε τον λογαριασμό μου"
+        },
+        "deleteAccount": "Διαγραφή του λογαριασμού μου"
+    },
+    "loginButtons": {
+        "mastodon": {
+            "connect": "Συνδεθείτε με το Mastodon"
+        },
+        "twitter": {
+            "continue": "Συνεχίστε με το Τwitter/X",
+            "notDeleted": "Διαθέτω λογαριασμό Twitter/X"
+        },
+        "deleteAccount": "Εχω ήδη διαγράψει τον λογαριασμό μου στο Twitter/X",
+        "bluesky": {
+            "connect": "Συνδεθείτε με το BlueSky"
+        }
+    },
+    "dashboardLoginButtons": {
+        "services": {
+            "mastodon": {
+                "error": {
+                    "unreachable": "Δεν είναι δυνατή η σύνδεση με τον διακομιστή. Ελέγξτε τη διεύθυνση και προσπαθήστε ξανά.",
+                    "special_chars": "Ο διακομιστής δεν μπορεί να περιέχει ειδικούς χαρακτήρες",
+                    "required": "Πρέπει να συμπληρώσετε υποχρεωτικά την ονομασία του διακομιστή σας",
+                    "fetch_instances": "Σφάλμα στη λήψη των διακομιστών.",
+                    "invalid_format": "Μη έγκυρη μορφή διακομιστή. Παράδειγμα: mastodon.social",
+                    "too_long": "Η ονομασία διακομιστή είναι πολύ μεγάλη"
+                },
+                "title": "Mastodon",
+                "connect": "Σύνδεση",
+                "instance": "Πού φιλοξενείται ο λογαριασμός σας; (π.χ. mastodon.social)"
+            },
+            "twitter": "Twitter/X",
+            "bluesky": "BlueSky"
+        },
+        "importTwitter": "Εισαγωγή του αρχείου μου από το Twitter/X",
+        "addSocialNetwork": "Προσθήκη αλλού κοινωνικού δικτύου",
+        "connectedDashboard": {
+            "twitter": "Συνδεθείτε στο Twitter/Χ",
+            "bluesky": "Συνδεθείτε στο Bluesky",
+            "mastodon": "Συνδεθείτε στο Mastodon"
+        }
+    },
+    "migrationComplete": {
+        "success": {
+            "description": "Ο λογαριασμός σας μεταφέρθηκε με επιτυχία στο BlueSky με όνομα χρήστη {handle}",
+            "title": "Η μεταφορά ολοκληρώθηκε!",
+            "displayName": "({name})",
+            "viewProfile": "Προβολή προφίλ"
+        },
+        "error": {
+            "title": "Σφάλμα στη μεταφορά",
+            "retry": "Προσπαθήστε ξανά",
+            "createAccount": "Δημιουργία λογαριασμού"
+        }
+    },
+    "uploadResults": {
+        "redirecting": "Ανακατεύθυνση προς τον εποπτικό πίνακα...",
+        "inviteFriends": "Προσκαλέστε τα άτομα που σας ακολουθούν να σας συνοδεύσουν σε αυτό το ταξίδι!",
+        "importSuccess": "Με την εισαγωγή του αρχείου σας καταχωρίστηκαν {count} νέα άτομα για το ταξίδι!",
+        "congratulations": "Συγχαρητήρια @{username}, όλα έτοιμα για το ταξίδι!",
+        "stats": {
+            "twitterAccounts": {
+                "label": "Λογαριασμοί Twitter/X",
+                "value": "{count}"
+            },
+            "totalImported": {
+                "label": "Εισήχθησαν συνολικά",
+                "value": "Εισήχθηκσαν {count} λογαριασμοί"
+            },
+            "readyTravelers": {
+                "label": "Όλα έτοιμα για το ταξίδι",
+                "value": "Ετοιμοι λογαριασμοί: {count}"
+            }
+        }
+    },
+    "upload": {
+        "loading-indic": "Φόρτωση των δεδομένων σας...",
+        "errors": {
+            "fileSize": "Το μέγεθος του αρχείου υπερβαίνει το 1GB",
+            "fileType": "Μη έγκυρος τύπος αρχείου. Ανεβάστε είτε αρχείο ZIP είτε αρχεία following.js και followers.js",
+            "noFiles": "Δεν έχετε επιλέξει αρχεία",
+            "invalidCombination": "Ανεβάστε είτε ένα αρχείο ZIP, following.js + follower.js ή τις τεμαχισμένες βερσιόν τους (following-part*.js/follower-part*.js)"
+        },
+        "title": "Εισαγάγατε το αρχείο σας από το Twitter/X αρχείο για να συνεχίσετε το ταξίδι σας",
+        "helpModal": {
+            "steps": [
+                "Συνδεθείτε στον λογαριασμό σας στο Twitter/X",
+                "Επιλέξτε «Περισσότερα» στο αριστερό μενού",
+                "Κάντε κλικ στο «Ρυθμίσεις και υποστήριξη» και εν συνεχεία στο «Ρυθμίσεις και ιδιωτικότητα»",
+                "Στο σημείο «Ο λογαριασμός σας», επιλέξτε «Κατεβάστε το αρχείο των δεδομένων σας»",
+                "Επιβεβαιώστε τον κωδικό σας, αν σας ζητηθεί",
+                "Κάντε κλικ στο »Αίτημα λήψης αρχείου»",
+                "Το Twitter/X θα σας στείλει ένα email όταν το αρχείο σας είναι έτοιμο για να κατεβάσετε",
+                "Μόλις το κατεβάσετε, μπορείτε να εισαγάγετε το αρχείο .zip εδώ"
+            ],
+            "title": "Πώς μπορείτε να λάβετε το αρχείο σας από το Twitter/X;",
+            "description": "Για να λάβετε το αρχείο σας από το Τwitter/X, ακολουθήστε τα εξής βήματα:",
+            "note": "Σημ,: Για την προετοιμασία του αρχείου Twitter/X ενδέχεται να χρειαστούν έως και 24 ώρες."
+        },
+        "action": "Αποθέστε ή επιλέξτε τα αρχεία σας εδώ",
+        "logoCNRS": {
+            "alt": "CNRS, Εθνικό Κέντρο Επιστημονικής Έρευνας της Γαλλίας"
+        },
+        "description": "Γίνονται δεκτά τρία μορφότυπα δεδομένα:\n- το πρωτότυπο αρχείο σας από το X εάν είναι <1GB (σε μορφότυπο Zip)\n- αρχεία following.js και follower.js ΜΑΖΙ και αφού εξαχθούν από το ZIP,\n- τεμαχισμένες βερσιόν των αρχείων αυτών για μεγάλα αρχεία (following-part*.js + follower-part*.js)",
+        "loading": {
+            "default": "Φόρτωση...",
+            "uploading": "Παρακαλώ μείνετε στη σελίδα, δίτο βρίσκεται σε εξέλιξη η εισαγωγή των δεδομένων σας"
+        },
+        "helpButton": "Βοήθεια για τη λήψη του αρχείου σας από το Twitter/X",
+        "loading-uploading": "Μείνετε στη σελίδα, διότι βρίσκεται σε εξέλιξη η εισαγωγή",
+        "logo": {
+            "alt": "Λογότυπος HelloQuitX"
+        }
+    },
+    "errorModal": {
+        "extractArchive": {
+            "steps": {
+                "windows": {
+                    "step3": "Επιλέξτε φάκελο προορισμού",
+                    "step4": "Κάντε κλικ στο «Εξαγωγή»",
+                    "step2": "Επιλέξτε «Εξαγωή όλων...»",
+                    "step1": "Κάντε δεξί κλικ στο αρχείo ZIP"
+                },
+                "mac": {
+                    "step1": "Κάντε διπλό κλικ στο αρχεί ZIP",
+                    "step2": "Το περιεχόμενο των αρχείων θα εξαχθεί αυτόματα"
+                },
+                "linux": {
+                    "step1": "Κάντε δεξί κλικ στο αρχείο ZIP",
+                    "step2": "Επιλέξτε «Εξαγωγή εδώ» ή «Εξαγωγή σε...»",
+                    "step3": "Επιλέξτε φάκελο προορισμού, εάν σας ζητηθεί"
+                }
+            },
+            "windows": "Windows",
+            "mac": "Mac",
+            "linux": "Linux",
+            "title": "Πώς να εξαγάγατε το περιεχόμενο του αρχείου σας"
+        },
+        "title": "Σφάλμα",
+        "close": "Κλείσιμο"
+    },
+    "largeFiles": {
+        "logoCNRS": {
+            "alt": "CNRS, Εθνικό Κέντρο Επιστημονικής Έρευνας της Γαλλίας"
+        },
+        "progress": {
+            "followers": {
+                "processed": "{processed} / {total}",
+                "title": "Σας ακολουθούν"
+            },
+            "following": {
+                "title": "Ακολουθείτε",
+                "processed": "{processed} / {total}"
+            },
+            "total": {
+                "title": "Συνολική πρόοδος",
+                "processed": "{processed} / {total}"
+            }
+        },
+        "status": {
+            "failed": "Απέτυχε",
+            "title": "Κατάσταση",
+            "pending": "Σε εκκρεμότητα",
+            "processing": "Επεξεργασία",
+            "completed": "Ολοκληρώθηκε"
+        },
+        "button": {
+            "dashboard": "Επιστροφή στον εποπτικό πίνακα"
+        },
+        "stats": {
+            "followers": "Σας ακολουθούν",
+            "following": "Ακολουθείτε"
+        },
+        "logo": {
+            "alt": "Λογότυπος HelloQuitX"
+        }
+    },
+    "firstSeen": {
+        "newsletter": {
+            "errors": {
+                "missingEmail": "Δεν εχει συμπληρωθεί email"
+            },
+            "researchConsent": "Συμφωνώ να μοιραστώ το γράφημα συνδέσεων με το CNRS για ερευνητικούς σκοπούς. Η επεξεργασία του θα γίνει συγκεντρωτικά. Δεν θα δημοσιευτούν προσωπικά δεδομένα.",
+            "emailPlaceholder": "ονομαρήστη@τομέας.com",
+            "emailLabel": "Συμπληρώστε το email σας για να λαμβάνετε νέα (προαιρετικό):",
+            "subtitle": "Θα ήθελα καθοδήγηση από το HelloQuitX",
+            "consent": "Θέλω να λαμβάνω νέα για προσεχείς δραστηριότητες του «On Est prêt», το οποίο υποστηρίζει το HelloQuitX"
+        },
+        "title": "Καλωσορίσατε!",
+        "cta": "ΥΠΟΒΟΛΗ",
+        "dismiss": "Να μην εμφανιστεί ξανά το μήνυματα αυτό",
+        "description": "Όλα έτοιμα για να εγγραφείτε στο HelloQuitΧ, να δηλώσετε τις διάφορες ψηφιακές σας ταυτότητες και να αντιγράψετε την κοινότητά σας σε άλλα δίκτυα. Για την όλη διαδικασία θα χρειαστείτε 5 λεπτά, Δεν θα επηρεαστεί ο λογαριασμός σας στο X. Αρχής γενομένης από τις 20 Ιανουαρίου, στους λογαριασμούς σας στο BlueSky και το Mastodon θα αρχίσουν να προστίθενται νέα άτομα που σας ακολουθούν .\nΓια να κυλήσουν όλα ομαλά, σας προσφέρουμε τη δυνατότητα να σας καθοδηγήσουμε βήμα-βήμα —σε ορισμένες περιπτώσεις, η διαδικασία απαιτεί αρκετά βήματα— και να σας ενημερώσουμε για προσεχείς λειτουργίες (όπως η εισαγωγή των μηνυμάτων σας από το X στο BlueSky ή στο Mastodon).\nΜε την εγγραφή σας στην πλατφόρμα μας, μας εξουσιοδοτείτε να επικοινωνούμε μαζί σας μέσω του BlueSky και του Mastodon. Σας συνιστούμε επίσης να μας δηλώσετε τη διεύθυνση email σας, για να μπορέσουμε να επικοινωνήσουμε μαζί σας σχετικά με μελλοντικές εκστρατείες.\nΗ επικοινωνία αυτή θα γίνεται με μέτρο και μπορείτε να αποχωρήσετε από το πρόγραμμα υποστήριξης ανά πάσα στιγμή."
+    },
+    "support": {
+        "modal": {
+            "error": {
+                "send": "Σφάλμα κατά την αποστολή μηνύματος",
+                "unknown": "Προέκυψε απρόσμενο σφάλμα"
+            },
+            "description": "Στείλτε μας μήνυμα και θα επικοινωνήσουμε το συντομότερο δυνατόν.",
+            "form": {
+                "message": {
+                    "label": "Μήνυμα",
+                    "placeholder": "Μήνυμα"
+                },
+                "email": {
+                    "placeholder": "παράδειγμα@email.com",
+                    "label": "Διεύθυνση email"
+                },
+                "subject": {
+                    "label": "Θέμα",
+                    "placeholder": "Θέμα"
+                },
+                "submit": "Αποστολή",
+                "submitting": "Αποστέλλεται..."
+            },
+            "title": "Προέκυψε κάποιο πρόβλημα;"
+        }
+    },
+    "dashboardSea": {
+        "logoCNRS": {
+            "alt": "CNRS, Εθνικό Κέντρο Επιστημονικής Έρευνας της Γαλλίας"
+        },
+        "logo": {
+            "alt": "Λογότυπος HelloQuitX"
+        },
+        "welcome": "Καλωσορίσατε στο HelloQuitX!"
+    },
+    "dashboard": {
+        "addSocialNetworkDescription": "Συνδεθείτε σε άλλα κοινωνικά δίκτυα για μια πιο ολοκληρωμένη εμπειρία",
+        "migrationStep": {
+            "completed1": "Συγχαρητήρια! Έχετε ολοκληρώσει τα πρώτα από τα δύο βήματα της μεταφοράς.",
+            "daysLeft": "Απομένουν {count} μέρες!",
+            "nextSteps": "Ολοκληρώστε τα ακόλουθα βήματα για να ανοίξετε πανιά για νέες περιπέτειες!",
+            "completed2": "Βεβαιωθείτε ότι οι ακόλουθοι σας στο X έχουν εγγραφεί σε αυτή την πλατφόρμα και επιστρέψτε στις #20Ιανουαρίου για να ενεργοποιήσετε την επανασύνδεσή σας."
+        },
+        "tutorial": {
+            "description": "Μάθετε πώς μπορείτε να μεταφέρετε εύκολα τα δεδομένα σας από το Twitter/X στο Mastodon και το Bluesky",
+            "watchVideo": "Δείτε το βίντεο",
+            "title": "Οδηγίες βήμα-βήμα"
+        },
+        "newsletter": {
+            "acceptOEP": "Θα ήθελα να λαμβάνω νέα για άλλες πρωτοβουλίες του [On est prêt](https://www.onestpret.com), που υποστηρίζει το HelloQuitXX,",
+            "subscribing": "Εγγραφή...",
+            "title": "Μη χάσετε καμία εξέλιξη",
+            "confirmSubscribe": "Επιβεβαίωση εγγραφής",
+            "emailPlaceholder": "παράδειγμα@email.com",
+            "emailLabel": "Διεύθυνση email",
+            "subscribed": "Εγγραφήκατε στο ενημερωτικό δελτίο!",
+            "acceptHQX": "Θέλω να λαμβάνω νέα από το HelloQuitX",
+            "subscribe": "Ενημερωθείτε για τα επόμενα βήματα του Hello QuitX",
+            "description": "Εγγραφείτε για να παρακολουθήσετε την πρόοδο του έργου και να ενημερώνεστε για νέες λειτουργίες."
+        },
+        "addSocialNetwork": "Προσθέστε κοινωνικό δίκτυο",
+        "loading": "Φόρτωση των δεδομένων σας...",
+        "shareModal": {
+            "title": "Κοινοποιήστε το ταξίδι σας",
+            "shareOn": "Κοινοποιήστε το στο {platform}",
+            "shareText": "Μόλις έκανα το #eXit μου! Το κύμα εξόδου από το X είναι πελώριο. Μην χάσετε κανένα από τα άτομα που σας ακολουθούν. Χάρη στο #HelloQuitX έχω καταχωρίσει {count} νέα άτομα για συνταξιδέψουμε προς τις ακτές του #BlueSky και του #Mastodon. Ελάτε στο https://app.helloquitx.com και βρείτε αυτόματα τις κοινότητές σας στις #20Ιανουαρίου!"
+        },
+        "importButton": "Εισαγωγή του αρχείου μου από το Twitter/X"
+    },
+    "uploadButton": {
+        "clickOrDrop": "Κάντε κλικ ή σύρετε το αρχείο σας εδώ",
+        "dropHere": "Αποθέστε το αρχείο σας εδώ",
+        "uploadInProgress": "Αναλύουμε το αρχείο σας, παρακαλώ περιμένετε ...",
+        "error": {
+            "uploadFailed": "Το ανέβασμα απέτυχε παρότι έγιναν πολλές προσπάθειες. Προσπαθήστε ξανά."
+        }
+    },
+    "profile": {
+        "providers": {
+            "mastodon": "Mastodon",
+            "twitter": "Twitter/X",
+            "bluesky": "Bluesky"
+        },
+        "unlinkSuccess": "Ο λογαριασμός σας στο {provider} αποσυνδέθηκε με επιτυχία",
+        "unlinkConfirmation": "Σίγουρα επιθυμείτε να αποσυνδέσετε τον λογαριασμό που διαθέτετε στο {provider} ;",
+        "unlinkError": "Συνέβη σφάλμα κατά την αποσύνδεση τον λογαριασμού που διαθέτετε στο {provider}",
+        "unlinkButton": "Αποσύνδεση λογιαριασμού {provider}",
+        "errors": {
+            "notLinked": "Δεν έχει συνδεθεί λογαριασμός από το {provider}",
+            "lastAccount": "Δεν είναι δυνατή η αποσύνδεση του τελευταίου συνδεδεμένου λογαριασμού"
+        }
+    },
+    "footer": {
+        "copyright": " {year} HelloQuitX. Με την επιφύλαξη παντός δικαιώματος.",
+        "hosted": {
+            "text": "Η πλατφορμα φιλοξενείται από το {cnrs} και αναπτύχθηκε σε σύμπραξη με το {hqx}",
+            "cnrs": "CNRS/ISC-PIF",
+            "hqx": "HelloQuitΧ"
+        }
+    },
+    "progressSteps": {
+        "socialNetworks": {
+            "title": "Σύνδεση των λογαριασμών που διαθέτω στα κοινωνικά δίκτυα"
+        },
+        "dashboard": {
+            "title": "Καλωσορίσατε"
+        },
+        "import": {
+            "title": "Ανέβασμα του αρχείου μου από το X/Twitter",
+            "description": {
+                "withStats": "ακολουθείτε {following} , σας ακολουθούν {followers}"
+            }
+        },
+        "share": {
+            "title": "Κοινοποίηση στον κύκλο μου"
+        }
+    },
+    "consentModal": {
+        "description": "Ανεβάζοντας τα αρχεία σας από το Twitter/X, επιβεβαιώνετε ότι :",
+        "conditions": {
+            "cnrsUsage": "Συμφωνείτε να χρησιμοποιηθούν τα παρεχόμενα δεδομένα από το Εθνικό Κέντρο Επιστημονικής Έρευνας (CNRS) στο πλαίσιο της λειτουργίας του HelloQuitX.",
+            "ownership": "Έχετε νόμιμα στην κατοχή σας τα δεδομένα αυτά.",
+            "profileCreation": "Κατανοείτε ότι τα δεδομένα αυτά θα χρησιμοποιηθούν για τη δημιουργία του προφίλ σας στο HelloQuitX."
+        },
+        "buttons": {
+            "cancel": "Ακύρωση",
+            "accept": "Αποδοχή και συνέχεια"
+        },
+        "title": "Επιβεβαίωση ανεβάσματος"
+    },
+    "connectedAccounts": {
+        "services": {
+            "twitter": "Twitter/X",
+            "bluesky": "BlueSky",
+            "mastodon": "Mastodon"
+        },
+        "and": "και",
+        "connectedWith": "Έχετε συνδεθεί με {services} "
+    },
+    "blueskyLogin": {
+        "tooltip": {
+            "info": "Δεν αποθηκεύουμε ποτέ τον κωδικό σας. Χρησιμοποιούμε μόνο ασφαλή ενδεικτικά εξακρίβωσης ταυτότητας τα οποία παρέχει το Bluesky.",
+            "noAccount": "Δεν έχετε ακόμα λογαριασμό στο Bluesky;",
+            "createAccount": "Δημιουργήστε τον εδώ"
+        },
+        "title": "Συνδεθείτε ατο Bluesky",
+        "description": "Συνδεθείτε με τον λογαριασμό που διαθέτετε στο Bluesky, για να συγχρονίσετε τα δεδομένα σας και να έχετε στη διάθεσή σας όλες τις λειτουργίες.",
+        "form": {
+            "identifier": {
+                "label": "Αναγνωριστικό Bluesky",
+                "placeholder": "ονομαχρήατη.bsky.social"
+            },
+            "password": {
+                "label": "Κωδικός εφαρμογής",
+                "placeholder": "••••••••",
+                "help": "Δημιουργήστε κωδικό εφαρμογής στο"
+            },
+            "submit": "Σύνδεση",
+            "errors": {
+                "missingFields": "Συμπληρώστε όλα τα πεδία",
+                "default": "Προέκυψε σφάλμα"
+            }
+        }
+    },
+    "header": {
+        "logout": "Αποσύνδεση",
+        "profile": {
+            "username": "@{username}"
+        }
+    },
+    "partageButton": {
+        "share": "Κοινοποίηση",
+        "shareOn": "Κοινοποιήστε στο {platform}"
+    },
+    "migrate": {
+        "title": "",
+        "matches_found": "",
+        "following": "",
+        "followers": "",
+        "loading": "",
+        "startMigration": "",
+        "selectAll": "",
+        "deselectAll": "",
+        "migrating": ""
+    },
+    "ReconnexionOptions": {
+        "descriptions": {
+            "automatic": "",
+            "manual": ""
+        },
+        "stats": {
+            "bluesky": "",
+            "networks": "",
+            "connections": ""
+        },
+        "buttons": {
+            "manual": "",
+            "automatic": ""
+        }
+    },
+    "migrateSea": {
+        "matchDetails": {
+            "bluesky": "",
+            "mastodon": ""
+        },
+        "logo": {
+            "alt": ""
+        },
+        "matchMessage": "",
+        "title": ""
+    },
+    "ManualReconnexion": {
+        "automaticReconnect": "",
+        "title": "",
+        "xAccountPseudo": "",
+        "mastodonBlueskyCorrespondence": "",
+        "connect": "",
+        "followOnMastodon": "",
+        "prev": "",
+        "next": "",
+        "selectAll": "",
+        "followOnBluesky": ""
+    },
+    "reconnexionModal": {
+        "progressTitle": "",
+        "title": "",
+        "message": "",
+        "migrationInProgress": "",
+        "migrationCompleteStats": "",
+        "minimize": "",
+        "close": "",
+        "migrationProgress": "",
+        "stayInformed": "",
+        "migrationComplete": "",
+        "progressMessage": ""
+    },
+    "AccountToMigrate": {
+        "followedOnMastodon": "",
+        "followedOnBluesky": "",
+        "followOnMastodon": "",
+        "followOnBluesky": ""
+    },
+    "Migrate": {
+        "migrationProgress": "",
+        "migrationComplete": "",
+        "migrationInProgress": "",
+        "minimize": "",
+        "close": "",
+        "migrationCompleteStats": ""
+    }
+}
