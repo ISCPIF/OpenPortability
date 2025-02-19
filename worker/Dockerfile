@@ -1,14 +1,29 @@
 FROM node:18-alpine
-WORKDIR /app
 
-# Install bash
+# Créer un utilisateur non-root
+RUN addgroup -g 1001 appgroup && \
+    adduser -u 1001 -G appgroup -s /bin/sh -D appuser
+
+# Installation de bash
 RUN apk add --no-cache bash
 
-COPY package*.json ./
-COPY . .
+# Définir le répertoire de travail
+WORKDIR /app
+
+# Copier les fichiers avec les bonnes permissions
+COPY --chown=appuser:appgroup package*.json ./
+COPY --chown=appuser:appgroup . .
+
+# Donner les permissions à l'utilisateur non-root
+RUN chown -R appuser:appgroup /app
+
+# Passer à l'utilisateur non-root pour l'installation et le build
+USER appuser
 
 RUN npm install
 RUN npm run build
+
+# Rendre le script executable
 RUN chmod +x start-workers.sh
 
 ENV NODE_ENV=production
