@@ -59,26 +59,26 @@ services:
       - app_network
     command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
 
-  watcher:
-    build:
-      context: ./watcher
-      dockerfile: Dockerfile
-    environment:
-      - NODE_ENV=production
-    env_file:
-      - ./watcher/.env
-    restart: unless-stopped
-    networks:
-      - app_network
-      - supabase_network_goodbyex
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "host.docker.internal:54321"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
+  # watcher:
+  #   build:
+  #     context: ./watcher
+  #     dockerfile: Dockerfile
+  #   environment:
+  #     - NODE_ENV=production
+  #   env_file:
+  #     - ./watcher/.env
+  #   restart: unless-stopped
+  #   networks:
+  #     - app_network
+  #     - supabase_network_goodbyex
+  #   extra_hosts:
+  #     - "host.docker.internal:host-gateway"
+  #   healthcheck:
+  #     test: ["CMD", "wget", "--spider", "-q", "host.docker.internal:54321"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+  #     start_period: 30s
 
 networks:
   app_network:
