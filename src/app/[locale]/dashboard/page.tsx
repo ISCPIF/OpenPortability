@@ -15,7 +15,7 @@ import LaunchReconnection from '@/app/_components/LaunchReconnection';
 import DahsboardSea from '@/app/_components/DashboardSea';
 import { useSession, signIn } from 'next-auth/react';
 import { motion } from 'framer-motion';
-import { Ship, Link } from 'lucide-react';
+import { Upload, Link } from 'lucide-react';
 import { Loader2 } from 'lucide-react';
 import { plex } from '../../fonts/plex';
 import DashboardLoginButtons from '@/app/_components/DashboardLoginButtons';
@@ -29,6 +29,7 @@ import Footer from '@/app/_components/Footer';
 import { useTranslations } from 'next-intl';
 import { GlobalStats, UserCompleteStats } from '@/lib/types/stats';
 import ProgressSteps from '@/app/_components/ProgressSteps';
+import LoginSea from "@/app/_components/LoginSea"
 
 type MatchedProfile = {
   bluesky_username: string
@@ -84,6 +85,7 @@ export default function DashboardPage() {
   const [progress, setProgress] = useState(0);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showNewsletterModal, setShowNewsletterModal] = useState(false);
+  const [mastodonInstances, setMastodonInstances] = useState<string[]>([])
 
   // Déterminer quels comptes sont connectés
   const hasMastodon = session?.user?.mastodon_id;
@@ -92,7 +94,6 @@ export default function DashboardPage() {
   const hasOnboarded = session?.user?.has_onboarded;
 
   const connectedServicesCount = [hasMastodon, hasBluesky, hasTwitter].filter(Boolean).length;
-  const [mastodonInstances, setMastodonInstances] = useState<string[]>([])
 
   useEffect(() => {
     const fetchMastodonInstances = async () => {
@@ -158,48 +159,6 @@ export default function DashboardPage() {
     }
   }, [status]);
 
-  const handleShare = async (url: string, platform: string) => {
-    update()
-
-    if (!session?.user?.id) {
-      console.log('❌ No user session found, returning');
-      return;
-    }
-
-    try {
-      window.open(url, '_blank');
-      console.log('✅ URL opened in new tab');
-
-      const response = await fetch('/api/share', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          platform,
-          success: true
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to record share event');
-      }
-      setIsShared(true);
-    } catch (error) {
-      console.error('❌ Error during share process:', error);
-
-      await fetch('/api/share', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          platform,
-          success: false
-        })
-      }).catch(console.error);
-    }
-  };
 
   if (isLoading) {
     return (
@@ -215,18 +174,13 @@ export default function DashboardPage() {
     );
   }
 
-  const daysLeft = Math.ceil((new Date('2025-01-20').getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
-
   return (
     <div className="min-h-screen bg-[#2a39a9] mt-4 relative w-full max-w-[80rem] m-auto">
       <div className="relative z-40">
         <Header />
       </div>
-      <div className="absolute inset-0 w-full h-full pointer-events-none">
-        <DahsboardSea 
-          progress={progress} 
-          showAllBoats={!!(session?.user?.has_onboarded && (session?.user?.mastodon_username || session?.user?.bluesky_username))}
-        />
+      <div className="container flex flex-col m-auto text-center text-[#E2E4DF]">
+      <LoginSea />
       </div>
 
       <AnimatePresence>
@@ -254,28 +208,46 @@ export default function DashboardPage() {
         )}
       </AnimatePresence>
 
-      <div className="relative min-h-[calc(100vh-4rem)] pt-80">
+      <div className="relative min-h-[calc(100vh-4rem)] pt-[250px]">
         <div className="container mx-auto px-4">
           <div className="max-w-2xl mx-auto">
 
             <div className="mb-4 md:mb-8 relative z-10">
               {session?.user?.has_onboarded && (session?.user?.mastodon_username || session?.user?.bluesky_username) ? (
-                <LaunchReconnection
-                  session={{
-                    user: {
-                      twitter_username: session.user?.twitter_username || session.user?.bluesky_username || session.user?.mastodon_username || '',
-                      bluesky_username: session.user.bluesky_username,
-                      mastodon_username: session.user.mastodon_username
-                    }
-                  }}
-                  totalProcessed={stats.globalStats.users.total}
-                  totalInDatabase={stats.globalStats.connections.following + stats.globalStats.connections.followers}
-                  userStats={stats.userStats}
-                />
+          <>
+          <LaunchReconnection
+            session={{
+              user: {
+                twitter_username: session.user.twitter_username,
+                bluesky_username: session.user.bluesky_username,
+                mastodon_username: session.user.mastodon_username,
+                mastodon_instance: session.user.mastodon_instance
+              }
+            }}
+            totalProcessed={stats.globalStats.users.total}
+            totalInDatabase={stats.globalStats.connections.following + stats.globalStats.connections.followers}
+            userStats={stats.userStats}
+            mastodonInstances={mastodonInstances}
+          />
+          <div className="mb-4">
+            <DashboardLoginButtons
+              connectedServices={{
+                twitter: true,
+                bluesky: !!session?.user?.bluesky_username,
+                mastodon: !!session?.user?.mastodon_username
+              }}
+              hasUploadedArchive={true}
+              onLoadingChange={setIsLoading}
+              mastodonInstances={mastodonInstances}
+            />
+          </div>
+          </>
               ) : (
+
+                
                 <>
-                  <div className="text-center mb-8 md:mb-10 relative z-10">
-                    {progress === 100 ? (
+                  {/* <div className="text-center mb-8 md:mb-10 relative z-10"> */}
+                    {/* {progress === 100 ? (
                       <div className="space-y-2 mt-12">
                         <h2 className={`${plex.className} text-xl font-semibold text-indigo-100 text-balance`}>
                           {t('migrationStep.completed1')}
@@ -288,81 +260,55 @@ export default function DashboardPage() {
                       <h2 className={`${plex.className} text-xl font-semibold text-indigo-100 mt-16`}>
                         {t('migrationStep.nextSteps')}
                       </h2>
-                    )}
-                  </div>
-                  <ProgressSteps
-                    hasTwitter={!!session?.user?.twitter_id}
-                    hasBluesky={!!session?.user?.bluesky_id}
-                    hasMastodon={!!session?.user?.mastodon_id}
-                    hasOnboarded={!!session?.user?.has_onboarded}
-                    stats={{
-                      following: stats.userStats.connections.following,
-                      followers: stats.userStats.connections.followers
-                    }}
-                    isShared={isShared}
-                    onProgressChange={setProgress}
-                  />
+                    )} */}
+                  {/* </div> */}
                 </>
               )}
             </div>
 
-            {/* {stats && session?.user?.has_onboarded && (
-              <div className="relative z-10">
-                <UploadResults
-                  stats={stats}
-                  onShare={handleShare}
-                  setIsModalOpen={setIsModalOpen}
-                  hasTwitter={!!session?.user?.twitter_id}
-                  hasBluesky={!!session?.user?.bluesky_id}
-                  hasMastodon={!!session?.user?.mastodon_id}
-                  hasOnboarded={!!session?.user?.has_onboarded}
-                  userId={session?.user?.id}
-                  twitter_username={session?.user?.twitter_username || undefined}
-                  mastodon_username={session?.user?.mastodon_username || undefined}
-                  bluesky_username={session?.user?.bluesky_username || undefined}
-                />
-              </div>
-            )} */}
             {(connectedServicesCount < 3 || !hasOnboarded) &&
-              <div className="flex flex-col sm:flex-row justify-center gap-4 relative z-10 bg-white/5 backdrop-blur-sm rounded-2xl p-4">
-                {connectedServicesCount < 3 && (
-                  <div className="flex-1 max-w-md">
-                    <DashboardLoginButtons
-                      connectedServices={{
-                        twitter: !!session?.user?.twitter_id,
-                        bluesky: !!session?.user?.bluesky_id,
-                        mastodon: !!session?.user?.mastodon_id
-                      }}
-                      hasUploadedArchive={!!stats}
-                      onLoadingChange={setIsLoading}
-                      mastodonInstances={mastodonInstances}
-                    />
-                  </div>
-                )}
+              <div className="w-full flex justify-center mt-[100px]">
+                <div className="inline-block backdrop-blur-xs rounded-2xl p-4">
+                  {!hasOnboarded && (
+                   <div className="flex flex-col items-center justify-center text-center">
+                   <motion.button
+                     whileHover={{ scale: 1.05 }}
+                     whileTap={{ scale: 0.95 }}
+                     onClick={() => {
+                       router.push('/upload');
+                     }}
+                     className="w-full flex items-center justify-between px-8 py-4 bg-white rounded-full text-black font-medium  relative overflow-hidden group"
+                   >
+                     <div className="flex text-center gap-2 mx-auto">
+                       <Upload className="w-6 h-6" />
+                       <span className={plex.className}>{t('importButton')}</span>
+                     </div>
+                   </motion.button>
+                   <button
+                     onClick={() => router.push('/reconnect')}
+                     className={`mt-6 text-sm text-white text-center hover:text-[#d6356f] transition-colors ${plex.className} mb-6`}
+                     style={{ fontStyle: 'italic' }}
+                   >
+                     {t('no_archive_yet')}
+                   </button>
 
-                {!hasOnboarded && (
-                  <div className="flex-1 max-w-md flex items-center space-y-4 py-4">
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={() => {
-                        const locale = params.locale as string || 'fr';
-                        router.push(`/${locale}/upload`);
-                      }}
-                      className="w-full flex items-center justify-between px-8 py-4 bg-white rounded-full text-black font-medium hover:bg-gray-50 transition-colors relative overflow-hidden group"
-                    >
-                      <div className="flex text-left gap-3">
-                        <Ship className="w-6 h-6" />
-                        <span>{t('importButton')}</span>
-                      </div>
-                      <span className="text-gray-400 group-hover:text-black transition-colors">›</span>
-                    </motion.button>
-                  </div>
-                )}
+                   {/* <DashboardLoginButtons
+              connectedServices={{
+                twitter: true,
+                bluesky: !!session?.user?.bluesky_username,
+                mastodon: !!session?.user?.mastodon_username
+              }}
+              hasUploadedArchive={true}
+              onLoadingChange={setIsLoading}
+              mastodonInstances={mastodonInstances}
+            /> */}
+                 </div>
+                  )}
+                </div>
               </div>
             }
 
-            <div className="mt-16 space-y-16 mb-16">
+            <div className=" space-y-16 mt-16 mb-16">
               {session?.user?.id && (
                 <div className="flex flex-col items-center text-center">
                   <Image
@@ -379,7 +325,7 @@ export default function DashboardPage() {
                     onClick={() => setShowNewsletterModal(true)}
                     className="group inline-flex items-center gap-3 text-indigo-200 hover:text-white transition-colors underline decoration-indigo-500"
                   >
-                    <Mail className="w-5 h-5" />
+                    {/* <Mail className="w-5 h-5" /> */}
                     <span className={`${plex.className} text-lg`}>{t('newsletter.subscribe')}</span>
                   </motion.button>
                 </div>
@@ -387,11 +333,13 @@ export default function DashboardPage() {
 
               {progress < 100 &&
                 <div className="flex flex-col items-center text-center space-y-4 mb-4">
-                  <h2 className={`${plex.className} text-2xl font-medium text-white`}>
+                  <h2 className={`${plex.className} text-lg font-medium text-white`}>
                     {t('tutorial.title')}
                   </h2>
                   <motion.a
-                    href="https://vimeo.com/1044334098?share=copy"
+                      href={params.locale === 'fr' 
+                        ? "https://indymotion.fr/w/jLkPjkhtjaSQ9htgyu8FXR"
+                        : "https://indymotion.fr/w/nQZrRgP3ceQKQV3ZuDJBAZ"}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="group inline-flex items-center gap-3 text-indigo-200 hover:text-white transition-colors"

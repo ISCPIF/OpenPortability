@@ -1,14 +1,11 @@
 'use client';
 
-import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { plex } from '@/app/fonts/plex';
 import { motion } from 'framer-motion';
 import { FaPlay } from "react-icons/fa";
-import { useEffect, useState } from 'react';
-import BSIcon from '../../../public/newSVG/BS.svg';
-import MastoIcon from '../../../public/newSVG/masto.svg';
 import { GlobalStats } from '@/lib/types/stats';
+import { useRouter } from 'next/navigation';
 
 const formatNumber = (num: number | undefined | null): string => {
   if (num === undefined || num === null) return '0';
@@ -19,10 +16,13 @@ interface ReconnexionOptionsProps {
   onAutomatic: () => void;
   onManual: () => void;
   globalStats?: GlobalStats;
+  has_onboarded?: boolean;
 }
 
-export default function ReconnexionOptions({ onAutomatic, onManual, globalStats }: ReconnexionOptionsProps) {
+export default function ReconnexionOptions({ onAutomatic, onManual, globalStats, has_onboarded = false }: ReconnexionOptionsProps) {
   const t = useTranslations('ReconnexionOptions');
+  const tt = useTranslations('dashboard');
+  const router = useRouter();
 
   console.log("****************************************",globalStats)
 
@@ -37,26 +37,48 @@ export default function ReconnexionOptions({ onAutomatic, onManual, globalStats 
   return (
     <div className="flex flex-col items-center w-full max-w-2xl mx-auto">
       <div className="w-full bg-[#2a39a9] p-4 rounded-lg">
+        {!has_onboarded && (
+          <div className="border border-[#2a39a9] rounded-lg p-6 mb-8">
+            <div className="text-white mb-6 ">
+              <p className="font-bold text-center mb-2">{t('not_onboarded_title')}</p>
+              <p className="text-sm text-justify">{t('not_onboarded_description')}</p>
+            </div>
+            <div className="flex justify-center p-4">
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => router.push('/upload')}
+                className="rounded-full bg-[#d6356f] text-white py-4 px-6 font-bold flex items-center justify-center gap-3"
+              >
+                {/* <FaPlay className="text-white" /> */}
+                {tt('importButton')}
+              </motion.button>
+            </div>
+          </div>
+        )}
+        
         <h2 className={`${plex.className} text-xl text-white font-bold mb-12 text-center`}>
           {t('title')}
         </h2>
         <div className="flex flex-col space-y-8 max-w-3xl mx-auto">
           {/* First option */}
-          <div className="flex items-center gap-8">
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              onClick={onAutomatic}
-              className="flex-1 rounded-full bg-[#d6356f] text-white py-4 px-6 font-bold  flex items-center justify-center gap-3"
-            >
-              {t('buttons.automatic')}
-              <FaPlay className="text-sm" />
-            </motion.button>
-            <div className="text-white text-2xl">›</div>
-            <div className={`${plex.className} text-sm text-white flex-1`}>
-              {t('descriptions.automatic')}
-            </div>
-          </div>
+          {has_onboarded && (
+              <div className="flex items-center gap-8">
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={onAutomatic}
+                  className="flex-1 rounded-full bg-[#d6356f] text-white py-4 px-6 font-bold flex items-center justify-center gap-3"
+                >
+                  {t('buttons.automatic')}
+                  <FaPlay className="text-sm" />
+                </motion.button>
+                <div className="text-white text-2xl">›</div>
+                <div className={`${plex.className} text-sm text-white flex-1`}>
+                  {t('descriptions.automatic')}
+                </div>
+              </div>
+            )}
 
           {/* Second option */}
           <div className="flex items-center gap-8">
@@ -74,8 +96,6 @@ export default function ReconnexionOptions({ onAutomatic, onManual, globalStats 
             </div>
           </div>
         </div>
-
-
       </div>
     </div>
   );

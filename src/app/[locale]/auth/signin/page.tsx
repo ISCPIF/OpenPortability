@@ -79,11 +79,7 @@ export default function SignIn() {
               </>
             ) : (
               <div className="relative z-10">
-                <h1 className={`${plex.className} text-2xl lg:text-3xl`}>{t('title')}</h1>
-                <p className={`${plex.className} text-lg lg:text-xl my-8 lg:my-10`}>
-                  {t('subtitle')}
-                </p>
-                <div className="my-40 lg:my-28" />
+                <div className="my-40 lg:my-28 mx-40" />
                 <LoginButtons onLoadingChange={handleLoadingChange} />
               </div>
             )}

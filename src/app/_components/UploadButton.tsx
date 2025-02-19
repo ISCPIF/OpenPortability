@@ -279,9 +279,9 @@ const UploadButton = ({ onUploadComplete, onError, onFilesSelected, filesToProce
         whileTap={{ scale: 0.98 }}
         className={`
           w-full px-6 py-4 flex items-center justify-center gap-3
-          text-white cursor-pointer text-sm
-          bg-gradient-to-r from-blue-600 to-blue-800
-          hover:from-blue-700 hover:to-blue-900
+          text-white text-lg font-bold cursor-pointer text-sm
+          border border-blue-600 rounded-xl
+          bg-blue-600
           shadow-lg hover:shadow-xl
           transition-all duration-300
           disabled:from-gray-400 disabled:to-gray-500 
