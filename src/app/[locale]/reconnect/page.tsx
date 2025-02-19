@@ -465,6 +465,7 @@ export default function MigratePage() {
 
   console.log("stats -->", stats)
   console.log("session from /reconnect -->", session)
+  console.log("showOptions --->", showOptions)
 
   return (
     <main className="min-h-screen bg-[#2a39a9]">
@@ -515,9 +516,9 @@ export default function MigratePage() {
 
           <div className="bg-[#2a39a9] mt-4">
             {missingProviders.length > 0 ? (
-              <div className="bg-[#2a39a9] rounded-xl p-8 max-w-md mx-auto border border-white">
-                <h2 className="text-2xl font-semibold mb-4 text-white">{tRefresh('title')}</h2>
-                <p className="text-blue-100 mb-6">{tRefresh('description')}</p>
+              <div className="bg-[#2a39a9] rounded-xl p-8 max-w-[50rem] mx-auto border border-white">
+                <h2 className="text-2xl font-semibold text-white text-center uppercase tracking-wider">{tRefresh('title')}</h2>
+                {/* <p className="text-blue-100 mb-6">{tRefresh('description')}</p> */}
                 
                 <DashboardLoginButtons
                   connectedServices={{
@@ -535,7 +536,7 @@ export default function MigratePage() {
               </div>
             ) : (
               <Suspense fallback={<LoadingIndicator msg="Loading..." />}>
-                {!(session?.user?.bluesky_username && session?.user?.mastodon_username) && (
+                {(session?.user?.bluesky_username || session?.user?.mastodon_username) && (
                   <div>
                     {isReconnectionComplete && session && stats ? (
                       <SuccessAutomaticReconnexion
@@ -596,7 +597,7 @@ export default function MigratePage() {
             </div>
           </div>
 
-          {!session?.user?.bluesky_username || !session?.user?.mastodon_username && (
+          {(!session?.user?.bluesky_username || !session?.user?.mastodon_username) && (
             <div className="flex items-center justify-center w-full mb-12">
               <div className="bg-[#2a39a9] rounded-xl flex gap-2">
                 <div className="flex max-w-[50rem]">

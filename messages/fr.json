@@ -77,7 +77,11 @@
         "connect_bluesky_after": "comptes à suivre sur Bluesky, connectez-vous pour récupérer vos abonnements",
         "connect_mastodon_before": "Nous avons trouvé",
         "connect_mastodon_after": "comptes à suivre sur Mastodon, connectez-vous pour récupérer vos abonnements",
-        "refresh": "Reconnectez-vous"
+        "refresh": "Reconnectez-vous",
+        "reconnect": {
+          "bluesky": "(!) Votre session BlueSky a expiré. Pour des raisons de sécurité, nous n'utilisons que des jetons d'accès temporaires qui doivent etre renouvelles regulieurement.",
+          "mastodon": "(!) Nous avons besoin de permissions supplémentaires pour permettre la reconnexion avec vos abdonnements. Veuillez vous reconnecter pour autoriser ces nouvelles fonctionnalités."
+        }
       },
       "connectedDashboard" : {
         "twitter" : "J'associe mon compte Twitter/X",
@@ -467,7 +471,8 @@
     "xAccountPseudo": "Pseudo",
     "mastodonBlueskyCorrespondence": "Correspondance Mastodon/Bluesky",
     "followOnBluesky": "Suivre sur Bluesky",
-    "followOnMastodon": "Suivre sur Mastodon"
+    "followOnMastodon": "Suivre sur Mastodon",
+    "showOnlyNotFollowed": "Uniquement les nouveaux comptes"
   },
   "AccountToMigrate": {
     "followOnBluesky": "Suivre sur Bluesky",
@@ -519,7 +524,7 @@
       "blueskyFollowing": "Reconnexions sur Bluesky",
       "mastodonFollowing": "Reconnexions sur Mastodon"
     },
-    "goToDashboard": "Retourner au tableau de bord",
+    "goToDashboard": "Retourner à la reconnexion",
     "firstObjective": "1er objectif réussi, vous êtes inscrit.e pour le voyage !"
   },
   "launchReconnection": {
