@@ -10,6 +10,17 @@ export interface MatchingTarget {
   total_count?: number;
 }
 
+export interface MatchedFollower {
+  source_twitter_id: string;
+  bluesky_handle: string | null;
+  mastodon_id: string | null;
+  mastodon_username: string | null;
+  mastodon_instance: string | null;
+  has_been_followed_on_bluesky: boolean;
+  has_been_followed_on_mastodon: boolean;
+  full_count?: number;
+}
+
 export interface MatchingStats {
   total_following: number;
   matched_following: number;

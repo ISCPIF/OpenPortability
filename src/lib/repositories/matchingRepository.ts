@@ -1,12 +1,15 @@
 import { MatchingTarget } from '../types/matching';
-import { supabase } from '../supabase';
+import { supabase, authClient } from '../supabase';
 
 export class MatchingRepository {
   private supabase;
+  private authClient;
 
   constructor() {
     this.supabase = supabase;
+    this.authClient = authClient;
   }
+  // }
 
   async getFollowableTargets(
     userId: string,
@@ -96,46 +99,92 @@ export class MatchingRepository {
     console.log('[MatchingRepository.updateFollowStatusBatch] Successfully updated follow status for batch');
   }
 
-  // async getUnprocessedFollowTargets(
-  //   userId: string,
-  //   platform: 'bluesky' | 'mastodon',
-  //   limit: number
-  // ): Promise<MatchingTarget[]> {
-  //   const query = this.supabase
-  //     .from('sources_targets')
-  //     .select(`
-  //       target_twitter_id,
-  //       ${platform === 'bluesky' ? 'bluesky_handle' : 'mastodon_username,mastodon_instance'}
-  //     `)
-  //     .eq('source_id', userId);
+  async updateSourcesFollowersStatusBatch(
+    followerTwitterId: string,
+    sourceTwitterIds: string[],
+    platform: 'bluesky' | 'mastodon',
+    success: boolean,
+    error?: string
+  ): Promise<void> {
+    console.log('[MatchingRepository.updateSourcesFollowersStatusBatch] Starting database update:', {
+      platform,
+      followerTwitterId,
+      sourceTwitterIds,
+      success,
+      error
+    });
 
-  //   if (platform === 'bluesky') {
-  //     query
-  //       .is('has_follow_bluesky', false)
-  //       .not('bluesky_handle', 'is', null);
-  //   } else {
-  //     query
-  //       .is('has_follow_mastodon', false)
-  //       .not('mastodon_username', 'is', null)
-  //       .not('mastodon_instance', 'is', null);
-  //   }
+    // Get the UUIDs for the source Twitter IDs
+    const { data: sourceUsers, error: sourceError } = await this.authClient
+      .from('users')
+      .select('id, twitter_id')
+      .in('twitter_id', sourceTwitterIds);
 
-  //   const { data, error } = await query.limit(limit);
+    if (sourceError) {
+      console.error('[MatchingRepository.updateSourcesFollowersStatusBatch] Error getting source UUIDs:', sourceError);
+      throw new Error(`Failed to get source UUIDs: ${sourceError.message}`);
+    }
 
-  //   if (error) {
-  //     console.error('Failed to get unprocessed follow targets:', error);
-  //     throw error;
-  //   }
+    if (!sourceUsers || sourceUsers.length === 0) {
+      console.error('[MatchingRepository.updateSourcesFollowersStatusBatch] No users found for Twitter IDs:', sourceTwitterIds);
+      throw new Error('No users found for the given Twitter IDs');
+    }
 
-  //   return data?.map(row => ({
-  //     targetId: row.target_twitter_id,
-  //     ...(platform === 'bluesky' 
-  //       ? { blueskyHandle: row.bluesky_handle }
-  //       : { 
-  //           mastodonUsername: row.mastodon_username,
-  //           mastodonInstance: row.mastodon_instance
-  //         }
-  //     )
-  //   })) || [];
-  // }
+    // Get the UUIDs
+    const sourceUUIDs = sourceUsers.map(user => user.id);
+
+    const now = new Date().toISOString();
+    const updates = platform === 'bluesky' 
+      ? {
+          has_been_followed_on_bluesky: success,
+          followed_at_bluesky: success ? now : null,
+          follow_error_bluesky: error
+        }
+      : {
+          has_been_followed_on_mastodon: success,
+          followed_at_mastodon: success ? now : null,
+          follow_error_mastodon: error
+        };
+
+    const { error: updateError } = await this.supabase
+      .from('sources_followers')
+      .update(updates)
+      .eq('follower_id', followerTwitterId)
+      .in('source_id', sourceUUIDs);
+
+    if (updateError) {
+      console.error('[MatchingRepository.updateSourcesFollowersStatusBatch] Error updating follow status:', updateError);
+      throw new Error(`Failed to update follow status: ${updateError.message}`);
+    }
+
+    console.log('[MatchingRepository.updateSourcesFollowersStatusBatch] Successfully updated follow status');
+  }
+
+  async updateSourcesFollowersStatus(
+    followerTwitterId: string,
+    sourceId: string,
+    platform: 'bluesky' | 'mastodon',
+    success: boolean,
+    error?: string
+  ): Promise<void> {
+    return this.updateSourcesFollowersStatusBatch(followerTwitterId, [sourceId], platform, success, error);
+  }
+
+  async getSourcesFromFollower(
+    twitterId: string,
+    pageSize: number = 1000,
+    pageNumber: number = 0
+  ): Promise<{ data: StoredProcedureTarget[] | null; error: any }> {
+    console.log('[MatchingRepository] getSourcesFromFollower called with:', { twitterId, pageSize, pageNumber });
+    const result = await this.supabase.rpc('get_sources_from_follower', {
+      follower_twitter_id_param: twitterId,
+      page_size: pageSize,
+      page_number: pageNumber
+    });
+    console.log('[MatchingRepository] getSourcesFromFollower result:', { 
+      dataLength: result.data?.length || 0,
+      error: result.error
+    });
+    return result;
+  }
 }

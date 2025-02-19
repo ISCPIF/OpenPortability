@@ -5,17 +5,17 @@ import { useSession } from 'next-auth/react';
 import dynamic from 'next/dynamic';
 import { useRouter, useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-
+import seaBackground from '../../../../public/sea-wave.svg';
 import ErrorModal from "../../_components/ErrorModal";
 import ConsentModal from "../../_components/ConsentModal";
 import Header from '../../_components/Header';
 import * as zip from '@zip.js/zip.js';
 import { validateTwitterData, extractTargetFiles } from '../../_components/UploadButton';
 import Image from 'next/image';
-import seaBackground from '../../../public/sea.svg'
+// import seaBackground from '../../../public/sea.svg'
 import { plex } from '../../fonts/plex';
 import { motion } from 'framer-motion';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, Play } from 'lucide-react';
 import boat1 from '../../../public/boats/boat-1.svg'
 import Footer from "@/app/_components/Footer";
 import LoadingIndicator from '@/app/_components/LoadingIndicator';
@@ -46,6 +46,7 @@ export default function UploadPage() {
   const [showHelpModal, setShowHelpModal] = useState(false);
   const [showSupportModal, setShowSupportModal] = useState(false);
   const t = useTranslations('upload');
+  const tuto = useTranslations('dashboard.tutorial');
   const tSupport = useTranslations('support');
 
   useEffect(() => {
@@ -476,34 +477,28 @@ export default function UploadPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#2a39a9] relative w-full max-w-[90rem] m-auto">
+    <div className="absolute top-0 left-0 w-full h-full bg-[#2a39a9]">
+      <Image src={seaBackground} fill alt="" className="object-cover"></Image>
       <Header />
-      <div className="relative z-10 pt-12">
+      <div className="relative z-10">
         <Image
           src={logo}
           alt={t('logo.alt')}
-          width={306}
-          height={125}
+          width={400}
+          height={200}
           className="mx-auto"
           priority
         />
       </div>
 
-      <div className="flex justify-center items-center min-h-[60vh]">
+      <div className="flex justify-center items-center bg-[#2a39a9] p-12">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-black/40 backdrop-blur-xl rounded-xl border border-black/10 shadow-xl p-8 max-w-2xl w-full mx-auto relative"
+          className="bg-black/20 backdrop-blur-sm rounded-xl p-8 max-w-2xl w-full mx-auto relative"
         >
-          <button
-            onClick={() => setShowHelpModal(true)}
-            className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors duration-200"
-            aria-label={t('helpButton')}
-          >
-            ?
-          </button>
 
-          <div className="text-center text-white">
+          <div className="text-center text-white p-4">
             <h2 className={`${plex.className} text-2xl font-bold mb-6`}>
               {t('title')}
             </h2>
@@ -511,22 +506,13 @@ export default function UploadPage() {
               {t('action')}
             </h2>
             <div className="space-y-4">
-              <p className="text-white/80 whitespace-pre-line text-left">
+              <p className={`${plex.className} text-white whitespace-pre-line text-left mb-6`}>
                 {t('description')}
               </p>
 
               {!isUploading && (
                 <div className="space-y-4">
                   <UploadButton onFilesSelected={handleFilesSelected} onError={handleUploadError} />
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => setShowSupportModal(true)}
-                    className="w-full flex items-center justify-center gap-2 py-3 px-6 bg-white/10 hover:bg-white/20 backdrop-blur-lg rounded-xl text-white"
-                  >
-                    <AlertCircle className="w-5 h-5" />
-                    <span>{tSupport('modal.title')}</span>
-                  </motion.button>
                 </div>
               )}
 
@@ -539,7 +525,38 @@ export default function UploadPage() {
             </div>
           </div>
 
+          <div className="rounded-xl p-4  max-w-2xl  relative">
+            <h3 className={`${plex.className} text-xl font-bold mb-4 text-white text-center`}>{t('helpModal.title')}</h3>
+            <div className={`${plex.className} text-justify`}>
+              <p>{t('helpModal.description')}</p>
+              <ol className="list-decimal list-inside space-y-2">
+                {t.raw('helpModal.steps').map((step: string, index: number) => (
+                  <li key={index}>{step}</li>
+                ))}
+              </ol>
+              <p className="mt-4 text-sm text-white">{t('helpModal.note')}</p>
+            </div>
+          </div>
+
+
+          {!isUploading && (
+                <div className="space-y-4 mt-12 ">
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setShowSupportModal(true)}
+                    className="w-full flex items-center justify-center gap-2 py-3 px-6 bg-[#2a39a9] rounded-xl text-white"
+                  >
+                    <AlertCircle className="w-5 h-5" />
+                    <span className={plex.className}>{tSupport('modal.title')}</span>
+                  </motion.button>
+                </div>
+              )}
+          
+        
+
         </motion.div>
+        
 
         {/* Modal de Support */}
         <SupportModal
@@ -580,28 +597,28 @@ export default function UploadPage() {
         isOpen={showConsent}
       />
 
-      {showHelpModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-8 max-w-2xl mx-4 relative">
-            <button
-              onClick={() => setShowHelpModal(false)}
-              className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
-            >
-              ✕
-            </button>
-            <h3 className="text-2xl font-bold mb-4">{t('helpModal.title')}</h3>
-            <div className="space-y-4 text-gray-600">
-              <p>{t('helpModal.description')}</p>
-              <ol className="list-decimal list-inside space-y-2">
-                {t.raw('helpModal.steps').map((step: string, index: number) => (
-                  <li key={index}>{step}</li>
-                ))}
-              </ol>
-              <p className="mt-4 text-sm text-gray-500">{t('helpModal.note')}</p>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* {showHelpModal && (
+        // <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+        // </div>
+      )} */}
+
+      <div className="flex flex-col items-center text-center space-y-4 bg-[#2a39a9] p-12">
+        <h3 className={`${plex.className} text-2xl font-medium text-white `}>
+          {tuto('title')}
+        </h3>
+        <motion.a
+          href="https://vimeo.com/1044334098?share=copy"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="group inline-flex items-center gap-3 text-indigo-200 hover:text-white transition-colors"
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+        >
+          <Play className="w-5 h-5" />
+          <span className={`${plex.className} text-lg underline decoration-indigo-500`}>{tuto('watchVideo')}</span>
+
+        </motion.a>
+      </div>
       <Footer />
     </div>
   );

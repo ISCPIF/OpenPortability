@@ -5,9 +5,17 @@ import { useTranslations } from 'next-intl';
 import { motion } from 'framer-motion';
 import { plex } from '@/app/fonts/plex';
 import AccountToMigrate from './AccountToMigrate';
-import { MatchingTarget } from '@/lib/types/matching';
+import { MatchingTarget, MatchedFollower } from '@/lib/types/matching';
 
-type Match = MatchingTarget;
+type Match = MatchingTarget | MatchedFollower;
+
+function isMatchingTarget(match: Match): match is MatchingTarget {
+  return 'target_twitter_id' in match;
+}
+
+function isMatchedFollower(match: Match): match is MatchedFollower {
+  return 'source_twitter_id' in match;
+}
 
 interface ManualReconnexionProps {
   matches: Match[];
@@ -34,16 +42,18 @@ export default function ManualReconnexion({
 
   // Filter matches based on user's connected accounts
   const filteredMatches = matches.filter(match => {
-    if (match.bluesky_handle && !session.user.bluesky_username) {
+    const blueskyHandle = isMatchingTarget(match) ? match.bluesky_handle : match.bluesky_handle;
+    const mastodonUsername = isMatchingTarget(match) ? match.mastodon_username : match.mastodon_username;
+    const mastodonHandle = isMatchingTarget(match) ? match.mastodon_handle : null;
+
+    if (blueskyHandle && !session.user.bluesky_username) {
       return false;
     }
-    if ((match.mastodon_handle || match.mastodon_username) && !session.user.mastodon_username) {
+    if ((mastodonHandle || mastodonUsername) && !session.user.mastodon_username) {
       return false;
     }
     return true;
   });
-
-  // console.log("currentMatches -->", filteredMatches)
 
   const handleToggleAccount = (targetTwitterId: string) => {
     if (!targetTwitterId) {
@@ -68,7 +78,9 @@ export default function ManualReconnexion({
   };
 
   const handleSelectAll = () => {
-    const currentPageMatches = currentMatches.map(match => match.target_twitter_id).filter(Boolean);
+    const currentPageMatches = currentMatches.map(match => 
+      isMatchingTarget(match) ? match.target_twitter_id : match.source_twitter_id
+    ).filter(Boolean);
     setSelectedAccounts(prev => {
       const newSet = new Set(prev);
       const allCurrentSelected = currentPageMatches.every(id => newSet.has(id));
@@ -89,10 +101,16 @@ export default function ManualReconnexion({
   const currentMatches = filteredMatches.slice(startIndex, endIndex);
   const totalPages = Math.ceil(filteredMatches.length / itemsPerPage);
 
+  console.log("currentMatches FULL DATA -->", currentMatches);
   console.log("currentMatches detailed -->", currentMatches.map(m => ({
-    target_twitter_id: m.target_twitter_id,
+    id: isMatchingTarget(m) ? m.target_twitter_id : m.source_twitter_id,
     bluesky: m.bluesky_handle,
-    mastodon: m.mastodon_handle
+    mastodon: isMatchingTarget(m) ? m.mastodon_handle : m.mastodon_username,
+    mastodon_id: m.mastodon_id,
+    mastodon_instance: m.mastodon_instance,
+    type: isMatchingTarget(m) ? 'MatchingTarget' : 'MatchedFollower',
+    has_follow_bluesky: isMatchingTarget(m) ? m.has_follow_bluesky : m.has_been_followed_on_bluesky,
+    has_follow_mastodon: isMatchingTarget(m) ? m.has_follow_mastodon : m.has_been_followed_on_mastodon
   })));
 
   return (
@@ -138,7 +156,7 @@ export default function ManualReconnexion({
 
         <div className="space-y-2">
           {currentMatches.map((match) => {
-            const targetTwitterId = match.target_twitter_id;
+            const targetTwitterId = isMatchingTarget(match) ? match.target_twitter_id : match.source_twitter_id;
             if (!targetTwitterId) {
               console.error('Match missing target_twitter_id:', match);
               return null;
@@ -147,16 +165,16 @@ export default function ManualReconnexion({
             // console.log(`Rendering account ${targetTwitterId}, isSelected:`, selectedAccounts.has(targetTwitterId));
             return (
               <AccountToMigrate
-                key={targetTwitterId}
-                twitterId={targetTwitterId}
+                key={isMatchingTarget(match) ? match.target_twitter_id : match.source_twitter_id}
+                twitterId={isMatchingTarget(match) ? match.target_twitter_id : match.source_twitter_id}
                 blueskyHandle={match.bluesky_handle}
-                mastodonHandle={match.mastodon_handle || null}
+                mastodonHandle={isMatchingTarget(match) ? match.mastodon_handle : null}
                 mastodonUsername={match.mastodon_username || null}
                 mastodonInstance={match.mastodon_instance || null}
-                isSelected={selectedAccounts.has(targetTwitterId)}
-                onToggle={() => handleToggleAccount(targetTwitterId)}
-                hasFollowBluesky={match.has_follow_bluesky}
-                hasFollowMastodon={match.has_follow_mastodon}
+                isSelected={selectedAccounts.has(isMatchingTarget(match) ? match.target_twitter_id : match.source_twitter_id)}
+                onToggle={() => handleToggleAccount(isMatchingTarget(match) ? match.target_twitter_id : match.source_twitter_id)}
+                hasFollowBluesky={isMatchingTarget(match) ? match.has_follow_bluesky : match.has_been_followed_on_bluesky}
+                hasFollowMastodon={isMatchingTarget(match) ? match.has_follow_mastodon : match.has_been_followed_on_mastodon}
               />
             );
           })}

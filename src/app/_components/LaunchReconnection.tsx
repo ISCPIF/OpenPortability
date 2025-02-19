@@ -11,6 +11,8 @@ import BadgeSuccessTwo from '../../../public/v2/badge-success-2.svg';
 import BadgeSuccessTwoOff from '../../../public/v2/badge-success-2-OFF.svg';
 import { useEffect, useState } from 'react';
 import { UserCompleteStats } from '@/lib/types/stats';
+import PartageButton from '@/app/_components/PartageButton';
+import { handleShare } from '@/lib/utils';
 
 interface LaunchReconnectionProps {
   session: {
@@ -18,6 +20,7 @@ interface LaunchReconnectionProps {
       twitter_username: string;
       bluesky_username?: string | null;
       mastodon_username?: string | null;
+      mastodon_instance? : string | null;
     };
   };
   totalProcessed?: number;
@@ -37,6 +40,7 @@ export default function LaunchReconnection({
 }: LaunchReconnectionProps) {
   const [totalMatches, setTotalMatches] = useState<number>(0);
   const [totalHasFollowed, setTotalHasFollowed] = useState<number>(0);
+  const [isShared, setIsShared] = useState(false);
   const t = useTranslations('launchReconnection');
 
   useEffect(() => {
@@ -85,7 +89,7 @@ export default function LaunchReconnection({
           <h2 className={`${plex.className} text-3xl font-bold mb-4 text-[#ebece7]`}>
             {t('firstObjective.before')}{' '}
             <span className="text-[#d6356f]">
-              @{session.user.twitter_username}
+              @{session.user.twitter_username || session.user.bluesky_username || session.user.mastodon_username}
             </span>
             {t('firstObjective.after')}
           </h2>
@@ -93,10 +97,26 @@ export default function LaunchReconnection({
 
         {/* Deuxième ligne : texte d'invitation */}
         <div className="col-span-2 pl-40">
-          <p className={`${plex.className} text-lg text-[#ebece7] mb-8`}>
+          <p className={`${plex.className} text-lg text-[#ebece7] `}>
             {t('inviteMessage')}
           </p>
 
+          <div className="p-8">
+          <PartageButton
+            onShare={(platform) => {
+              const shareText = t('shareText', {
+                username: session.user.twitter_username,
+                matches: totalMatches
+              });
+              handleShare(shareText, platform, session, () => {}, setIsShared);
+            }}
+            providers={{
+              bluesky: session.user.bluesky_username ? true : false,
+              mastodon: session.user.mastodon_username ? true : false,
+              twitter: session.user.twitter_username ? true : false,
+            }}
+          />
+        </div>
           {/* Messages pour les services non connectés avec des matches */}
           {!session.user.bluesky_username && userStats.matches.bluesky.notFollowed > 0 && (
             <p className={`${plex.className} text-lg text-[#ebece7] mb-4`}>
@@ -117,7 +137,8 @@ export default function LaunchReconnection({
             </p>
           )}
 
-          {/* Afficher le bouton uniquement s'il y a des comptes à reconnecter */}
+          {totalMatches > 0 && (
+
           <Link 
             href="/reconnect"
             className={`${plex.className} inline-block p-6 bg-[#d6356f] text-[#ebece7] font-bold rounded-xl hover:bg-[#d6356f]/90 transition-colors duration-300 mb-8`}
@@ -127,7 +148,10 @@ export default function LaunchReconnection({
               : t('alreadyReconnected', { count: formatNumber(totalHasFollowed) })
             }
           </Link>
+            )}
+
         </div>
+
 
         {/* Troisième ligne : Badge 2 et stats */}
         <div className="flex items-center">

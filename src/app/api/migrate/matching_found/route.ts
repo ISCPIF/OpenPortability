@@ -11,7 +11,21 @@ export async function GET() {
     }
 
     const matchingService = new MatchingService();
-    const result = await matchingService.getFollowableTargets(session.user.id);
+    let result;
+
+    if (!session.user?.has_onboarded) {
+      if (!session?.user?.twitter_id) {
+        return NextResponse.json(
+          { error: 'Twitter ID not found in session' },
+          { status: 400 }
+        );
+      }
+      result = await matchingService.getSourcesFromFollower(session.user.twitter_id);
+    } else {
+      result = await matchingService.getFollowableTargets(session.user.id);
+    }
+
+    console.log("results from route -->", result)
 
     return NextResponse.json({ matches: result });
 
