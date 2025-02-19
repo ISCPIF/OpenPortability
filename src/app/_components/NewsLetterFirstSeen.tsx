@@ -60,6 +60,8 @@ export default function NewsLetterFirstSeen({ userId, onSubscribe, onClose }: Ne
     { code: 'it', name: 'IT' },
     { code: 'de', name: 'DE' },
     { code: 'sv', name: 'SV' },
+    { code: 'pt', name: 'PT'},
+
   ];
   const currentLocale = pathname.split('/')[1]
 
