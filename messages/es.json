@@ -422,17 +422,6 @@
         "description": "Estás a punto de ejercitar tu derecho a la portabilidad de datos desde X hacia Bluesky y/o Mastodon. A la vez, participarás en un proyecto de investigación sobre redes sociales. Solo te llevará 5 minutos. \nOpenPortability examinará tu identidad digital y te ayudará a recrear poco a poco tu comunidad en Bluesky y/o Mastodon, sin modificar tu actual cuenta de X.\nConforme más personas vayan registrándose en OpenPortability, las conexiones que tengas con ellas se reproducirán en Bluesky y/o Mastodon (siempre con su consentimiento). Por tanto, funcionará mejor si animas a las personas que te siguen en X a registrarse.\n\nEsta \"copia\" de tu comunidad puede tardar varios días.\n\nSi usas OpenPortability, das tu permiso para que tus datos sean procesados según {lien} y para que tus datos sea, quizá, trasladados fuera de la Unión Europea (por ejemplo, a los servidores de Bluesky).",
         "privacyPolicyLink": "nuestra política de privacidad"
     },
-    "migrate": {
-        "deselectAll": "Desmarcar todo",
-        "migrating": "Migrando...",
-        "startMigration": "Comenzar la migración",
-        "matches_found": "coincidencias encontradas",
-        "following": "Seguidos",
-        "title": "Migra tu comunidad",
-        "selectAll": "Marcar todo",
-        "loading": "Cargando tus coincidencias",
-        "followers": "Seguidores"
-    },
     "ReconnexionOptions": {
         "buttons": {
             "automatic": "RECONECTAR AUTOMÁTICAMENTE",
@@ -568,11 +557,6 @@
         "needBothAccounts": "Comience vinculando sus cuentas de Bluesky y/o Mastodon para reconectarse con sus contactos"
 
     },
-    "AccountToMigrate": {
-        "followOnBluesky": "Seguir en Bluesky",
-        "followOnMastodon": "Seguir en Mastodon",
-        "followedOnBluesky": "Seguido en Bluesky",
-        "followedOnMastodon": "Seguido en Mastodon"
     "privacy_policy": {
         "backToSignIn": "Vuelve a la plataforma OpenPortability",
         "title": "Aviso sobre protección de datos",

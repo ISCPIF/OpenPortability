@@ -12,8 +12,8 @@ export class StatsService {
       return this.repository.getGlobalStats();
     }
 
-    async getUserStats(userId: string): Promise<UserCompleteStats> {
-      return this.repository.getUserCompleteStats(userId);
+    async getUserStats(userId: string, has_onboard: boolean): Promise<UserCompleteStats> {
+      return this.repository.getUserCompleteStats(userId, has_onboard);
     }
 
     async getReconnectionStats(): Promise<ReconnectionStats> {
@@ -26,8 +26,8 @@ export class StatsService {
       };
     }
 
-    async refreshUserStats(userId: string): Promise<void> {
-      return this.repository.refreshUserStatsCache(userId);
+    async refreshUserStats(userId: string, has_onboard: boolean): Promise<void> {
+      return this.repository.refreshUserStatsCache(userId, has_onboard);
     }
 
     async refreshGlobalStats(): Promise<void> {

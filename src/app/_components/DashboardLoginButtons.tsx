@@ -101,7 +101,13 @@ export default function DashboardLoginButtons({
       {!pathname.includes('dashboard') && (
         <p className="text-sm text-white text-center p-4">
           {isRefreshToken ? (
-            t('services.refresh')
+            service === 'bluesky' ? (
+              t('services.reconnect.bluesky')
+            ) : service === 'mastodon' ? (
+              t('services.reconnect.mastodon')
+            ) : (
+              t('services.refresh')
+            )
           ) : (
             service === 'bluesky' ? (
               <>
@@ -144,7 +150,7 @@ export default function DashboardLoginButtons({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="grid grid-cols-2 gap-4">
+      <div className={`grid ${Object.values(connectedServices).filter(v => !v).length === 1 ? 'grid-cols-1' : 'grid-cols-2'} gap-4`}>
         {!connectedServices.twitter && (
           <div className="flex flex-col">
             {renderServiceButton('twitter', twitterIcon, t('connectedDashboard.twitter'))}

@@ -8,6 +8,7 @@ export interface UserCompleteStats {
   connections: {
     followers: number;
     following: number;
+    totalEffectiveFollowers: number;
   };
   matches: {
     bluesky: PlatformStats;

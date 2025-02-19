@@ -30,6 +30,7 @@ import { useTranslations } from 'next-intl';
 import { GlobalStats, UserCompleteStats } from '@/lib/types/stats';
 import ProgressSteps from '@/app/_components/ProgressSteps';
 import LoginSea from "@/app/_components/LoginSea"
+import MigrateStats from '@/app/_components/MigrateStats';
 
 type MatchedProfile = {
   bluesky_username: string

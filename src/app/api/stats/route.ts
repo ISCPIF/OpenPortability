@@ -11,22 +11,25 @@ export async function GET() {
     }
 
     if (!session?.user?.has_onboarded) {
-      return NextResponse.json({
-        connections: {
-          followers: 0,
-          following: 0
-        },
-        matches: {
-          bluesky: { total: 0, hasFollowed: 0, notFollowed: 0 },
-          mastodon: { total: 0, hasFollowed: 0, notFollowed: 0 }
-        }
-      });
+      if (!session?.user?.twitter_id) {
+        return NextResponse.json({
+          connections: {
+            followers: 0,
+            following: 0
+          },
+          matches: {
+            bluesky: { total: 0, hasFollowed: 0, notFollowed: 0 },
+            mastodon: { total: 0, hasFollowed: 0, notFollowed: 0 }
+          }
+        });
+      }
+      
     }
 
     const repository = new StatsRepository();
     const statsService = new StatsService(repository);
     
-    const stats = await statsService.getUserStats(session.user.id);
+    const stats = await statsService.getUserStats(session.user.id, session.user.has_onboarded);
     
     return NextResponse.json(stats);
   } catch (error) {

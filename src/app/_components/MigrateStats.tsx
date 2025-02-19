@@ -19,6 +19,7 @@ interface StatsProps {
     connections: {
       followers: number;
       following: number;
+      totalEffectiveFollowers: number;
     };
     matches: {
       bluesky: {
@@ -84,6 +85,24 @@ export default function MigrateStats({ stats, session, simpleView = false }: Sta
               {t('stats.alreadyTransferred')}
             </p>
           </div>
+
+          {stats.connections.totalEffectiveFollowers > 0 && (
+            <>
+              <Image src={chainon} alt="" width={100} height={100} className="mx-4" />
+              
+              <div className="flex flex-col items-center">
+                <div className="flex items-center gap-2">
+                  <span className={`${plex.className} text-[80px] text-[#ffd700] font-bold`}>
+                    {stats.connections.totalEffectiveFollowers}
+                  </span>
+                  <FaCheck className="text-[#ffd700] text-3xl" />
+                </div>
+                <p className={`${plex.className} text-white text-center text-sm mt-2 max-w-[250px] whitespace-pre-line`}>
+                  {t('stats.effectiveFollowers')}
+                </p>
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>

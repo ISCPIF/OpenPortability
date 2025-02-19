@@ -18,7 +18,7 @@ export async function POST() {
     const statsService = new StatsService(statsRepository);
     
     console.log('[UserStats] Initiating stats refresh');
-    await statsService.refreshUserStats(session.user.id);
+    await statsService.refreshUserStats(session.user.id, session.user.has_onboarded);
     console.log('[UserStats] Stats refresh completed successfully');
     
     return NextResponse.json({ success: true });
