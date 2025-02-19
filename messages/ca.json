@@ -1,0 +1,200 @@
+{
+    "header": {
+        "logout": "Tancar sessió",
+        "returnToFirstStep": "Torna al primer pas",
+        "profile": {
+            "username": "@{username}"
+        }
+    },
+    "connectedAccounts": {
+        "and": "i",
+        "services": {
+            "twitter": "Twitter/X",
+            "bluesky": "BlueSky",
+            "mastodon": "Mastodon"
+        },
+        "connectedWith": "T'has connectat amb {services} "
+    },
+    "blueskyLogin": {
+        "title": "Connecta't a BlueSky",
+        "description": "Connecta el teu compte de BlueSky per sincronitzar les teves dades i gaudir de l'experència completa.",
+        "tooltip": {
+            "noAccount": "No tens un compte de BlueSky encara?",
+            "createAccount": "Crea un aquí",
+            "info": "Mai emmagetzarem la teva contrasenya. Només utilitzem els identificadors segurs proveït per BlueSky."
+        },
+        "form": {
+            "identifier": {
+                "placeholder": "nomusuari.bsky.social",
+                "label": "Identificador de BlueSky"
+            },
+            "password": {
+                "label": "Contrasenya de l'aplicació",
+                "help": "Crea una contrasenya per l'aplicació a",
+                "placeholder": "••••••••"
+            },
+            "submit": "Iniciar sessió",
+            "errors": {
+                "missingFields": "Si us plau, completa tots els camps",
+                "default": "Ha ocorregut un error"
+            }
+        }
+    },
+    "consentModal": {
+        "title": "Confirmació de l'enviament",
+        "description": "Pujant els teus arxius de Twitter/X, confirmes que:",
+        "conditions": {
+            "cnrsUsage": "Acceptes que les dades proveïdes seran utilitzades pel Centre Nacional per la Investigació Científica (CNRS) en el marc de l'operació OpenPortability.",
+            "profileCreation": "Entens que aquestes dades són usades per crear un perfil a OpenPortability.",
+            "ownership": "Tens la propietat legítima d'aquestes dades."
+        },
+        "buttons": {
+            "cancel": "Cancel·lar",
+            "accept": "Acceptar i continuar"
+        }
+    },
+    "dashboardLoginButtons": {
+        "importTwitter": "Penjar el meu arxiu de Twitter/X",
+        "addSocialNetwork": "Afegir una altra xarxa social",
+        "services": {
+            "twitter": "Twitter/X",
+            "mastodon": {
+                "title": "Mastodon",
+                "instance": "En quin servidor tens el teu compte allotjat? (ex. mastodon.social)",
+                "connect": "Connectar-se",
+                "error": {
+                    "required": "És necessari el nom del servidor",
+                    "special_chars": "El servidor no pot tenir caràcters especials",
+                    "too_long": "El nom del servidor és massa llarg",
+                    "invalid_format": "Format de servidor no vàlid. Exemple: mastodon.social",
+                    "unreachable": "No hem trobat aquest servidor. Si us plau, comprova l'URL una altra vegada.",
+                    "fetch_instances": "Error recuperant la informació dels servidors."
+                }
+            },
+            "bluesky": "BlueSky"
+        },
+        "connectedDashboard": {
+            "twitter": "Connectar amb Twitter/X",
+            "bluesky": "Connectar amb BlueSky",
+            "mastodon": "Connectar amb Mastodon"
+        }
+    },
+    "footer": {
+        "hosted": {
+            "cnrs": "CNRS/ISC-PIF",
+            "hqx": "OpenPortability",
+            "text": "Aquesta plataforma està allotjada per {cnrs}."
+        },
+        "copyright": " {year} OpenPortability. Tots els drets reservats.",
+        "privacy": "Política de privacitat"
+    },
+    "loginButtons": {
+        "twitter": {
+            "continue": "Continuar amb Twitter/X",
+            "notDeleted": "Tinc un compte a Twitter/X"
+        },
+        "bluesky": {
+            "connect": "Connectar amb BlueSky"
+        },
+        "mastodon": {
+            "connect": "Connectar amb Mastodon"
+        },
+        "deleteAccount": "Ja he elimitat el meu compte de Twitter/X"
+    },
+    "migrationComplete": {
+        "error": {
+            "title": "Error de migració",
+            "retry": "Intentar de nou",
+            "createAccount": "Crear un compte"
+        },
+        "success": {
+            "title": "Migració completa!",
+            "description": "El teu compte s'ha migrat amb èxit a BlueSky amb el nom d'usuari {handle}",
+            "displayName": "({name})",
+            "viewProfile": "Veure Perfil"
+        }
+    },
+    "partageButton": {
+        "share": "Compartir",
+        "shareOn": "Compartir a {platform}"
+    },
+    "progressSteps": {
+        "dashboard": {
+            "title": "Et donem la benvinguda a bord"
+        },
+        "share": {
+            "title": "Compartir amb la meva comunitat"
+        },
+        "import": {
+            "description": {
+                "withStats": "{following} comptes que segueixes, {followers} comptes que et segueixen"
+            },
+            "title": "Penjar el meu arxiu de X/Twitter"
+        },
+        "socialNetworks": {
+            "title": "Vincula les meves xarxes socials"
+        }
+    },
+    "successModal": {
+        "title": "Importació completada amb èxit!",
+        "following": {
+            "title": "Seguint ({count})",
+            "username": "@{username}"
+        },
+        "followers": {
+            "title": "Et segueixen ({count})",
+            "username": "@{username}"
+        },
+        "close": "Tancar"
+    },
+    "uploadButton": {
+        "uploadInProgress": "Analitzant els teus arxius, si us plau espera...",
+        "clickOrDrop": "Fes clic o arrossega els teus arxius aquí",
+        "dropHere": "Arrossega els teus arxius aquí",
+        "error": {
+            "uploadFailed": "La descàrrega ha fallat després de diferents intents. Si us plau, intenta-ho de nou."
+        }
+    },
+    "uploadResults": {
+        "congratulations": "Felicitats @{username}, t'has registrat per aquest viatge!",
+        "importSuccess": "La importació dels teus arxius ha permès inscriure a {count} persones més!",
+        "stats": {
+            "twitterAccounts": {
+                "label": "Comptes de Twitter/X",
+                "value": "{count}"
+            },
+            "totalImported": {
+                "value": "{count} comptes importades",
+                "label": "Total importat"
+            },
+            "readyTravelers": {
+                "value": "{count} comptes preparades",
+                "label": "Tot a punt pel viatge"
+            }
+        },
+        "inviteFriends": "Convida els comptes que et segueixen a unir-se!",
+        "redirecting": "Redirigint al panell de control..."
+    },
+    "signin": {
+        "title": "A punt per descobrir nous horitzons?",
+        "loading": "Carregant informació...",
+        "logo": {
+            "alt": "Logotip d'OpenPortability"
+        },
+        "logoCNRS": {
+            "alt": "CNRS, Centre Nacional per la investigació científica, França"
+        },
+        "subtitle": "Comença connectant-te a Twitter/X per migrar les teves dades"
+    },
+    "dashboard": {
+        "loading": "Carregant les teves dades...",
+        "addSocialNetworkDescription": "Connecta't amb altres xarxes socials per millorar la teva experiència",
+        "importButton": "Importar el meu arxiu de Twitter/X",
+        "addSocialNetwork": "Afegeix una xarxa social",
+        "migrationStep": {
+            "completed1": "Felicitats! Has completat la primera de les dues etapes de migració.",
+            "completed2": "No oblidis de convidar a les persones que et segueixen per a que es registrin a OpenPortability. Reconnectaran amb tu molt ràpidament, fins i tot sense tenir el seu arxiu.\nLa fase 2 arribarà molt aviar: segons les teves preferències, rebràs una notificació per correu electrònic o t'assabentaràs del llançament a X, BlueSky, i Mastodon.\nSegueix-nos, hi haurà sorpreses!",
+            "nextSteps": "Completa les següents passes per descobrir nous horitzons!"
+        }
+    }
+}

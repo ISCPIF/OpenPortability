@@ -1,0 +1,492 @@
+{
+    "consentModal": {
+        "buttons": {
+            "cancel": "Semmet",
+            "accept": "Qbel, tkemmleḍ"
+        },
+        "description": "",
+        "conditions": {
+            "ownership": "",
+            "profileCreation": "",
+            "cnrsUsage": ""
+        },
+        "title": ""
+    },
+    "blueskyLogin": {
+        "form": {
+            "submit": "Qqen",
+            "identifier": {
+                "placeholder": "isem_n_useqdac.bsky.social",
+                "label": "Asulay n BlueSky"
+            },
+            "password": {
+                "placeholder": "••••••••",
+                "label": "Awal n uɛeddi n wesnas",
+                "help": "Snulfu-d awal n uɛeddi n usnas deg"
+            },
+            "errors": {
+                "default": "Teḍra-d tuccḍa",
+                "missingFields": ""
+            }
+        },
+        "title": "Qqen ɣer BlueSky",
+        "tooltip": {
+            "createAccount": "Snulfu-d yiwen da",
+            "noAccount": "Ulac ɣur-k·m amiḍan deg BlueSky?",
+            "info": ""
+        },
+        "description": ""
+    },
+    "settings": {
+        "deleteConfirm": {
+            "cancel": "Semmet",
+            "title": "Kkes amḍan",
+            "confirm": "Ih, kkes amiḍan-iw",
+            "message": ""
+        },
+        "notifications": {
+            "title": "Ilɣa",
+            "hqxNewsletter": "Awi-d ileqman seg HelloQuitX",
+            "oepNewsletter": ""
+        },
+        "logout": "Senser tuqqna",
+        "deleteAccount": "Kkes amiḍan-iw"
+    },
+    "dashboardLoginButtons": {
+        "services": {
+            "mastodon": {
+                "title": "Mastodon",
+                "instances": {
+                    "piaille": "piaille.fr",
+                    "mastodon": "mastodon.social"
+                },
+                "error": {
+                    "fetch_instances": "",
+                    "required": "",
+                    "special_chars": "",
+                    "unreachable": "",
+                    "too_long": "",
+                    "invalid_format": ""
+                },
+                "instance": "",
+                "connect": ""
+            },
+            "twitter": "Twitter",
+            "bluesky": "BlueSky"
+        },
+        "addSocialNetwork": "Rnu aẓeṭṭa inmetti nniḍen",
+        "connectedDashboard": {
+            "mastodon": "",
+            "bluesky": "",
+            "twitter": ""
+        },
+        "importTwitter": ""
+    },
+    "errorModal": {
+        "close": "Mdel",
+        "title": "Tuccḍa deg usali",
+        "extractArchive": {
+            "steps": {
+                "windows": {
+                    "step3": "",
+                    "step1": "",
+                    "step2": "",
+                    "step4": ""
+                },
+                "mac": {
+                    "step1": "",
+                    "step2": ""
+                },
+                "linux": {
+                    "step3": "",
+                    "step2": "",
+                    "step1": ""
+                }
+            },
+            "title": "",
+            "linux": "",
+            "mac": "",
+            "windows": ""
+        }
+    },
+    "successModal": {
+        "following": {
+            "username": "@{username}",
+            "title": ""
+        },
+        "close": "Mdel",
+        "followers": {
+            "username": "@{username}",
+            "title": ""
+        },
+        "title": ""
+    },
+    "profile": {
+        "providers": {
+            "twitter": "Twitter",
+            "mastodon": "Mastodon",
+            "bluesky": "Bluesky"
+        },
+        "unlinkButton": "",
+        "unlinkError": "",
+        "errors": {
+            "lastAccount": "",
+            "notLinked": ""
+        },
+        "unlinkSuccess": "",
+        "unlinkConfirmation": ""
+    },
+    "migrationComplete": {
+        "success": {
+            "displayName": "({name})",
+            "viewProfile": "Wali amaɣnu",
+            "description": "",
+            "title": ""
+        },
+        "error": {
+            "retry": "Ɛreḍ tikkelt-nniḍen",
+            "createAccount": "Snulfu-d amiḍan",
+            "title": "Tuccḍa deg tunigin"
+        }
+    },
+    "footer": {
+        "hosted": {
+            "cnrs": "CNRS/ISC-PIF",
+            "hqx": "HelloQuitX",
+            "text": "Yiɣerɣert-a tessuddes-itt-id {cnrs} yernu tennegma-d s wufus n tegrawt n {hqx}"
+        },
+        "copyright": ""
+    },
+    "largeFiles": {
+        "status": {
+            "completed": "Yemmed",
+            "failed": "Yerreẓ",
+            "pending": "Yettṛaǧu",
+            "title": "Addad",
+            "processing": "Asesfer"
+        },
+        "progress": {
+            "following": {
+                "processed": "{processed} / {total}",
+                "title": "Teṭṭafareḍ"
+            },
+            "total": {
+                "processed": "{processed} / {total}",
+                "title": ""
+            },
+            "followers": {
+                "processed": "{processed} / {total}",
+                "title": ""
+            }
+        },
+        "stats": {
+            "followers": "Imeḍfaṛen",
+            "following": "Teṭṭafareḍ"
+        },
+        "button": {
+            "dashboard": "Uɣal ar tfelwit"
+        },
+        "logo": {
+            "alt": "Alugu n HelloQuitX"
+        },
+        "logoCNRS": {
+            "alt": ""
+        }
+    },
+    "connectedAccounts": {
+        "services": {
+            "bluesky": "BlueSky",
+            "mastodon": "Mastodon",
+            "twitter": "Twitter"
+        },
+        "and": "d",
+        "connectedWith": "Aql-ik·em teqqneḍ s {services} ✨"
+    },
+    "partageButton": {
+        "share": "Bḍu",
+        "shareOn": ""
+    },
+    "header": {
+        "profile": {
+            "username": "@{username}"
+        },
+        "logout": "Senser tuqqna"
+    },
+    "progressSteps": {
+        "share": {
+            "title": "Beṭṭu",
+            "description": "Ԑiwen imdukal-ik·im ad inigen"
+        },
+        "import": {
+            "title": "Kter",
+            "description": {
+                "withStats": ""
+            }
+        },
+        "socialNetworks": {
+            "description": "Rnu aẓeṭṭa inmetti",
+            "title": "Iẓeḍwa inmettiyen"
+        },
+        "dashboard": {
+            "description": "Yeqqen akken iwata ɣer tɣerɣert HelloQuitX!",
+            "title": ""
+        }
+    },
+    "uploadResults": {
+        "stats": {
+            "twitterAccounts": {
+                "value": "{count}",
+                "label": "Imiḍanen n Twitter"
+            },
+            "readyTravelers": {
+                "label": "Theyyam iman-nnwen i usikel",
+                "value": ""
+            },
+            "totalImported": {
+                "label": "",
+                "value": ""
+            }
+        },
+        "inviteFriends": "Ɛreḍ-d ineḍfaṛen-inek·inem ad ddun yid-k·m!",
+        "redirecting": "",
+        "congratulations": "",
+        "importSuccess": ""
+    },
+    "dashboard": {
+        "newsletter": {
+            "emailPlaceholder": "amedya@email.com",
+            "emailLabel": "Tansa-k·m imayl",
+            "subscribing": "Ajerred iteddu…",
+            "confirmSubscribe": "Sentem ajerred",
+            "title": "",
+            "acceptHQX": "",
+            "subscribed": "",
+            "description": "",
+            "acceptOEP": "",
+            "subscribe": ""
+        },
+        "shareModal": {
+            "shareOn": "Bḍu-t deg {platform}",
+            "title": "Bḍu asikel-ik·im",
+            "shareText": ""
+        },
+        "loading": "Yettɛebbi-d isefka-k·m…",
+        "addSocialNetwork": "Rnu aẓeṭṭa inmetti",
+        "migrationStep": {
+            "completed": "Tfukkeḍ aswir amezwaru n yinig-ik·im",
+            "nextSteps": "",
+            "daysLeft": "",
+            "completed1": "",
+            "completed2": ""
+        },
+        "importButton": "",
+        "addSocialNetworkDescription": "",
+        "tutorial": {
+            "watchVideo": "",
+            "title": "",
+            "description": ""
+        }
+    },
+    "loginButtons": {
+        "bluesky": {
+            "connect": "Qqen s BlueSky"
+        },
+        "mastodon": {
+            "connect": "Qqen s Mastodon",
+            "instances": {
+                "mastodon": "Qqen s Mastodon.social",
+                "piaille": "Qqen s Piaille.fr"
+            }
+        },
+        "twitter": {
+            "notDeleted": "Ɣuri amiḍan deg Twitter",
+            "continue": "Kemmel akked Twitter"
+        },
+        "deleteAccount": "Kkseɣ yakan amiḍan-iw Twitter"
+    },
+    "upload": {
+        "loading-indic": "Yettɛebbi-d isefka-k·m…",
+        "helpModal": {
+            "steps": [
+                "Qqen ɣer umiḍan-inek·inem n Twitter",
+                "Ruḥ ɣer \"Ugar\" deg umuɣ azelmaḍ",
+                "",
+                "",
+                "Sentem awal-ik·im uffir ma ssutren-t-id",
+                "",
+                "",
+                ""
+            ],
+            "title": "",
+            "description": "",
+            "note": ""
+        },
+        "logo": {
+            "alt": "Alugu n HelloQuitX"
+        },
+        "errors": {
+            "noFiles": "Ulac kra ufaylu yettwafernen",
+            "fileSize": "Tiddi n ufaylu tɛedda i talast n 1 GB",
+            "invalidCombination": "",
+            "fileType": ""
+        },
+        "loading": {
+            "default": "",
+            "uploading": ""
+        },
+        "title": "",
+        "helpButton": "",
+        "loading-uploading": "",
+        "logoCNRS": {
+            "alt": ""
+        },
+        "action": "",
+        "description": ""
+    },
+    "uploadButton": {
+        "dropHere": "Sers afaylu-k·m da",
+        "error": {
+            "uploadFailed": ""
+        },
+        "clickOrDrop": "",
+        "uploadInProgress": ""
+    },
+    "dashboardSea": {
+        "welcome": "Ansuf yis-k·m ɣer HelloQuitX!",
+        "logo": {
+            "alt": "Alugu n HelloQuitX"
+        },
+        "logoCNRS": {
+            "alt": ""
+        }
+    },
+    "signin": {
+        "loading": "Aɛebbi n telɣa…",
+        "subtitle": "Bdut tuqqna akked Twitter akken ad tzegrem isefka-nwen",
+        "title": "",
+        "logo": {
+            "alt": ""
+        },
+        "logoCNRS": {
+            "alt": ""
+        }
+    },
+    "migrate": {
+        "deselectAll": "",
+        "following": "",
+        "startMigration": "",
+        "migrating": "",
+        "loading": "",
+        "matches_found": "",
+        "followers": "",
+        "title": "",
+        "selectAll": ""
+    },
+    "ReconnexionOptions": {
+        "buttons": {
+            "automatic": "",
+            "manual": ""
+        },
+        "descriptions": {
+            "manual": "",
+            "automatic": ""
+        },
+        "stats": {
+            "connections": "",
+            "bluesky": "",
+            "networks": ""
+        }
+    },
+    "migrateSea": {
+        "logo": {
+            "alt": ""
+        },
+        "matchDetails": {
+            "bluesky": "",
+            "mastodon": ""
+        },
+        "matchMessage": "",
+        "title": ""
+    },
+    "ManualReconnexion": {
+        "selectAll": "",
+        "xAccountPseudo": "",
+        "next": "",
+        "followOnBluesky": "",
+        "mastodonBlueskyCorrespondence": "",
+        "followOnMastodon": "",
+        "prev": "",
+        "connect": "",
+        "automaticReconnect": "",
+        "title": ""
+    },
+    "reconnexionModal": {
+        "message": "",
+        "migrationInProgress": "",
+        "migrationComplete": "",
+        "minimize": "",
+        "title": "",
+        "progressMessage": "",
+        "progressTitle": "",
+        "close": "",
+        "stayInformed": "",
+        "migrationCompleteStats": "",
+        "migrationProgress": ""
+    },
+    "Migrate": {
+        "migrationCompleteStats": "",
+        "close": "",
+        "minimize": "",
+        "migrationComplete": "",
+        "migrationProgress": "",
+        "migrationInProgress": ""
+    },
+    "firstSeen": {
+        "newsletter": {
+            "consent": "",
+            "emailPlaceholder": "",
+            "researchConsent": "",
+            "errors": {
+                "missingEmail": ""
+            },
+            "emailLabel": "",
+            "subtitle": ""
+        },
+        "cta": "",
+        "description": "",
+        "dismiss": "",
+        "title": ""
+    },
+    "support": {
+        "modal": {
+            "form": {
+                "email": {
+                    "placeholder": "",
+                    "label": ""
+                },
+                "subject": {
+                    "placeholder": "",
+                    "label": ""
+                },
+                "message": {
+                    "placeholder": "",
+                    "label": ""
+                },
+                "submitting": "",
+                "submit": ""
+            },
+            "title": "",
+            "error": {
+                "send": "",
+                "unknown": ""
+            },
+            "description": ""
+        }
+    },
+    "AccountToMigrate": {
+        "followedOnBluesky": "",
+        "followedOnMastodon": "",
+        "followOnMastodon": "",
+        "followOnBluesky": ""
+    }
+}

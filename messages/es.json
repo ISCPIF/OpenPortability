@@ -1,21 +1,21 @@
 {
     "uploadButton": {
-        "dropHere": "Suelta sus archivos aquí",
-        "clickOrDrop": "Haga clic o arrastre su archivo aquí",
+        "dropHere": "Arrastra tus archivos aquí",
+        "clickOrDrop": "Haz clic o arrastra tu archivo aquí",
         "error": {
-            "uploadFailed": "La descarga a fallado luego de varios intentos. Por favor pruebe nuevamente."
+            "uploadFailed": "La descarga ha fallado después de varios intentos. Por favor, inténtalo nuevamente."
         },
-        "uploadInProgress": "Estamos analizando su archivo, por favor espere ..."
+        "uploadInProgress": "Estamos analizando tu archivo, por favor espera..."
     },
     "blueskyLogin": {
         "tooltip": {
             "createAccount": "Crea una aquí",
-            "info": "Nunca almacenamos su contraseña. Únicamente utilizamos los tokens de autentificación asegurados proveídos por BlueSky.",
-            "noAccount": "¿No tienes cuenta BlueSky todavía?"
+            "info": "Nunca almacenamos tu contraseña. Únicamente utilizamos los identificadores de autentificación seguros proveídos por Bluesky.",
+            "noAccount": "¿No tienes cuenta en Bluesky todavía?"
         },
         "form": {
             "password": {
-                "label": "Contraseña de la App",
+                "label": "Contraseña de la app",
                 "placeholder": "••••••••",
                 "help": "Crea una contraseña para la aplicación en"
             },
@@ -24,22 +24,22 @@
                 "default": "Ha ocurrido un error"
             },
             "identifier": {
-                "label": "Identificador BlueSky",
+                "label": "Identificador de Bluesky",
                 "placeholder": "nombredeusuario.bsky.social"
             },
             "submit": "Conectarse"
         },
-        "title": "Conéctese a BlueSky",
-        "description": "Conecte su cuenta BlueSky para sincronizar sus datos y disfrutar de una experiencia completa."
+        "title": "Conéctate a Bluesky",
+        "description": "Conecta tu cuenta de Bluesky para sincronizar tus datos y disfrutar la experiencia completa."
     },
     "consentModal": {
         "conditions": {
-            "ownership": "Ud. es propietario legítimo de estos datos.",
-            "cnrsUsage": "Acepta que los datos brindados sean utilizados por el Centro Nacional para la Investigación Científica (CNRS) en el marco de la operación OpenPortability.",
-            "profileCreation": "Entiende que estos datos son utilizados para crear un perfil en OpenPortability."
+            "ownership": "Tienes la propiedad legítima de estos datos.",
+            "cnrsUsage": "Aceptas que los datos brindados sean utilizados por el Centro Nacional para la Investigación Científica (CNRS) en el marco de la operación OpenPortability.",
+            "profileCreation": "Entiendes que estos datos son utilizados para crear un perfil en OpenPortability."
         },
         "title": "Confirmación de envío",
-        "description": "Enviado sus archivos Twitter/X, ud. confirma que:",
+        "description": "Enviando tus archivos de Twitter/X, confirmas que:",
         "buttons": {
             "accept": "Aceptar y continuar",
             "cancel": "Cancelar"
@@ -53,17 +53,17 @@
             },
             "twitterAccounts": {
                 "value": "{count}",
-                "label": "Cuentas Twitter/X"
+                "label": "Cuentas de Twitter/X"
             },
             "readyTravelers": {
                 "value": "{count} cuentas listas",
-                "label": "Listo/a para el Viaje"
+                "label": "Listo/a para el viaje"
             }
         },
         "redirecting": "Redirigiendo al dashboard...",
-        "congratulations": "¡Felicitaciones @{username}, quedó inscrito/a para el viaje!",
+        "congratulations": "¡Felicidades, @{username}, ya te has registrado para el viaje!",
         "inviteFriends": "¡Invita a tus seguidores/as a unirse!",
-        "importSuccess": "¡La importación de sus archivos permitió inscribir {count} nuevos pasajeros!"
+        "importSuccess": "¡La importación de tus archivos ha permitido inscribir a {count} personas más!"
     },
     "loginButtons": {
         "deleteAccount": "Ya eliminé mi cuenta de Twitter/X",
@@ -79,14 +79,14 @@
             "notDeleted": "Tengo una cuenta de Twitter/X"
         },
         "bluesky": {
-            "connect": "Conectarse con BlueSky"
+            "connect": "Conectarse con Bluesky"
         }
     },
     "progressSteps": {
         "import": {
-            "title": "Importo mi archivo X/Twitter",
+            "title": "Subir mi archivo de X/Twitter",
             "description": {
-                "withStats": "{following} siguiendo, {followers} seguidores",
+                "withStats": "{following} seguidos, {followers} seguidores",
                 "noStats": "Importa tus suscripciones"
             }
         },
@@ -95,51 +95,51 @@
             "title": "Compartir con mi comunidad"
         },
         "dashboard": {
-            "title": "Bienvenido/a a bordo",
-            "description": "¡Conexión a la plataforma OpenPortability exitosa!"
+            "title": "Te damos la bienvenida a bordo",
+            "description": "¡Conexión a la plataforma HelloQuitX exitosa!"
         },
         "socialNetworks": {
-            "title": "Conecto mis redes sociales",
+            "title": "Vincular mis redes sociales",
             "description": "Agregar una red social"
         }
     },
     "upload": {
-        "loading-indic": "Cargando sus datos...",
+        "loading-indic": "Cargando tus datos...",
         "logo": {
-            "alt": "OpenPortability Logo"
+            "alt": "Logo de OpenPortability"
         },
         "helpModal": {
             "steps": [
-                "Conéctese a su cuenta de Twitter/X",
-                "Vaya a \"Más\" en el menú izquierdo",
-                "Haga clic en \"Configuración y privacidad\"",
-                "En \"Tu cuenta\", seleccione \"Descargar un archivo con tus datos\"",
-                "Confirme su contraseña si se lo requiere",
-                "Haga clic en \"Solicita tu archivo\"",
-                "Twitter/X le enviará un email cuando su archivo esté listo para descargar",
-                "Una vez descargado, podrá importar el archivo .zip aquí"
+                "Conéctate a tu cuenta de Twitter/X",
+                "Ve a \"Más\" en el menú izquierdo",
+                "Haz clic en \"Configuración y privacidad\"",
+                "En \"Tu cuenta\", selecciona \"Descargar un archivo con tus datos\"",
+                "Confirma tu contraseña si te la piden",
+                "Haz clic en \"Solicita tu archivo\"",
+                "Twitter/X te enviará un email cuando tu archivo esté listo para descargar",
+                "Una vez descargado, podrás importar el archivo aquí"
             ],
-            "description": "Para obtener su archivo Twitter/X, siga estos pasos:",
-            "title": "¿Cómo obtener su archivo Twitter/X?",
-            "note": "Nota: La preparación del archivo Twitter/X puede tomar hasta 24 horas."
+            "description": "Para obtener tu archivo de Twitter/X, sigue estos pasos:",
+            "title": "¿Cómo obtener tu archivo de Twitter/X?",
+            "note": "Nota: El envío del archivo de Twitter/X puede tardar hasta 24 horas."
         },
-        "title": "Importar su archivo Twitter/X para continuar su viaje",
-        "helpButton": "Ayuda para obtener su archivo Twitter/X",
+        "title": "Importar tu archivo de Twitter/X para continuar tu viaje",
+        "helpButton": "Ayuda para obtener tu archivo de Twitter/X",
         "loading": {
             "default": "Cargando...",
-            "uploading": "Permanezca en la página, su importación está en curso"
+            "uploading": "Permanece en la página, tu importación está en curso"
         },
         "errors": {
-            "fileSize": "El tamaño del archivo excede el límite de 1GB",
-            "fileType": "Tipo de archivo inválido. Por favor suba o bien un archivo ZIP o bien los archivos following.js y follower.js",
+            "fileSize": "El tamaño del archivo excede el límite de 1 GB",
+            "fileType": "Tipo de archivo inválido. Por favor, sube o bien un archivo ZIP o bien los archivos following.js y follower.js",
             "noFiles": "Ningún archivo seleccionado",
-            "invalidCombination": "Por favor suba o bien un archivo ZIP, following.js + follower.js, o sus versiones fraccionadas (following-part*.js/follower-part*.js)"
+            "invalidCombination": "Por favor, sube o bien un archivo ZIP, o los archivos following.js y follower.js, o sus versiones fraccionadas (following-part*.js/follower-part*.js)"
         },
-        "action": "Suelta o selecciona tu archivo Twitter aquí",
-        "description": "Tres formatos de datos son aceptados:\n- su archivo X originar si < 1 GB (en formato Zip)\n- los archivos following.js y follower.js JUNTOS y descomprimidos,\n- las versiones fraccionadas de estos archivos para archivos pesados (following-part*.js + follower-part*.js)",
-        "loading-uploading": "Permanezca en la página, importación en curso",
+        "action": "Arrastra aquí tu archivo de Twitter o selecciónalo",
+        "description": "Se aceptan tres formatos:\n- tu archivo X original completo si ocupa menos de 1 GB (en formato zip)\n- los archivos following.js y follower.js JUNTOS y descomprimidos,\n- las versiones fraccionadas de estos archivos, si son pesados (following-part*.js + follower-part*.js)",
+        "loading-uploading": "Permanece en la página, importación en curso",
         "logoCNRS": {
-            "alt": "CNRS, Centro Nacional por la Investigación Científica francés"
+            "alt": "CNRS, Centro Nacional por la Investigación Científica, Francia"
         }
     },
     "dashboardLoginButtons": {
@@ -150,32 +150,32 @@
                     "mastodon": "mastodon.social"
                 },
                 "title": "Mastodon",
-                "instance": "¿Dónde está albergada su cuenta? (ej. mastodon.social)",
+                "instance": "¿En qué servidor está tu cuenta? (ej. mastodon.social)",
                 "connect": "Conectarse",
                 "error": {
-                    "required": "El nombre de su servidor es requerido",
-                    "unreachable": "La instancia es inaccesible. Por favor corrobore la URL otra vez.",
-                    "fetch_instances": "Error en la recuperación de las instancias.",
-                    "invalid_format": "Formato de instancia inválido. Ejemplo: mastodon.social",
-                    "special_chars": "La instancia no puede contener caracteres especiales",
-                    "too_long": "El nombre de la instancia es demasiado largo"
+                    "required": "Es necesario el nombre del servidor",
+                    "unreachable": "No podemos acceder a ese servidor. Por favor, comprueba la URL otra vez.",
+                    "fetch_instances": "Error recuperando información de los servidores.",
+                    "invalid_format": "Formato de servidor inválido. Ejemplo: mastodon.social",
+                    "special_chars": "El servidor no puede contener caracteres especiales",
+                    "too_long": "El nombre del servidor es demasiado largo"
                 }
             },
             "twitter": "Twitter/X",
-            "bluesky": "BlueSky"
+            "bluesky": "Bluesky"
         },
         "importTwitter": "Importar mi archivo Twitter/X",
         "addSocialNetwork": "Agregar otra red social",
         "connectedDashboard": {
-            "twitter": "Asocio mi cuenta Twitter/X",
-            "bluesky": "Asocio mi cuenta Bluesky",
-            "mastodon": "Asocio mi cuenta Mastodon"
+            "twitter": "Conectar con Twitter/X",
+            "bluesky": "Conectar con Bluesky",
+            "mastodon": "Conectar con Mastodon"
         }
     },
     "largeFiles": {
         "progress": {
             "following": {
-                "title": "Siguiendo",
+                "title": "Seguidos",
                 "processed": "{processed} / {total}"
             },
             "followers": {
@@ -183,7 +183,7 @@
                 "processed": "{processed} / {total}"
             },
             "total": {
-                "title": "Progresión total",
+                "title": "Progreso total",
                 "processed": "{processed} / {total}"
             }
         },
@@ -195,48 +195,48 @@
             "title": "Estado"
         },
         "logo": {
-            "alt": "OpenPortability Logo"
+            "alt": "Logo de OpenPortability"
         },
         "stats": {
-            "following": "Siguiendo",
+            "following": "Seguidos",
             "followers": "Seguidores"
         },
         "button": {
             "dashboard": "Volver al panel de control"
         },
         "logoCNRS": {
-            "alt": "CNRS, Centro Nacional por la Investigación Científica francés"
+            "alt": "CNRS, Centro Nacional por la Investigación Científica, Francia"
         }
     },
     "dashboard": {
         "migrationStep": {
             "completed": "Ha completado la primera etapa de su migración",
             "daysLeft": "¡{count} días restantes!",
-            "nextSteps": "¡Completa las siguientes etapas para viajar a nuevas orillas!",
-            "completed1": "¡Felicitaciones! Ha completado la primera de las dos etapas de migración.",
-            "completed2": "No olvides invitar a tus suscriptores a registrarse en OpenPortability. En 1 minuto estarán reconectados a tu cuenta, incluso sin su archivo.\nLa fase 2 llegará en solo unos días. Según tus preferencias, recibirás una notificación por correo electrónico o podrás seguir nuestro lanzamiento en X, BlueSky y Mastodon.\n¡Mantente atento, hay sorpresas emocionantes esperando!"
+            "nextSteps": "¡Completa los siguientes pasos para descubrir nuevos horizontes!",
+            "completed1": "¡Felicidades! Has completado la primera de las dos etapas de migración.",
+            "completed2": "No te olvides de invitar a las personas que te siguen en X para que se registren también en OpenPortability. Podrán reconectar contigo rápidamente, incluso sin tener su archivo. \nLa fase 2 llegará muy pronto: según prefieras, recibirás una notificación por email o puedes enterarte del lanzamiento en X, Bluesky y Mastodon.\nAtención, ¡habrá sorpresas!"
         },
         "shareModal": {
-            "title": "Compartir mi viaje",
+            "title": "Compartir tu viaje",
             "shareOn": "Compartir en {platform}",
-            "shareText": "¡🚨#eXode en progreso! Acabo de registrarme en #OpenPortability para seguir en contacto con mi comunidad en BlueSky/Mastodon. ¡Se han añadido {count} conexiones pendientes! En sólo 1 minuto, tú también puedes asegurarte de no perder a tus suscriptores! ➡️ https://OpenPortability.org"
+            "shareText": "¡Acabo de hacer mi #eXit! El éxodo de X es masivo. No pierdas a ninguno de tus seguidores. Gracias a #OpenPortability he sumado a {count} nuevos pasajeros para un viajar a #BlueSky y #Mastodon. ¡Únete y encuentra tu comunidad! https://openportability.org"
         },
         "newsletter": {
-            "title": "Seguir informado/a",
-            "subscribe": "Seguir informado/a de los próximos pasos",
+            "title": "Sigue las novedades",
+            "subscribe": "Recibe información sobre los próximos pasos del proyecto OpenPortability",
             "acceptHQX": "Deseo recibir las novedades de OpenPortability",
-            "subscribing": "Suscribiendo...",
-            "subscribed": "¡Está inscrito/a a la newsletter!",
-            "emailLabel": "Se dirección mail",
+            "subscribing": "Suscribiéndote...",
+            "subscribed": "¡Te has inscrito a la newsletter!",
+            "emailLabel": "Tu email",
             "emailPlaceholder": "ejemplo@email.com",
             "confirmSubscribe": "Confirmar la suscripción",
-            "description": "Sigue informado/a de la última etapa y de las nuevas funcionalidades.",
-            "acceptOEP": "Deseo también estar informado/a de las próximas iniciativas [On est prêt](https://www.onestpret.com), que acompaña OpenPortability"
+            "description": "Recibe información sobre la última etapa y sobre nuevas funcionalidades.",
+            "acceptOEP": "Deseo también información sobre las próximas iniciativas de [On est prêt](https://www.onestpret.com), que acompaña OpenPortability"
         },
-        "loading": "Cargando sus datos...",
-        "addSocialNetwork": "Agregar una red social",
-        "addSocialNetworkDescription": "Conéctese a otras redes sociales para enriquecer su experiencia",
-        "importButton": "Importar mi archivo Twitter/X",
+        "loading": "Cargando tus datos...",
+        "addSocialNetwork": "Añadir una red social",
+        "addSocialNetworkDescription": "Conéctate a otras redes sociales para enriquecer tu experiencia",
+        "importButton": "Importar mi archivo de Twitter/X",
         "tutorial": {
             "title": "Explicación paso a paso en nuestro tutorial",
             "description": "Descubra como migrar fácilmente de Twitter/X a Mastodon y Bluesky",
@@ -246,18 +246,18 @@
     },
     "profile": {
         "errors": {
-            "notLinked": "Ninguna cuenta {provider} ligada",
-            "lastAccount": "Imposible desligar su última cuenta conectada"
+            "notLinked": "No hay ninguna cuenta de {provider} vinculada",
+            "lastAccount": "Imposible desvincular tu última cuenta conectada"
         },
-        "unlinkError": "Ha ocurrido un error al momento de desligar su cuenta {provider}",
+        "unlinkError": "Ha ocurrido un error en el momento de desvincular tu cuenta de {provider}",
         "providers": {
             "mastodon": "Mastodon",
             "twitter": "Twitter/X",
             "bluesky": "Bluesky"
         },
-        "unlinkSuccess": "Su cuenta {provider} fue desligada con éxito",
-        "unlinkConfirmation": "¿Está seguro/a de querer desligar su cuenta {provider}?",
-        "unlinkButton": "Desligar la cuenta {provider}"
+        "unlinkSuccess": "Tu cuenta de {provider} ha sido desvinculada con éxito",
+        "unlinkConfirmation": "¿Estás seguro/a de querer desvincular tu cuenta de {provider}?",
+        "unlinkButton": "Desvincular la cuenta de {provider}"
     },
     "signin": {
         "loading": "Cargando información...",
@@ -266,34 +266,34 @@
         "embark": "Sube tu archivo para embarcar a tu comunidad",
         "welcome": "Bienvenido/a",
         "logo": {
-            "alt": "OpenPortability Logo"
+            "alt": "Logo de OpenPortability"
         },
         "logoCNRS": {
-            "alt": "CNRS, Centro Nacional por la Investigación Científica francés"
+            "alt": "CNRS, Centro Nacional para la Investigación Científica, Francia"
         }
     },
     "migrationComplete": {
         "error": {
             "createAccount": "Crear una cuenta",
-            "title": "Error de Migración",
-            "retry": "Intentar Nuevamente"
+            "title": "Error de migración",
+            "retry": "Intentar nuevamente"
         },
         "success": {
-            "description": "Su cuanta ha migrado exitosamente a BlueSky bajo el handle {handle}",
+            "description": "Tu cuenta se ha migrado con éxito a BlueSky con el nombre de usuario {handle}",
             "displayName": "({name})",
-            "viewProfile": "Ver Perfil",
-            "title": "¡Migración Completa!"
+            "viewProfile": "Ver perfil",
+            "title": "¡Migración completa!"
         }
     },
     "successModal": {
-        "title": "¡Importación exitosa!",
+        "title": "¡Importación completada con éxito!",
         "followers": {
             "title": "Seguidores ({count})",
             "username": "@{username}"
         },
         "close": "Cerrar",
         "following": {
-            "title": "Siguiendo ({count})",
+            "title": "Seguidos ({count})",
             "username": "@{username}"
         }
     },
@@ -302,49 +302,50 @@
         "notifications": {
             "title": "Notificaciones",
             "hqxNewsletter": "Recibir actualizaciones de OpenPortability",
-            "oepNewsletter": "Recibir información sobre iniciativas On est prêt"
+            "oepNewsletter": "Recibir información de las iniciativas de On est prêt"
         },
         "deleteConfirm": {
             "cancel": "Cancelar",
             "title": "Eliminar la cuenta",
-            "message": "¿Está seguro/a de querer eliminar su cuenta? Esta acción es irreversible e implicará la supresión de:\n\n• Todos sus datos importados\n• Todas sus cuentas ligadas (Twitter/X, BlueSky, Mastodon)\n• Su perfil OpenPortability",
+            "message": "¿Estás seguro/a de querer eliminar su cuenta? Esta acción es irreversible e implicará la supresión de:\n\n• Todos tus datos importados\n• Todas tus cuentas vinculadas (Twitter/X, BlueSky, Mastodon)\n• Tu perfil de OpenPortability",
             "confirm": "Sí, eliminar mi cuenta"
         },
         "deleteAccount": "Eliminar mi cuenta",
-        "newsletter": "Recibir boletín informativo",
-        "oepNewsletter": "Recibir información sobre iniciativas On est prêt",
-        "research": "Participar en el programa de investigación",
+        "newsletter": "Newsletter de OpenPortability",
+        "research": "Programa de investigación del CNRS (Centro Nacional para la Investigación Científica, Francia)",
+        "oepNewsletter": "Recibe información sobre las iniciativas de On est prêt",
         "preferencesUpdated": "Preferencias actualizadas"
     },
     "dashboardSea": {
-        "welcome": "¡Bienvenido/a a bordo de OpenPortability!",
+        "welcome": "¡Te damos la bienvenida a bordo de OpenPortability!",
         "logo": {
-            "alt": "OpenPortability Logo"
+            "alt": "Logo de OpenPortability"
         },
         "logoCNRS": {
-            "alt": "CNRS, Centro Nacional por la Investigación Científica francés"
+            "alt": "CNRS, Centro Nacional por la Investigación Científica, Francia"
         }
     },
     "errorModal": {
         "close": "Cerrar",
         "title": "Error",
         "extractArchive": {
-            "title": "Cómo extraer su archivo",
+            "title": "Cómo extraer tu archivo",
             "windows": "Windows",
             "steps": {
                 "windows": {
                     "step1": "Clic derecho sobre el archivo .zip",
-                    "step2": "Seleccione \"Extraer todo\"",
-                    "step3": "Elija un archivo de destino",
-                    "step4": "Haga clic sobre \"Extraer\""
+                    "step2": "Selecciona \"Extraer todo\"",
+                    "step3": "Elige una carpeta de destino",
+                    "step4": "Haz clic en \"Extraer\""
                 },
                 "mac": {
-                    "step1": "Haga doble-clic sobre el archivo .zip",
+                    "step1": "Haz doble-clic en el archivo .zip",
                     "step2": "El archivo será automáticamente extraído"
                 },
                 "linux": {
-                    "step2": "Seleccione \"Extraer aquí\" o \"Extraer en...\"",
-                    "step1": "Haga clic derecho sobre el archivo .zip"
+                    "step2": "Selecciona \"Extraer aquí\" o \"Extraer en...\"",
+                    "step1": "Haz clic derecho sobre el archivo .zip",
+                    "step3": "Elige una carpeta de destino si se solicita"
                 }
             },
             "mac": "Mac",
@@ -353,9 +354,9 @@
     },
     "footer": {
         "hosted": {
-          "text": "Esta plataforma está abierta y puede ser utilizada por todos. Es parte de la investigación {openPortability} del ISC-PIF (CNRS). Está alojada por {cnrs}",
-          "cnrs": "CNRS/ISC-PIF",
-          "openPortability": "OpenPortability"
+            "cnrs": "CNRS/ISC-PIF",
+            "hqx": "OpenPortability",
+            "text": "Esta plataforma es hospedada por el {cnrs}."
         },
         "copyright": " {year} OpenPortability. Todos los derechos reservados.",
         "privacy": "Política de privacidad"
@@ -372,25 +373,22 @@
         "returnToFirstStep": "Volver al primer paso"
     },
     "connectedAccounts": {
-        "connectedWith": "Estás conectado/a con {services}",
+        "connectedWith": "Te has conectado con {services} ",
         "and": "y",
         "services": {
             "twitter": "Twitter/X",
-            "bluesky": "BlueSky",
+            "bluesky": "Bluesky",
             "mastodon": "Mastodon"
         }
     },
     "support": {
         "modal": {
-            "title": "¿Ha ocurrido un problema?",
-            "description": "Envíenos un mensaje y le contestaremos a la brevedad.",
-            "error": {
-                "send": "Error al enviar el mensaje",
-                "unknown": "Un error inesperado ha ocurrido"
-            },
+            "title": "¿Ha ocurrido algún problema?",
+            "description": "Envíanos un mensaje y te contestaremos en breve.",
+            "error": "Ha ocurrido un error mientras se enviaba el mensaje.",
             "form": {
                 "email": {
-                    "label": "Su dirección de email",
+                    "label": "Tu dirección de email",
                     "placeholder": "ejemplo@email.com"
                 },
                 "subject": {
@@ -400,10 +398,11 @@
                 "submit": "Enviar",
                 "submitting": "Enviando...",
                 "message": {
-                    "label": "Mensaje",
-                    "placeholder": "Su mensaje"
+                    "label": "Tu mensaje",
+                    "placeholder": "Describe el problema..."
                 }
-            }
+            },
+            "success": "¡Mensaje enviado!"
         }
     },
     "firstSeen": {
@@ -413,138 +412,148 @@
             "emailLabel": "Ingrese su email para seguir informado/a (opcional):",
             "emailPlaceholder": "nombeDeUsuario@direccion.com",
             "consent": "Deseo también estar informado/a de las próximas iniciativas On Est prêt, quienes acompañan OpenPortability",
-            "researchConsent": "Deseo compartir con el CNRS mi grafo de conexiones para propósitos de investigación. Será tratado de forma agregada. Ningún dato personal se volverá público.",
+            "researchConsent": "Deseo compartir con el CNRS mi grafo de conexiones para propósitos de investigación. Será tratado de forma agregada. Ningún dato personal será publicado.",
             "errors": {
-                "missingEmail": "Email faltante"
+                "missingEmail": "Falta el email"
             }
         },
         "cta": "ENVIAR",
-        "dismiss": "Debe aceptar las condiciones de uso para continuar en la plataforma OpenPortability",
-        "description": "Está al punto de embarcarse con OpenPortability para referenciar sus distintas identidades en linea y duplicar su comunidad en otras redes. El total de la operación le tomará 5 minutos y no tendrá impacto sobre su cuenta X. A partir del 20 de enero, sus cuentas BlueSky y Mastodon comenzarán a recibir automáticamente nuevos suscriptores.\nPara que todo vaya bien, le ofrecemos guiar --en algunos casos el proceso requiere de varias etapas-- e informar sobre las funcionalidades que serán publicadas próximamente (como importar sus mensajes X en BlueSky o Mastodon).\nEmbarcando con nosotros, nos autoriza a contactarlo/a por BlueSky o Mastodon. Le recomendamos además dejarno su email, para permitirnos contactarlo/a en sus futuras campañas.\nEste contacto será utilizado con moderación y puede optar por bajarse del programa en cualquier momento. {lien}",
-        "privacyPolicyLink": " Para más información, consulte nuestra política de privacidad"
-
+        "dismiss": "Al hacer clic en \"enviar\", certificas que has leído las condiciones anteriores y estás de acuerdo con ellas. Debes aceptar los términos de uso para continuar en la plataforma OpenPortability.",
+        "description": "Estás a punto de ejercitar tu derecho a la portabilidad de datos desde X hacia Bluesky y/o Mastodon. A la vez, participarás en un proyecto de investigación sobre redes sociales. Solo te llevará 5 minutos. \nOpenPortability examinará tu identidad digital y te ayudará a recrear poco a poco tu comunidad en Bluesky y/o Mastodon, sin modificar tu actual cuenta de X.\nConforme más personas vayan registrándose en OpenPortability, las conexiones que tengas con ellas se reproducirán en Bluesky y/o Mastodon (siempre con su consentimiento). Por tanto, funcionará mejor si animas a las personas que te siguen en X a registrarse.\n\nEsta \"copia\" de tu comunidad puede tardar varios días.\n\nSi usas OpenPortability, das tu permiso para que tus datos sean procesados según {lien} y para que tus datos sea, quizá, trasladados fuera de la Unión Europea (por ejemplo, a los servidores de Bluesky).",
+        "privacyPolicyLink": "nuestra política de privacidad"
     },
-    "launchReconnection": {
-        "firstObjective": {
-            "before": "¡Primer objetivo completado",
-            "after": "! El segundo paso está a la vista: inicia la reconexión"
+    "migrate": {
+        "deselectAll": "Desmarcar todo",
+        "migrating": "Migrando...",
+        "startMigration": "Comenzar la migración",
+        "matches_found": "coincidencias encontradas",
+        "following": "Seguidos",
+        "title": "Migra tu comunidad",
+        "selectAll": "Marcar todo",
+        "loading": "Cargando tus coincidencias",
+        "followers": "Seguidores"
+    },
+    "ReconnexionOptions": {
+        "buttons": {
+            "automatic": "RECONECTAR AUTOMÁTICAMENTE",
+            "manual": "ELEGIR CON QUÉ CUENTAS RECONECTAR"
         },
-        "inviteMessage": "No olvides invitar a tus seguidores a registrarse en OpenPortability. En 1 minuto pueden reconectarse a tu cuenta, incluso sin su archivo. ¡Mantente atento a grandes sorpresas!",
-        "blueskyConnectionMessage": {
-            "before": "Conecta tu cuenta de Bluesky para reconectar automáticamente con",
-            "after": "cuentas!"
-        },
-        "mastodonConnectionMessage": {
-            "before": "Conecta tu cuenta de Mastodon para reconectar automáticamente con",
-            "after": "cuentas!"
-        },
-        "launchButton": "¡Inicia tu reconexión con {count} cuentas!",
         "stats": {
-            "twitterAccounts": "Cuentas de Twitter",
-            "totalImported": "Conexiones de Twitter/X cartografiadas"
+            "networks": "usuarios con al menos una conexión que puede ser activada",
+            "bluesky": "conexiones que pueden ser activadas en Bluesky y Mastodon",
+            "connections": "conexiones importadas"
         },
-        "title": "Reconexión Automática",
-        "description": "Hemos encontrado {count} cuentas que puedes reconectar automáticamente.",
-        "button": "INICIAR RECONEXIÓN AUTOMÁTICA",
-        "loading": "Reconexión en curso...",
-        "alreadyReconnected": "Ya te hemos reconectado con {count} cuentas. ¡Vuelve más tarde para continuar tu reconexión!"
-    },
-    "privacy_policy": {
-        "title": "Aviso de Información sobre Protección de Datos",
-        "subtitle": "Instituto de Sistemas Complejos París Ile de France | Enero 2025",
-        "content": "<h2>CNRS ISC PIF</h2><p>Aviso de información sobre protección de datos en el marco de la investigación científica Proyecto Open Portability</p><p>Las redes sociales, y en particular Twitter (ahora X), han sido desde el principio objetos de investigación privilegiados, especialmente en el campo de las ciencias sociales computacionales.</p><p>Una transición histórica está en curso en el panorama de las redes sociales. El modelo centralizado, encarnado por X (anteriormente Twitter), está experimentando una fuga masiva de usuarios hacia plataformas alternativas como BlueSky y Mastodon. Varios millones de cuentas han migrado en pocas semanas, marcando un cambio importante hacia redes descentralizadas y abiertas.</p><p>Esta transición es un fenómeno social, económico y tecnológico importante que podría modificar el espacio digital global, particularmente en Europa, y podría permitir que Europa recupere cierta soberanía digital.</p><h2>I. Descripción del Proyecto y del Tratamiento</h2><p>Los objetivos de la investigación son los siguientes: analizar la diferencia entre entornos digitales abiertos y cerrados de tipo micro-blogging desde el punto de vista de las dinámicas sociales y los debates en línea. Estudiar como caso de estudio la migración en curso entre X y espacios basados en los protocolos abiertos AT Protocol y Activity Pub, y estudiar la apropiación de espacios digitales descentralizados en el tiempo (horizonte 5 años).</p><p>El proyecto OpenPortability implica:</p><ul><li>Recopilación de datos para la portabilidad de datos entre redes sociales</li><li>Recopilación de datos para realizar una fotografía de la estructura social de la red X</li><li>Recopilación de datos para realizar fotografías de las estructuras sociales de las redes alternativas</li><li>Portabilidad de datos</li><li>Procesamiento y análisis de datos</li></ul><h2>II. Recopilación de Datos, Destinatarios y Conservación</h2><p>Los datos recopilados directamente de las personas y procesados son:</p><ul><li>Identificadores digitales en redes sociales (ID de nombre de usuario)</li><li>Nombres de perfil en redes sociales</li><li>Direcciones de correo electrónico</li></ul><p>La política de protección de datos personales de Bluesky se encuentra en: <link>https://bsky.social/about/support/privacy-policy</link></p><p>La política de protección de datos personales de Mastodon está disponible en <link>https://joinmastodon.org/servers</link></p><h2>III. Medidas de Seguridad</h2><p>Para garantizar la confidencialidad y protección de los datos, se toman medidas en aplicación de la política de seguridad de los sistemas de información del Estado, aplicada al CNRS. Los datos se alojan en Francia en los servidores del CNRS.</p><h2>IV. Ejercicio de sus Derechos</h2><p>Puede acceder y obtener una copia de sus datos, oponerse al tratamiento de estos datos o solicitar su rectificación. También tiene derecho a la limitación del tratamiento de sus datos. Puede ejercer estos derechos contactando al responsable del tratamiento en el Instituto de Sistemas Complejos-París Ile de France, ubicado en 113 rue Nationale 75013 París, o a través del formulario de contacto disponible en <link>https://openportability.org/</link></p><p>También puede contactar al Delegado de Protección de Datos (DPD) del CNRS en: CNRS - Servicio de protección de datos, 2 rue Jean Zay, 54519 Vandoeuvre-lès-Nancy - dpd.demandes@cnrs.fr.</p><p>Si considera que sus derechos de Informática y Libertades no se respetan, puede presentar una reclamación en línea ante la CNIL, 3 Place de Fontenoy, TSA 80715 – 75334 París Cedex 07 (<link>https://www.cnil.fr/</link>).</p>",
-        "backToSignIn": "Volver al inicio de sesión"
-    },
-    "SuccessAutomaticReconnexion": {
-        "congratulations": "¡Felicitaciones!",
-        "secondObjective": "Has completado el segundo objetivo y te has reconectado con {count} cuentas. ¡Has llegado a tu destino!",
-        "notification": "Continuaremos notificándote si nuevas cuentas pueden ser reconectadas, por correo electrónico o a través de tu red preferida, según tus preferencias.",
-        "stats": {
-            "reconnectedAccounts": "Cuentas reconectadas",
-            "totalAccounts": "Total de cuentas",
-            "remainingAccounts": "Cuentas restantes",
-            "blueskyFollowing": "Reconexiones en Bluesky",
-            "mastodonFollowing": "Reconexiones en Mastodon"
+        "descriptions": {
+            "manual": "OpenPortability te mostrará las cuentas que encuentre en Bluesky y Mastodon para que puedas elegir si las sigues o no",
+            "automatic": "OpenPortability te reconectará con tus seguidores de X durante 30 días"
         },
-        "firstObjective": "¡Primer objetivo logrado, estás inscrito para el viaje!",
-        "goToDashboard": "Volver al panel"
+        "title": "Elige cómo quieres reconectar con las personas a las que sigues"
     },
     "migrateSea": {
-        "logo": {
-            "alt": "Logo OpenPortability"
-        },
+        "title": "¡La Gran Reconexión!",
         "matchDetails": {
             "bluesky": "{count} en Bluesky",
             "mastodon": "{count} en Mastodon"
         },
-        "title": "Hacia una nueva era digital",
-        "matchMessage": "¡Se encontraron {matchCount} pasajeros durante tu primer paso de migración!\nAhora es el momento de activar la conexión con aquellos que quieres\nunirte en tus nuevas redes.",
+        "logo": {
+            "alt": "Logo de OpenPortability"
+        },
+        "matchMessage": "¡Hemos encontrado a {matchCount} personas durante el primer paso de tu migración!\nAhora llega el momento de retomar la conexión con quienes quieras\nen tus nuevas redes.",
         "stats": {
-            "awaitingConnection": "de tus cuentas seguidas están\nesperando conexión!",
-            "alreadyTransferred": "suscriptores ya han sido\ntransferidos!"
+            "alreadyTransferred": "seguidores ya han sido\ntransferidos!",
+            "awaitingConnection": "de tus cuentas seguidas están\nesperando que las reencuentres!"
         }
     },
-    "ReconnexionOptions": {
-        "title": "Elige como quieres reconectarte con tus seguidos",
-        "buttons": {
-            "automatic": "RECONECTARME AUTOMÁTICAMENTE",
-            "manual": "ELIJO LAS CUENTAS A RECONECTAR"
-        },
-        "descriptions": {
-            "automatic": "OpenPortability te reconectará con todos tus seguidores de Twitter/X",
-            "manual": "OpenPortability te permitirá elegir con qué cuentas reconectarte entre las cuentas encontradas en Bluesky y Mastodon."
-        },
-"stats": {
-      "connections": "Conexiones de Twitter/X cartografiadas",
-      "bluesky": "Reconexiones pendientes en BlueSky",
-      "mastodon": "Reconexiones pendientes en Mastodon",
-      "followedBluesky": "Reconexiones completadas en BlueSky",
-      "followedMastodon": "Reconexiones completadas en Mastodon"
-    }
+    "ManualReconnexion": {
+        "selectAll": "SELECCIONAR TODO",
+        "automaticReconnect": "RECONECTARME AUTOMÁTICAMENTE",
+        "title": "Reconexión manual",
+        "connect": "CONECTAR",
+        "followOnBluesky": "Seguir en Bluesky",
+        "prev": "Anterior",
+        "next": "Siguiente",
+        "mastodonBlueskyCorrespondence": "Correspondencia en Mastodon / Bluesky",
+        "xAccountPseudo": "Nombre de la cuenta",
+        "followOnMastodon": "Seguir en Mastodon"
+    },
+    "AccountToMigrate": {
+        "followOnBluesky": "Seguir en Bluesky",
+        "followOnMastodon": "Seguir en Mastodon",
+        "followedOnBluesky": "Seguido en Bluesky",
+        "followedOnMastodon": "Seguido en Mastodon"
     },
     "reconnexionModal": {
-        "title": "¡Acabas de activar la conexión con {count} cuentas!",
-        "message": "Felicitaciones, tu reconexión está completa, has llegado a salvo.",
-        "stayInformed": "MANTENTE INFORMADO/A SOBRE NUEVAS CONEXIONES",
-        "progressTitle": "Reconexión en progreso: {succeeded} de {total} cuentas",
-        "progressMessage": "Por favor espera mientras reconectamos tus cuentas...",
-        "migrationInProgress": "Reconexión en progreso...",
-        "migrationComplete": "¡Reconexión completada!",
-        "migrationProgress": "{current} de {total} cuentas reconectadas",
-        "migrationCompleteStats": "Se reconectaron exitosamente {count} cuentas",
+        "title": "¡Acabas de activar tu conexión con {count} cuentas!",
+        "stayInformed": "RECIBE INFORMACIÓN SOBRE NUEVAS CONEXIONES",
+        "message": "Enhorabuena, tu reconexión se ha completado, tu comunidad está a salvo.",
+        "progressMessage": "Por favor, espera mientras reconectamos tus cuentas...",
+        "progressTitle": "Reconexión en proceso: reconectadas {succeeded} de {total} cuentas",
         "minimize": "Minimizar",
-        "close": "Cerrar"
+        "migrationComplete": "¡Reconexión completa!",
+        "migrationCompleteStats": "Reconectadas {count} cuentas con éxito",
+        "close": "Cerrar",
+        "migrationInProgress": "Reconexión en proceso...",
+        "migrationProgress": "{current} de {total} cuentas reconectadas"
     },
     "Migrate": {
-        "migrationInProgress": "Reconexión en progreso...",
-        "migrationComplete": "¡Reconexión completada!",
+        "migrationComplete": "¡Reconexión completa!",
+        "migrationInProgress": "Reconexión en proceso...",
+        "migrationCompleteStats": "{count} cuentas reconectadas con éxito",
+        "close": "Cerrar",
         "migrationProgress": "{current} de {total} cuentas reconectadas",
-        "migrationCompleteStats": "Se reconectaron exitosamente {count} cuentas",
-        "minimize": "Minimizar",
-        "close": "Cerrar"
+        "minimize": "Minimizar"
+    },
+    "SuccessAutomaticReconnexion": {
+        "notification": "Seguiremos notificándote si se pueden reconectar nuevas cuentas, ya sea por correo electrónico o a través de tu red preferida, de acuerdo con tus preferencias.",
+        "congratulations": "Enhorabuena",
+        "secondObjective": "Has completado el segundo objetivo y te has reconectado con {count} cuentas. ¡Has llegado a tu nueva comunidad!",
+        "stats": {
+            "blueskyFollowing": "Seguidos en Bluesky",
+            "mastodonFollowing": "Seguidos en Mastodon"
+        },
+        "remainingAccounts": "Quedan {count} cuentas que reconectar",
+        "showRemainingOptions": "RECONECTAR LAS CUENTAS QUE FALTAN",
+        "firstObjective": "Primer objetivo completado, ¡ya te has apuntado a la reconexión!"
     },
     "AutomaticReconnexion": {
-        "reconnectionInProgress": "Reconexión automática activada",
-        "chooseManualy": "tus seguidos para reconectar",
-        "switchToManual": "Elijo las cuentas para reconectar",
         "accountsToConnect": "Cuentas para conectar",
+        "chooseManualy": "tus seguidos para reconectar",
+        "reconnectionInProgress": "Reconexión automática activada",
+        "switchToManual": "Clic aquí para elegir manualmente",
         "blueskyAccounts": "Cuentas de Bluesky",
         "mastodonAccounts": "Cuentas de Mastodon"
     },
     "refreshTokenModal": {
-        "title": "Reconexión Requerida",
-        "description": "Tu sesión ha expirado para {provider}. Por favor, vuelve a conectarte para continuar.",
-        "descriptionMultiple": "Tu sesión ha expirado para los siguientes servicios: {providers}. Por favor, vuelve a conectarte para continuar.",
         "details": {
-            "bluesky": "Tu sesión de BlueSky ha expirado. Por razones de seguridad, solo utilizamos tokens de acceso temporales que necesitan renovarse regularmente.",
-            "mastodon": "Necesitamos permisos adicionales para habilitar la reconexión con tus seguidores. Por favor, vuelve a conectarte para autorizar estas nuevas funciones.",
-            "both": "• BlueSky: Sesión expirada (tokens temporales)\n• Mastodon: Actualización de permisos requerida"
+            "both": "• Bluesky: La sesión ha caducado (identificadores temporales)\n• Mastodon: Se requiere actualizar la autorización",
+            "bluesky": "Tu sesión en Bluesky ha caducado. Por razones de seguridad, usamos identificadores de acceso temporales que deben ser renovados.",
+            "mastodon": "Necesitamos permisos adicionales para activar la reconexión con tus seguidores. Por favor, vuelve a conectarte para autorizar estas nuevas funciones."
         },
+        "descriptionMultiple": "Tus sesiones en los siguientes servicios han caducado: {providers}. Por favor, vuelve a activarlas para continuar.",
+        "title": "Reconexión requerida",
+        "description": "Tu sesión en {provider} ha caducado. Por favor vuelve a activarla para continuar.",
         "close": "Cerrar"
     },
-    "refreshToken": {
-        "title": "Reconexión necesaria",
-        "description": "Autoriza a OpenPortability para iniciar la reconexión mediante autenticación."
+    "launchReconnection": {
+        "firstObjective": {
+            "before": "Primer objetivo completado",
+            "after": "El siguiente paso se acerca: comenzar la reconexión"
+        },
+        "mastodonConnectionMessage": {
+            "before": "¡Conecta tu cuenta de Mastodon para reconectar automáticamente con",
+            "after": "cuentas!"
+        },
+        "inviteMessage": "No te olvides de invitar a tus seguidores a registrarse en OpenPortability. En 1 minuto podrán reconectarse contigo, incluso sin no tienen su archivo. Atención, ¡habrá sorpresas!",
+        "blueskyConnectionMessage": {
+            "after": "cuentas!",
+            "before": "¡Conecta tu cuenta de Bluesky para reconectar automáticamente con"
+        },
+        "launchButton": "¡Comienza tu reconexión con {count} cuentas!",
+        "stats": {
+            "twitterAccounts": "Cuentas de X",
+            "totalImported": "Total importadas"
+        },
+        "alreadyReconnected": "Ya te hemos reconectado con {count} cuentas. ¡Vuelve más adelante para continuar tu reconexión!"
     },
     "migrate": {
         "title": "Migrar tus suscripciones",
@@ -564,5 +573,14 @@
         "followOnMastodon": "Seguir en Mastodon",
         "followedOnBluesky": "Seguido en Bluesky",
         "followedOnMastodon": "Seguido en Mastodon"
+    "privacy_policy": {
+        "backToSignIn": "Vuelve a la plataforma OpenPortability",
+        "title": "Aviso sobre protección de datos",
+        "subtitle": "Complex Systems Institute Paris Ile de France | Enero de 2025",
+        "content": "<h2>CNRS ISC PIF</h2><p>Información sobre protección de datos para el proyecto de investigación científica Open Portability</p><p>Las redes sociales, en particular Twitter (ahora X), han sido desde sus inicios objetos privilegiados de investigación, especialmente en el campo de las ciencias sociales computacionales.</p><p>Estamos viviendo una transición histórica en el panorama de las redes sociales. El modelo centralizado, representado por X (antes Twitter), está experimentando un éxodo masivo de usuarios hacia plataformas alternativas como BlueSky y Mastodon. Varios millones de cuentas han migrado en solo unas semanas, marcando un cambio importante hacia redes descentralizadas y abiertas.</p><p>Esta transición es un fenómeno social, económico y tecnológico de gran envergadura que podría modificar el espacio digital global, particularmente en Europa, y permitir que Europa recupere parte de su soberanía digital.</p><h2>I. Descripción del Proyecto y del Tratamiento de Datos</h2><p>Los objetivos de la investigación son los siguientes: analizar la diferencia entre entornos digitales de microblogging abiertos y cerrados desde la perspectiva de las dinámicas sociales y los debates en línea. Estudiar como caso de estudio la migración en curso entre X y espacios basados en los protocolos abiertos AT Protocol y Activity Pub, y estudiar la apropiación de los espacios digitales descentralizados a lo largo del tiempo (con un horizonte de 5 años).</p><p>El proyecto OpenPortability incluye:</p><ul><li>Recopilación de datos para la portabilidad de datos entre redes sociales</li><li>Recopilación de datos para crear una instantánea de la estructura social de la red X</li><li>Recopilación de datos para crear instantáneas de las estructuras sociales de redes alternativas</li><li>Portabilidad de datos</li><li>Procesamiento y análisis de datos</li></ul><h2>II. Recopilación de Datos, Destinatarios y Conservación</h2><p>Los datos recopilados directamente de las personas y procesados son:</p><ul><li>Identificadores digitales en redes sociales (ID de usuario)</li><li>Nombres de perfiles en redes sociales</li><li>Direcciones de correo electrónico</li></ul><p>La política de protección de datos personales de Bluesky se puede encontrar en: <link>https://bsky.social/about/support/privacy-policy</link></p><p>La política de protección de datos personales de Mastodon se puede consultar en: <link>https://joinmastodon.org/servers</link></p><h2>III. Medidas de Seguridad</h2><p>Para garantizar la confidencialidad y protección de los datos, se toman medidas de acuerdo con la política de seguridad de los sistemas de información del Estado, aplicada al CNRS. Los datos se alojan en Francia en servidores del CNRS.</p><h2>IV. Ejercicio de Tus Derechos</h2><p>Puedes acceder y obtener una copia de tus datos, oponerte al tratamiento de estos datos o solicitar su rectificación. También tienes derecho a limitar el tratamiento de tus datos. Puedes ejercer estos derechos contactando al responsable del tratamiento en el Instituto de Sistemas Complejos-París Isla de Francia, ubicado en 113 rue Nationale 75013 París, o a través del formulario de contacto disponible en: <link>https://openportability.org/</link></p><p>También puedes contactar al Delegado de Protección de Datos (DPO) del CNRS en: CNRS - Servicio de Protección de Datos, 2 rue Jean Zay, 54519 Vandoeuvre-lès-Nancy - dpd.demandes@cnrs.fr.</p><p>Si consideras que no se están respetando tus derechos en materia de informática y libertades, puedes presentar una reclamación en línea ante la CNIL, 3 Place de Fontenoy, TSA 80715 – 75334 París Cedex 07 (<link>https://www.cnil.fr/</link>).</p>"
+    },
+    "refreshToken": {
+        "title": "Es necesario reconectar",
+        "description": "Para continuar usando nuestros servicios, por favor vuelve a conectar tus cuentas"
     }
 }

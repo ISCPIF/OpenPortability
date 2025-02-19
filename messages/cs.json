@@ -1,0 +1,245 @@
+{
+    "blueskyLogin": {
+        "form": {
+            "password": {
+                "help": "Vytvořit heslo aplikace",
+                "label": "Heslo Appky",
+                "placeholder": "••••••••"
+            },
+            "submit": "Přihlasit se",
+            "errors": {
+                "missingFields": "Vyplňte prosím všechna pole",
+                "default": "chyba"
+            },
+            "identifier": {
+                "placeholder": "username.bsky.social",
+                "label": "BlueSky Identifikace"
+            }
+        },
+        "title": "Připojení k BlueSky",
+        "description": "Připojit k BlueSky účetu abyste synchronizovali data a vychutnat si plnou skušenost.",
+        "tooltip": {
+            "info": "Vaše heslo nikdy neukládáme. Používáme pouze bezpečnostní ověřovací tokeny od BlueSky.",
+            "noAccount": "Už žadní Bluesky učet?",
+            "createAccount": "Založit tady"
+        }
+    },
+    "dashboardLoginButtons": {
+        "connectedDashboard": {
+            "twitter": "Připojit za Twitter/X",
+            "bluesky": "Připojit za Bluesky",
+            "mastodon": "Připojit za Mastodon"
+        },
+        "services": {
+            "bluesky": "BlueSky",
+            "twitter": "Twitter/X",
+            "mastodon": {
+                "title": "Mastodon",
+                "connect": "Připojit",
+                "error": {
+                    "special_chars": "Instance nemůže obsahovat speciální znaky",
+                    "required": "Jméno vašeho serveru je vyžadováno",
+                    "unreachable": "Instance je nedostupná. Prosím zkontrolujte URL a zkuste znovu.",
+                    "fetch_instances": "Chyba při stahování instancí.",
+                    "invalid_format": "Neplatný formát instance. Příklad: mastodon.social",
+                    "too_long": "Jméno instance je příliš dlouhé"
+                },
+                "instance": "Kde je váš účet hostován? (např. mastodon.social)"
+            }
+        },
+        "importTwitter": "Importovat můj Twitter/X archiv",
+        "addSocialNetwork": "Přidat další sociální síť"
+    },
+    "connectedAccounts": {
+        "connectedWith": "Jste spojeni s {services}. ",
+        "services": {
+            "twitter": "Twitter/X",
+            "bluesky": "BlueSky",
+            "mastodon": "Mastodon"
+        },
+        "and": "a"
+    },
+    "header": {
+        "logout": "odhlásit se",
+        "profile": {
+            "username": "@{username}"
+        },
+        "returnToFirstStep": "zpět k prvnímu kroku"
+    },
+    "consentModal": {
+        "title": "Potvrzení odeslání",
+        "buttons": {
+            "accept": "Souchlasit a pokračovat",
+            "cancel": "Zrušit"
+        },
+        "conditions": {
+            "cnrsUsage": "Souhlasíte, že poskytnutá data budou použita National Center for Scientific Research (CNRS) jako součást programu OpenPortability.",
+            "ownership": "Jste oprávněný vlastník těchto dat.",
+            "profileCreation": "Souhlasíte, že tato data budou použita pro vytvoření vašeho profilu na OpenPortability."
+        },
+        "description": "Nahráním svých Twitter/X souborů potvrzujete, že:"
+    },
+    "partageButton": {
+        "share": "Sdílet",
+        "shareOn": "Sdílet na {platform}"
+    },
+    "loginButtons": {
+        "bluesky": {
+            "connect": "Připojit s BlueSky"
+        },
+        "twitter": {
+            "continue": "Pokračovat s Twitter/X",
+            "notDeleted": "Mám Twitter/X účet"
+        },
+        "deleteAccount": "Můj Twitter/X účet jsem již zrušil/zrušila",
+        "mastodon": {
+            "connect": "Připojit s Mastodonem"
+        }
+    },
+    "migrationComplete": {
+        "error": {
+            "title": "Chyba migrace",
+            "retry": "Zkusit znovu",
+            "createAccount": "Vytvořit účet"
+        },
+        "success": {
+            "viewProfile": "Zobrazit profil",
+            "title": "Migrace dokončena!",
+            "description": "Váš účet byl úspěšně zmigrován na BlueSky pod účtem {handle}",
+            "displayName": "({name})"
+        }
+    },
+    "progressSteps": {
+        "import": {
+            "description": {
+                "withStats": "{following} sleduje, {followers} sledujících"
+            },
+            "title": "Nahrát můj X/Twitter archiv"
+        },
+        "dashboard": {
+            "title": "Vítejte na palubě"
+        },
+        "share": {
+            "title": "Sdílet s mojí komunitou"
+        }
+    },
+    "footer": {
+        "hosted": {
+            "text": "Tato platforma je otevřená a použitelná kýmkoli. Je součástí výzkumného programu {openPortability} na ISC-PIF (CNRS). Je hostována {cnrs}",
+            "cnrs": "CNRS/ISC-PIF",
+            "openPortability": "OpenPortability"
+        },
+        "copyright": " {year} OpenPortability. Všechna práva vyhrazena.",
+        "privacy": "Ochrana soukromí"
+    },
+    "successModal": {
+        "title": "Import byl úspěšný!",
+        "following": {
+            "username": "@{username}"
+        },
+        "followers": {
+            "username": "@{username}",
+            "title": "Sledujících ({count})"
+        },
+        "close": "Zavřit"
+    },
+    "uploadButton": {
+        "uploadInProgress": "Analyzujeme váš archiv, prosím čekejte...",
+        "error": {
+            "uploadFailed": "Nahrávání se několikrát nezdařilo. Prosím zkuste znovu."
+        },
+        "clickOrDrop": "Klikněte nebo přetáhněte archiv zde",
+        "dropHere": "Přetáhněte svůj soubor sem"
+    },
+    "uploadResults": {
+        "stats": {
+            "totalImported": {
+                "value": "{count} účtů zmapováno"
+            },
+            "twitterAccounts": {
+                "label": "Twitter/X učty",
+                "value": "{count}"
+            },
+            "readyTravelers": {
+                "label": "Připraven na cestu",
+                "value": "{count} účty připraveny"
+            }
+        },
+        "redirecting": "Přesměrovávám na přehled...",
+        "importSuccess": "Váš soubor je registroval {count} nové cestující!",
+        "inviteFriends": "Pozvěte své sledující, aby se k vám připojili!"
+    },
+    "signin": {
+        "subtitle": "Začněte spojit s Twitter / X a migrovat vaše data",
+        "logo": {
+            "alt": "Logo OpenPortability"
+        },
+        "loading": "Načítám informace…",
+        "logoCNRS": {
+            "alt": "CNRS, Francouzské národní centrum pro vědecký výzkum"
+        }
+    },
+    "dashboard": {
+        "newsletter": {
+            "emailLabel": "Vaše e-mailová adresa",
+            "emailPlaceholder": "email@example.com",
+            "acceptHQX": "Chci dostávat aktualizace z OpenPortability"
+        },
+        "addSocialNetwork": "Přidat sociální síť",
+        "shareModal": {
+            "title": "Sdílejte svou cestu",
+            "shareOn": "Sdílet na {platform}"
+        },
+        "importButton": "Importovat můj archiv Twitteru/X",
+        "loading": "Načítání vašich dat…",
+        "addSocialNetworkDescription": "Přidejte další sociální sítě pro lepší zážitek",
+        "migrationStep": {
+            "completed1": "Gratulujeme! První ze dvou kroků migrace byl úspěšně dokončen."
+        }
+    },
+    "largeFiles": {
+        "logo": {
+            "alt": "Logo OpenPortability"
+        },
+        "status": {
+            "completed": "Hotovo",
+            "title": "Stav",
+            "pending": "Čekající",
+            "processing": "Ve zpracování",
+            "failed": "Selhalo"
+        }
+    },
+    "upload": {
+        "errors": {
+            "noFiles": "Nejsou vybrány žádné soubory",
+            "fileSize": "Soubor přesahuje limit 1 GB"
+        },
+        "loading": {
+            "default": "Načítání…",
+            "uploading": "Zůstaňte prosím na stránce, váš import probíhá"
+        },
+        "loading-indic": "Načítání vašich dat…",
+        "loading-uploading": "Zůstaňte na stránce, import probíhá",
+        "logo": {
+            "alt": "Logo OpenPortability"
+        }
+    },
+    "dashboardSea": {
+        "logo": {
+            "alt": "Logo OpenPortability"
+        }
+    },
+    "profile": {
+        "providers": {
+            "twitter": "Twitter/X",
+            "bluesky": "Bluesky",
+            "mastodon": "Mastodon"
+        }
+    },
+    "settings": {
+        "deleteAccount": "Smazat můj účet",
+        "deleteConfirm": {
+            "title": "Smazat účet"
+        }
+    }
+}
