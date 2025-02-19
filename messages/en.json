@@ -177,9 +177,11 @@
     "redirecting": "Redirecting to dashboard..."
   },
   "signin": {
-    "title": "Ready to travel to new horizons?",
+    "title": "Ready to travel to new horizons ?",
     "subtitle": "Start by connecting with Twitter/X to migrate your data",
+    "embark": "Upload your archive to embark your community",
     "loading": "Loading information...",
+    "welcome": "Welcome",
     "logo": {
       "alt": "OpenPortability Logo"
     },
@@ -197,6 +199,7 @@
       "nextSteps": "Complete the following steps to sail to new horizons!"
     },
     "importButton": "Import my Twitter/X archive",
+    "no_archive_yet": "I don't have my archive yet",
     "shareModal": {
       "title": "Share your journey",
       "shareOn": "Share on {platform}",
@@ -411,6 +414,7 @@
     "selectAll": "Select all",
     "deselectAll": "Deselect all",
     "startMigration": "Start migration",
+    "needBothAccounts": "Start by linking your Bluesky and/or Mastodon accounts to reconnect with your contacts",
     "migrating": "Migrating..."
   },
   "ReconnexionOptions": {

@@ -33,9 +33,10 @@ interface StatsProps {
       };
     };
   } | null;
+  simpleView?: boolean;
 }
 
-export default function MigrateStats({ stats, session }: StatsProps) {
+export default function MigrateStats({ stats, session, simpleView = false }: StatsProps) {
   const t = useTranslations('migrateSea');
 
   console.log("stats from MigrateStats", stats)
@@ -56,46 +57,35 @@ export default function MigrateStats({ stats, session }: StatsProps) {
         {t('title')}
       </h1>
 
-      <div className="flex items-center justify-center gap-2">
-        <div className="flex flex-col items-center">
-          <div className="flex items-center gap-2">
-            <span className={`${plex.className} text-[80px] text-[#66D9E8] font-bold`}>
-              {totalToFollow}
-            </span>
-            <Image src={arrowGrowth} alt="" width={30} height={30} />
+      {!simpleView && (
+        <div className="flex items-center justify-center gap-2">
+          <div className="flex flex-col items-center">
+            <div className="flex items-center gap-2">
+              <span className={`${plex.className} text-[80px] text-[#66D9E8] font-bold`}>
+                {totalToFollow}
+              </span>
+              <Image src={arrowGrowth} alt="" width={30} height={30} />
+            </div>
+            <p className={`${plex.className} text-white text-center text-sm mt-2 max-w-[250px] whitespace-pre-line`}>
+              {t('stats.awaitingConnection')}
+            </p>
           </div>
-          <p className={`${plex.className} text-white text-center text-sm mt-2 max-w-[250px] whitespace-pre-line`}>
-            {t('stats.awaitingConnection')}
-          </p>
-        </div>
 
-        <Image src={chainon} alt="" width={100} height={100} className="mx-4" />
+          <Image src={chainon} alt="" width={100} height={100} className="mx-4" />
 
-        <div className="flex flex-col items-center">
-          <div className="flex items-center gap-2">
-            <span className={`${plex.className} text-[80px] text-[#6fce97] font-bold`}>
-              {totalFollowed}
-            </span>
-            <FaCheck className="text-[#6fce97] text-3xl" />
+          <div className="flex flex-col items-center">
+            <div className="flex items-center gap-2">
+              <span className={`${plex.className} text-[80px] text-[#6fce97] font-bold`}>
+                {totalFollowed}
+              </span>
+              <FaCheck className="text-[#6fce97] text-3xl" />
+            </div>
+            <p className={`${plex.className} text-white text-center text-sm mt-2 max-w-[250px] whitespace-pre-line`}>
+              {t('stats.alreadyTransferred')}
+            </p>
           </div>
-          <p className={`${plex.className} text-white text-center text-sm mt-2 max-w-[250px] whitespace-pre-line`}>
-            {t('stats.alreadyTransferred')}
-          </p>
         </div>
-      </div>
-
-      {/* <div className="flex justify-center gap-8 mt-8">
-        <div className="text-center">
-          <span className={`${plex.className} text-[#66D9E8] font-bold`}>
-            {t('matchDetails.bluesky', { count: stats.matches.bluesky.total })}
-          </span>
-        </div>
-        <div className="text-center">
-          <span className={`${plex.className} text-[#66D9E8] font-bold`}>
-            {t('matchDetails.mastodon', { count: stats.matches.mastodon.total })}
-          </span>
-        </div>
-      </div> */}
+      )}
     </div>
   );
 }

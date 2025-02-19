@@ -4,17 +4,20 @@ import { useState, useEffect, Suspense } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter, redirect } from 'next/navigation'
 import { useTranslations } from 'next-intl'
+import { motion } from 'framer-motion';
 import dynamic from 'next/dynamic'
+import { Upload } from 'lucide-react';
+
 import { plex } from '@/app/fonts/plex'
 import Header from '@/app/_components/Header'
 import LoadingIndicator from '@/app/_components/LoadingIndicator'
 import Footer from '@/app/_components/Footer'
-import { MatchingTarget, MatchingStats } from '@/lib/types/matching'
 import { UserCompleteStats, GlobalStats } from '@/lib/types/stats'
 import { time } from 'console'
 import Link from 'next/link'
 import DashboardLoginButtons from '@/app/_components/DashboardLoginButtons'
 import StatsReconnexion from '@/app/_components/StatsReconnexion'
+import { MatchingTarget, MatchedFollower, MatchingStats } from '@/lib/types/matching'
 
 // Dynamic imports for heavy components
 const MigrateSea = dynamic(() => import('@/app/_components/MigrateSea'), {
@@ -60,6 +63,8 @@ const ManualReconnexion = dynamic(() => import('@/app/_components/ManualReconnex
 //   };
 // };
 
+type AccountToFollow = MatchingTarget | MatchedFollower;
+
 export default function MigratePage() {
   const { data: session, status } = useSession()
   const router = useRouter()
@@ -71,7 +76,7 @@ export default function MigratePage() {
   const [showOptions, setShowOptions] = useState(true)
   const [isAutomaticReconnect, setIsAutomaticReconnect] = useState(false)
   const [invalidTokenProviders, setInvalidTokenProviders] = useState<string[]>([])
-  const [accountsToProcess, setAccountsToProcess] = useState<MatchingTarget[]>([])
+  const [accountsToProcess, setAccountsToProcess] = useState<AccountToFollow[]>([])
   const [selectedAccounts, setSelectedAccounts] = useState<Set<string>>(new Set())
   const [activeTab, setActiveTab] = useState<'mastodon' | 'bluesky'>('bluesky')
   const [stats, setStats] = useState<UserCompleteStats | null>(null)
@@ -108,7 +113,7 @@ export default function MigratePage() {
   useEffect(() => {
 
     console.log("USE EFFECT")
-    if (!session?.user?.id || !session.user?.has_onboarded || (!session.user.mastodon_id && !session.user.bluesky_id)) {
+    if (!session?.user?.id) {
       // redirect (`/dashboard`)
       return 
     }
@@ -145,29 +150,39 @@ export default function MigratePage() {
       
       const matches = matchesData.matches.following
       
-      // Store the full matches data for migration
-      setAccountsToProcess(matches)
+       setAccountsToProcess(matches)
       
       // Use reduce for better performance with large datasets
       const stats = matches.reduce((acc, match) => {
+        const hasBluesky = match.bluesky_handle !== null && match.bluesky_handle !== undefined;
+        const hasMastodon = match.mastodon_username !== null && match.mastodon_username !== undefined;
+        const isMatchedFollower = 'source_twitter_id' in match;
+
+        const hasFollowedBluesky = isMatchedFollower 
+          ? match.has_been_followed_on_bluesky 
+          : match.has_follow_bluesky;
+        const hasFollowedMastodon = isMatchedFollower 
+          ? match.has_been_followed_on_mastodon 
+          : match.has_follow_mastodon;
+
         return {
           connections: {
             followers: 0, // This will be updated from the global stats
-            following: acc.connections.following + (match.bluesky_handle || match.mastodon_username ? 1 : 0)
+            following: acc.connections.following + (hasBluesky || hasMastodon ? 1 : 0)
           },
           matches: {
             bluesky: {
-              total: acc.matches.bluesky.total + (match.bluesky_handle ? 1 : 0),
-              hasFollowed: acc.matches.bluesky.hasFollowed + (match.has_follow_bluesky ? 1 : 0),
-              notFollowed: acc.matches.bluesky.notFollowed + (match.bluesky_handle && !match.has_follow_bluesky ? 1 : 0)
+              total: acc.matches.bluesky.total + (hasBluesky ? 1 : 0),
+              hasFollowed: acc.matches.bluesky.hasFollowed + (hasBluesky && hasFollowedBluesky ? 1 : 0),
+              notFollowed: acc.matches.bluesky.notFollowed + (hasBluesky && !hasFollowedBluesky ? 1 : 0)
             },
             mastodon: {
-              total: acc.matches.mastodon.total + (match.mastodon_username ? 1 : 0),
-              hasFollowed: acc.matches.mastodon.hasFollowed + (match.has_follow_mastodon ? 1 : 0),
-              notFollowed: acc.matches.mastodon.notFollowed + (match.mastodon_username && !match.has_follow_mastodon ? 1 : 0)
+              total: acc.matches.mastodon.total + (hasMastodon ? 1 : 0),
+              hasFollowed: acc.matches.mastodon.hasFollowed + (hasMastodon && hasFollowedMastodon ? 1 : 0),
+              notFollowed: acc.matches.mastodon.notFollowed + (hasMastodon && !hasFollowedMastodon ? 1 : 0)
             }
           }
-        };
+        }
       }, {
         connections: {
           followers: 0,
@@ -313,30 +328,59 @@ export default function MigratePage() {
       setIsMigrating(true);
       console.log('Starting migration for accounts:', selectedAccounts);
 
-      // Get all selected accounts
-      const accountsToMigrate = accountsToProcess.filter(match => 
-        selectedAccounts.includes(match.target_twitter_id)
-      );
+      // Get all selected accounts and handle both types
+      const accountsToMigrate = accountsToProcess.filter(match => {
+        const twitterId = 'target_twitter_id' in match 
+          ? match.target_twitter_id 
+          : match.source_twitter_id;
+        return selectedAccounts.includes(twitterId);
+      });
 
       // Initialize progress tracking with total matches
       const initialResults = {
         bluesky: {
-          attempted: accountsToMigrate.filter(acc => !acc.has_follow_bluesky).length,
-          succeeded: accountsToMigrate.filter(acc => acc.has_follow_bluesky).length
+          attempted: accountsToMigrate.filter(acc => {
+            const hasFollowed = 'has_follow_bluesky' in acc 
+              ? acc.has_follow_bluesky 
+              : acc.has_been_followed_on_bluesky;
+            return !hasFollowed;
+          }).length,
+          succeeded: accountsToMigrate.filter(acc => {
+            const hasFollowed = 'has_follow_bluesky' in acc 
+              ? acc.has_follow_bluesky 
+              : acc.has_been_followed_on_bluesky;
+            return hasFollowed;
+          }).length
         },
         mastodon: {
-          attempted: accountsToMigrate.filter(acc => !acc.has_follow_mastodon).length,
-          succeeded: accountsToMigrate.filter(acc => acc.has_follow_mastodon).length
+          attempted: accountsToMigrate.filter(acc => {
+            const hasFollowed = 'has_follow_mastodon' in acc 
+              ? acc.has_follow_mastodon 
+              : acc.has_been_followed_on_mastodon;
+            return !hasFollowed;
+          }).length,
+          succeeded: accountsToMigrate.filter(acc => {
+            const hasFollowed = 'has_follow_mastodon' in acc 
+              ? acc.has_follow_mastodon 
+              : acc.has_been_followed_on_mastodon;
+            return hasFollowed;
+          }).length
         }
       };
       setMigrationResults(initialResults);
 
       // Process in batches, excluding already followed accounts
       const BATCH_SIZE = 25;
-      let remainingAccounts = accountsToMigrate.filter(acc => 
-        (!acc.has_follow_bluesky && session?.user?.bluesky_username) || 
-        (!acc.has_follow_mastodon && session?.user?.mastodon_username)
-      );
+      let remainingAccounts = accountsToMigrate.filter(acc => {
+        const hasFollowedBluesky = 'has_follow_bluesky' in acc 
+          ? acc.has_follow_bluesky 
+          : acc.has_been_followed_on_bluesky;
+        const hasFollowedMastodon = 'has_follow_mastodon' in acc 
+          ? acc.has_follow_mastodon 
+          : acc.has_been_followed_on_mastodon;
+        return (!hasFollowedBluesky && session?.user?.bluesky_username) || 
+               (!hasFollowedMastodon && session?.user?.mastodon_username);
+      });
 
       for (let i = 0; i < remainingAccounts.length; i += BATCH_SIZE) {
         const batchAccounts = remainingAccounts.slice(i, i + BATCH_SIZE);
@@ -393,14 +437,9 @@ export default function MigratePage() {
         console.error('Error updating user stats:', error);
       }
 
-      // Migration completed
-      // if (isAutomaticReconnect) {
-        setIsReconnectionComplete(true);
-      // }
+      setIsReconnectionComplete(true);
       setIsMigrating(false);
       
-      // Refresh the session to update follow status
-      // await updateSession();
     } catch (error) {
       console.error('Error during migration:', error);
       setIsMigrating(false);
@@ -424,6 +463,9 @@ export default function MigratePage() {
     }
   }
 
+  console.log("stats -->", stats)
+  console.log("session from /reconnect -->", session)
+
   return (
     <main className="min-h-screen bg-[#2a39a9]">
       <div className="w-full max-w-[90rem] m-auto">
@@ -445,11 +487,32 @@ export default function MigratePage() {
                     mastodon_username: session?.user?.mastodon_username ?? ""
                   }
                 }}
+                simpleView={!session?.user?.bluesky_username && !session?.user?.mastodon_username}                
               />
             </Suspense>
+
+            {!session?.user?.bluesky_username && !session?.user?.mastodon_username && (
+              <div className="bg-[#2a39a9] rounded-xl px-32 ">
+                <h2 className="text-2xl font-bold mb-4 text-white text-center uppercase tracking-wider mb-4">{t('needBothAccounts')}</h2>
+                {/* <p className="text-blue-100 mb-6">{t('connectBothAccountsDescription')}</p> */}
+                
+                <DashboardLoginButtons
+                  connectedServices={{
+                    bluesky: !!session?.user?.bluesky_username,
+                    mastodon: !!session?.user?.mastodon_username,
+                    twitter: true
+                  }}
+                  hasUploadedArchive={true}
+                  onLoadingChange={setIsLoading}
+                  mastodonInstances={mastodonInstances}
+                  isRefreshToken={false}
+                  blueskyNotFollowed={stats?.matches.bluesky.notFollowed ?? 0}
+                  mastodonNotFollowed={stats?.matches.mastodon.notFollowed ?? 0}
+                />
+              </div>
+            )}
           </div>
 
-          
           <div className="bg-[#2a39a9] mt-4">
             {missingProviders.length > 0 ? (
               <div className="bg-[#2a39a9] rounded-xl p-8 max-w-md mx-auto border border-white">
@@ -465,67 +528,95 @@ export default function MigratePage() {
                   hasUploadedArchive={true}
                   onLoadingChange={setIsLoading}
                   mastodonInstances={mastodonInstances}
+                  isRefreshToken={true}
+                  blueskyNotFollowed={stats?.matches.bluesky.notFollowed ?? 0}
+                  mastodonNotFollowed={stats?.matches.mastodon.notFollowed ?? 0}
                 />
               </div>
             ) : (
               <Suspense fallback={<LoadingIndicator msg="Loading..." />}>
-                {isReconnectionComplete && session && stats ? (
-                    <SuccessAutomaticReconnexion
-                      session={{
-                        user: {
-                          twitter_username: session.user?.twitter_username || session.user?.bluesky_username || session.user?.mastodon_username || '',
-                          bluesky_username: session.user.bluesky_username ?? "",
-                          mastodon_username: session.user.mastodon_username ?? ""
-                        }
-                      }}
-                      stats={stats}
-                      onSuccess={refreshStats}
-                    />
-                      ) : isAutomaticReconnect ? (
-                        <AutomaticReconnexion
-                  results={migrationResults || { bluesky: { attempted: 0, succeeded: 0 }, mastodon: { attempted: 0, succeeded: 0 } }}
-                  onPause={toggleAutomaticReconnect}
-                  session={{
-                    user: {
-                      bluesky_username: session?.user?.bluesky_username ?? null,
-                      mastodon_username: session?.user?.mastodon_username ?? null
-                    }
-                  }}
-                  stats={{
-                    bluesky_matches: stats?.matches.bluesky.total ?? 0,
-                    mastodon_matches: stats?.matches.mastodon.total ?? 0,
-                    matched_following: stats?.connections.following ?? 0
-                  }}
-                />
-              ) : showOptions ? (
-                
-                <ReconnexionOptions
-                  onAutomatic={handleAutomaticReconnection}
-                  onManual={handleManualReconnection}
-                  globalStats={globalStats}
-                        />
-                      ) : (
-                        <ManualReconnexion
-                  matches={accountsToProcess}
-                  onStartMigration={handleStartMigration}
-                  onToggleAutomaticReconnect={handleAutomaticReconnection}
-                  session={{
-                    user: {
-                      bluesky_username: session?.user?.bluesky_username ?? null,
-                      mastodon_username: session?.user?.mastodon_username ?? null
-                    }
-                  }}
-                        />
-                      )}
+                {!(session?.user?.bluesky_username && session?.user?.mastodon_username) && (
+                  <div>
+                    {isReconnectionComplete && session && stats ? (
+                      <SuccessAutomaticReconnexion
+                        session={{
+                          user: {
+                            twitter_username: session.user?.twitter_username || session.user?.bluesky_username || session.user?.mastodon_username || '',
+                            bluesky_username: session.user.bluesky_username ?? "",
+                            mastodon_username: session.user.mastodon_username ?? ""
+                          }
+                        }}
+                        stats={stats}
+                        onSuccess={refreshStats}
+                      />
+                    ) : isAutomaticReconnect ? (
+                      <AutomaticReconnexion
+                        results={migrationResults || { bluesky: { attempted: 0, succeeded: 0 }, mastodon: { attempted: 0, succeeded: 0 } }}
+                        onPause={toggleAutomaticReconnect}
+                        session={{
+                          user: {
+                            bluesky_username: session?.user?.bluesky_username ?? null,
+                            mastodon_username: session?.user?.mastodon_username ?? null
+                          }
+                        }}
+                        stats={{
+                          bluesky_matches: stats?.matches.bluesky.total ?? 0,
+                          mastodon_matches: stats?.matches.mastodon.total ?? 0,
+                          matched_following: stats?.connections.following ?? 0
+                        }}
+                      />
+                    ) : showOptions && (session?.user?.bluesky_username || session?.user?.mastodon_username) ? (
+                      <ReconnexionOptions
+                        onAutomatic={handleAutomaticReconnection}
+                        onManual={handleManualReconnection}
+                        globalStats={globalStats}
+                        has_onboarded={session?.user?.has_onboarded}
+                      />
+                    ) : (session?.user?.bluesky_username || session?.user?.mastodon_username) && (
+                      <ManualReconnexion
+                        matches={accountsToProcess}
+                        onStartMigration={handleStartMigration}
+                        onToggleAutomaticReconnect={handleAutomaticReconnection}
+                        session={{
+                          user: {
+                            bluesky_username: session?.user?.bluesky_username ?? null,
+                            mastodon_username: session?.user?.mastodon_username ?? null
+                          }
+                        }}
+                      />
+                    )}
+                  </div>
+                )}
               </Suspense>
             )}
-            <div className="w-full flex justify-center mb-12">
-              <div className="max-w-[50rem] w-full">
-                <StatsReconnexion globalStats={globalStats} />
-              </div>
+          </div>
+          <div className="w-full flex justify-center mb-12">
+            <div className="max-w-[50rem] w-full">
+              <StatsReconnexion globalStats={globalStats} />
             </div>
           </div>
 
+          {!session?.user?.bluesky_username || !session?.user?.mastodon_username && (
+            <div className="flex items-center justify-center w-full mb-12">
+              <div className="bg-[#2a39a9] rounded-xl flex gap-2">
+                <div className="flex max-w-[50rem]">
+                  <DashboardLoginButtons
+                    connectedServices={{
+                      bluesky: !!session?.user?.bluesky_username,
+                      mastodon: !!session?.user?.mastodon_username,
+                      twitter: true
+                    }}
+                    hasUploadedArchive={true}
+                    onLoadingChange={setIsLoading}
+                    mastodonInstances={mastodonInstances}
+                    isRefreshToken={false}
+                    blueskyNotFollowed={stats?.matches.bluesky.notFollowed ?? 0}
+                    mastodonNotFollowed={stats?.matches.mastodon.notFollowed ?? 0}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
           <Footer />
         </div>
       </div>

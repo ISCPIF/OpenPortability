@@ -241,7 +241,8 @@
             "title": "Explicación paso a paso en nuestro tutorial",
             "description": "Descubra como migrar fácilmente de Twitter/X a Mastodon y Bluesky",
             "watchVideo": "Mire el vídeo"
-        }
+        },
+        "no_archive_yet": "Aún no tengo mi archivo"
     },
     "profile": {
         "errors": {
@@ -262,6 +263,8 @@
         "loading": "Cargando información...",
         "title": "¿Listo/a para viajar a nuevos horizontes?",
         "subtitle": "Comience por conectarse a Twitter/X para migrar sus datos",
+        "embark": "Sube tu archivo para embarcar a tu comunidad",
+        "welcome": "Bienvenido/a",
         "logo": {
             "alt": "OpenPortability Logo"
         },
@@ -552,7 +555,9 @@
         "selectAll": "Seleccionar todo",
         "deselectAll": "Deseleccionar todo",
         "startMigration": "Iniciar migración",
-        "migrating": "Migrando..."
+        "migrating": "Migrando...",
+        "needBothAccounts": "Comience vinculando sus cuentas de Bluesky y/o Mastodon para reconectarse con sus contactos"
+
     },
     "AccountToMigrate": {
         "followOnBluesky": "Seguir en Bluesky",

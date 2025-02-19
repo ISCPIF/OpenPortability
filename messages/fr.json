@@ -71,7 +71,13 @@
             "too_long": "Le nom d'instance est trop long"
           }
         },
-        "bluesky": "BlueSky"
+        "bluesky": "BlueSky",
+        "connect": "Connectez-vous pour commencer",
+        "connect_bluesky_before": "Nous avons trouvé",
+        "connect_bluesky_after": "comptes à suivre sur Bluesky, connectez-vous pour récupérer vos abonnements",
+        "connect_mastodon_before": "Nous avons trouvé",
+        "connect_mastodon_after": "comptes à suivre sur Mastodon, connectez-vous pour récupérer vos abonnements",
+        "refresh": "Reconnectez-vous"
       },
       "connectedDashboard" : {
         "twitter" : "J'associe mon compte Twitter/X",
@@ -165,7 +171,9 @@
   "signin": {
     "title": "Prêt à migrer vers de nouveaux horizons ?",
     "subtitle": "Commencez par vous connecter avec Twitter/X pour migrer vos données",
+    "embark" : "Uploadez votre archive pour embarquer votre communauté",
     "loading": "Chargement des informations…",
+    "welcome": "Bienvenue",
     "logo": {
       "alt": "OpenPortability Logo"
     },
@@ -183,6 +191,7 @@
       "nextSteps": "Effectuez les étapes suivantes pour voguer vers de nouveaux horizons !"
     },
     "importButton": "Importer mon archive Twitter/X",
+    "no_archive_yet": "Je n'ai pas encore mon archive",
     "shareModal": {
       "title": "Partager votre voyage",
       "shareOn": "Partager sur {platform}",
@@ -409,11 +418,14 @@
     "migrationComplete": "Migration terminée !",
     "migrationProgress": "{current} comptes migrés sur {total}",
     "migrationCompleteStats": "{count} comptes migrés avec succès",
+    "needBothAccounts": "Commencez par associer vos comptes Bluesky et/ou mastodon pour vous reconnecter a vos contacts",
     "minimize": "Réduire",
     "close": "Fermer"
   },
   "ReconnexionOptions": {
     "title": "Choisissez comment vous souhaitez vous reconnecter à vos abonnements",
+    "not_onboarded_title": "Vous n'avez pas complete tous les objectifs de votre migration de Twitter/X ?",
+    "not_onboarded_description": "Pas de probleme nous avons trouvé des connexions pour vous d'apres vos associations de compte. Pour plus de comptes a associer et un meilluer ciblage, nous vous conseillons quand meme d'importer votre archive de donnees Twitter/X",
     "buttons": {
       "automatic": "RECONNECTEZ-MOI AUTOMATIQUEMENT",
       "manual": "JE CHOISIS LES COMPTES À RECONNECTER"
