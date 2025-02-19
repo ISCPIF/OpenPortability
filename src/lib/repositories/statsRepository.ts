@@ -53,10 +53,18 @@ export class StatsRepository {
         return response;
     }
 
-    async getUserCompleteStats(userId: string): Promise<UserCompleteStats> {
-      const { data, error } = await supabase
-        .rpc('get_user_complete_stats', { p_user_id: userId })
-        .single();
+    async getUserCompleteStats(userId: string, has_onboard: boolean): Promise<UserCompleteStats> {
+      let data, error;
+
+      if (!has_onboard) {
+        ({ data, error } = await supabase
+          .rpc('get_user_complete_stats_from_sources', { p_user_id: userId })
+          .single());
+      } else {
+        ({ data, error } = await supabase
+          .rpc('get_user_complete_stats', { p_user_id: userId })
+          .single());
+      }
 
       if (error) {
         console.error('Error in getUserCompleteStats:', error);
@@ -79,10 +87,20 @@ export class StatsRepository {
       return data;
     }
 
-    async refreshUserStatsCache(userId: string): Promise<void> {
-      const { error } = await supabase.rpc('refresh_user_stats_cache', {
-        p_user_id: userId
-      });
+    async refreshUserStatsCache(userId: string, has_onboard: boolean): Promise<void> {
+      let error;
+
+      if (!has_onboard) {
+        ({ error } = await supabase
+          .rpc('get_user_complete_stats_from_sources', { 
+            p_user_id: userId.toString() 
+          })
+          .single());
+      } else {
+        ({ error } = await supabase.rpc('refresh_user_stats_cache', {
+          p_user_id: userId
+        }));
+      }
       
       if (error) {
         console.error('Error refreshing user stats cache:', error);
