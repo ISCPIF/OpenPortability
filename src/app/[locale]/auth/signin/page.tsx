@@ -66,7 +66,7 @@ export default function SignIn() {
   }
 
   return (
-    <div className="min-h-screen bg-[#2a39a9] relative w-full max-w-[90rem] m-auto">
+    <div className="min-h-screen bg-[#2a39a9] relative w-full h-full max-w-[90%] m-auto">
       <Header />
       <div className="container mx-auto py-12">
         <div className="container flex flex-col m-auto text-center text-[#E2E4DF]">
@@ -78,8 +78,8 @@ export default function SignIn() {
                 <LoadingIndicator msg={t('loading')} />
               </>
             ) : (
-              <div className="relative z-10">
-                <div className="my-40 lg:my-28 mx-40" />
+              <div className=" z-10">
+                <div className="my-40  mx-40" />
                 <LoginButtons onLoadingChange={handleLoadingChange} />
               </div>
             )}
