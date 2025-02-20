@@ -91,9 +91,9 @@ export default function MigrateSea({ stats }: SeaProps) {
   };
 
   return (
-    <div className="absolute top-0 left-0 w-full bg-[#2a39a9]">
-      <div className="relative h-[23rem] bg-[#2a39a9]">
-        <Image src={seaBackground} fill alt="" className="object-cover" />
+    <div className="absolute top-0 left-0 w-full h-[23rem]">
+      <Image src={seaBackground} fill alt="" className="object-cover"></Image>
+      <div className="relative z-[5] pt-12">
         <div className="relative z-[5] ">
           <Image
             src={logo}
@@ -106,7 +106,7 @@ export default function MigrateSea({ stats }: SeaProps) {
             <Boats />
           </div>
         </div>
-        {stats && <MigrateStats stats={stats} />}
+        {/* {stats && <MigrateStats stats={stats} />} */}
       </div>
     </div>
   );

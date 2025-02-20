@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, memo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, ChevronDown } from 'lucide-react'
 import { useTranslations } from 'next-intl'
@@ -13,11 +13,25 @@ import { isValidEmail } from '@/lib/utils'
 import { Switch } from '@headlessui/react'
 import Link from 'next/link'
 
+
 interface NewsLetterFirstSeenProps {
   userId: string
   onSubscribe?: () => void
   onClose?: () => void
 }
+
+const NewsletterLink = memo(({ href, children }: { href: string; children: React.ReactNode }) => (
+  <a 
+    href={href}
+    target="_blank"
+    rel="noopener noreferrer"
+    className="text-[#46489B] font-bold hover:underline"
+  >
+    {children}
+  </a>
+));
+
+NewsletterLink.displayName = 'NewsletterLink';
 
 export default function NewsLetterFirstSeen({ userId, onSubscribe, onClose }: NewsLetterFirstSeenProps) {
   const [isLoading, setIsLoading] = useState(false)
@@ -143,7 +157,7 @@ export default function NewsLetterFirstSeen({ userId, onSubscribe, onClose }: Ne
 
 
   return (
-    <div className="bg-white rounded-2xl p-8 max-w-2xl w-full relative max-h-[90vh] overflow-y-auto">
+    <div className="bg-white rounded-2xl p-4 max-w-2xl w-full relative max-h-[90vh] overflow-y-auto">
       <div className="absolute top-4 right-4 flex items-center gap-2">
         {/* Language Selector */}
         <div className="relative mr-6">
@@ -280,7 +294,16 @@ export default function NewsLetterFirstSeen({ userId, onSubscribe, onClose }: Ne
                 />
               </Switch>
               <span className="text-sm text-gray-700">
-              {t('newsletter.consent')}
+                {t.raw('newsletter.consent').split(/\{(link_oep)\}/).map((part, index) => {
+                  if (part === 'link_oep') {
+                    return (
+                      <NewsletterLink key="oep" href="https://onestpret.com">
+                        On est Prêt
+                      </NewsletterLink>
+                    );
+                  }
+                  return <span key={index}>{part}</span>;
+                })}
               </span>
             </div>
 

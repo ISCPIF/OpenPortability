@@ -26,7 +26,7 @@ export default function LoginSea() {
   console.log("Session -->", session)
 
   return (
-    <div className="absolute top-0 left-0 w-full h-[35rem]">
+    <div className="absolute top-0 left-0 w-full">
       <Image src={seaBackground} fill alt="" className="object-cover"></Image>
       <Image
         src={logo}
@@ -39,7 +39,12 @@ export default function LoginSea() {
         <h1 className={`${plex.className} text-2xl lg:text-3xl`}>{t('title')}</h1>
         {!session?.user.has_onboarded && (
           <p className={`${plex.className} text-lg lg:text-xl my-8 lg:my-10 p-4`}>
-            {isSigninPage ? t('subtitle') : t('embark')}
+            {isSigninPage 
+              ? t('subtitle') 
+              : session?.user?.twitter_id 
+                ? t('embark')
+                : t('embarkOrLogin')
+            }
           </p>
         )}
         {isDashboardPage && session?.user && !session.user.has_onboarded && (

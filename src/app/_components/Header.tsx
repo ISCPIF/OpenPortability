@@ -43,7 +43,7 @@ const Header = () => {
       <div className="relative">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
-            {/* Return to first step button - only shown on reconnect page */}
+            {/* Return to first step button - only shown on reconnect page
             {pathname.includes('/reconnect') && (
               <Link 
                 href="/dashboard" 
@@ -52,7 +52,7 @@ const Header = () => {
                 <span>←</span>
                 <span>{t('returnToFirstStep')}</span>
               </Link>
-            )}
+            )} */}
 
             <div className="flex items-center ml-auto">
               {/* Language Selector */}

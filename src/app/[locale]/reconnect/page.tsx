@@ -44,25 +44,6 @@ const ManualReconnexion = dynamic(() => import('@/app/_components/ManualReconnex
   loading: () => <div className="flex justify-center"><LoadingIndicator msg="Manual" /></div>
 })
 
-// type GlobalStats = {
-//   connections: {
-//     followers: number;
-//     following: number;
-//   };
-//   matches: {
-//     bluesky: {
-//       total: number;
-//       hasFollowed: number;
-//       notFollowed: number;
-//     };
-//     mastodon: {
-//       total: number;
-//       hasFollowed: number;
-//       notFollowed: number;
-//     };
-//   };
-// };
-
 type AccountToFollow = MatchingTarget | MatchedFollower;
 
 export default function MigratePage() {
@@ -87,7 +68,6 @@ export default function MigratePage() {
   const [isReconnectionComplete, setIsReconnectionComplete] = useState(false)
   const [mastodonInstances, setMastodonInstances] = useState<string[]>([])
 
-  // Ajout d'un useEffect pour vérifier les tokens au chargement
   useEffect(() => {
     const verifyTokens = async () => {
       try {
@@ -106,114 +86,6 @@ export default function MigratePage() {
         console.error('Error verifying tokens:', error)
       }
     }
-
-    verifyTokens()
-  }, []) // Ce useEffect s'exécute une seule fois au chargement
-
-  useEffect(() => {
-
-    console.log("USE EFFECT")
-    if (!session?.user?.id) {
-      // redirect (`/dashboard`)
-      return 
-    }
-
-    const checkUserProfile = async () => {
-      setUserProfile(session.user)
-
-      // Parallel API calls
-
-      console.log("CHECKING USER PROFILE")
-      const [matchesResponse, statsResponse] = await Promise.all([
-        // checkTokens(),
-        fetch('/api/migrate/matching_found', {
-          headers: {
-            'Cache-Control': 'no-cache'
-          }
-        }),
-        fetch('/api/stats/total', {
-          headers: {
-            'Cache-Control': 'no-cache'
-          }
-        })
-      ])
-
-      const matchesData = await matchesResponse.json()
-      const statsData: GlobalStats = await statsResponse.json()
-      console.log("****************************************",matchesData)
-      
-      if (matchesData.error) {
-        console.error("Error fetching matches:", matchesData.error)
-        setIsLoading(false)
-        return
-      }
-      
-      const matches = matchesData.matches.following
-      
-       setAccountsToProcess(matches)
-      
-      // Use reduce for better performance with large datasets
-      const stats = matches.reduce((acc, match) => {
-        const hasBluesky = match.bluesky_handle !== null && match.bluesky_handle !== undefined;
-        const hasMastodon = match.mastodon_username !== null && match.mastodon_username !== undefined;
-        const isMatchedFollower = 'source_twitter_id' in match;
-
-        const hasFollowedBluesky = isMatchedFollower 
-          ? match.has_been_followed_on_bluesky 
-          : match.has_follow_bluesky;
-        const hasFollowedMastodon = isMatchedFollower 
-          ? match.has_been_followed_on_mastodon 
-          : match.has_follow_mastodon;
-
-        return {
-          connections: {
-            followers: 0, // This will be updated from the global stats
-            following: acc.connections.following + (hasBluesky || hasMastodon ? 1 : 0)
-          },
-          matches: {
-            bluesky: {
-              total: acc.matches.bluesky.total + (hasBluesky ? 1 : 0),
-              hasFollowed: acc.matches.bluesky.hasFollowed + (hasBluesky && hasFollowedBluesky ? 1 : 0),
-              notFollowed: acc.matches.bluesky.notFollowed + (hasBluesky && !hasFollowedBluesky ? 1 : 0)
-            },
-            mastodon: {
-              total: acc.matches.mastodon.total + (hasMastodon ? 1 : 0),
-              hasFollowed: acc.matches.mastodon.hasFollowed + (hasMastodon && hasFollowedMastodon ? 1 : 0),
-              notFollowed: acc.matches.mastodon.notFollowed + (hasMastodon && !hasFollowedMastodon ? 1 : 0)
-            }
-          }
-        }
-      }, {
-        connections: {
-          followers: 0,
-          following: 0
-        },
-        matches: {
-          bluesky: {
-            total: 0,
-            hasFollowed: 0,
-            notFollowed: 0
-          },
-          mastodon: {
-            total: 0,
-            hasFollowed: 0,
-            notFollowed: 0
-          }
-        }
-      });
-
-      setStats(stats)
-      setGlobalStats(statsData)
-      console.log("****************************************",stats)
-      setIsLoading(false)
-    }
-
-    checkUserProfile()
-
-    console.log("session from /migrate", session)
-  }, [session?.user?.id, session?.user?.has_onboarded])
-
-  useEffect(() => {
     const fetchMastodonInstances = async () => {
       try {
         const response = await fetch('/api/auth/mastodon')
@@ -225,36 +97,79 @@ export default function MigratePage() {
         console.error('Error fetching Mastodon instances:', error)
       }
     }
+    const fetchMatches = async () => {
+      try {
+        const matchesResponse = await fetch('/api/migrate/matching_found', {
+          headers: {
+            'Cache-Control': 'no-cache'
+          }
+        });
 
-    fetchMastodonInstances()
-  }, [])
+        const matchesData = await matchesResponse.json();
+        setAccountsToProcess(matchesData.matches.following);
 
-  const checkTokens = async () => {
-    try {
-      const response = await fetch('/api/auth/refresh', {
-        method: 'POST',
-        headers: {
-          'Cache-Control': 'no-cache'
+        console.log(matchesData.matches.following)
+        if (matchesData.error) {
+          console.error("Error fetching matches:", matchesData.error);
+          return;
         }
-      })
-      const data = await response.json()
-
-      if (!data.success) {
-        setInvalidTokenProviders(data.providers || [])
-        return false
+      } catch (error) {
+        console.error("Error in fetchMatches:", error);
       }
+    };
+    const checkUserProfile = async () => {
+      setUserProfile(session.user)
 
-      return true
-    } catch (error) {
-      console.error('Error checking tokens:', error)
-      return false
+      // Parallel API calls
+      console.log("CHECKING USER PROFILE")
+      const [userStatsResponse, globalStatsResponse] = await Promise.all([
+        fetch('/api/stats', {
+          headers: {
+            'Cache-Control': 'no-cache'
+          }
+        }),
+        fetch('/api/stats/total', {
+          headers: {
+            'Cache-Control': 'no-cache'
+          }
+        })
+      ])
+
+      const userStats = await userStatsResponse.json()
+      const globalStats: GlobalStats = await globalStatsResponse.json()
+      
+      if (userStats.error) {
+        console.error("Error fetching user stats:", userStats.error)
+        // setIsLoading(false)
+        return
+      }
+      
+      setStats(userStats)
+      setGlobalStats(globalStats)
+      // setIsLoading(false)
     }
-  }
+
+    verifyTokens()
+    checkUserProfile()
+    if (session.user.has_onboarded || session.user.twitter_id) {
+      console.log("Fetching matches")
+      fetchMatches();
+    }
+    if (missingProviders.length > 0 || !session.user.mastodon_username) {
+      console.log("Fetching mastodon instances")
+      fetchMastodonInstances()
+    }
+    setIsLoading(false)
+  }, []) // Ce useEffect s'exécute une seule fois au chargement
+
+  
+
+  
 
 
   if (isLoading) {
     return (
-      <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center">
+      <div className="fixed inset-0 bg-[#2a39a9] backdrop-blur-sm z-50 flex items-center justify-center">
         <LoadingIndicator msg={t('loading')} />
       </div>
     )
@@ -270,18 +185,6 @@ export default function MigratePage() {
   const handleManualMode = async () => {
     setIsAutomaticReconnect(false)
     await updateAutomaticReconnect(false)
-  }
-
-  const handleToggleAccount = (twitterId: string) => {
-    setSelectedAccounts(prev => {
-      const newSet = new Set(prev)
-      if (newSet.has(twitterId)) {
-        newSet.delete(twitterId)
-      } else {
-        newSet.add(twitterId)
-      }
-      return newSet
-    })
   }
 
   const updateAutomaticReconnect = async (value: boolean) => {
@@ -463,14 +366,10 @@ export default function MigratePage() {
     }
   }
 
-  console.log("stats -->", stats)
-  console.log("session from /reconnect -->", session)
-  console.log("showOptions --->", showOptions)
-
   return (
     <main className="min-h-screen bg-[#2a39a9]">
-      <div className="w-full max-w-[90rem] m-auto">
-        <div className="bg-[#2a39a9]">
+      <div className=" max-w-[90%] m-auto">
+        <div className="">
           <Header />
           
           <Suspense fallback={<div className="animate-pulse bg-blue-900/50 h-[600px]" />}>
@@ -544,7 +443,8 @@ export default function MigratePage() {
                           user: {
                             twitter_username: session.user?.twitter_username || session.user?.bluesky_username || session.user?.mastodon_username || '',
                             bluesky_username: session.user.bluesky_username ?? "",
-                            mastodon_username: session.user.mastodon_username ?? ""
+                            mastodon_username: session.user.mastodon_username ?? "",
+                            mastodon_instance: session.user.mastodon_instance ?? ""
                           }
                         }}
                         stats={stats}
@@ -597,7 +497,7 @@ export default function MigratePage() {
             </div>
           </div>
 
-          {(!session?.user?.bluesky_username || !session?.user?.mastodon_username) && (
+          {((session?.user?.bluesky_username && !session?.user?.mastodon_username) || (!session?.user?.bluesky_username && session?.user?.mastodon_username)) && (
             <div className="flex items-center justify-center w-full mb-12">
               <div className="bg-[#2a39a9] rounded-xl flex gap-2">
                 <div className="flex max-w-[50rem]">
