@@ -15,6 +15,12 @@ type AccountToMigrateProps = {
   onToggle: () => void
   hasFollowBluesky: boolean
   hasFollowMastodon: boolean
+  session: {
+    user: {
+      bluesky_username: string | null
+      mastodon_username: string | null
+    }
+  }
 }
 
 export default function AccountToMigrate({
@@ -27,7 +33,8 @@ export default function AccountToMigrate({
   isSelected,
   onToggle,
   hasFollowBluesky,
-  hasFollowMastodon
+  hasFollowMastodon,
+  session
 }: AccountToMigrateProps) {
   const t = useTranslations('AccountToMigrate');
 
@@ -82,7 +89,7 @@ export default function AccountToMigrate({
         </div>
       </div>
       <div className="flex items-center gap-2">
-        {blueskyHandle && (
+        {blueskyHandle && session.user.bluesky_username && (
           hasFollowBluesky ? (
             <div className="flex items-center gap-1 px-3 py-1 text-sm text-blue-500">
               <CheckCircle className="w-3 h-3" />
@@ -97,7 +104,7 @@ export default function AccountToMigrate({
             </button>
           )
         )}
-        {(mastodonUsername && mastodonInstance) && (
+        {(mastodonUsername && mastodonInstance && session.user.mastodon_username) && (
           hasFollowMastodon ? (
             <div className="flex items-center gap-1 px-3 py-1 text-sm text-purple-500">
               <CheckCircle className="w-3 h-3" />

@@ -67,9 +67,9 @@ export default function LaunchReconnection({
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="flex flex-col items-center w-full max-w-4xl mx-auto p-8 bg-[#2a39a9] rounded-lg shadow-lg"
+      className="flex flex-col items-center w-full max-w-4xl mx-auto p-8 bg-[#2a39a9] rounded-lg"
     >
-      <div className="grid grid-cols-[auto,1fr] relative w-full gap-x-8 gap-y-12">
+      <div className="grid grid-cols-[auto,1fr] relative w-full gap-x-8 gap-y-4">
         {/* Séparateur vertical central */}
         <div className="absolute left-[64px] top-[80px] bottom-[80px] w-[2px] bg-[#ebece7]/30 rounded-full" />
 
@@ -86,7 +86,7 @@ export default function LaunchReconnection({
         </div>
 
         <div className="flex flex-col justify-center">
-          <h2 className={`${plex.className} text-3xl font-bold mb-4 text-[#ebece7]`}>
+          <h2 className={`${plex.className} text-3xl font-bold text-[#ebece7]`}>
             {t('firstObjective.before')}{' '}
             <span className="text-[#d6356f]">
               @{session.user.twitter_username || session.user.bluesky_username || session.user.mastodon_username}
@@ -101,7 +101,24 @@ export default function LaunchReconnection({
             {t('inviteMessage')}
           </p>
 
-          <div className="p-8">
+          {totalMatches > 0 && (
+            <div className="flex justify-center mt-4">
+              <Link 
+                href="/reconnect"
+                className={`${plex.className} inline-flex items-center px-11 py-4 bg-[#d6356f] text-[#ebece7] font-bold rounded-full hover:bg-[#d6356f]/90 transition-colors duration-300`}
+              >
+                {totalMatches > 0 
+                  ? t('launchButton', { count: formatNumber(totalMatches) })
+                  : t('alreadyReconnected', { count: formatNumber(totalHasFollowed) })
+                }
+              </Link>
+            </div>
+          )}
+          
+
+          
+
+          <div className="p-4">
           <PartageButton
             onShare={(platform) => {
               const shareText = t('shareText', {
@@ -136,19 +153,6 @@ export default function LaunchReconnection({
               {t('mastodonConnectionMessage.after')}
             </p>
           )}
-
-          {totalMatches > 0 && (
-
-          <Link 
-            href="/reconnect"
-            className={`${plex.className} inline-block p-6 bg-[#d6356f] text-[#ebece7] font-bold rounded-xl hover:bg-[#d6356f]/90 transition-colors duration-300 mb-8`}
-          >
-            {totalMatches > 0 
-              ? t('launchButton', { count: formatNumber(totalMatches) })
-              : t('alreadyReconnected', { count: formatNumber(totalHasFollowed) })
-            }
-          </Link>
-            )}
 
         </div>
 

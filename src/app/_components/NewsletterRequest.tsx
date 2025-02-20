@@ -14,6 +14,17 @@ interface NewsletterRequestProps {
   onClose?: () => void
 }
 
+const NewsletterLink = ({ href, children }: { href: string; children: React.ReactNode }) => (
+  <a 
+    href={href}
+    target="_blank"
+    rel="noopener noreferrer"
+    className="text-[#d6356f] hover:underline"
+  >
+    {children}
+  </a>
+);
+
 export default function NewsletterRequest({ userId, onSubscribe, onClose }: NewsletterRequestProps) {
   const [isSubscribed, setIsSubscribed] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -153,15 +164,12 @@ export default function NewsletterRequest({ userId, onSubscribe, onClose }: News
             <span className="text-sm">{renderCheckboxLabel(tt('newsletter.researchConsent'))}</span>
           </label>
 
-
-          <label className="flex items-start gap-2 text-slate-300 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={acceptOEP}
-              onChange={(e) => setAcceptOEP(e.target.checked)}
-              className="mt-1"
-            />
-            <span className="text-sm">{renderCheckboxLabel(t('acceptOEP'))}</span>
+          <label htmlFor="acceptOEP" className="text-sm text-gray-600">
+            {t.raw('acceptOEP').split('{link_oep}').map((part, i, arr) => (
+              i === arr.length - 1 ? part : (
+                <>{part}<NewsletterLink href="https://onestpret.com">On est Prêt</NewsletterLink></>
+              )
+            ))}
           </label>
         </div>
 

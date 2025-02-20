@@ -175,7 +175,8 @@
   "signin": {
     "title": "Prêt à explorer de nouveaux horizons ?",
     "subtitle": "Commencez par vous connecter avec Twitter/X pour migrer vos données",
-    "embark" : "Uploadez votre archive pour embarquer votre communauté",
+    "embark" : "Uploadez votre archive pour embarquer votre communauté ",
+    "embarkOrLogin": "Uploadez votre archive ou connectez-vous avec Twitter/X pour embarquer votre communauté",
     "loading": "Chargement des informations…",
     "welcome": "Bienvenue",
     "logo": {
@@ -209,7 +210,7 @@
       "emailLabel": "Votre adresse email",
       "emailPlaceholder": "exemple@email.com",
       "acceptHQX": "Je veux recevoir des updates de OpenPortability",
-      "acceptOEP": "Je souhaite aussi être informé.e des prochaines initiatives de [On est prêt](https://www.onestpret.com), qui accompagne OpenPortability",
+      "acceptOEP": "Je souhaite contribuer à la mobilisation autour d'OpenPortability avec {link_oep} et rester informé.e de leur futurs actions",
       "subscribing": "Inscription en cours...",
       "confirmSubscribe": "Confirmer l'inscription"
     },
@@ -399,7 +400,7 @@
       "subtitle": "Je souhaite être accompagné.e par OpenPortability.",
       "emailLabel": "Inscrivez votre mail pour rester informé.e (optionnel) :",
       "emailPlaceholder": "pseudo@nomdedomaine.com",
-      "consent": "Je souhaite aussi être informé.e des prochaines initiatives de On est prêt, qui accompagne OpenPortability",
+      "consent": "Je souhaite contribuer à la mobilisation autour d'OpenPortability avec {link_oep} et rester informé.e de leur futurs actions",
       "researchConsent": "Je souhaite partager avec le CNRS mon graphe de connexions à des fins de recherche. Il sera traité de manière aggrégée. Aucun donnée personnelle ne sera rendu publique.",
       "errors": {
         "missingEmail": "E-mail manquant"
@@ -457,8 +458,9 @@
     "title": "Vers une nouvelle ère numérique",
     "matchMessage": "{matchCount} passagers ont été retrouvés lors de votre 1ère étape de migration !\nC'est le moment maintenant d'activer la connexion avec ceux que vous souhaitez\nrejoindre sur vos nouveaux réseaux.",
     "stats": {
-      "awaitingConnection": "de vos comptes suivis sont\nen attente de connexion !",
-      "alreadyTransferred": "abonné·e·s ont déjà été\nreconnecté·e·s !"
+      "awaitingConnection": "de vos abonnements sont\nen attente de connexion !",
+      "alreadyTransferred": "abonnements ont déjà été\nreconnecté·e·s !",
+      "effectiveFollowers": "abonné·e·s gagné·e·s par le biais d'OpenPortability"
     }
   },
   "ManualReconnexion": {
@@ -525,7 +527,8 @@
       "mastodonFollowing": "Reconnexions sur Mastodon"
     },
     "goToDashboard": "Retourner à la reconnexion",
-    "firstObjective": "1er objectif réussi, vous êtes inscrit.e pour le voyage !"
+    "firstObjective": "1er objectif réussi, vous êtes inscrit.e pour le voyage !",
+    "shareMessage": "🔥 Je viens de reconnecter {count} contacts de #X sur BlueSky/Mastodon ! Exercez votre droit à la portabilité avec #OpenPortability\n\n🎯 {effectiveFollowers} nouveaux abonnés\n\n➡️ OpenPortability.org"
   },
   "launchReconnection": {
     "firstObjective": {

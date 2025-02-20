@@ -143,7 +143,7 @@ export class MatchingService {
 
   async getSourcesFromFollower(twitterId: string): Promise<MatchingResult> {
     console.log('[MatchingService] getSourcesFromFollower started for twitterId:', twitterId);
-    const PAGE_SIZE = 1000;
+    const PAGE_SIZE = 50;
     let allMatches: MatchingTarget[] = [];
     let page = 0;
     let totalCount = 0;

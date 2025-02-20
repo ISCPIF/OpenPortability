@@ -9,6 +9,8 @@ import BadgeSuccessTwo from '../../../public/v2/badge-success-2.svg';
 import BadgeSuccessOne from '../../../public/v2/badge-success-1.svg';
 import BSLogo from '../../../public/v2/statut=BS-defaut.svg';
 import MastoLogo from '../../../public/v2/statut=Masto-Defaut.svg';
+import { handleShare } from '@/lib/utils';
+import PartageButton from './PartageButton';
 
 interface SuccessAutomaticReconnexionProps {
   session: {
@@ -16,12 +18,14 @@ interface SuccessAutomaticReconnexionProps {
       twitter_username: string;
       bluesky_username?: string;
       mastodon_username?: string;
+      mastodon_instance?: string;
     };
   };
   stats: {
     connections: {
       followers: number;
       following: number;
+      totalEffectiveFollowers: number;
     };
     matches: {
       bluesky: {
@@ -49,6 +53,15 @@ export default function SuccessAutomaticReconnexion({
   const totalReconnected = (session.user.bluesky_username ? stats.matches.bluesky.hasFollowed : 0) + 
                           (session.user.mastodon_username ? stats.matches.mastodon.hasFollowed : 0);
 
+  const onShareClick = (platform: string) => {
+    const message = t('shareMessage', {
+      // username: session.user.twitter_username,
+      count: totalReconnected,
+      effectiveFollowers: stats.connections.totalEffectiveFollowers || 0
+    });
+    console.log("sesionn from onShareCLick", session)
+    handleShare(message, platform, session, () => {}, () => {});
+  };
 
   console.log("stats from SuccessAutomaticReconnexion", totalReconnected)
   useEffect(() => {
@@ -99,22 +112,6 @@ export default function SuccessAutomaticReconnexion({
               ? 'grid grid-cols-2 gap-8'
               : 'flex justify-center'
           }`}>
-            {session.user.bluesky_username && (
-              <div className="text-center p-6 rounded-xl bg-[#1f2498]/30 border border-[#ebece7]/20 backdrop-blur-sm hover:border-[#ebece7]/40 transition-all duration-300">
-                <div className="flex flex-col items-center">
-                  <div className="w-12 h-12 relative mb-3">
-                    <Image
-                      src={BSLogo}
-                      alt="Bluesky Logo"
-                      fill
-                      className="object-contain"
-                    />
-                  </div>
-                  <p className="text-sm text-[#ebece7]">{t('stats.blueskyFollowing')}</p>
-                  <p className="text-2xl font-bold text-[#ebece7]">{stats.matches.bluesky.hasFollowed}</p>
-                </div>
-              </div>
-            )}
             {session.user.mastodon_username && (
               <div className="text-center p-6 rounded-xl bg-[#1f2498]/30 border border-[#ebece7]/20 backdrop-blur-sm hover:border-[#ebece7]/40 transition-all duration-300">
                 <div className="flex flex-col items-center">
@@ -131,20 +128,46 @@ export default function SuccessAutomaticReconnexion({
                 </div>
               </div>
             )}
+            {session.user.bluesky_username && (
+              <div className="text-center p-6 rounded-xl bg-[#1f2498]/30 border border-[#ebece7]/20 backdrop-blur-sm hover:border-[#ebece7]/40 transition-all duration-300">
+                <div className="flex flex-col items-center">
+                  <div className="w-12 h-12 relative mb-3">
+                    <Image
+                      src={BSLogo}
+                      alt="Bluesky Logo"
+                      fill
+                      className="object-contain"
+                    />
+                  </div>
+                  <p className="text-sm text-[#ebece7]">{t('stats.blueskyFollowing')}</p>
+                  <p className="text-2xl font-bold text-[#ebece7]">{stats.matches.bluesky.hasFollowed}</p>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* {((session.user.bluesky_username ? stats.matches.bluesky.notFollowed : 0) + 
             (session.user.mastodon_username ? stats.matches.mastodon.notFollowed : 0)) > 0 && ( */}
-              <div className="mt-12 flex justify-center w-full">
+            <div className="mt-8">
+          <PartageButton
+            onShare={onShareClick}
+            providers={{
+              bluesky: !!session.user.bluesky_username,
+              mastodon: !!session.user.mastodon_username,
+              twitter: !!session.user.twitter_username
+            }}
+          />
+        </div>
+        <div className="mt-12 flex justify-center w-full">
               <button 
                 onClick={() => window.location.reload()}
-                className="inline-block w-fit px-4 py-2 bg-[#d6356f] text-[#ebece7] rounded-full hover:bg-[#c02d61] transition-colors mb-4"
+                className="inline-block w-fit p-4 bg-[#d6356f] text-[#ebece7] rounded-xl hover:bg-[#c02d61] transition-colors mb-4"
               >
                 {t('goToDashboard')}
               </button>
-            </div>
-          {/* // )} */}
         </div>
+        </div>
+
 
         {/* Troisième ligne : Badge 1 et Message du premier objectif */}
         <div className="flex items-center">
