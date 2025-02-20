@@ -69,6 +69,11 @@ export default function MigratePage() {
   const [mastodonInstances, setMastodonInstances] = useState<string[]>([])
 
   useEffect(() => {
+    if (!session.user.has_onboarded && !session.user.twitter_id)
+    {
+      redirect('/dashboard')
+      return 
+    }
     const verifyTokens = async () => {
       try {
         const response = await fetch('/api/auth/refresh', {
@@ -136,6 +141,8 @@ export default function MigratePage() {
       ])
 
       const userStats = await userStatsResponse.json()
+
+      console.log("userStats --->", userStats)
       const globalStats: GlobalStats = await globalStatsResponse.json()
       
       if (userStats.error) {
