@@ -42,7 +42,16 @@
                 "title": "Mastodon"
             },
             "twitter": "Twitter/X",
-            "bluesky": "BlueSky"
+            "bluesky": "BlueSky",
+            "connect_bluesky_before": "Encontramos",
+            "connect_bluesky_after": "contas para seguir no Bluesky, faça login para recuperar suas inscrições",
+            "connect_mastodon_before": "Encontramos",
+            "connect_mastodon_after": "contas para seguir no Mastodon, faça login para recuperar suas inscrições",
+            "refresh": "Sign in again",
+            "reconnect": {
+                "bluesky": "(!) Sua sessão do BlueSky expirou. Por motivos de segurança, utilizamos apenas tokens de acesso temporários que precisam ser renovados regularmente.",
+                "mastodon": "(!) Precisamos de permissões adicionais para permitir a reconexão com suas inscrições. Por favor, faça login novamente para autorizar estes novos recursos."
+            }           
         },
         "addSocialNetwork": "Adicionar outra rede social",
         "connectedDashboard": {
@@ -50,6 +59,7 @@
             "bluesky": "Conecte-se ao Bluesky",
             "mastodon": "Conecte-se ao Mastodon"
         }
+
     },
     "loginButtons": {
         "twitter": {
@@ -177,8 +187,11 @@
         }
     },
     "signin": {
-        "title": "Pronto para viajar para novos horizontes?",
-        "subtitle": "Comece conectando-se ao Twitter/X para migrar seus dados",
+     "title": "Pronto para viajar para novos horizontes?",
+    "subtitle": "Comece conectando-se ao Twitter/X para migrar seus dados",
+    "embark": "Carregue seu arquivo para embarcar sua comunidade",
+    "embarkOrLogin": "Carregue seu arquivo ou conecte-se com Twitter/X para embarcar sua comunidade",
+    "welcome": "Welcome",
         "loading": "Carregando informações...",
         "logo": {
             "alt": "Logo da OpenPortability"
@@ -195,6 +208,7 @@
             "completed2": "Não se esqueça de convidar seus assinantes a se registrarem no OpenPortability. Em 1 minuto, eles serão reconectados à sua conta, mesmo sem o arquivo deles.\nA Fase 2 chegará em apenas alguns dias! De acordo com suas preferências, você receberá uma notificação por e-mail ou poderá acompanhar nosso lançamento no X, BlueSky e Mastodon.\nFique ligado - surpresas emocionantes o aguardam!"
         },
         "importButton": "Importar meu arquivo do Twitter/X",
+        "no_archive_yet": "Ainda não tenho meu arquivo",
         "shareModal": {
             "title": "Compartilhe sua jornada",
             "shareOn": "Compartilhar em {plataforma}",
@@ -352,7 +366,8 @@
         "title": "Rumo a uma nova era digital",
         "stats": {
             "awaitingConnection": "de suas contas seguidas estão\naguardando conexão!",
-            "alreadyTransferred": "os assinantes já foram\ntransferidos!"
+            "alreadyTransferred": "os assinantes já foram\ntransferidos!",
+            "effectiveFollowers": "seguidores ganhos através do OpenPortability"
         }
     },
     "ReconnexionOptions": {
@@ -368,6 +383,8 @@
             "followedMastodon": "Reconexões concluídas no Mastodon"
         },
         "title": "Escolha como deseja se reconectar com seus seguidores",
+        "not_onboarded_title": "Não completou todos os objetivos da sua migração do Twitter/X?",
+"not_onboarded_description": "Sem problema, encontramos conexões para você com base nas associações da sua conta. Para mais contas para associar e melhor direcionamento, ainda recomendamos importar seu arquivo de dados do Twitter/X",
         "buttons": {
             "automatic": "RECONECTAR-ME AUTOMATICAMENTE",
             "manual": "EU ESCOLHO CONTAS PARA RECONECTAR"
@@ -383,7 +400,9 @@
         "next": "Próximo",
         "xAccountPseudo": "Nome de usuário da conta",
         "mastodonBlueskyCorrespondence": "Correspondência no Mastodon/Bluesky",
-        "followOnBluesky": "Seguir no Bluesky"
+        "followOnBluesky": "Seguir no Bluesky",
+        "showOnlyNotFollowed": "Mostrar apenas novas contas"
+
     },
     "largeFiles": {
         "progress": {

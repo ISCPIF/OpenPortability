@@ -16,7 +16,8 @@
         "hosted": {
             "text": "Diese Plattform wird von {cnrs} betrieben.",
             "hqx": "OpenPortability",
-            "cnrs": "CNRS/ISC-PIF"
+            "cnrs": "CNRS/ISC-PIF",
+            "openPortability": "OpenPortability"
         },
         "copyright": "  {year} OpenPortability. Alle Rechte vorbehalten.",
         "privacy": "Datenschutz"
@@ -83,7 +84,17 @@
                 "instance": "Wo wird dein Account gehostet? (bspw. mastodon.social)",
                 "connect": "Verbinde dich"
             },
-            "bluesky": "BlueSky"
+            "bluesky": "BlueSky",
+            "connect": "Anmelden, um zu beginnen",
+            "connect_bluesky_after": "Konten zum Folgen auf Bluesky gefunden, melde dich an, um deine Abonnements abzurufen",
+            "connect_bluesky_before": "Wir haben",
+            "connect_mastodon_after": "Konten zum Folgen auf Mastodon gefunden, melde dich an, um deine Abonnements abzurufen",
+            "connect_mastodon_before": "Wir haben",
+            "reconnect": {
+                "bluesky": "Deine BlueSky-Sitzung ist abgelaufen. Aus Sicherheitsgründen verwenden wir nur temporäre Zugriffstoken, die regelmäßig erneuert werden müssen.",
+                "mastodon": "Wir benötigen zusätzliche Berechtigungen, um die Wiederverbindung mit deinen Abonnements zu ermöglichen. Bitte melde dich erneut an, um diese neuen Funktionen zu autorisieren."
+            },
+            "refresh": "Erneut anmelden"
         },
         "importTwitter": "Importiere mein Twitter/X-Archiv und fahre mit der Migration fort",
         "connectedDashboard": {
@@ -238,11 +249,12 @@
         },
         "loading": "Lade deine Daten ...",
         "migrationStep": {
-            "completed": "Du hast den ersten Schritt deiner Migration abgeschlossen",
-            "daysLeft": "Noch {count} Tage bis zur großen Abfahrt",
+            "completed": "Migration abgeschlossen",
+            "daysLeft": "Noch {count} Tage",
             "nextSteps": "Schließe die folgenden Schritte ab, um zu neuen Ufern zu segeln!",
             "completed1": "Glückwunsch! Du hast den ersten der beiden Migrationsschritte abgeschlossen.",
-            "completed2": "Vergiss nicht, deine Abonnent:innen einzuladen, sich bei OpenPortability zu registrieren. In einer Minute sind sie wieder mit deinem Konto verbunden, auch ohne ihr Archiv.\nPhase 2 kommt in ein paar Tagen! Je nach deinen Präferenzen erhältst du eine Benachrichtigung per E-Mail oder kannst unseren Start auf X, BlueSky und Mastodon verfolgen!\nBleib dran — es warten spannende Überraschungen auf dich!"
+            "completed2": "Vergiss nicht, deine Abonnent:innen einzuladen, sich bei OpenPortability zu registrieren. In einer Minute sind sie wieder mit deinem Konto verbunden, auch ohne ihr Archiv.\nPhase 2 kommt in ein paar Tagen! Je nach deinen Präferenzen erhältst du eine Benachrichtigung per E-Mail oder kannst unseren Start auf X, BlueSky und Mastodon verfolgen!\nBleib dran — es warten spannende Überraschungen auf dich!",
+            "no_archive_yet": "Ich habe mein Archiv noch nicht"
         },
         "importButton": "Importiere mein Twitter/X-Archiv",
         "newsletter": {
@@ -342,7 +354,10 @@
         },
         "logoCNRS": {
             "alt": "CNRS, Nationales Zentrum für wissenschaftliche Forschung"
-        }
+        },
+        "embark": "Lade dein Archiv hoch, um deine Community mitzunehmen",
+        "embarkOrLogin": "Lade dein Archiv hoch oder melde dich mit Twitter/X an, um deine Community mitzunehmen",
+        "welcome": "Willkommen"
     },
     "settings": {
         "notifications": {
@@ -387,7 +402,12 @@
         "followers": "Follower:innen",
         "deselectAll": "alle abwählen",
         "migrating": "Migration...",
-        "startMigration": "Migration starten"
+        "startMigration": "Migration starten",
+        "needBothAccounts": "Du musst beide Konten verbinden"
+    },
+    "StatsReconnexion": {
+        "blueskyAccounts": "{count} gefundene Konten auf Bluesky",
+        "mastodonAccounts": "{count} gefundene Konten auf Mastodon"
     },
     "ReconnexionOptions": {
         "buttons": {
@@ -395,13 +415,17 @@
             "manual": "KONTEN SELBST AUSWÄHLEN"
         },
         "stats": {
-            "networks": "User mit mindestens einer aktivierbaren Verbindung",
-            "bluesky": "Verbindungen, die auf Bluesky und Mastodon aktiviert werden können",
-            "connections": "Importierte Kontakte"
+            "connections": "Zugeordnete Twitter/X-Verbindungen",
+            "bluesky": "Ausstehende Wiederverbindungen auf BlueSky",
+            "mastodon": "Ausstehende Wiederverbindungen auf Mastodon",
+            "followedBluesky": "Abgeschlossene Wiederverbindungen auf BlueSky",
+            "followedMastodon": "Abgeschlossene Wiederverbindungen auf Mastodon"
         },
         "descriptions": {
             "automatic": "HelloQuittex verbindet dich 30 Tage lang wieder mit allen deinen Follower:innen von X",
-            "manual": "HelloQuittex zeigt dir die Konten auf Bluesky und Mastodon im Detail an, damit du entscheiden kannst, ob du dich verbinden willst oder nicht"
+            "manual": "HelloQuittex zeigt dir die Konten auf Bluesky und Mastodon im Detail an, damit du entscheiden kannst, ob du dich verbinden willst oder nicht",
+            "not_onboarded_description": "Dein Konto wurde noch nicht für die Reise registriert",
+            "not_onboarded_title": "Noch nicht an Bord"
         },
         "title": "Lege fest, auf welchem Weg du dich wieder mit deinen Follower:innen verbinden willst"
     },
@@ -417,7 +441,8 @@
         "title": "#GreatReconnection!",
         "stats": {
             "awaitingConnection": "der von dir gefolgten Konten\nwarten auf eine Verbindung!",
-            "alreadyTransferred": "Follower:innen sind bereits\nübertragen worden!"
+            "alreadyTransferred": "Follower:innen sind bereits\nübertragen worden!",
+            "effectiveFollowers": "Follower durch OpenPortability gewonnen"
         }
     },
     "ManualReconnexion": {
@@ -430,7 +455,8 @@
         "connect": "VERBINDEN ({count})",
         "followOnBluesky": "Auf Bluesky folgen",
         "title": "Manuelle Wiederherstellung der Verbindung",
-        "automaticReconnect": "VERBINDE MICH AUTOMATISCH"
+        "automaticReconnect": "VERBINDE MICH AUTOMATISCH",
+        "showOnlyNotFollowed": "Nur nicht gefolgten Konten anzeigen"
     },
     "AccountToMigrate": {
         "followOnMastodon": "Auf Mastodon folgen",
@@ -484,10 +510,10 @@
                     "label": "Deine Nachricht",
                     "placeholder": "Beschreibe dein Problem..."
                 },
-                "submitting": "",
+                "submitting": "Wird gesendet...",
                 "subject": {
-                    "label": "",
-                    "placeholder": ""
+                    "label": "Betreff",
+                    "placeholder": "Wähle einen Betreff"
                 },
                 "email": {
                     "placeholder": "beispiel@email.com",
@@ -531,9 +557,11 @@
             "blueskyFollowing": "Auf Bluesky folgend",
             "mastodonFollowing": "Auf Mastodon folgend"
         },
-        "remainingAccounts": "{count} verbleibende Accounts",
-        "showRemainingOptions": "VERBLEIBENDE ACCOUNTS VERBINDEN",
-        "firstObjective": "1. Etappe abgeschlossen, du hast deine Reise gebucht!"
+        "remainingAccounts": "Verbleibende Konten: {count}",
+        "showRemainingOptions": "VERBLEIBENDE OPTIONEN ANZEIGEN",
+        "firstObjective": "1. Etappe abgeschlossen, du hast deine Reise gebucht!",
+        "goToDashboard": "Zum Dashboard",
+        "shareMessage": "Teile deine Reise"
     },
     "launchReconnection": {
         "firstObjective": {

@@ -71,7 +71,17 @@
           "too_long": "Servernamnet är för långt"
         }
       },
-      "bluesky": "BlueSky"
+      "refresh": "Logga in igen",
+      "bluesky": "BlueSky",
+      "connect_bluesky_before": "Vi hittade",
+      "connect_bluesky_after": "konton att följa på Bluesky, logga in för att hämta dina prenumerationer",
+      "connect_mastodon_before": "Vi hittade",
+      "connect_mastodon_after": "konton att följa på Mastodon, logga in för att hämta dina prenumerationer",
+      "reconnect": {
+        "bluesky": "(!) Din Bluesky-session har löpt ut. Av säkerhetsskäl använder vi endast tillfälliga åtkomsttoken som behöver förnyas regelbundet.",
+        "mastodon": "(!) Vi behöver ytterligare behörigheter för att tillåta återanslutning med dina prenumerationer. Vänligen logga in igen för att godkänna dessa nya funktioner."
+    }
+          
     },
     "connectedDashboard": {
       "twitter": "Anslut till Twitter/X",
@@ -176,8 +186,11 @@
     "redirecting": "Omdirigerar till instrumentpanelen..."
   },
   "signin": {
-    "title": "Redo att resa mot nya horisonter?",
-    "subtitle": "Börja med att ansluta med Twitter/X för att migrera dina data",
+"title": "Redo att resa mot nya horisonter?",
+"subtitle": "Börja med att ansluta till Twitter/X för att migrera dina data",
+"embark": "Ladda upp ditt arkiv för att ta med din gemenskap",
+"embarkOrLogin": "Ladda upp ditt arkiv eller logga in med Twitter/X för att ta med din gemenskap",
+"welcome" : "Vitne",
     "loading": "Laddar information...",
     "logo": {
       "alt": "OpenPortability Logotyp"
@@ -196,6 +209,7 @@
       "nextSteps": "Slutför följande steg för att segla till nya horisonter!"
     },
     "importButton": "Importera mitt Twitter/X-arkiv",
+    "no_archive_yet": "Jag har inte mitt arkiv än",
     "shareModal": {
       "title": "Dela din resa",
       "shareOn": "Dela på {platform}",
@@ -413,6 +427,8 @@
   },
   "ReconnexionOptions": {
     "title": "Välj hur du vill återansluta till dina följande",
+    "not_onboarded_title": "Har du inte slutfört alla mål för din Twitter/X-migrering?",
+    "not_onboarded_description": "Inga problem, vi har hittat anslutningar åt dig baserat på dina kontoassociationer. För fler konton att koppla och bättre målinriktning rekommenderar vi fortfarande att du importerar ditt Twitter/X-dataarkiv",
     "buttons": {
       "automatic": "ÅTERANSLUT MIG AUTOMATISKT",
       "manual": "JAG VÄLJER KONTON ATT ÅTERANSLUTA"
