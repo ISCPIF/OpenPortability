@@ -83,9 +83,12 @@ export default function MigrateSea({ stats }: SeaProps) {
   const Boats = () => {
     return (
       <>
-        <Boat model={3} top={140} left={40} scale={2} zindex={20} />
-        <Boat model={2} top={180} left={15} scale={1.2} zindex={20} />
-        <Boat model={4} top={170} left={75} scale={1.2} zindex={20} />
+        <Boat model={3} top={120} left={40} scale={2} zindex={20} />
+        <Boat model={2} top={140} left={60} scale={1.2} zindex={20} />
+        <Boat model={4} top={130} left={75} scale={1.2} zindex={20} />
+        <Boat model={1} top={120} left={25} scale={1.2} zindex={20} />
+        {/* <Boat model={6} top={130} left={100} scale={1.2} zindex={20} /> */}
+        {/* <Boat model={7} top={190} left={10} scale={1.2} zindex={20} /> */}
       </>
     );
   };

@@ -72,7 +72,17 @@
           }
 
         },
-        "bluesky": "BlueSky"
+        "bluesky": "BlueSky",
+        "connect": "Sign in to get started",
+        "connect_bluesky_before": "We found",
+        "connect_bluesky_after": "accounts to follow on Bluesky, sign in to retrieve your subscriptions",
+        "connect_mastodon_before": "We found",
+        "connect_mastodon_after": "accounts to follow on Mastodon, sign in to retrieve your subscriptions",
+        "refresh": "Sign in again",
+        "reconnect": {
+          "bluesky": "(!) Your BlueSky session has expired. For security reasons, we only use temporary access tokens that need to be renewed regularly.",
+          "mastodon": "(!) We need additional permissions to allow reconnection with your subscriptions. Please sign in again to authorize these new features."
+        }
       },
       "connectedDashboard" : {
         "twitter" : "Connect to Twitter/X",
@@ -180,6 +190,7 @@
     "title": "Ready to travel to new horizons ?",
     "subtitle": "Start by connecting with Twitter/X to migrate your data",
     "embark": "Upload your archive to embark your community",
+    "embarkOrLogin": "Upload your archive or sign in with Twitter/X to embark your community",
     "loading": "Loading information...",
     "welcome": "Welcome",
     "logo": {
@@ -419,6 +430,8 @@
   },
   "ReconnexionOptions": {
     "title": "Choose how you want to reconnect to your followings",
+    "not_onboarded_title": "Haven't completed all the objectives of your Twitter/X migration?",
+    "not_onboarded_description": "No problem, we found connections for you based on your account associations. For more accounts to associate and better targeting, we still recommend importing your Twitter/X data archive",
     "buttons": {
       "automatic": "RECONNECT ME AUTOMATICALLY",
       "manual": "I CHOOSE ACCOUNTS TO RECONNECT"
@@ -447,7 +460,9 @@
     "matchMessage": "{matchCount} passengers were found during your first migration step!\nNow is the time to activate the connection with those you want to\njoin on your new networks.",
     "stats": {
       "awaitingConnection": "of your followed accounts are\nawaiting connection!",
-      "alreadyTransferred": "subscribers have already been\ntransferred!"
+      "alreadyTransferred": "subscribers have already been\ntransferred!",
+      "effectiveFollowers": "followers gained through OpenPortability"
+
     }
   },
   "ManualReconnexion": {
@@ -460,7 +475,9 @@
     "xAccountPseudo": "Account Handle",
     "mastodonBlueskyCorrespondence": "Mastodon/Bluesky Correspondence",
     "followOnBluesky": "Follow on Bluesky",
-    "followOnMastodon": "Follow on Mastodon"
+    "followOnMastodon": "Follow on Mastodon",
+    "showOnlyNotFollowed": "Only show new accounts"
+
   },
   "AccountToMigrate": {
     "followOnBluesky": "Follow on Bluesky",
@@ -521,7 +538,8 @@
       "mastodonFollowing": "Followings found on Mastodon"
     },
     "firstObjective": "1st objective completed, you're registered for the journey!",
-    "goToDashboard": "Return to dashboard"
+    "goToDashboard": "Return back",
+    "shareMessage": "🔥 I just reconnected with {count} #X contacts on BlueSky/Mastodon! Exercise your right to data portability with #OpenPortability\n\n🎯 {effectiveFollowers} new followers\n\n➡️ OpenPortability.org"
   },
   "launchReconnection": {
     "firstObjective": {
