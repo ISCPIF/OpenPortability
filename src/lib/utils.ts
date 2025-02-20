@@ -35,7 +35,9 @@ export const handleShare = async (text: string, platform: string, session: any, 
         console.error('❌ No Mastodon instance found for user');
         return;
       }
-      url = `https://${session.user.mastodon_instance}/share?text=${encodeURIComponent(text)}`;
+      // Remove any protocol prefix from the instance
+      const instance = session.user.mastodon_instance.replace(/^https?:\/\//, '');
+      url = `https://${instance}/share?text=${encodeURIComponent(text)}`;
     } else {
       const platformUrls = {
         twitter: 'https://twitter.com',
@@ -47,35 +49,35 @@ export const handleShare = async (text: string, platform: string, session: any, 
     window.open(url, '_blank');
     console.log('✅ URL opened in new tab');
 
-    const response = await fetch('/api/share', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        platform,
-        success: true
-      })
-    });
+    // const response = await fetch('/api/share', {
+    //   method: 'POST',
+    //   headers: {
+    //     'Content-Type': 'application/json',
+    //   },
+    //   body: JSON.stringify({
+    //     platform,
+    //     success: true
+    //   })
+    // });
 
-    if (!response.ok) {
-      throw new Error('Failed to record share event');
-    }
-    if (setIsShared) {
-      setIsShared(true);
-    }
+    // if (!response.ok) {
+    //   throw new Error('Failed to record share event');
+    // }
+    // if (setIsShared) {
+    //   setIsShared(true);
+    // }
   } catch (error) {
     console.error('❌ Error during share process:', error);
 
-    await fetch('/api/share', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        platform,
-        success: false
-      })
-    }).catch(console.error);
+    // await fetch('/api/share', {
+    //   method: 'POST',
+    //   headers: {
+    //     'Content-Type': 'application/json',
+    //   },
+    //   body: JSON.stringify({
+    //     platform,
+    //     success: false
+    //   })
+    // }).catch(console.error);
   }
 };

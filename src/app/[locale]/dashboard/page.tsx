@@ -209,11 +209,11 @@ export default function DashboardPage() {
         )}
       </AnimatePresence>
 
-      <div className="relative min-h-[calc(100vh-4rem)] pt-[250px]">
+      <div className="relative min-h-[calc(100vh-4rem)]">
         <div className="container mx-auto px-4">
           <div className="max-w-2xl mx-auto">
 
-            <div className="mb-4 md:mb-8 relative z-10">
+            <div className="mb-4 md:mb-8 relative z-10 pt-[135px]">
               {session?.user?.has_onboarded && (session?.user?.mastodon_username || session?.user?.bluesky_username) ? (
           <>
           <LaunchReconnection
@@ -228,7 +228,7 @@ export default function DashboardPage() {
             totalProcessed={stats.globalStats.users.total}
             totalInDatabase={stats.globalStats.connections.following + stats.globalStats.connections.followers}
             userStats={stats.userStats}
-            mastodonInstances={mastodonInstances}
+            // mastodonInstances={mastodonInstances}
           />
           <div className="mb-4">
             <DashboardLoginButtons
@@ -268,41 +268,43 @@ export default function DashboardPage() {
             </div>
 
             {(connectedServicesCount < 3 || !hasOnboarded) &&
-              <div className="w-full flex justify-center mt-[100px]">
-                <div className="inline-block backdrop-blur-xs rounded-2xl p-4">
-                  {!hasOnboarded && (
-                   <div className="flex flex-col items-center justify-center text-center">
-                   <motion.button
-                     whileHover={{ scale: 1.05 }}
-                     whileTap={{ scale: 0.95 }}
-                     onClick={() => {
-                       router.push('/upload');
-                     }}
-                     className="w-full flex items-center justify-between px-8 py-4 bg-white rounded-full text-black font-medium  relative overflow-hidden group"
-                   >
-                     <div className="flex text-center gap-2 mx-auto">
-                       <Upload className="w-6 h-6" />
-                       <span className={plex.className}>{t('importButton')}</span>
-                     </div>
-                   </motion.button>
-                   <button
-                     onClick={() => router.push('/reconnect')}
-                     className={`mt-6 text-sm text-white text-center hover:text-[#d6356f] transition-colors ${plex.className} mb-6`}
-                     style={{ fontStyle: 'italic' }}
-                   >
-                     {t('no_archive_yet')}
-                   </button>
-
-                   {/* <DashboardLoginButtons
-              connectedServices={{
-                twitter: true,
-                bluesky: !!session?.user?.bluesky_username,
-                mastodon: !!session?.user?.mastodon_username
-              }}
-              hasUploadedArchive={true}
-              onLoadingChange={setIsLoading}
-              mastodonInstances={mastodonInstances}
-            /> */}
+                <div className="flex justify-center items-center w-full">
+                  <div className="inline-block backdrop-blur-xs rounded-2xl p-4">
+                    {!hasOnboarded && (
+                     <div className="mt-[100px] flex flex-col gap-4 items-center justify-center text-center mb-12">
+                     <motion.button
+                       whileHover={{ scale: 1.05 }}
+                       whileTap={{ scale: 0.95 }}
+                       onClick={() => {
+                         router.push('/upload');
+                       }}
+                       className="w-full flex items-center justify-between px-4 py-6 bg-white rounded-full text-black font-medium  relative overflow-hidden group"
+                     >
+                       <div className="flex text-center gap-2 mx-auto text-lg">
+                         <Upload className="w-6 h-6" />
+                         <span>{t('importButton')}</span>
+                       </div>
+                     </motion.button>
+                     {session?.user?.twitter_id ? (
+                         <button
+                           onClick={() => router.push('/reconnect')}
+                           className={`mt-6 text-sm text-white text-center hover:text-[#d6356f] transition-colors ${plex.className} mb-6`}
+                           style={{ fontStyle: 'italic' }}
+                         >
+                           {t('no_archive_yet')}
+                         </button>
+                       ) : (
+                         <DashboardLoginButtons
+                           connectedServices={{
+                             twitter: false,
+                             bluesky: true,
+                             mastodon: true
+                           }}
+                           hasUploadedArchive={true}
+                           onLoadingChange={setIsLoading}
+                           mastodonInstances={mastodonInstances}
+                         />
+                       )}
                  </div>
                   )}
                 </div>

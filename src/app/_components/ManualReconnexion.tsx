@@ -41,6 +41,10 @@ export default function ManualReconnexion({
   const [showOnlyNotFollowed, setShowOnlyNotFollowed] = useState(true);
   const itemsPerPage = 50;
 
+  console.log("matches from component", matches)
+  console.log("session user data -->", session.user)  // Add this line
+
+
   // Filter matches based on user's connected accounts
   const filteredMatches = matches.filter(match => {
     const blueskyHandle = isMatchingTarget(match) ? match.bluesky_handle : match.bluesky_handle;
@@ -49,23 +53,23 @@ export default function ManualReconnexion({
     const hasFollowBluesky = isMatchingTarget(match) ? match.has_follow_bluesky : match.has_been_followed_on_bluesky;
     const hasFollowMastodon = isMatchingTarget(match) ? match.has_follow_mastodon : match.has_been_followed_on_mastodon;
 
-    // Vérifier d'abord si les comptes sont connectés
-    if (blueskyHandle && !session.user.bluesky_username) {
-      return false;
-    }
-    if ((mastodonHandle || mastodonUsername) && !session.user.mastodon_username) {
-      return false;
-    }
+    // If user has Bluesky connected, show accounts with Bluesky handles that aren't followed
+    const showForBluesky = session.user.bluesky_username && blueskyHandle && !hasFollowBluesky;
+    
+    // If user has Mastodon connected, show accounts with Mastodon handles that aren't followed
+    const showForMastodon = session.user.mastodon_username && (mastodonHandle || mastodonUsername) && !hasFollowMastodon;
 
-    // Switch ON (true) : afficher uniquement les comptes jamais suivis
+    // Show accounts that match either condition when showOnlyNotFollowed is true
     if (showOnlyNotFollowed) {
-      return !hasFollowBluesky && !hasFollowMastodon;
+      return showForBluesky || showForMastodon;
     }
-    // Switch OFF (false) : afficher uniquement les comptes déjà suivis
+    // When showOnlyNotFollowed is false, show accounts that have been followed on either platform
     else {
       return hasFollowBluesky || hasFollowMastodon;
     }
   });
+
+  console.log("Filtered_matches -->", filteredMatches)
 
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
@@ -112,6 +116,11 @@ export default function ManualReconnexion({
     });
   };
 
+  const handleToggleSwitch = () => {
+    setShowOnlyNotFollowed(!showOnlyNotFollowed);
+    setSelectedAccounts(new Set()); // Reset selection when switching
+  };
+
   console.log("currentMatches FULL DATA -->", currentMatches);
   console.log("currentMatches detailed -->", currentMatches.map(m => ({
     id: isMatchingTarget(m) ? m.target_twitter_id : m.source_twitter_id,
@@ -135,7 +144,7 @@ export default function ManualReconnexion({
             <input
               type="checkbox"
               checked={showOnlyNotFollowed}
-              onChange={(e) => setShowOnlyNotFollowed(e.target.checked)}
+              onChange={handleToggleSwitch}
               className="sr-only peer"
             />
             <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[50%] after:translate-y-[-50%] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#d6356f]"></div>
@@ -189,15 +198,17 @@ export default function ManualReconnexion({
             return (
               <AccountToMigrate
                 key={isMatchingTarget(match) ? match.target_twitter_id : match.source_twitter_id}
-                twitterId={isMatchingTarget(match) ? match.target_twitter_id : match.source_twitter_id}
+                targetTwitterId={isMatchingTarget(match) ? match.target_twitter_id : match.source_twitter_id}
                 blueskyHandle={match.bluesky_handle}
                 mastodonHandle={isMatchingTarget(match) ? match.mastodon_handle : null}
-                mastodonUsername={match.mastodon_username || null}
-                mastodonInstance={match.mastodon_instance || null}
+                mastodonUsername={isMatchingTarget(match) ? match.mastodon_username : match.mastodon_username}
+                mastodonInstance={match.mastodon_instance}
+                mastodonId={match.mastodon_id}
                 isSelected={selectedAccounts.has(isMatchingTarget(match) ? match.target_twitter_id : match.source_twitter_id)}
                 onToggle={() => handleToggleAccount(isMatchingTarget(match) ? match.target_twitter_id : match.source_twitter_id)}
                 hasFollowBluesky={hasFollowBluesky}
                 hasFollowMastodon={hasFollowMastodon}
+                session={session}
               />
             );
           })}

@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { FaCheck } from "react-icons/fa";
+import { FaCheck, FaUsers } from "react-icons/fa";
 import Image from 'next/image';
 import { plex, caveat } from '@/app/fonts/plex';
 import arrowGrowth from '../../../public/v2/uil_arrow-growth.svg';
@@ -40,7 +40,7 @@ interface StatsProps {
 export default function MigrateStats({ stats, session, simpleView = false }: StatsProps) {
   const t = useTranslations('migrateSea');
 
-  console.log("stats from MigrateStats", stats)
+  // console.log("stats from MigrateStats", stats)
 
   if (!stats) return null;
 
@@ -53,15 +53,15 @@ export default function MigrateStats({ stats, session, simpleView = false }: Sta
     (session.user.mastodon_username ? stats.matches.mastodon.hasFollowed : 0);
 
   return (
-    <div className="w-full mt-[250px] bg-[#2a39a9]">
+    <div className="w-full mt-[250px]">
       <h1 className={`${caveat.className} text-[5rem] text-[#d6356f] z-[15] text-center font-bold`}>
         {t('title')}
       </h1>
 
       {!simpleView && (
-        <div className="flex items-center justify-center gap-2">
+        <div className="flex items-center justify-center">
           <div className="flex flex-col items-center">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
               <span className={`${plex.className} text-[80px] text-[#66D9E8] font-bold`}>
                 {totalToFollow}
               </span>
@@ -75,7 +75,7 @@ export default function MigrateStats({ stats, session, simpleView = false }: Sta
           <Image src={chainon} alt="" width={100} height={100} className="mx-4" />
 
           <div className="flex flex-col items-center">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
               <span className={`${plex.className} text-[80px] text-[#6fce97] font-bold`}>
                 {totalFollowed}
               </span>
@@ -91,11 +91,11 @@ export default function MigrateStats({ stats, session, simpleView = false }: Sta
               <Image src={chainon} alt="" width={100} height={100} className="mx-4" />
               
               <div className="flex flex-col items-center">
-                <div className="flex items-center gap-2">
-                  <span className={`${plex.className} text-[80px] text-[#ffd700] font-bold`}>
+                <div className="flex items-center gap-1">
+                  <span className={`${plex.className} text-[80px] text-[#d6356f] font-bold`}>
                     {stats.connections.totalEffectiveFollowers}
                   </span>
-                  <FaCheck className="text-[#ffd700] text-3xl" />
+                  <FaUsers className="text-[#d6356f] text-3xl" />
                 </div>
                 <p className={`${plex.className} text-white text-center text-sm mt-2 max-w-[250px] whitespace-pre-line`}>
                   {t('stats.effectiveFollowers')}
