@@ -71,7 +71,16 @@
                     "too_long": "Error: Il nome del server è troppo lungo"
                 }
             },
-            "bluesky": "BlueSky"
+            "bluesky": "BlueSky",
+            "connect_bluesky_before": "Abbiamo trovato",
+            "connect_bluesky_after": "account da seguire su Bluesky, accedi per recuperare i tuoi abbonamenti",
+            "connect_mastodon_before": "Abbiamo trovato",
+            "connect_mastodon_after": "account da seguire su Mastodon, accedi per recuperare i tuoi abbonamenti",
+            "refresh": "Accedi di nuovo",
+            "reconnect": {
+            "bluesky": "(!) La tua sessione BlueSky è scaduta. Per motivi di sicurezza, utilizziamo solo token di accesso temporanei che devono essere rinnovati regolarmente.",
+            "mastodon": "(!) Abbiamo bisogno di autorizzazioni aggiuntive per consentire la riconnessione con i tuoi abbonamenti. Accedi di nuovo per autorizzare queste nuove funzionalità."
+            }
         },
         "connectedDashboard": {
             "twitter": "Connettiti a Twitter/X",
@@ -83,7 +92,8 @@
         "hosted": {
             "text": "Questa piattaforma è ospitata da {cnrs}.",
             "cnrs": "CNRS/ISC-PIF",
-            "hqx": "OpenPortability"
+            "hqx": "OpenPortability",
+            "openPortability": "OpenPortability"
         },
         "copyright": "{year} OpenPortability. Tutti i diritti riservati.",
         "privacy": "Politica sulla privacy"
@@ -176,8 +186,11 @@
         "redirecting": "Reindirizzamento al pannello di controllo..."
     },
     "signin": {
+        "welcome": "Benvenuto",
         "title": "Pronto a viaggiare verso nuovi orizzonti?",
         "subtitle": "Inizia collegandoti con Twitter/X per migrare i tuoi dati",
+        "embark": "Carica il tuo archivio per imbarcare la tua community",
+"embarkOrLogin": "Carica il tuo archivio o accedi con Twitter/X per imbarcare la tua community",
         "loading": "Caricamento delle informazioni...",
         "logo": {
             "alt": "Logo di OpenPortability"
@@ -188,6 +201,7 @@
     },
     "dashboard": {
         "loading": "Caricamento dei tuoi dati...",
+        "no_archive_yet": "Non ho ancora il mio archivio",
         "addSocialNetwork": "Aggiungi social network",
         "addSocialNetworkDescription": "Collegati ad altri social network per migliorare la tua esperienza",
         "migrationStep": {
@@ -413,6 +427,8 @@
     },
     "ReconnexionOptions": {
         "title": "Scegli come vuoi riconnetterti ai tuoi seguiti",
+        "not_onboarded_title": "Non hai completato tutti gli obiettivi della tua migrazione da Twitter/X?",
+"not_onboarded_description": "Nessun problema, abbiamo trovato delle connessioni per te basate sulle associazioni del tuo account. Per trovare più account da associare e un targeting migliore, ti consigliamo comunque di importare il tuo archivio dati di Twitter/X",
         "buttons": {
             "automatic": "RICOLLEGAMI AUTOMATICAMENTE",
             "manual": "SCELGO GLI ACCOUNT DA RICOLLEGARE"
@@ -422,9 +438,11 @@
             "manual": "OpenPortability ti mostrerà in dettaglio gli account trovati su Bluesky e Mastodon in modo che tu possa scegliere se connetterti o meno"
         },
         "stats": {
-            "connections": "connessioni importate",
-            "bluesky": "connessioni che possono essere attivate su Bluesky e Mastodon",
-            "networks": "utenti con almeno una connessione che può essere attivata"
+            "connections": "Connessioni mappate di Twitter/X",
+            "bluesky": "Riconnessioni in sospeso su BlueSky",
+            "mastodon": "Riconnessioni in sospeso su Mastodon",
+            "followedBluesky": "Riconnessioni completate su BlueSky",
+            "followedMastodon": "Riconnessioni completate su Mastodon"
         }
     },
     "migrateSea": {
@@ -436,10 +454,11 @@
             "mastodon": "{count} on Mastodon | {count} su Mastodon"
         },
         "title": "la #GrandeRiconnessione!",
-        "matchMessage": "{matchCount} passengers were found during your first migration step!\nNow is the time to activate the connection with those you want to\njoin on your new networks. | {matchCount} passeggeri sono stati trovati durante il tuo primo passo di migrazione!\nOra è il momento di attivare la connessione con coloro che vuoi\nunire ai tuoi nuovi network.",
+        "matchMessage": "{matchCount} passeggeri sono stati trovati durante il tuo primo passo di migrazione!\nOra è il momento di attivare la connessione con coloro che vuoi\nunire ai tuoi nuovi network.",
         "stats": {
-            "awaitingConnection": "of your followed accounts are\nawaiting connection! | dei tuoi account seguiti sono\nin attesa di connessione!",
-            "alreadyTransferred": "subscribers have already been\ntransferred! | iscritti sono già stati\ntrasferiti!"
+            "awaitingConnection": "dei tuoi account seguiti sono\nin attesa di connessione!",
+            "alreadyTransferred": "iscritti sono già stati\ntrasferiti!",
+            "effectiveFollowers": "follower ottenuti attraverso OpenPortability"
         }
     },
     "ManualReconnexion": {
@@ -452,7 +471,8 @@
         "xAccountPseudo": "Pseudonimo dell'account",
         "mastodonBlueskyCorrespondence": "Corrispondenza Mastodon/Bluesky",
         "followOnBluesky": "Segui su Bluesky",
-        "followOnMastodon": "Segui su Mastodon"
+        "followOnMastodon": "Segui su Mastodon",
+        "showOnlyNotFollowed": "Mostra solo nuovi account"
     },
     "AccountToMigrate": {
         "followOnBluesky": "Segui su Bluesky",
@@ -468,7 +488,7 @@
         "progressMessage": "Attendere mentre ricolleghiamo i tuoi account...",
         "migrationInProgress": "Riconnessione in corso...",
         "migrationComplete": "Riconnessione completata!",
-        "migrationProgress": "{current} out of {total} accounts reconnected | {current} su {total} account ricollegati",
+        "migrationProgress": "{current} su {total} account ricollegati",
         "migrationCompleteStats": "Ricollegati con successo {count} account",
         "minimize": "Riduci",
         "close": "Chiudi"
@@ -476,7 +496,7 @@
     "Migrate": {
         "migrationInProgress": "Riconnessione in corso...",
         "migrationComplete": "Riconnessione completata!",
-        "migrationProgress": "{current} out of {total} accounts reconnected | {current} su {total} account ricollegati",
+        "migrationProgress": "{current} su {total} account ricollegati",
         "migrationCompleteStats": "Ricollegati con successo {count} account",
         "minimize": "Riduci",
         "close": "Chiudi"
