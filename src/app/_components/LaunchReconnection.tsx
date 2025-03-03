@@ -47,14 +47,10 @@ export default function LaunchReconnection({
     // Calculate total matches and hasFollowed based on connected accounts
     let total = 0;
     let hasFollowed = 0;
-    if (session.user.bluesky_username) {
-      total += userStats.matches.bluesky.notFollowed;
-      hasFollowed += userStats.matches.bluesky.hasFollowed;
-    }
-    if (session.user.mastodon_username) {
-      total += userStats.matches.mastodon.notFollowed;
-      hasFollowed += userStats.matches.mastodon.hasFollowed;
-    }
+    total += userStats.matches.bluesky.notFollowed;
+    hasFollowed += userStats.matches.bluesky.hasFollowed;
+    total += userStats.matches.mastodon.notFollowed;
+    hasFollowed += userStats.matches.mastodon.hasFollowed;
     setTotalMatches(total);
     setTotalHasFollowed(hasFollowed);
 
@@ -119,21 +115,6 @@ export default function LaunchReconnection({
           
 
           <div className="p-4">
-          <PartageButton
-            onShare={(platform) => {
-              const shareText = t('shareText', {
-                username: session.user.twitter_username,
-                matches: totalMatches
-              });
-              handleShare(shareText, platform, session, () => {}, setIsShared);
-            }}
-            providers={{
-              bluesky: session.user.bluesky_username ? true : false,
-              mastodon: session.user.mastodon_username ? true : false,
-              twitter: session.user.twitter_username ? true : false,
-            }}
-          />
-        </div>
           {/* Messages pour les services non connectés avec des matches */}
           {!session.user.bluesky_username && userStats.matches.bluesky.notFollowed > 0 && (
             <p className={`${plex.className} text-lg text-[#ebece7] mb-4`}>
@@ -153,6 +134,22 @@ export default function LaunchReconnection({
               {t('mastodonConnectionMessage.after')}
             </p>
           )}
+
+        <PartageButton
+                    onShare={(platform) => {
+                      const shareText = t('shareText', {
+                        count: totalMatches
+                      });
+                      console.log("SHARE TEXT --->", shareText)
+                      handleShare(shareText, platform, session, () => {}, setIsShared);
+                    }}
+                    providers={{
+                      bluesky: session.user.bluesky_username ? true : false,
+                      mastodon: session.user.mastodon_username ? true : false,
+                      twitter: session.user.twitter_username ? true : false,
+                    }}
+                  />
+                </div>
 
         </div>
 
