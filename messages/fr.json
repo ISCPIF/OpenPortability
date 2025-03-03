@@ -549,7 +549,8 @@
       "twitterAccounts": "Comptes Twitter",
       "totalImported": "Total importés"
     },
-    "alreadyReconnected": "Nous vous avons déjà reconnecté avec {count} comptes. Revenez plus tard pour poursuivre votre reconnexion !"
+    "alreadyReconnected": "Nous vous avons déjà reconnecté avec {count} comptes. Revenez plus tard pour poursuivre votre reconnexion !",
+    "shareText": "🚨#eXode en cours ! Je viens de m'inscrire sur #OpenPortability pour garder le contact avec ma communauté sur #BlueSky et #Mastodon. {count} connexions en attente ont été ajoutées !En 1 min, vous aussi assurez-vous de ne pas perdre vos abonnés ! ➡️ https://OpenPortability.org "
   },
   "privacy_policy": {
     "title": "Note d'information sur la protection des données",

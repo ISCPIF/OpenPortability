@@ -214,7 +214,7 @@ export default function DashboardPage() {
           <div className="max-w-2xl mx-auto">
 
             <div className="mb-4 md:mb-8 relative z-10 pt-[135px]">
-              {session?.user?.has_onboarded && (session?.user?.mastodon_username || session?.user?.bluesky_username) ? (
+              {session?.user?.has_onboarded ? (
           <>
           <LaunchReconnection
             session={{

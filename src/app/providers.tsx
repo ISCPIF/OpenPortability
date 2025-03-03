@@ -8,7 +8,7 @@ type ProvidersProps = {
 }
 
 export function Providers({ children, session }: ProvidersProps) {
-  console.log("Session provider called !", { session })
+  // console.log("Session provider called !", { session })
   return (
     <SessionProvider session={session}>
       {children}

@@ -496,7 +496,7 @@
             "mastodonFollowing": "Seguidos en Mastodon"
         },
         "goToDashboard": "Ir al dashboard",
-        "shareMessage": "¡Comparte con tu comunidad!"
+        "shareMessage": "🔥 ¡Acabo de reconectarme con {count} contactos de #X en BlueSky/Mastodon! Ejerce tu derecho a la portabilidad de datos con #OpenPortability\n\n🎯 {effectiveFollowers} nuevos seguidores\n\n➡️ https://openportability.org"
     },
     "AutomaticReconnexion": {
         "accountsToConnect": "Cuentas para conectar",
@@ -536,7 +536,8 @@
             "twitterAccounts": "Cuentas de X",
             "totalImported": "Total importadas"
         },
-        "alreadyReconnected": "Ya te hemos reconectado con {count} cuentas. ¡Vuelve más adelante para continuar tu reconexión!"
+        "alreadyReconnected": "Ya te hemos reconectado con {count} cuentas. ¡Vuelve más adelante para continuar tu reconexión!",
+        "shareText" : "🚨¡#eXodo en curso! Acabo de registrarme en #OpenPortability para mantener el contacto con mi comunidad en #BlueSky y #Mastodon. ¡Se han añadido {count} conexiones pendientes! En 1 minuto, ¡tú también asegúrate de no perder a tus seguidores! ➡️ https://OpenPortability.org"
     },
     "migrate": {
         "title": "Migrar tus suscripciones",

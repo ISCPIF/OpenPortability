@@ -531,7 +531,8 @@
       "mastodonFollowing": "Följare som hittats på Mastodon"
     },
     "firstObjective": "Första målet uppnått, du är registrerad för resan!",
-    "goToDashboard": "Återgå till instrumentpanelen"
+    "goToDashboard": "Återgå till instrumentpanelen",
+    "shareMessage": "🔥 Jag har just återanslutit med {count} #X-kontakter på BlueSky/Mastodon! Utöva din rätt till dataportabilitet med #OpenPortability\n\n🎯 {effectiveFollowers} nya följare\n\n➡️ https://openportability.org"
   },
   "launchReconnection": {
     "firstObjective": {
@@ -552,7 +553,8 @@
       "twitterAccounts": "Twitter/X-konton",
       "totalImported": "Totalt importerade"
     },
-    "alreadyReconnected": "Vi har redan återanslutit dig med {count} konton. Kom tillbaka senare för att fortsätta din återanslutning!"
+    "alreadyReconnected": "Vi har redan återanslutit dig med {count} konton. Kom tillbaka senare för att fortsätta din återanslutning!",
+    "shareText" : "🚨#eXodus pågår! Jag har precis registrerat mig på #OpenPortability för att hålla kontakten med mitt community på #BlueSky och #Mastodon. {count} väntande anslutningar har lagts till! På 1 minut kan även du se till att inte förlora dina följare! ➡️ https://OpenPortability.org"
   },
   "privacy_policy": {
     "title": "Dataskyddsinformation",
