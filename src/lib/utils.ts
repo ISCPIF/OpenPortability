@@ -28,8 +28,13 @@ export const handleShare = async (text: string, platform: string, session: any, 
     return;
   }
 
+  console.log('TEXT IS -->', text);
+
   try {
     let url;
+    // Remove any existing URLs from the text to prevent duplication
+    const textWithoutUrl = text.replace(/➡️ https:\/\/OpenPortability\.org.*$/, '➡️ https://OpenPortability.org');
+    
     if (platform === 'mastodon') {
       if (!session.user.mastodon_instance) {
         console.error('❌ No Mastodon instance found for user');
@@ -37,13 +42,13 @@ export const handleShare = async (text: string, platform: string, session: any, 
       }
       // Remove any protocol prefix from the instance
       const instance = session.user.mastodon_instance.replace(/^https?:\/\//, '');
-      url = `https://${instance}/share?text=${encodeURIComponent(text)}`;
+      url = `https://${instance}/share?text=${encodeURIComponent(textWithoutUrl)}`;
     } else {
       const platformUrls = {
         twitter: 'https://twitter.com',
         bluesky: 'https://bsky.app'
       };
-      url = `${platformUrls[platform as keyof typeof platformUrls]}/share?text=${encodeURIComponent(text)}`;
+      url = `${platformUrls[platform as keyof typeof platformUrls]}/share?text=${encodeURIComponent(textWithoutUrl)}`;
     }
 
     window.open(url, '_blank');

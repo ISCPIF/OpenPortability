@@ -533,7 +533,8 @@
             "mastodonFollowing": "Seguiti trovati su Mastodon"
         },
         "firstObjective": "1° obiettivo completato, sei registrato per il viaggio!",
-        "goToDashboard": "Ritorna al pannello di controllo"
+        "goToDashboard": "Ritorna al pannello di controllo",
+        "shareMessage": "🔥 Mi sono appena riconnesso con {count} contatti #X su BlueSky/Mastodon! Esercita il tuo diritto alla portabilità dei dati con #OpenPortability\n\n🎯 {effectiveFollowers} nuovi follower\n\n➡️ https://openportability.org"
     },
     "launchReconnection": {
         "firstObjective": {
@@ -554,7 +555,8 @@
             "twitterAccounts": "Account Twitter",
             "totalImported": "Totale importato"
         },
-        "alreadyReconnected": "Ti abbiamo già ricollegato con {count} account. Torna più tardi per continuare la tua riconnessione!"
+        "alreadyReconnected": "Ti abbiamo già ricollegato con {count} account. Torna più tardi per continuare la tua riconnessione!",
+        "shareText" : "🚨#eXodo in corso! Mi sono appena iscritto a #OpenPortability per mantenere i contatti con la mia comunità su #BlueSky e #Mastodon. Sono state aggiunte {count} connessioni in attesa! In 1 minuto, assicurati anche tu di non perdere i tuoi follower! ➡️ https://OpenPortability.org"
     },
     "privacy_policy": {
         "title": "Informativa sulla protezione dei dati",

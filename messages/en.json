@@ -560,7 +560,10 @@
       "twitterAccounts": "Twitter accounts",
       "totalImported": "Total imported"
     },
-    "alreadyReconnected": "We have already reconnected you with {count} accounts. Come back later to continue your reconnection!"
+    "alreadyReconnected": "We have already reconnected you with {count} accounts. Come back later to continue your reconnection!",
+    "shareText": "🚨#eXode in progress! Just signed up for #OpenPortability to keep in touch with my community on #BlueSky and #Mastodon. {count} pending connections have been added! In just 1 minute, you too can make sure you don't lose your subscribers! ➡️ https://OpenPortability.org",
+    "shareTextNotConnected": "🚨#eXode in progress! Just signed up for #OpenPortability to keep in touch with my community on #BlueSky and #Mastodon. {count} pending connections have been added! In just 1 minute, you too can make sure you don't lose your subscribers! ➡️ https://OpenPortability.org"
+
   },
   "privacy_policy": {
     "title": "Data Protection Information Notice",

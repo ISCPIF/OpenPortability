@@ -176,7 +176,7 @@
     },
     "partageButton": {
         "share": "Compartilhar",
-        "shareOn": "Compartilhar em {plataforma}"
+        "shareOn": "Compartilhar no {platform}"
     },
     "uploadButton": {
         "dropHere": "Envie seu arquivo aqui",
@@ -211,7 +211,7 @@
         "no_archive_yet": "Ainda não tenho meu arquivo",
         "shareModal": {
             "title": "Compartilhe sua jornada",
-            "shareOn": "Compartilhar em {plataforma}",
+            "shareOn": "Compartilhar no {plataforma}",
             "shareText": "🚨#eXodo em andamento! Acabei de me inscrever no #OpenPortability para manter contato com minha comunidade no #BlueSky e no #Mastodon. {count} conexões pendentes foram adicionadas! Em apenas 1 minuto, você também pode garantir que não perderá seus assinantes! ➡️ https://OpenPortability.org"
         },
         "newsletter": {
@@ -501,7 +501,8 @@
         "selectAll": "Selecionar tudo",
         "deselectAll": "Desmarcar tudo",
         "startMigration": "Iniciar a migração",
-        "migrating": "Migrando..."
+        "migrating": "Migrando...",
+        "needBothAccounts": "Comece vinculando suas contas do Bluesky e/ou Mastodon para se reconectar com seus contatos"
     },
     "settings": {
         "logout": "Sair",
@@ -531,7 +532,8 @@
         "congratulations": "Parabéns",
         "secondObjective": "Você concluiu o segundo objetivo e se reconectou com {count} contas. Você chegou ao seu destino!",
         "notification": "Continuaremos a notificá-lo se novas contas puderem ser reconectadas, por e-mail ou por meio de sua rede preferida, de acordo com suas preferências.",
-        "goToDashboard": "Retornar ao painel de controle"
+        "goToDashboard": "Retornar ao painel de controle",
+        "shareMessage": "🔥 Acabei de me reconectar com {count} contatos do #X no BlueSky/Mastodon! Exerça seu direito à portabilidade de dados com #OpenPortability\n\n🎯 {effectiveFollowers} novos seguidores\n\n➡️ https://openportability.org"
     },
     "launchReconnection": {
         "stats": {
@@ -552,7 +554,8 @@
             "after": "contas!"
         },
         "launchButton": "Inicie sua reconexão com {count} contas!",
-        "alreadyReconnected": "Já reconectamos você com {count} contas. Volte mais tarde para continuar sua reconexão!"
+        "alreadyReconnected": "Já reconectamos você com {count} contas. Volte mais tarde para continuar sua reconexão!",
+        "shareText" : "🚨#eXodo em andamento! Acabei de me inscrever no #OpenPortability para manter contato com minha comunidade no #BlueSky e #Mastodon. {count} conexões pendentes foram adicionadas! Em 1 minuto, você também pode garantir que não perderá seus seguidores! ➡️ https://OpenPortability.org"
     },
     "refreshToken": {
         "title": "Necessidade de reconexão",

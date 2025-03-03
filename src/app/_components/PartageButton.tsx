@@ -21,6 +21,8 @@ interface PartageButtonProps {
 export default function PartageButton({ onShare, providers }: PartageButtonProps) {
   const t = useTranslations('partageButton')
 
+  // console.log
+
   return (
     <div className="flex flex-wrap justify-center gap-4">
       {providers.mastodon && (

@@ -561,7 +561,12 @@
         "showRemainingOptions": "VERBLEIBENDE OPTIONEN ANZEIGEN",
         "firstObjective": "1. Etappe abgeschlossen, du hast deine Reise gebucht!",
         "goToDashboard": "Zum Dashboard",
-        "shareMessage": "Teile deine Reise"
+        "shareMessage": "🔥 Ich habe mich gerade mit {count} #X-Kontakten auf BlueSky/Mastodon wieder verbunden! Nutze dein Recht auf Datenübertragbarkeit mit #OpenPortability\n\n🎯 {effectiveFollowers} neue Follower\n\n➡️ OpenPortability.org"
+
+
+
+
+
     },
     "launchReconnection": {
         "firstObjective": {
@@ -582,7 +587,8 @@
             "twitterAccounts": "Twitter/X Accounts",
             "totalImported": "Vollständig importiert"
         },
-        "alreadyReconnected": "Wir haben dich schon mit {count} Accounts wieder verbunden. Komm später wieder, um deine Wiederherstellung fortzusetzen!"
+        "alreadyReconnected": "Wir haben dich schon mit {count} Accounts wieder verbunden. Komm später wieder, um deine Wiederherstellung fortzusetzen!",
+        "shareText" : "🚨#eXodus läuft! Ich habe mich gerade bei #OpenPortability angemeldet, um mit meiner Community auf #BlueSky und #Mastodon in Kontakt zu bleiben. {count} ausstehende Verbindungen wurden hinzugefügt! In nur 1 Minute kannst auch du sicherstellen, dass du deine Follower nicht verlierst! ➡️ https://OpenPortability.org"
     },
     "privacy_policy": {
         "title": "Hinweis zum Datenschutz",
