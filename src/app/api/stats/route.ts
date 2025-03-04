@@ -30,7 +30,7 @@ export async function GET() {
     const statsService = new StatsService(repository);
     
     const stats = await statsService.getUserStats(session.user.id, session.user.has_onboarded);
-    
+    console.log('[Stats] Stats retrieved successfully:', stats);
     return NextResponse.json(stats);
   } catch (error) {
     console.error('Error in stats endpoint:', error);
