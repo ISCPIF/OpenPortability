@@ -97,7 +97,7 @@ export default function LaunchReconnection({
             {t('inviteMessage')}
           </p>
 
-          {totalMatches > 0 && (
+          {/* {totalMatches > 0 && ( */}
             <div className="flex justify-center mt-4">
               <Link 
                 href="/reconnect"
@@ -109,7 +109,7 @@ export default function LaunchReconnection({
                 }
               </Link>
             </div>
-          )}
+          {/* )} */}
           
 
           

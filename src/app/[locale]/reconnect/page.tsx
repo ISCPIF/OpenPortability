@@ -421,7 +421,7 @@ export default function MigratePage() {
           </div>
 
           <div className="bg-[#2a39a9] mt-4">
-            {missingProviders.length > 0 ? (
+          {missingProviders.length > 0 && (stats?.matches.bluesky.notFollowed > 0 || stats?.matches.mastodon.notFollowed > 0) ? (
               <div className="bg-[#2a39a9] rounded-xl p-8 max-w-[50rem] mx-auto border border-white">
                 <h2 className="text-2xl font-semibold text-white text-center uppercase tracking-wider">{tRefresh('title')}</h2>
                 {/* <p className="text-blue-100 mb-6">{tRefresh('description')}</p> */}
@@ -444,7 +444,7 @@ export default function MigratePage() {
               <Suspense fallback={<LoadingIndicator msg="Loading..." />}>
                 {(session?.user?.bluesky_username || session?.user?.mastodon_username) && (
                   <div>
-                    {isReconnectionComplete && session && stats ? (
+                    {(isReconnectionComplete || (stats && (stats.matches.bluesky.hasFollowed > 0 || stats.matches.mastodon.hasFollowed > 0))) && session && stats ? (
                       <SuccessAutomaticReconnexion
                         session={{
                           user: {

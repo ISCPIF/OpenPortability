@@ -35,7 +35,33 @@ export const handleShare = async (text: string, platform: string, session: any, 
     // Remove any existing URLs from the text to prevent duplication
     const textWithoutUrl = text.replace(/➡️ https:\/\/OpenPortability\.org.*$/, '➡️ https://OpenPortability.org');
     
-    if (platform === 'mastodon') {
+    if (platform === 'bluesky') {
+      // Utiliser l'API pour poster directement sur BlueSky
+      const response = await fetch('/api/share/bluesky', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          text: textWithoutUrl
+        })
+      });
+
+      const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to share to BlueSky');
+      }
+      
+      console.log('✅ Posted to BlueSky successfully', result);
+      
+      // Ouvrir le post dans une nouvelle fenêtre si possible
+      if (result.uri) {
+        const postId = result.uri.split('/').pop();
+        const userDid = result.uri.split('/')[2];
+        window.open(`https://bsky.app/profile/${userDid}/post/${postId}`, '_blank');
+      }
+    } else if (platform === 'mastodon') {
       if (!session.user.mastodon_instance) {
         console.error('❌ No Mastodon instance found for user');
         return;
@@ -43,46 +69,21 @@ export const handleShare = async (text: string, platform: string, session: any, 
       // Remove any protocol prefix from the instance
       const instance = session.user.mastodon_instance.replace(/^https?:\/\//, '');
       url = `https://${instance}/share?text=${encodeURIComponent(textWithoutUrl)}`;
+      window.open(url, '_blank');
     } else {
       const platformUrls = {
         twitter: 'https://twitter.com',
-        bluesky: 'https://bsky.app'
       };
       url = `${platformUrls[platform as keyof typeof platformUrls]}/share?text=${encodeURIComponent(textWithoutUrl)}`;
+      window.open(url, '_blank');
     }
 
-    window.open(url, '_blank');
-    console.log('✅ URL opened in new tab');
+    console.log('✅ Sharing completed');
 
-    // const response = await fetch('/api/share', {
-    //   method: 'POST',
-    //   headers: {
-    //     'Content-Type': 'application/json',
-    //   },
-    //   body: JSON.stringify({
-    //     platform,
-    //     success: true
-    //   })
-    // });
-
-    // if (!response.ok) {
-    //   throw new Error('Failed to record share event');
-    // }
-    // if (setIsShared) {
-    //   setIsShared(true);
-    // }
+    if (setIsShared) {
+      setIsShared(true);
+    }
   } catch (error) {
     console.error('❌ Error during share process:', error);
-
-    // await fetch('/api/share', {
-    //   method: 'POST',
-    //   headers: {
-    //     'Content-Type': 'application/json',
-    //   },
-    //   body: JSON.stringify({
-    //     platform,
-    //     success: false
-    //   })
-    // }).catch(console.error);
   }
 };

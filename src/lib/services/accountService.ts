@@ -12,6 +12,7 @@ export class AccountService {
     this.repository = new AccountRepository();
   }
 
+
   async verifyAndRefreshBlueskyToken(userId: string): Promise<RefreshResult> {
     console.log(' [AccountService.verifyAndRefreshBlueskyToken] Starting token verification for user:', userId);
     const account = await this.repository.getProviderAccount(userId, 'bluesky');
