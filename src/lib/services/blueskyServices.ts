@@ -273,6 +273,25 @@ export class BlueskyService implements IBlueskyService {
     return result;
   }
 
+  async createPost(text: string): Promise<{ uri: string; cid: string }> {
+    try {
+      const now = new Date().toISOString();
+      
+      const result = await this.agent.post({
+        text: text,
+        createdAt: now
+      });
+      
+      return {
+        uri: result.uri,
+        cid: result.cid
+      };
+    } catch (error: any) {
+      console.error('Error creating BlueSky post:', error);
+      throw new Error(this.formatError(error));
+    }
+  }
+
   private formatError(error: any): string {
     if (error.message.includes('Invalid identifier or password')) {
       return 'Invalid identifier or password'
@@ -281,4 +300,6 @@ export class BlueskyService implements IBlueskyService {
     }
     return error.message || 'An unexpected error occurred'
   }
+
+
 }
