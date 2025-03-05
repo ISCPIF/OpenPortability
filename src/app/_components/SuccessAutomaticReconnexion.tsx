@@ -161,18 +161,28 @@ export default function SuccessAutomaticReconnexion({
             />
           </div>
           <div className="mt-8 sm:mt-12 flex justify-center w-full">
-            <button 
-              onClick={() => {
-                if (session.user.has_onboarded) {
-                  window.location.reload();
-                } else {
-                  window.location.href = '/dashboard';
-                }
-              }}
-              className="inline-block w-fit py-3 px-4 sm:p-4 bg-[#d6356f] text-[#ebece7] text-sm sm:text-base rounded-xl hover:bg-[#c02d61] transition-colors mb-4"
-            >
-              {t('goToDashboard')}
-            </button>
+          <button 
+            onClick={() => {
+              // Compter le nombre de services connectés
+              const connectedServicesCount = [
+                !!session.user.twitter_username,
+                !!session.user.bluesky_username,
+                !!session.user.mastodon_username
+              ].filter(Boolean).length;
+              
+              // Rediriger vers /dashboard si:
+              // - L'utilisateur n'a pas fait son onboarding OU
+              // - L'utilisateur est connecté à moins de 3 services
+              if (!session.user.has_onboarded || connectedServicesCount < 3) {
+                window.location.href = '/dashboard';
+              } else {
+                window.location.reload();
+              }
+            }}
+            className="inline-block w-fit py-3 px-4 sm:p-4 bg-[#d6356f] text-[#ebece7] text-sm sm:text-base rounded-xl hover:bg-[#c02d61] transition-colors mb-4"
+          >
+            {t('goToDashboard')}
+          </button>
           </div>
         </div>
 
