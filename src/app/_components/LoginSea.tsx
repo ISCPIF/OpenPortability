@@ -26,19 +26,19 @@ export default function LoginSea() {
   console.log("Session -->", session)
 
   return (
-    <div className="absolute top-0 left-0 w-full">
-      <Image src={seaBackground} fill alt="" className="object-cover"></Image>
-      <Image
-        src={logo}
-        alt={t('logo.alt')}
-        width={306}
-        height={125}
-        className="mx-auto mt-8 relative"
-      />
-      <div className="relative z-10">
-        <h1 className={`${plex.className} text-2xl lg:text-3xl`}>{t('title')}</h1>
+    <div className="relative w-full h-[300px] sm:h-[350px] md:h-[400px] lg:h-[450px]">
+      <Image src={seaBackground} alt="" className="absolute top-0 left-0 w-full h-full object-cover" priority />
+      <div className="relative z-10 flex flex-col items-center pt-8 px-4 text-center">
+        <Image
+          src={logo}
+          alt={t('logo.alt')}
+          width={200}
+          height={82}
+          className="mx-auto sm:w-[250px] md:w-[306px]"
+        />
+        <h1 className={`${plex.className} text-2xl lg:text-3xl mt-4`}>{t('title')}</h1>
         {!session?.user.has_onboarded && (
-          <p className={`${plex.className} text-lg lg:text-xl my-8 lg:my-10 p-4`}>
+          <p className={`${plex.className} text-lg lg:text-xl my-4 lg:my-6 max-w-md`}>
             {isSigninPage 
               ? t('subtitle') 
               : session?.user?.twitter_id 
@@ -48,7 +48,7 @@ export default function LoginSea() {
           </p>
         )}
         {isDashboardPage && session?.user && !session.user.has_onboarded && (
-          <p className={`${plex.className} text-lg lg:text-xl mt-4`}>
+          <p className={`${plex.className} text-lg lg:text-xl mt-4 max-w-md`}>
             <span className="font-extrabold text-white">{t('welcome')}</span>{' '}
             <span className="font-extrabold text-[#d6356f]">
               @{session.user.twitter_username || session.user.bluesky_username || session.user.mastodon_username}

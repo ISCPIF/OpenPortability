@@ -97,7 +97,7 @@ export class StatsRepository {
           })
           .single());
       } else {
-        ({ error } = await supabase.rpc('refresh_user_stats_cache', {
+        ({ error } = await supabase.rpc('refresh_user_stats_caches', {
           p_user_id: userId
         }));
       }

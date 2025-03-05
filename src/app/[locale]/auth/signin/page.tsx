@@ -66,35 +66,39 @@ export default function SignIn() {
   }
 
   return (
-    <div className="min-h-screen bg-[#2a39a9] relative w-full h-full max-w-[90%] m-auto">
+    <div className="min-h-screen bg-[#2a39a9] w-full">
       <Header />
-      <div className="container mx-auto py-12">
-        <div className="container flex flex-col m-auto text-center text-[#E2E4DF]">
+      <div className="w-full">
+        <div className="flex flex-col text-center text-[#E2E4DF]">
+          {/* Sea background that takes full width */}
           <LoginSea />
-          <div className="m-auto relative my-32 lg:my-40">
+          
+          {/* Login buttons positioned below the sea background */}
+          <div className="w-full max-w-md mx-auto px-4">
             {(status === "loading" || isLoading) ? (
-              <>
-                <div className="my-24 sm:my-36" />
+              <div className="py-8">
                 <LoadingIndicator msg={t('loading')} />
-              </>
+              </div>
             ) : (
-              <div className=" z-10">
-                <div className="my-40  mx-40" />
+              <div className="z-10">
                 <LoginButtons onLoadingChange={handleLoadingChange} />
               </div>
             )}
+            
+            {error && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="text-center text-sm text-red-600 mt-4"
+              >
+                {t(`errors.${error}`)}
+              </motion.div>
+            )}
           </div>
-          {error && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="text-center text-sm text-red-600"
-            >
-              {t(`errors.${error}`)}
-            </motion.div>
-          )}
         </div>
-        <Footer />
+        <div className="mt-16">
+          <Footer />
+        </div>
       </div>
     </div>
   )

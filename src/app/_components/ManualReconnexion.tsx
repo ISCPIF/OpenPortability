@@ -134,13 +134,13 @@ export default function ManualReconnexion({
   })));
 
   return (
-    <div className="w-full max-w-4xl mx-auto bg-[#1A237E] rounded-lg p-6 mt-12">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className={`${plex.className} text-xl text-white`}>
+    <div className="w-full max-w-4xl mx-auto bg-[#1A237E] rounded-lg p-3 sm:p-6 mt-4 sm:mt-12">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 sm:mb-6 gap-3 sm:gap-0">
+        <h2 className={`${plex.className} text-lg sm:text-xl text-white`}>
           {t('title')}
         </h2>
-        <div className="flex items-center gap-4">
-        <label className="relative inline-flex items-center cursor-pointer">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
+          <label className="relative inline-flex items-center cursor-pointer">
             <input
               type="checkbox"
               checked={showOnlyNotFollowed}
@@ -148,11 +148,11 @@ export default function ManualReconnexion({
               className="sr-only peer"
             />
             <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[50%] after:translate-y-[-50%] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#d6356f]"></div>
-            <span className="ml-3 text-white">{t('showOnlyNotFollowed', 'Show not followed')}</span>
+            <span className="ml-3 text-sm sm:text-base text-white">{t('showOnlyNotFollowed', 'Show not followed')}</span>
           </label>
           <button
             onClick={() => onToggleAutomaticReconnect()}
-            className="flex items-center text-white hover:text-gray-200"
+            className="flex items-center text-white text-sm sm:text-base hover:text-gray-200"
           >
             <span className="mr-2">▶</span>
             {t('automaticReconnect')}
@@ -160,11 +160,11 @@ export default function ManualReconnexion({
         </div>
       </div>
 
-      <div className="bg-white rounded-lg p-4 mb-6">
-        <div className="flex justify-between items-center mb-4">
+      <div className="bg-white rounded-lg p-3 sm:p-4 mb-4 sm:mb-6">
+        <div className="flex flex-col sm:flex-row justify-between items-center mb-3 sm:mb-4 gap-2 sm:gap-0">
           <button
             onClick={handleSelectAll}
-            className="text-[#2a39a9] hover:text-[#1A237E] font-semibold"
+            className="text-[#2a39a9] text-sm sm:text-base hover:text-[#1A237E] font-semibold"
           >
             {t('selectAll')}
           </button>
@@ -177,7 +177,7 @@ export default function ManualReconnexion({
                 const selectedAccountIds = Array.from(selectedAccounts);
                 onStartMigration(selectedAccountIds);
               }}
-              className="bg-[#d6356f] text-white px-6 py-2 rounded-full font-bold hover:bg-[#FF1F59] transition-colors"
+              className="bg-[#d6356f] text-white px-4 sm:px-6 py-1.5 sm:py-2 text-sm sm:text-base rounded-full font-bold hover:bg-[#FF1F59] transition-colors w-full sm:w-auto"
             >
               {t('connect', { count: selectedAccounts.size })}
             </motion.button>
@@ -215,15 +215,15 @@ export default function ManualReconnexion({
         </div>
 
         {filteredMatches.length > itemsPerPage && (
-          <div className="flex justify-between items-center mt-6 ">
+          <div className="flex flex-col sm:flex-row justify-between items-center mt-4 sm:mt-6 gap-3 sm:gap-0">
             <button
               onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
               disabled={currentPage === 1}
-              className="text-[#2a39a9] disabled:text-gray-400"
+              className="text-[#2a39a9] text-sm sm:text-base disabled:text-gray-400 order-2 sm:order-1"
             >
               ← {t('prev')}
             </button>
-            <div className="flex gap-2">
+            <div className="flex gap-1 sm:gap-2 order-1 sm:order-2 overflow-x-auto py-1 sm:py-0 max-w-full">
               {(() => {
                 const totalPages = Math.ceil(filteredMatches.length / itemsPerPage);
                 const pageNumbers = [];
@@ -258,14 +258,14 @@ export default function ManualReconnexion({
                 
                 return pageNumbers.map((pageNum, index) => {
                   if (pageNum === '...') {
-                    return <span key={`ellipsis-${index}`} className="text-[#d6356f]">...</span>;
+                    return <span key={`ellipsis-${index}`} className="text-[#d6356f] text-sm sm:text-base">...</span>;
                   }
                   
                   return (
                     <button
                       key={pageNum}
                       onClick={() => setCurrentPage(pageNum as number)}
-                      className={`w-8 h-8 rounded-full ${
+                      className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full text-sm ${
                         currentPage === pageNum
                           ? 'bg-[#d6356f] text-white'
                           : 'text-[#d6356f] hover:bg-gray-100'
@@ -280,7 +280,7 @@ export default function ManualReconnexion({
             <button
               onClick={() => setCurrentPage(p => Math.min(Math.ceil(filteredMatches.length / itemsPerPage), p + 1))}
               disabled={currentPage === Math.ceil(filteredMatches.length / itemsPerPage)}
-              className="text-[#2a39a9] disabled:text-gray-400"
+              className="text-[#2a39a9] text-sm sm:text-base disabled:text-gray-400 order-3"
             >
               {t('next')} →
             </button>

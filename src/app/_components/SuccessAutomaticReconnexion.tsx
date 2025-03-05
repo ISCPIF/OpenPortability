@@ -19,6 +19,7 @@ interface SuccessAutomaticReconnexionProps {
       bluesky_username?: string;
       mastodon_username?: string;
       mastodon_instance?: string;
+      has_onboarded?: boolean;
     };
   };
   stats: {
@@ -73,15 +74,19 @@ export default function SuccessAutomaticReconnexion({
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="flex flex-col items-center w-full max-w-4xl mx-auto p-8 bg-[#2a39a9] rounded-lg shadow-lg"
+      className="flex flex-col items-center w-full max-w-4xl mx-auto p-4 sm:p-6 md:p-8 bg-[#2a39a9] rounded-lg shadow-lg"
     >
-      <div className="grid grid-cols-[auto,1fr] relative w-full gap-x-8 gap-y-12">
-        {/* Séparateur vertical central */}
-        <div className="absolute left-[72px] top-[80px] bottom-[80px] w-[2px] bg-[#ebece7]/30 rounded-full" />
+      {/* Disposition mobile: Colonnes empilées verticalement */}
+      <div className="w-full grid grid-cols-1 sm:grid-cols-[auto,1fr] relative gap-4 sm:gap-x-8 sm:gap-y-12">
+        {/* Séparateur vertical uniquement visible sur desktop */}
+        <div className="hidden sm:block absolute left-[72px] top-[80px] bottom-[80px] w-[2px] bg-[#ebece7]/30 rounded-full" />
+        
+        {/* Séparateur horizontal uniquement visible sur mobile */}
+        <div className="sm:hidden w-full h-[2px] bg-[#ebece7]/30 rounded-full my-6" />
 
         {/* Première ligne : Badge 2 et Message de bravo */}
-        <div className="flex items-center">
-          <div className="relative w-32 h-32">
+        <div className="flex justify-center sm:justify-start items-center">
+          <div className="relative w-24 h-24 sm:w-32 sm:h-32">
             <Image
               src={BadgeSuccessTwo}
               alt="Success Badge"
@@ -91,8 +96,8 @@ export default function SuccessAutomaticReconnexion({
           </div>
         </div>
 
-        <div className="flex flex-col justify-center">
-          <h2 className={`${plex.className} text-3xl font-bold mb-4 text-[#ebece7]`}>
+        <div className="flex flex-col justify-center items-center sm:items-start mt-4 sm:mt-0">
+          <h2 className={`${plex.className} text-xl sm:text-2xl md:text-3xl font-bold mb-4 text-[#ebece7] text-center sm:text-left`}>
             {t('congratulations')} <span className="text-[#d6356f]">@{session.user.twitter_username}</span> !{' '}
             {t('secondObjective', { count: totalReconnected })}
           </h2>
@@ -101,21 +106,20 @@ export default function SuccessAutomaticReconnexion({
         {/* Deuxième ligne : Espace vide et Stats */}
         <div className="h-px" /> {/* Espace pour maintenir l'alignement */}
 
-        <div className="flex flex-col">
-          <p className="text-lg text-[#ebece7] mb-8">
+        <div className="flex flex-col w-full">
+          <p className="text-base md:text-lg text-[#ebece7] mb-6 sm:mb-8 text-center sm:text-left">
             {t('notification')}
           </p>
 
-
           <div className={`${
             session.user.bluesky_username && session.user.mastodon_username
-              ? 'grid grid-cols-2 gap-8'
+              ? 'grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-8'
               : 'flex justify-center'
           }`}>
             {session.user.mastodon_username && (
-              <div className="text-center p-6 rounded-xl bg-[#1f2498]/30 border border-[#ebece7]/20 backdrop-blur-sm hover:border-[#ebece7]/40 transition-all duration-300">
+              <div className="text-center p-4 sm:p-6 rounded-xl bg-[#1f2498]/30 border border-[#ebece7]/20 backdrop-blur-sm hover:border-[#ebece7]/40 transition-all duration-300">
                 <div className="flex flex-col items-center">
-                  <div className="w-12 h-12 relative mb-3">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 relative mb-2 sm:mb-3">
                     <Image
                       src={MastoLogo}
                       alt="Mastodon Logo"
@@ -123,15 +127,15 @@ export default function SuccessAutomaticReconnexion({
                       className="object-contain"
                     />
                   </div>
-                  <p className="text-sm text-[#ebece7]">{t('stats.mastodonFollowing')}</p>
-                  <p className="text-2xl font-bold text-[#ebece7]">{stats.matches.mastodon.hasFollowed}</p>
+                  <p className="text-xs sm:text-sm text-[#ebece7]">{t('stats.mastodonFollowing')}</p>
+                  <p className="text-xl sm:text-2xl font-bold text-[#ebece7]">{stats.matches.mastodon.hasFollowed}</p>
                 </div>
               </div>
             )}
             {session.user.bluesky_username && (
-              <div className="text-center p-6 rounded-xl bg-[#1f2498]/30 border border-[#ebece7]/20 backdrop-blur-sm hover:border-[#ebece7]/40 transition-all duration-300">
+              <div className="text-center p-4 sm:p-6 rounded-xl bg-[#1f2498]/30 border border-[#ebece7]/20 backdrop-blur-sm hover:border-[#ebece7]/40 transition-all duration-300">
                 <div className="flex flex-col items-center">
-                  <div className="w-12 h-12 relative mb-3">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 relative mb-2 sm:mb-3">
                     <Image
                       src={BSLogo}
                       alt="Bluesky Logo"
@@ -139,39 +143,45 @@ export default function SuccessAutomaticReconnexion({
                       className="object-contain"
                     />
                   </div>
-                  <p className="text-sm text-[#ebece7]">{t('stats.blueskyFollowing')}</p>
-                  <p className="text-2xl font-bold text-[#ebece7]">{stats.matches.bluesky.hasFollowed}</p>
+                  <p className="text-xs sm:text-sm text-[#ebece7]">{t('stats.blueskyFollowing')}</p>
+                  <p className="text-xl sm:text-2xl font-bold text-[#ebece7]">{stats.matches.bluesky.hasFollowed}</p>
                 </div>
               </div>
             )}
           </div>
 
-          {/* {((session.user.bluesky_username ? stats.matches.bluesky.notFollowed : 0) + 
-            (session.user.mastodon_username ? stats.matches.mastodon.notFollowed : 0)) > 0 && ( */}
-            <div className="mt-8">
-          <PartageButton
-            onShare={onShareClick}
-            providers={{
-              bluesky: !!session.user.bluesky_username,
-              mastodon: !!session.user.mastodon_username,
-              twitter: !!session.user.twitter_username
-            }}
-          />
-        </div>
-        <div className="mt-12 flex justify-center w-full">
-              <button 
-                onClick={() => window.location.reload()}
-                className="inline-block w-fit p-4 bg-[#d6356f] text-[#ebece7] rounded-xl hover:bg-[#c02d61] transition-colors mb-4"
-              >
-                {t('goToDashboard')}
-              </button>
-        </div>
+          <div className="mt-6 sm:mt-8 w-full">
+            <PartageButton
+              onShare={onShareClick}
+              providers={{
+                bluesky: !!session.user.bluesky_username,
+                mastodon: !!session.user.mastodon_username,
+                twitter: !!session.user.twitter_username
+              }}
+            />
+          </div>
+          <div className="mt-8 sm:mt-12 flex justify-center w-full">
+            <button 
+              onClick={() => {
+                if (session.user.has_onboarded) {
+                  window.location.reload();
+                } else {
+                  window.location.href = '/dashboard';
+                }
+              }}
+              className="inline-block w-fit py-3 px-4 sm:p-4 bg-[#d6356f] text-[#ebece7] text-sm sm:text-base rounded-xl hover:bg-[#c02d61] transition-colors mb-4"
+            >
+              {t('goToDashboard')}
+            </button>
+          </div>
         </div>
 
+        {/* Séparateur horizontal uniquement visible sur mobile */}
+        <div className="sm:hidden w-full h-[2px] bg-[#ebece7]/30 rounded-full my-6" />
 
         {/* Troisième ligne : Badge 1 et Message du premier objectif */}
-        <div className="flex items-center">
-          <div className="relative w-32 h-32">
+        <div className="flex justify-center sm:justify-start items-center">
+          <div className="relative w-24 h-24 sm:w-32 sm:h-32">
             <Image
               src={BadgeSuccessOne}
               alt="First Success Badge"
@@ -181,13 +191,11 @@ export default function SuccessAutomaticReconnexion({
           </div>
         </div>
 
-        <div className="flex items-center">
-          <p className="text-3xl text-[#ebece7]">
+        <div className="flex items-center justify-center sm:justify-start">
+          <p className="text-xl sm:text-2xl md:text-3xl text-[#ebece7] text-center sm:text-left">
             {t('firstObjective')}
           </p>
         </div>
-
-        
       </div>
     </motion.div>
   );

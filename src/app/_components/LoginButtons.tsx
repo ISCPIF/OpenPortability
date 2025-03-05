@@ -51,18 +51,16 @@ export default function LoginButtons({ onLoadingChange, onError }: LoginButtonsP
   }
 
   return (
-    <div className="max-w-96 mx-auto mt-8">
+    <div className="w-full mx-auto bg-transparent">
       {isRateLimited && (
         <TwitterRateLimit onShowAlternatives={() => setShowAlternatives(true)} />
       )}
-
-      
       
       <motion.div
         variants={containerVariants}
         initial="hidden"
         animate="visible"
-        className="space-y-6"
+        className="space-y-4 bg-transparent"
       >
         <TwitterLoginButton 
           onLoadingChange={onLoadingChange} 
@@ -97,7 +95,7 @@ export default function LoginButtons({ onLoadingChange, onError }: LoginButtonsP
               exit={{ opacity: 0, height: 0 }}
               className="overflow-hidden"
             >
-              <div className="mt-6">
+              <div className="mt-4 sm:mt-6">
                 <BlueSkyLogin onLoginComplete={() => {
                   setActiveService(null)
                   onLoadingChange(true)
@@ -113,7 +111,7 @@ export default function LoginButtons({ onLoadingChange, onError }: LoginButtonsP
               exit={{ opacity: 0, height: 0 }}
               className="overflow-hidden"
             >
-              <div className="mt-6 p-6 bg-white/5 backdrop-blur-lg rounded-xl">
+              <div className="mt-4 sm:mt-6 p-4 sm:p-6 bg-white/5 backdrop-blur-lg rounded-xl">
                 <MastodonLoginButton 
                   onLoadingChange={onLoadingChange}
                   className={plex.className}
