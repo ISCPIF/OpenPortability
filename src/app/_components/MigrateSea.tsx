@@ -6,6 +6,7 @@ import localFont from 'next/font/local';
 import { useTranslations } from 'next-intl';
 import { useParams } from 'next/navigation';
 import { FaCheck } from "react-icons/fa";
+import { useState, useEffect } from 'react';
 
 import logo from '../../../public/logo/logo-openport-rose.svg';
 import seaBackground from '../../../public/sea.svg';
@@ -34,6 +35,29 @@ interface MigrateStatsProps {
     bluesky_matches: number;
     mastodon_matches: number;
   };
+}
+
+// Hook personnalisé pour détecter si l'écran est mobile
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false);
+  
+  useEffect(() => {
+    // Fonction pour vérifier si l'écran est mobile (breakpoint à 640px)
+    const checkIsMobile = () => {
+      setIsMobile(window.innerWidth < 640);
+    };
+    
+    // Vérifier au chargement initial
+    checkIsMobile();
+    
+    // Ajouter l'écouteur d'événement pour le redimensionnement
+    window.addEventListener('resize', checkIsMobile);
+    
+    // Nettoyer l'écouteur d'événement au démontage
+    return () => window.removeEventListener('resize', checkIsMobile);
+  }, []);
+  
+  return isMobile;
 }
 
 function MigrateStats({ stats }: MigrateStatsProps) {
@@ -79,6 +103,7 @@ function MigrateStats({ stats }: MigrateStatsProps) {
 export default function MigrateSea({ stats }: SeaProps) {
   const t = useTranslations('migrateSea');
   const params = useParams();
+  const isMobile = useIsMobile();
 
   const Boats = () => {
     return (
@@ -94,10 +119,11 @@ export default function MigrateSea({ stats }: SeaProps) {
   };
 
   return (
-    <div className="absolute top-0 left-0 w-full h-[23rem]">
+    <div className={`absolute top-0 left-0 w-full ${isMobile ? 'h-[11rem]' : 'h-[23rem]'}`}>
       <Image src={seaBackground} fill alt="" className="object-cover"></Image>
-      <div className="relative z-[5] pt-12">
-        <div className="relative z-[5] ">
+      {/* Modifier le padding-top en fonction du type d'appareil */}
+      <div className={`relative z-[5] ${isMobile ? 'flex items-center justify-center h-full' : 'pt-12'}`}>
+        <div className="relative z-[5]">
           <Image
             src={logo}
             alt="OpenPortability Logo"
@@ -105,8 +131,9 @@ export default function MigrateSea({ stats }: SeaProps) {
             height={125}
             className="mx-auto"
           />
-          <div className="w-full ">
-            <Boats />
+          <div className="w-full">
+            {/* N'afficher les bateaux que sur les écrans non-mobiles */}
+            {!isMobile && <Boats />}
           </div>
         </div>
         {/* {stats && <MigrateStats stats={stats} />} */}

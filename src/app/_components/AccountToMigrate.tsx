@@ -61,23 +61,23 @@ export default function AccountToMigrate({
   };
 
   return (
-    <div className={`flex items-center justify-between p-4 rounded-lg ${
+    <div className={`flex flex-col sm:flex-row items-start sm:items-center sm:justify-between p-3 sm:p-4 rounded-lg gap-2 sm:gap-0 ${
       hasFollowBluesky && hasFollowMastodon 
         ? 'bg-blue-50' 
         : 'bg-white hover:bg-gray-50'
     }`}>
-      <div className="flex items-center space-x-4">
+      <div className="flex items-center space-x-2 sm:space-x-4 w-full sm:w-auto">
         {(!hasFollowBluesky || !hasFollowMastodon) && (
           <input
             type="checkbox"
             checked={isSelected}
             onChange={handleChange}
-            className="w-4 h-4 text-blue-600"
+            className="w-4 h-4 text-blue-600 flex-shrink-0"
             id={`checkbox-${targetTwitterId}`}
           />
         )}
-        <div>
-        <span className="font-medium text-black">
+        <div className="truncate max-w-[200px] sm:max-w-[300px]">
+          <span className="font-medium text-sm sm:text-base text-black">
             {blueskyHandle ? 
               `@${blueskyHandle}` : 
               (mastodonUsername && mastodonInstance ? 
@@ -88,17 +88,17 @@ export default function AccountToMigrate({
           </span>
         </div>
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-start sm:justify-end mt-1 sm:mt-0">
         {blueskyHandle && session.user.bluesky_username && (
           hasFollowBluesky ? (
-            <div className="flex items-center gap-1 px-3 py-1 text-sm text-blue-500">
+            <div className="flex items-center gap-1 px-2 sm:px-3 py-1 text-xs sm:text-sm text-blue-500">
               <CheckCircle className="w-3 h-3" />
               <span>{t('followedOnBluesky')}</span>
             </div>
           ) : (
             <button 
               onClick={() => window.open(`https://bsky.app/profile/${blueskyHandle}`, '_blank')}
-              className="px-3 py-1 text-sm bg-blue-100 text-blue-600 rounded-full hover:bg-blue-200 transition-colors"
+              className="px-2 sm:px-3 py-1 text-xs sm:text-sm bg-blue-100 text-blue-600 rounded-full hover:bg-blue-200 transition-colors"
             >
               {t('followOnBluesky')}
             </button>
@@ -106,14 +106,14 @@ export default function AccountToMigrate({
         )}
         {(mastodonUsername && mastodonInstance && session.user.mastodon_username) && (
           hasFollowMastodon ? (
-            <div className="flex items-center gap-1 px-3 py-1 text-sm text-purple-500">
+            <div className="flex items-center gap-1 px-2 sm:px-3 py-1 text-xs sm:text-sm text-purple-500">
               <CheckCircle className="w-3 h-3" />
               <span>{t('followedOnMastodon')}</span>
             </div>
           ) : (
             <button 
               onClick={() => window.open(`${mastodonInstance}/@${mastodonUsername}`, '_blank')}
-              className="px-3 py-1 text-sm bg-purple-100 text-purple-600 rounded-full hover:bg-purple-200 transition-colors"
+              className="px-2 sm:px-3 py-1 text-xs sm:text-sm bg-purple-100 text-purple-600 rounded-full hover:bg-purple-200 transition-colors"
             >
               {t('followOnMastodon')}
             </button>
