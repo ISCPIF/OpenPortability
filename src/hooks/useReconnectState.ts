@@ -99,9 +99,9 @@ export function useReconnectState() {
         await fetchMatches();
       }
       
-      if (session?.user?.hasOwnProperty('automatic_reconnect')) {
-        setIsAutomaticReconnect(Boolean(session.user.automatic_reconnect));
-      }
+      // if (session?.user?.hasOwnProperty('automatic_reconnect')) {
+      //   setIsAutomaticReconnect(Boolean(session.user.automatic_reconnect));
+      // }
       
       setIsLoading(false);
     };

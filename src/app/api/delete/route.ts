@@ -1,35 +1,15 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/app/auth"
 import { supabaseAdapter } from "@/lib/supabase-adapter"
-import { createClient } from "@supabase/supabase-js"
+import { supabase, authClient } from '@/lib/supabase'
+import logger, { withLogging } from '@/lib/log_utils'
 
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-);
-
-const authClient = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    {
-      auth: {
-        autoRefreshToken: false,
-        persistSession: false
-      },
-      db: {
-        schema: "next-auth"
-      }
-    }
-  )
-
-  
-export async function DELETE() {
+async function deleteHandler() {
   try {
     const session = await auth()
     
     if (!session?.user?.id) {
-        console.error('Unauthorized deletion attempt: No valid session')
+        logger.logWarning('API', 'DELETE /api/delete', 'Unauthorized deletion attempt: No valid session')
         return NextResponse.json(
           { error: 'Unauthorized' },
           { status: 401 }
@@ -37,10 +17,9 @@ export async function DELETE() {
       }
 
     const userId = session.user.id
-
     // 1. Si l'utilisateur a has_onboarded = true
     if (session.user.has_onboarded) {
-        console.log(`User ${userId} has onboarded, cleaning up public schema data`)
+        logger.logInfo('API', 'DELETE /api/delete', 'User has onboarded, cleaning up public schema data', userId)
 
         // Supprimer l'import_job dans le schema public
         const { error: importJobError } = await supabase
@@ -49,10 +28,10 @@ export async function DELETE() {
           .eq('user_id', userId)
   
         if (importJobError) {
-          console.error('Error deleting import_job:', importJobError)
-          throw new Error(`{importJobError.message}`)
+          logger.logError('API', 'DELETE /api/delete', new Error(importJobError.message), userId, { context: 'Deleting import_job' })
+          throw new Error(importJobError.message)
         }
-        console.log('Successfully deleted import_job')
+        logger.logInfo('API', 'DELETE /api/delete', 'Successfully deleted import_job', userId)
 
         const { error: userStatsError } = await supabase
         .from('user_stats_cache')
@@ -60,10 +39,10 @@ export async function DELETE() {
         .eq('user_id', userId)
 
       if (userStatsError) {
-        console.error('Error deleting userStatsError:', userStatsError)
-        throw new Error(`{userStatsError.message}`)
+        logger.logError('API', 'DELETE /api/delete', new Error(userStatsError.message), userId, { context: 'Deleting user_stats_cache' })
+        throw new Error(userStatsError.message)
       }
-      console.log('Successfully deleted userStatsCache')
+      logger.logInfo('API', 'DELETE /api/delete', 'Successfully deleted userStatsCache', userId)
 
         const { error: sourceError } = await supabase
         .from('sources')
@@ -71,10 +50,10 @@ export async function DELETE() {
         .eq('id', userId)
 
       if (sourceError) {
-        console.error('Error deleting source:', sourceError)
-        throw new Error(`{sourceError.message}`)
+        logger.logError('API', 'DELETE /api/delete', new Error(sourceError.message), userId, { context: 'Deleting source' })
+        throw new Error(sourceError.message)
       }
-      console.log('Successfully deleted source')
+      logger.logInfo('API', 'DELETE /api/delete', 'Successfully deleted source', userId)
 
       // Mettre à jour has_onboarded à false dans next-auth
       const { error: hasBoardError } = await authClient
@@ -83,12 +62,10 @@ export async function DELETE() {
       .eq('id', session.user.id);
 
       if (hasBoardError) {
-        console.error('Error updating has_onboarded:', hasBoardError)
-        throw new Error(`{updateError.message}`)
+        logger.logError('API', 'DELETE /api/delete', new Error(hasBoardError.message), userId, { context: 'Updating has_onboarded' })
+        throw new Error(hasBoardError.message)
       }
-      console.log('Successfully updated has_onboarded to false')
-    // }
-
+      logger.logInfo('API', 'DELETE /api/delete', 'Successfully updated has_onboarded to false', userId)
     }
 
     const { error: deleteError } = await authClient
@@ -97,20 +74,23 @@ export async function DELETE() {
     .eq('id', userId)
 
     if (deleteError) {
-      console.error('Error deleting user:', deleteError)
-      throw new Error(`{deleteError.message}`)
+      logger.logError('API', 'DELETE /api/delete', new Error(deleteError.message), userId, { context: 'Deleting user' })
+      throw new Error(deleteError.message)
     }
-    console.log('Successfully deleted user')
+    logger.logInfo('API', 'DELETE /api/delete', 'Successfully deleted user', userId)
     
     return NextResponse.json(
       { message: 'Account deleted successfully' },
       { status: 200 }
     )
   } catch (error) {
-    console.error('Error deleting account:', error)
+    const userId = (await auth())?.user?.id || 'unknown'
+    logger.logError('API', 'DELETE /api/delete', error, userId, { context: 'Account deletion process' })
     return NextResponse.json(
       { error: 'Failed to delete account' },
       { status: 500 }
     )
   }
 }
+
+export const DELETE = withLogging(deleteHandler)
