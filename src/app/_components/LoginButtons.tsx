@@ -9,6 +9,7 @@ import BlueSkyLogin from "./BlueSkyLogin"
 import TwitterRateLimit from "./TwitterRateLimit"
 import { plex } from "@/app/fonts/plex"
 import { useTranslations } from 'next-intl'
+import { useMastodonInstances } from '@/hooks/useMastodonInstances'
 
 
 const containerVariants = {
@@ -34,6 +35,7 @@ export default function LoginButtons({ onLoadingChange, onError }: LoginButtonsP
   const [isRateLimited, setIsRateLimited] = useState(false)
   const [activeService, setActiveService] = useState<ActiveService>(null)
   const [error, setError] = useState<string | null>(null)
+  const mastodonInstances = useMastodonInstances()
 
   const handleServiceSelect = (service: ActiveService) => {
     setActiveService(service === activeService ? null : service)
@@ -82,6 +84,7 @@ export default function LoginButtons({ onLoadingChange, onError }: LoginButtonsP
               onLoadingChange={onLoadingChange} 
               className={plex.className}
               isSelected={activeService === 'mastodon'}
+              instances={mastodonInstances}
               onClick={() => handleServiceSelect('mastodon')}
             />
           </>
@@ -116,6 +119,8 @@ export default function LoginButtons({ onLoadingChange, onError }: LoginButtonsP
                   onLoadingChange={onLoadingChange}
                   className={plex.className}
                   showForm={true}
+                  instances={mastodonInstances}
+                  onError={handleError}
                 />
               </div>
             </motion.div>
