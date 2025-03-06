@@ -195,6 +195,7 @@ export default function DashboardLoginButtons({
                     <MastodonLoginButton
                       onLoadingChange={onLoadingChange}
                       showForm={true}
+                      instances={mastodonInstances}
                     />
                   </div>
                 </motion.div>

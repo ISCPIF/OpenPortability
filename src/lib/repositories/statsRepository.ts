@@ -1,6 +1,7 @@
 import { PostgrestSingleResponse } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 import { RawStatsData, UserCompleteStats, GlobalStats } from "../types/stats";
+import { logError, logWarning } from "../log_utils";
 
 interface CountResponse {
   count: number;
@@ -21,18 +22,16 @@ export class StatsRepository {
     async getFollowersCount(): Promise<PostgrestSingleResponse<CountResponse>> {
       const response = await supabase.rpc('count_followers').single();
       if (response.error) {
-        console.error('Error in getFollowersCount:', response.error);
+        logError('Repository', 'StatsRepository.getFollowersCount', response.error, 'unknown');
       }
-      console.log('getFollowersCount response:', response);
       return response;
     }
 
     async getFollowingCount(): Promise<PostgrestSingleResponse<CountResponse>> {
       const response = await supabase.rpc('count_targets').single();
       if (response.error) {
-        console.error('Error in getFollowingCount:', response.error);
+        logError('Repository', 'StatsRepository.getFollowingCount', response.error, 'unknown');
       }
-      console.log('getFollowingCount response:', response);
       return response;
     }
 
@@ -47,9 +46,8 @@ export class StatsRepository {
     async getTargetsWithHandleCount(): Promise<PostgrestSingleResponse<CountResponse>> {
         const response = await supabase.rpc('count_targets_with_handle').single();
         if (response.error) {
-            console.error('Error in getTargetsWithHandleCount:', response.error);
+            logError('Repository', 'StatsRepository.getTargetsWithHandleCount', response.error, 'unknown');
         }
-        console.log('getTargetsWithHandleCount response:', response);
         return response;
     }
 
@@ -67,7 +65,7 @@ export class StatsRepository {
       }
 
       if (error) {
-        console.error('Error in getUserCompleteStats:', error);
+        logError('Repository', 'StatsRepository.getUserCompleteStats', error, userId, { has_onboard });
         throw error;
       }
 
@@ -80,7 +78,7 @@ export class StatsRepository {
         .single();
 
       if (error) {
-        console.error('Error in getGlobalStats:', error);
+        logError('Repository', 'StatsRepository.getGlobalStats', error, 'unknown');
         throw error;
       }
 
@@ -103,7 +101,7 @@ export class StatsRepository {
       }
       
       if (error) {
-        console.error('Error refreshing user stats cache:', error);
+        logError('Repository', 'StatsRepository.refreshUserStatsCache', error, userId, { has_onboard });
         throw error;
       }
     }
@@ -113,7 +111,7 @@ export class StatsRepository {
         .rpc('refresh_global_stats_cache');
 
       if (error) {
-        console.error('Error in refreshGlobalStatsCache:', error);
+        logError('Repository', 'StatsRepository.refreshGlobalStatsCache', error, 'unknown');
         throw error;
       }
     }
@@ -123,7 +121,7 @@ export class StatsRepository {
         .rpc('count_platform_matches', { user_id: userId })
         .single();
       if (response.error) {
-        console.error('Error in getPlatformMatchesCount:', response.error);
+        logError('Repository', 'StatsRepository.getPlatformMatchesCount', response.error, userId);
       }
       return response;
     }

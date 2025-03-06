@@ -14,6 +14,7 @@ interface MastodonLoginButtonProps {
   className?: string
   onClick?: () => void
   showForm?: boolean
+  instances: string[]
   // prompt?: string
 }
 
@@ -50,32 +51,32 @@ export default function MastodonLoginButton({
   isSelected = false,
   className = "",
   onClick = () => { },
-  showForm = false
+  showForm = false,
+  instances = []
 }: MastodonLoginButtonProps) {
   const [instanceText, setInstanceText] = useState('')
-  const [instances, setInstances] = useState<string[]>([])
   const [searchTerm, setSearchTerm] = useState('')
   const [instanceError, setInstanceError] = useState('')
   const t = useTranslations('dashboardLoginButtons')
 
 
-  useEffect(() => {
-    const fetchInstances = async () => {
-      try {
-        const response = await fetch('/api/auth/mastodon')
-        const data = await response.json()
-        if (data.success) {
-          setInstances(data.instances)
-        }
-      } catch (error) {
-        console.error('Error fetching Mastodon instances:', error)
-      }
-    }
+  // useEffect(() => {
+  //   const fetchInstances = async () => {
+  //     try {
+  //       const response = await fetch('/api/auth/mastodon')
+  //       const data = await response.json()
+  //       if (data.success) {
+  //         setInstances(data.instances)
+  //       }
+  //     } catch (error) {
+  //       console.error('Error fetching Mastodon instances:', error)
+  //     }
+  //   }
 
-    if (showForm) {
-      fetchInstances()
-    }
-  }, [showForm])
+  //   if (showForm) {
+  //     fetchInstances()
+  //   }
+  // }, [showForm])
 
   const validateInstance = (instance: string): boolean => {
     setInstanceError('')

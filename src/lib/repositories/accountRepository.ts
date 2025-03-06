@@ -1,6 +1,7 @@
 import { authClient } from '../supabase';
 import { Provider, TokenUpdate } from '../types/account';
 import { encrypt, decrypt } from '../encryption';
+import { logError, logWarning } from '../log_utils';
 
 export class AccountRepository {
   async getAccount(userId: string) {
@@ -11,7 +12,7 @@ export class AccountRepository {
       .single();
     
     if (error) {
-      console.error(' [AccountRepository.getAccount] Error:', error.message);
+      logError('Repository', 'AccountRepository.getAccount', error, userId);
       throw error;
     }
     return data;
@@ -27,11 +28,10 @@ export class AccountRepository {
       .maybeSingle();
     
     if (error) {
-      console.error(' [AccountRepository.getProviderAccount] Error:', error.message);
+      logError('Repository', 'AccountRepository.getProviderAccount', error, userId, { provider });
       throw error;
     }
 
-    console.log(' [AccountRepository.getProviderAccount] Account found:', data);
     if (data) {
       // Decrypt sensitive tokens
       return {
@@ -60,7 +60,10 @@ export class AccountRepository {
       .eq('provider', provider);
     
     if (error) {
-      console.error(' [AccountRepository.updateTokens] Error:', error.message);
+      logError('Repository', 'AccountRepository.updateTokens', error, userId, { 
+        provider,
+        context: 'Updating tokens'
+      });
       throw error;
     }
   }
@@ -73,9 +76,12 @@ export class AccountRepository {
       .eq('provider', provider)
       .eq('type', 'oauth');
     
-    // if (error) {
-    //   console.error(' [AccountRepository.deleteAccount] Error:', error.message);
-    //   throw error;
-    // }
+    if (error) {
+      logWarning('Repository', 'AccountRepository.deleteAccount', `Failed to delete account: ${error.message}`, userId, { 
+        provider,
+        context: 'Deleting provider account'
+      });
+      // Not throwing the error as per the commented code
+    }
   }
 }
