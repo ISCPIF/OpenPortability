@@ -2,8 +2,9 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/app/auth';
 import { StatsService } from '@/lib/services/statsServices';
 import { StatsRepository } from '@/lib/repositories/statsRepository';
+import logger, { withLogging } from '@/lib/log_utils';
 
-export async function GET() {
+async function userStatsHandler() {
   try {
     const session = await auth();
     if (!session?.user?.id) {
@@ -30,10 +31,14 @@ export async function GET() {
     const statsService = new StatsService(repository);
     
     const stats = await statsService.getUserStats(session.user.id, session.user.has_onboarded);
-    console.log('[Stats] Stats retrieved successfully:', stats);
     return NextResponse.json(stats);
   } catch (error) {
-    console.error('Error in stats endpoint:', error);
+    const userId = (await auth())?.user?.id || 'unknown';
+    logger.logError('API', 'GET /api/stats', error, userId, {
+      context: 'Retrieving user stats'
+    });
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
+
+export const GET = withLogging(userStatsHandler);

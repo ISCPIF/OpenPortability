@@ -9,6 +9,7 @@ import { isTwitterProfile, isMastodonProfile, isBlueskyProfile } from "./auth"
 import type { AdapterAccountType } from "next-auth/adapters"
 import type { CustomAdapterUser } from '@/lib/supabase-adapter'
 import { authClient } from '@/lib/supabase'
+import logger from '@/lib/log_utils'
 
 import { auth } from "./auth"
 
@@ -69,12 +70,20 @@ export const authConfig = {
   },
   callbacks: {
     async signIn({ user, account, profile, error }) {
-      console.log("SignIn callback - Profile:", profile);
-      console.log("SignIn callback - Error:", error);
-      console.log("SignIn callback - Account:", account);
-      console.log("SignIn callback - user:", user);
+      logger.logInfo('Auth', 'signIn', 'SignIn callback initiated', user?.id, { 
+        provider: account?.provider,
+        errorExists: !!error,
+        profileExists: !!profile
+      });
+      
+      if (error) {
+        logger.logError('Auth', 'signIn', error, user?.id, { provider: account?.provider });
+      }
 
-      if (!account) return false;
+      if (!account) {
+        logger.logWarning('Auth', 'signIn', 'No account provided during sign in', user?.id);
+        return false;
+      }
 
       try {
         // Vérifier si un utilisateur est déjà connecté
@@ -83,6 +92,11 @@ export const authConfig = {
         if (session?.user?.id && account.provider === 'mastodon') {
           const mastodonProfile = profile as MastodonProfile;
           const instance = new URL(mastodonProfile.url).origin;
+          
+          logger.logInfo('Auth', 'signIn', 'Mastodon account verification', session.user.id, {
+            mastodonId: mastodonProfile.id,
+            instance
+          });
 
           // Vérifier si un autre utilisateur a déjà ce compte Mastodon
           const { data: existingUser } = await authClient
@@ -93,13 +107,21 @@ export const authConfig = {
             .single();
 
             if (existingUser && existingUser.id !== session.user.id) {
-              console.log("This Mastodon account is already linked to another user");
+              logger.logWarning('Auth', 'signIn', 'This Mastodon account is already linked to another user', session.user.id, {
+                existingUserId: existingUser.id,
+                mastodonId: mastodonProfile.id,
+                instance
+              });
               return '/auth/error?error=MastodonAccountAlreadyLinked';
             }
         }
         
         // Si on essaie de lier un compte Bluesky
         if (session?.user?.id && account.provider === 'bluesky') {
+          logger.logInfo('Auth', 'signIn', 'Linking Bluesky account', session.user.id, {
+            providerAccountId: account.providerAccountId
+          });
+          
           await supabaseAdapter.linkAccount({
             userId: session.user.id,
             type: account.type as AdapterAccountType,
@@ -113,16 +135,19 @@ export const authConfig = {
             id_token: account.id_token,
             session_state: account.session_state
           });
+          
+          logger.logInfo('Auth', 'signIn', 'Successfully linked Bluesky account', session.user.id);
         }
 
         // Autoriser la connexion dans tous les cas
+        logger.logInfo('Auth', 'signIn', 'Authentication successful', user?.id, { provider: account.provider });
         return true;
       } catch (error) {
-        console.error("Error in signIn callback:", error);
+        logger.logError('Auth', 'signIn', error, user?.id, { provider: account?.provider });
         return false;
       }
     },
-async jwt({ token, user, account, profile }) {
+    async jwt({ token, user, account, profile }) {
       // S'assurer que token.id existe et que user.id est une string
       if (!token.id && user?.id && typeof user.id === 'string') {
         token.id = user.id
@@ -132,16 +157,28 @@ async jwt({ token, user, account, profile }) {
         token.research_accepted = !!user.research_accepted
         token.have_seen_newsletter = !!user.have_seen_newsletter
         token.automatic_reconnect = !!user.automatic_reconnect
-
+        
+        logger.logInfo('Auth', 'jwt', 'User token initialization', user.id, {
+          hasOnboarded: !!user.has_onboarded,
+          hqxNewsletter: !!user.hqx_newsletter
+        });
       }
 
       if (account && profile) {
         try {
           if (account?.provider === 'bluesky') {
+            logger.logInfo('Auth', 'jwt', 'Bluesky token processing', token.id || '', {
+              provider: 'bluesky'
+            });
             // The user object should already be properly formatted from the credentials provider
             return token;
           }
           if (account.provider === 'twitter' && profile && isTwitterProfile(profile)) {
+            logger.logInfo('Auth', 'jwt', 'Twitter profile update', token.id || '', {
+              twitterId: profile.data.id,
+              twitterUsername: profile.data.username
+            });
+            
             await supabaseAdapter.updateUser(token.id || '', {
               provider: 'twitter',
               profile: profile
@@ -152,6 +189,14 @@ async jwt({ token, user, account, profile }) {
             token.name = profile.data.name
           }
           else if ((account.provider === 'mastodon' || account.provider === 'piaille') && profile && isMastodonProfile(profile)) {
+            const instance = profile.url ? new URL(profile.url).origin : undefined;
+            
+            logger.logInfo('Auth', 'jwt', 'Mastodon profile update', token.id || '', {
+              mastodonId: profile.id,
+              mastodonUsername: profile.username,
+              instance
+            });
+            
             await supabaseAdapter.updateUser(token.id || '', {
               provider: 'mastodon',
               profile: profile
@@ -178,7 +223,7 @@ async jwt({ token, user, account, profile }) {
           //   token.name = blueskyName
           // }
         } catch (error) {
-          console.error(`Error updating user profile for ${account.provider}:`, error)
+          logger.logError('Auth', 'jwt', error, token.id || '', { provider: account.provider });
         }
       }
 
@@ -186,6 +231,7 @@ async jwt({ token, user, account, profile }) {
     },
     async session({ session, token }) {
       if (!supabaseAdapter.getUser) {
+        logger.logError('Auth', 'session', new Error('Required adapter methods are not implemented'), token.id);
         throw new Error('Required adapter methods are not implemented');
       }
       if (session.user && token.id) {
@@ -193,6 +239,8 @@ async jwt({ token, user, account, profile }) {
           const user = await supabaseAdapter.getUser(token.id)
           
           if (user) {
+            logger.logDebug('Auth', 'session', 'User session refresh', token.id);
+            
             session.user = {
               ...session.user,
               id: token.id,
@@ -221,21 +269,21 @@ async jwt({ token, user, account, profile }) {
             }
           }
         } catch (error) {
-          console.error("Error fetching user data for session:", error)
+          logger.logError('Auth', 'session', error, token.id);
         }
       }
-
       return session
     },
     async redirect({ url, baseUrl }) {
-      // Always allow the full URL if it starts with the base URL
-      if (url.startsWith(baseUrl)) {
-        return url;
-      }
-      // For relative URLs, just append them to the base URL
-      return `${baseUrl}${url.startsWith('/') ? url : `/${url}`}`;
+      // Handles redirect after sign in
+      // console.log('REDIRECT', { url, baseUrl })
+      
+      logger.logDebug('Auth', 'redirect', 'Handling redirect after sign in', undefined, { url, baseUrl });
+      
+      return url.startsWith(baseUrl) 
+        ? url
+        : (url.startsWith('/') ? `${baseUrl}${url}` : baseUrl)
     }
-
   },
   providers: [
     {
@@ -248,7 +296,7 @@ async jwt({ token, user, account, profile }) {
           console.error('Missing credentials');
           return null;
         }
-
+        
         try {
           // The user object should already be properly formatted from the API
           return credentials as unknown as CustomAdapterUser;
@@ -332,8 +380,10 @@ async jwt({ token, user, account, profile }) {
       // version: "2.0",
       // checks: ["none"], // Désactiver la vérification du state pour Twitter
       async profile(profile, tokens) {
-        console.log("Twitter profile response:", profile);
-
+        logger.logInfo('Auth', 'twitter.profile', 'Processing Twitter profile', undefined, {
+          twitterId: profile.data.id,
+          twitterUsername: profile.data.username
+        });
         if (profile.status === 429 || profile.detail =="Too Many Requests") {
           console.log("Twitter rate limit detected in profile");
           throw new Error("RATE_LIMIT");
@@ -368,6 +418,12 @@ async jwt({ token, user, account, profile }) {
       // This will be rewrited on the fly later on
       issuer: "https://mastodon.space",
       profile(profile: MastodonProfile) {
+        logger.logInfo('Auth', 'mastodon.profile', 'Processing Mastodon profile', undefined, {
+          mastodonId: profile.id,
+          mastodonUsername: profile.username,
+          url: profile.url
+        });
+        
         return {
           id: profile.id,
           name: profile.display_name,

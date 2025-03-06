@@ -10,6 +10,7 @@ import type {
 import type { Profile } from "next-auth"
 import { encrypt, decrypt } from './encryption';
 import { auth } from '@/app/auth';
+import logger, {logInfo, withLogging } from '@/lib/log_utils';
 
 export interface CustomAdapterUser extends Omit<AdapterUser, 'image'> {
   has_onboarded: boolean
@@ -79,25 +80,18 @@ export async function createUser(
     profile?: ProviderProfile
   })
 ): Promise<CustomAdapterUser> {
-  console.log("\n=== [Adapter] Starting user creation ===")
-  console.log("→ Input user data:", JSON.stringify(userData, null, 2))
+  // logger.logInfo('Auth', 'createUser', 'Starting user creation', undefined, { userData })
 
 
   if ('provider' in userData && 
     'profile' in userData && 
     userData.provider === 'mastodon' && 
     userData.profile) {
-
-      //getUserbyAccount renvoie null si provider === 'mastodon'
-      //pour eviter de reattacher un account avec uniquement un user_id
-      // on verifier ici si l'association mastodon_id@mastodon_instance existe
-
-      console.log("Looking for existing user with Mastodon ID and instance")
     const mastodonProfile = userData.profile as MastodonProfile
     const instance = new URL(mastodonProfile.url).origin
 
-    console.log("Instance:", instance)
-    console.log("Mastodon ID:", mastodonProfile.id)
+    logger.logInfo('Auth', 'createUser', 'Starting user creation with Mastodon profile', undefined, { mastodonProfile, instance })
+
 
     // Vérifier si un utilisateur existe déjà avec cet ID et cette instance
     const { data: existingUser, error } = await authClient
@@ -107,8 +101,13 @@ export async function createUser(
       .eq('mastodon_instance', instance)
       .single()
 
+    if (error)
+    {
+      logger.logError('Auth', 'createUser', 'Error checking for existing user', undefined, { error })
+    }
+
     if (existingUser) {
-      console.log("Found existing user with same Mastodon ID and instance")
+      logger.logInfo('Auth', 'createUser', 'User already exists with Mastodon profile', undefined, { mastodonProfile, instance })
       return {
         id: existingUser.id,
         name: existingUser.name || null,
@@ -120,6 +119,7 @@ export async function createUser(
         oep_accepted: existingUser.oep_accepted,
         have_seen_newsletter: existingUser.have_seen_newsletter,
         research_accepted: existingUser.research_accepted,
+        automatic_reconnect: existingUser.automatic_reconnect,
         twitter_id: existingUser.twitter_id,
         twitter_username: existingUser.twitter_username,
         twitter_image: existingUser.twitter_image,
@@ -148,9 +148,7 @@ const providerIdField = `${provider}_id` as keyof CustomAdapterUser
       : (userData as any).bluesky_id || (userData as any).did // Try both fields
 
   
-
-    console.log('Looking for existing user with provider ID:', providerId)
-    const { data: existingUser } = await authClient
+    const { data: existingUser, error: existingUserError } = await authClient
       .from('users')
       .select('*')
       .eq(providerIdField, providerId)
@@ -159,6 +157,10 @@ const providerIdField = `${provider}_id` as keyof CustomAdapterUser
     if (existingUser) {
       console.log(`→ Found existing user with ${provider} ID:`, existingUser.id)
       return existingUser as CustomAdapterUser
+    }
+    else if (existingUserError)
+    {
+      logger.logError('Auth', 'createUser', 'Error checking for existing user', undefined, { provider, providerId, error: existingUserError })
     }
 
  // Créer les données utilisateur selon le provider
@@ -202,15 +204,15 @@ const providerIdField = `${provider}_id` as keyof CustomAdapterUser
       })
     }
 
-    console.log(`→ Creating new ${provider} user with data:`, userToCreate)
     const { data: newUser, error: createError } = await authClient
       .from('users')
       .insert([userToCreate])
       .select()
       .single()
 
+
     if (createError) {
-      console.error("Error creating user:", createError)
+      logger.logError('Auth', 'createUser', 'Error creating user', undefined, { provider, providerId, error: createError })
       throw new Error(createError.message)
     }
 
@@ -228,8 +230,6 @@ const providerIdField = `${provider}_id` as keyof CustomAdapterUser
     automatic_reconnect: false,
     email: 'none'
   }
-
-  console.log("→ Creating new user with data:", userToCreate)
   const { data: newUser, error: createError } = await authClient
     .from('users')
     .insert([userToCreate])
@@ -237,7 +237,7 @@ const providerIdField = `${provider}_id` as keyof CustomAdapterUser
     .single()
 
   if (createError) {
-    console.error("Error creating user:", createError)
+    logger.logError('Auth', 'createUser', 'Error creating user', undefined, { provider, providerId, error: createError })
     throw new Error(createError.message)
   }
 
@@ -252,7 +252,7 @@ export async function getUser(id: string): Promise<CustomAdapterUser | null> {
     .single()
 
   if (userError) {
-    console.error("Error fetching user:", userError)
+    logger.logError('Auth', 'getUser', 'Error getting user', undefined, { id, error: userError })
     return null
   }
 
@@ -288,16 +288,11 @@ export async function getUserByEmail(email: string): Promise<CustomAdapterUser |
 
 export async function getUserByAccount({ providerAccountId, provider }): Promise<CustomAdapterUser | null> {
 
-  console.log("\n=== [Adapter] Starting user search by account ===")
-  console.log("PROVIDER_ACCOUNT_ID:", providerAccountId)
-  console.log("PROVIDER:", provider)
-
-  console.log("=============================================================================")
   let column: string
   if (provider === 'twitter') {
     column = 'twitter_id'
   } else if (provider === 'mastodon' || provider === 'piaille') {
-    console.log("RETURNING NULL FOR GETUSERBYACCOUNT FOR MASTODON")
+    //for Mastodon the next auth doesnt handle singularity so we have to overwrite
     return null;
   } else if (provider === 'bluesky') {
     column = 'bluesky_id'
@@ -312,7 +307,7 @@ export async function getUserByAccount({ providerAccountId, provider }): Promise
     .single()
 
   if (userError) {
-    console.error("Error fetching user by account:", userError)
+logger.logError('Auth', 'getUserByAccount', 'Error getting user by account', undefined, { provider, providerAccountId, error: userError })
     return null
   }
 
@@ -363,11 +358,9 @@ export async function updateUser(
   }
 ): Promise<CustomAdapterUser> {
   const userId = typeof userOrId === 'string' ? userOrId : userOrId.id;
-  console.log("\n=== [Adapter] Starting user update ===")
-  console.log("→ User ID:", userId)
-  console.log("→ Provider data:", JSON.stringify(providerData, null, 2))
 
   if (!userId) {
+    logger.logError('Auth', 'updateUser', 'User ID is required', undefined, { userOrId })
     throw new Error("User ID is required")
   }
 
@@ -405,7 +398,7 @@ export async function updateUser(
     .single()
 
   if (updateError) {
-    console.error("Error updating user:", updateError)
+    logger.logError('Auth', 'updateUser', 'Error updating user', userId, { providerData, error: updateError })
     // Check if user exists
     const { data: existingUser, error: checkError } = await authClient
       .from("users")
@@ -414,9 +407,9 @@ export async function updateUser(
       .single()
     
     if (checkError) {
-      console.error("Error checking user existence:", checkError)
+      logger.logError('Auth', 'updateUser', 'Error checking user existence', userId, { providerData, error: checkError })
     } else {
-      console.log("Existing user:", existingUser)
+      logger.logInfo('Auth', 'updateUser', 'Existing user', userId, { providerData, user: existingUser })
     }
     throw updateError
   }
@@ -456,14 +449,12 @@ export function decodeJwt(token: string): { exp: number } | null {
     const payload = JSON.parse(Buffer.from(jwt[1], 'base64').toString())
     return payload
   } catch (error) {
-    console.error('❌ [Adapter] Erreur décodage JWT:', error)
     return null
   }
 }
 
 export async function linkAccount(account: AdapterAccount): Promise<void> {
-  console.log("\n=== [Adapter] linkAccount ===")
-  console.log("→ Linking account:", JSON.stringify(account, null, 2))
+  logger.logInfo('Auth', 'linkAccount', 'Linking account', account.user_id, { account })
   
   // Décoder l'access token pour obtenir l'expiration
   let expires_at = account.expires_at
@@ -471,7 +462,6 @@ export async function linkAccount(account: AdapterAccount): Promise<void> {
     const payload = decodeJwt(account.access_token)
     if (payload?.exp) {
       expires_at = payload.exp
-      console.log('📅 [Adapter] Expiration décodée du token:', new Date(expires_at * 1000).toISOString())
     }
   }
   
@@ -494,11 +484,9 @@ export async function linkAccount(account: AdapterAccount): Promise<void> {
     })
 
   if (error) {
-    console.log("❌ Error linking account:", error)
+    logger.logError('Auth', 'linkAccount', 'Error linking account', account.user_id, { account, error })
     throw error
   }
-
-  console.log("✅ Account linked successfully")
 }
 
 export async function createSession(session: {
@@ -584,7 +572,11 @@ export async function getAccountsByUserId(userId: string): Promise<AdapterAccoun
   const accounts: AdapterAccount[] = []
   const user = await getUser(userId)
 
-  if (!user) return accounts
+  if (!user) {
+    logger.logError('Auth', 'getAccountsByUserId', 'User not found', userId)
+    return accounts
+
+  }
 
   if (user.twitter_id) {
     accounts.push({
@@ -643,12 +635,8 @@ async function unlinkAccountImpl(
     .eq('id', userId)
     .single()
 
-  if (userError) {
-    console.error("Error fetching user:", userError)
-    throw new UnlinkError("User not found", "NOT_FOUND", 404)
-  }
-
-  if (!user) {
+  if (userError || !user) {
+    logger.logError('Auth', 'unlinkAccountImpl', 'Error fetching user', userId, { provider, error: userError })
     throw new UnlinkError("User not found", "NOT_FOUND", 404)
   }
 
@@ -672,6 +660,7 @@ async function unlinkAccountImpl(
 
   // Prevent unlinking the last account
   if (linkedAccounts === 1) {
+    logger.logError('Auth', 'unlinkAccountImpl', 'Cannot unlink the last account', userId, { provider })
     throw new UnlinkError(
       "Cannot unlink the last account. Add another account first.",
       "LAST_ACCOUNT",
@@ -687,7 +676,7 @@ async function unlinkAccountImpl(
     .eq('provider', provider)
 
   if (deleteError) {
-    console.error("Error deleting account:", deleteError)
+    logger.logError('Auth', 'unlinkAccountImpl', 'Error deleting account', userId, { provider, error: deleteError })
     throw new UnlinkError("Database error", "DATABASE_ERROR", 500)
   }
 
@@ -708,11 +697,9 @@ async function unlinkAccountImpl(
     .eq('id', userId)
 
   if (updateError) {
-    console.error("Error updating user:", updateError)
+    logger.logError('Auth', 'unlinkAccountImpl', 'Error updating user', userId, { provider, error: updateError })
     throw new UnlinkError("Database error", "DATABASE_ERROR", 500)
   }
-
-  console.log("→ Account unlinked successfully")
 }
 
 export async function unlinkAccount(
@@ -724,23 +711,15 @@ export async function unlinkAccount(
 
   const session = await auth()
   if (!session?.user?.id) {
+    logger.logError('Auth', 'unlinkAccount', 'User not found', session?.user?.id, { provider: account.provider, providerAccountId: account.providerAccountId })
     throw new UnlinkError("User not found", "NOT_FOUND", 404)
   }
 
-  // if (account.provider == "mastodon")
-  // {
     const user = await getUser(session.user.id)
     if (!user) {
+      logger.logError('Auth', 'unlinkAccount', 'User not found', session?.user?.id, { provider: account.provider, providerAccountId: account.providerAccountId })
       throw new UnlinkError("User not found", "NOT_FOUND", 404)
     }
-  // }
-  // else 
-  // {
-  //   const user = await getUserByAccount(account)
-  //   if (!user) {
-  //     throw new UnlinkError("User not found", "NOT_FOUND", 404)
-  //   }
-  // }
 
 
   await unlinkAccountImpl(user.id, account.provider as 'twitter' | 'bluesky' | 'mastodon')
