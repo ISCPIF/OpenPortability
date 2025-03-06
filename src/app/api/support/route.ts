@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
 import { auth } from '@/app/auth';
+import logger, { withLogging } from '@/lib/log_utils';
 
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
@@ -12,7 +13,7 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-export async function POST(request: Request) {
+async function supportHandler(request: Request) {
   try {
     const session = await auth();
     const { subject, message, email } = await request.json();
@@ -42,10 +43,15 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error sending email:', error);
+    const userId = (await auth())?.user?.id || 'unknown';
+    logger.logError('API', 'POST /api/support', error, userId, {
+      context: 'Sending support email'
+    });
     return NextResponse.json(
       { error: 'Failed to send email' },
       { status: 500 }
     );
   }
 }
+
+export const POST = withLogging(supportHandler);

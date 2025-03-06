@@ -1,26 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from '@/lib/supabase'
 import { auth } from "@/app/auth";
+import logger, { withLogging } from '@/lib/log_utils';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
-export async function GET(request: NextRequest) {
+async function getImportStatus(request: NextRequest) {
   try {
     // Récupérer et attendre les paramètres
     const jobId = request.nextUrl.pathname.split('/').pop();
-    // console.log(`📡 [Import Status API] Fetching status for job: ${jobId}`);
 
     const session = await auth();
-    // console.log('[Import Status] Session check:', { 
-    //   userId: session?.user?.id,
-    //   hasSession: !!session 
-    // });
-
+    
     if (!session?.user?.id) {
-      console.log('❌ [Import Status API] Unauthorized access attempt');
+      logger.logWarning('API', 'GET /api/import-status/[jobId]', 'Unauthorized access attempt');
       return NextResponse.json(
         { error: "Not authenticated" },
         { status: 401 }
@@ -28,7 +19,6 @@ export async function GET(request: NextRequest) {
     }
 
     // Récupérer le statut du job
-    // console.log('[Import Status] Fetching job details');
     const { data: job, error: jobError } = await supabase
       .from('import_jobs')
       .select('*')
@@ -37,7 +27,10 @@ export async function GET(request: NextRequest) {
       .single();
 
     if (jobError) {
-      console.error('❌ [Import Status API] Database error:', jobError);
+      logger.logError('API', 'GET /api/import-status/[jobId]', new Error(jobError.message), session.user.id, { 
+        jobId,
+        context: 'Database query error'
+      });
       return NextResponse.json(
         { error: 'Failed to fetch job status' },
         { status: 500 }
@@ -45,7 +38,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (!job) {
-      console.log(`❌ [Import Status API] Job ${jobId} not found`);
+      logger.logWarning('API', 'GET /api/import-status/[jobId]', 'Job not found', session.user.id, { jobId });
       return NextResponse.json(
         { error: 'Job not found' },
         { status: 404 }
@@ -59,7 +52,7 @@ export async function GET(request: NextRequest) {
       processed: 0
     };
 
-    console.log('✅ [Import Status API] Job status retrieved:', {
+    logger.logInfo('API', 'GET /api/import-status/[jobId]', 'Job status retrieved', session.user.id, {
       jobId: job.id,
       status: job.status,
       progress: `${stats.processed}/${stats.total} items`,
@@ -77,10 +70,15 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('❌ [Import Status API] Unexpected error:', error);
+    const userId = (await auth())?.user?.id || 'unknown';
+    logger.logError('API', 'GET /api/import-status/[jobId]', error, userId, { 
+      context: 'Unexpected error in import status check'
+    });
     return NextResponse.json(
       { error: 'Failed to check import status' },
       { status: 500 }
     );
   }
 }
+
+export const GET = withLogging(getImportStatus);

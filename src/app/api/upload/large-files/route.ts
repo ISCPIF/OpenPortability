@@ -1,20 +1,9 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from '@/lib/supabase'
 import { auth } from "@/app/auth";
 import { writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
-
-// Initialize Supabase client
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false
-    }
-  }
-);
+import logger, { withLogging } from '@/lib/log_utils';
 
 const TEMP_UPLOAD_DIR = join(process.cwd(), 'tmp', 'uploads');
 
@@ -24,30 +13,13 @@ async function ensureUserTempDir(userId: string) {
   return userDir;
 }
 
-export async function POST(request: Request) {
+async function largeFilesUploadHandler(request: Request) {
   try {
-    console.log(' [Large Files API] Starting file upload process');
-    
     const session = await auth();
     if (!session?.user || session.user.has_onboarded) {
-      console.log(' [Large Files API] Unauthorized access attempt');
+      logger.logWarning('API', 'POST /api/upload/large-files', 'Unauthorized access attempt', session?.user?.id || 'unknown');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-
-    // 1. Vérifier si l'utilisateur a déjà complété son onboarding
-    // const { data: userData, error: userError } = await supabase
-    //   .from('users')
-    //   .select('has_onboarded')
-    //   .eq('id', session.user.id)
-    //   .single();
-
-    // if (session.user.has_onboarded) {
-    //   console.log(' [Large Files API] User has already completed onboarding');
-    //   return NextResponse.json(
-    //     { error: 'User has already completed onboarding' },
-    //     { status: 400 }
-    //   );
-    // }
 
     // 2. Vérifier si l'utilisateur a déjà un job en cours
     const { data: existingJobs, error: jobCheckError } = await supabase
@@ -57,7 +29,9 @@ export async function POST(request: Request) {
       .in('status', ['pending', 'processing']);
 
     if (jobCheckError) {
-      console.error(' [Large Files API] Error checking existing jobs:', jobCheckError);
+      logger.logError('API', 'POST /api/upload/large-files', jobCheckError, session.user.id, {
+        context: 'Checking existing jobs'
+      });
       return NextResponse.json(
         { error: 'Failed to verify existing jobs' },
         { status: 500 }
@@ -65,7 +39,7 @@ export async function POST(request: Request) {
     }
 
     if (existingJobs && existingJobs.length > 0) {
-      console.log(' [Large Files API] User has pending or processing jobs');
+      logger.logWarning('API', 'POST /api/upload/large-files', 'User has pending or processing jobs', session.user.id);
       return NextResponse.json(
         { error: 'You already have a file upload in progress' },
         { status: 400 }
@@ -75,10 +49,8 @@ export async function POST(request: Request) {
     const formData = await request.formData();
     const files = formData.getAll('files');
 
-    console.log(` [Large Files API] Received ${files.length} files for user ${session.user.id}`);
-
     if (!files.length) {
-      console.log(' [Large Files API] No files provided in request');
+      logger.logWarning('API', 'POST /api/upload/large-files', 'No files provided in request', session.user.id);
       return NextResponse.json(
         { error: 'No files provided' },
         { status: 400 }
@@ -87,7 +59,6 @@ export async function POST(request: Request) {
 
     // Créer le dossier temporaire pour l'utilisateur
     const userDir = await ensureUserTempDir(session.user.id);
-    console.log(` [Large Files API] Created/ensured temp directory: ${userDir}`);
 
     // Sauvegarder les fichiers
     for (const file of files) {
@@ -97,20 +68,20 @@ export async function POST(request: Request) {
         
         // Vérifier si le fichier a la méthode arrayBuffer
         if (typeof file.arrayBuffer !== 'function') {
-          console.log(` [Large Files API] Invalid file object for ${fileName}`);
+          logger.logWarning('API', 'POST /api/upload/large-files', `Invalid file object for ${fileName}`, session.user.id);
           continue;
         }
 
         const buffer = Buffer.from(await file.arrayBuffer());
         await writeFile(filePath, buffer);
-        console.log(` [Large Files API] Saved ${fileName} (${buffer.length} bytes)`);
       } catch (error) {
-        console.error(` [Large Files API] Error saving file ${fileName}:`, error);
+        logger.logError('API', 'POST /api/upload/large-files', error, session.user.id, {
+          context: `Saving file ${file.name}`
+        });
       }
     }
 
     // Créer le job pour le traitement asynchrone
-    console.log(' [Large Files API] Creating import job');
     const { data: job, error: jobError } = await supabase
       .from('import_jobs')
       .insert({
@@ -128,21 +99,27 @@ export async function POST(request: Request) {
       .single();
 
     if (jobError) {
-      console.error(' [Large Files API] Failed to create job:', jobError);
+      logger.logError('API', 'POST /api/upload/large-files', jobError, session.user.id, {
+        context: 'Creating import job'
+      });
       throw jobError;
     }
 
-    console.log(` [Large Files API] Job created successfully: ${job.id}`);
     return NextResponse.json({ 
       jobId: job.id,
       message: 'Files uploaded successfully and queued for processing'
     });
 
   } catch (error) {
-    console.error(' [Large Files API] Upload error:', error);
+    const userId = (await auth())?.user?.id || 'unknown';
+    logger.logError('API', 'POST /api/upload/large-files', error, userId, {
+      context: 'Processing upload'
+    });
     return NextResponse.json(
       { error: 'Failed to process upload' },
       { status: 500 }
     );
   }
 }
+
+export const POST = withLogging(largeFilesUploadHandler);

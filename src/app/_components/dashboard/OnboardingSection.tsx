@@ -4,7 +4,6 @@ import { Upload } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { plex } from '@/app/fonts/plex';
 import { useTranslations } from 'next-intl';
-import DashboardLoginButtons from '@/app/_components/DashboardLoginButtons';
 import { UserSession } from '@/lib/types/common';
 
 type OnboardingSectionProps = {
@@ -39,7 +38,7 @@ export default function OnboardingSection({
         </div>
       </motion.button>
       
-      {session?.twitter_id ? (
+      {session?.twitter_id && (
         <button
           onClick={() => router.push('/reconnect')}
           className={`mt-4 sm:mt-6 text-sm text-white text-center hover:text-[#d6356f] transition-colors ${plex.className} mb-4 sm:mb-6`}
@@ -47,17 +46,6 @@ export default function OnboardingSection({
         >
           {t('no_archive_yet')}
         </button>
-      ) : (
-        <DashboardLoginButtons
-          connectedServices={{
-            twitter: !!session?.twitter_id,
-            bluesky: !!session?.bluesky_username,
-            mastodon: !!session?.mastodon_username
-          }}
-          hasUploadedArchive={true}
-          onLoadingChange={setIsLoading}
-          mastodonInstances={mastodonInstances}
-        />
       )}
     </div>
   );
