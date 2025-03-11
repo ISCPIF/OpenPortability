@@ -34,28 +34,9 @@ export default function ReconnexionOptions({ onAutomatic, onManual, globalStats,
 
   return (
     <div className="flex flex-col items-center w-full max-w-2xl mx-auto px-4 sm:px-0">
-      <div className="w-full bg-[#2a39a9] p-3 sm:p-4 rounded-lg">
-        {!has_onboarded && (
-          <div className="border border-[#2a39a9] rounded-lg p-4 sm:p-6 mb-4 sm:mb-8">
-            <div className="text-white mb-4 sm:mb-6">
-              <p className="font-bold text-center mb-2 text-sm sm:text-base">{t('not_onboarded_title')}</p>
-              <p className="text-xs sm:text-sm text-justify">{t('not_onboarded_description')}</p>
-            </div>
-            <div className="flex justify-center p-2 sm:p-4">
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => router.push('/upload')}
-                className="rounded-full bg-[#d6356f] text-white py-2 sm:py-4 px-4 sm:px-6 text-sm sm:text-base font-bold flex items-center justify-center gap-2 sm:gap-3"
-              >
-                {tt('importButton')}
-              </motion.button>
-            </div>
-          </div>
-        )}
-        
-        <h2 className={`${plex.className} text-lg sm:text-xl text-white font-bold mb-6 sm:mb-12 text-center`}>
-          {t('title')}
+      <div className="w-full bg-[#2a39a9] p-3 sm:p-4 rounded-lg">        
+        <h2 className={`${plex.className} text-lg sm:text-xl text-white font-bold mb-4 text-center`}>
+          {has_onboarded ? t('title') : t('titleNotUploadYet')}
         </h2>
         <div className="flex flex-col space-y-6 sm:space-y-8 max-w-3xl mx-auto">
           {/* First option */}
@@ -88,11 +69,29 @@ export default function ReconnexionOptions({ onAutomatic, onManual, globalStats,
               {t('buttons.manual')}
             </motion.button>
             <div className="text-white text-xl sm:text-2xl hidden sm:block">›</div>
-            <div className={`${plex.className} text-xs sm:text-sm text-white flex-1 text-center sm:text-left`}>
-              {t('descriptions.manual')}
+              <div className={`${plex.className} text-xs sm:text-sm text-white flex-1 text-center sm:text-left`}>
+                {t('descriptions.manual')}
+              </div>
             </div>
           </div>
-        </div>
+
+          {!has_onboarded && (
+          <div className="border border-[#2a39a9] rounded-lg mt-4">
+            <div className="text-white mb-4 sm:mb-6">
+              <p className="font-bold text-center mb-2 text-sm sm:text-base">{t('not_onboarded_title')}</p>
+            </div>
+            <div className="flex justify-center">
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => router.push('/upload')}
+                className="rounded-full bg-[#d6356f] text-white py-2 sm:py-4 px-4 sm:px-6 text-sm sm:text-base font-bold flex items-center justify-center gap-2 sm:gap-3"
+              >
+                {tt('importButton')}
+              </motion.button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
