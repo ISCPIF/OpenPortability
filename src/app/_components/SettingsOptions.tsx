@@ -1,6 +1,6 @@
 'use client'
 
-import { Fragment, useState, useEffect } from 'react'
+import { Fragment, useState } from 'react'
 import { Menu, Transition, Dialog } from '@headlessui/react'
 import { signOut } from 'next-auth/react'
 import { IoEllipsisVertical } from 'react-icons/io5'
@@ -8,68 +8,31 @@ import { useTranslations } from 'next-intl'
 import { Trash2, CheckCircle2 } from 'lucide-react'
 import { plex } from '@/app/fonts/plex'
 import { Switch } from '@headlessui/react'
+import { useNewsLetter } from '@/hooks/useNewsLetter'
 
 export default function SettingsOptions() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
-  const [acceptOEP, setAcceptOEP] = useState(false)
-  const [acceptResearch, setAcceptResearch] = useState(false)
-  const [acceptOEPNewsletter, setAcceptOEPNewsletter] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
+  const { preferences, isLoading, updatePreferences } = useNewsLetter()
   const t = useTranslations('settings')
-
-  useEffect(() => {
-    const fetchPreferences = async () => {
-      try {
-        const response = await fetch('/api/newsletter', { method: 'GET' });
-        if (response.ok) {
-          const responseData = await response.json();
-          const preferences = responseData.data;
-          setAcceptResearch(!!preferences.research_accepted);
-          setAcceptOEP(!!preferences.oep_accepted);
-          setAcceptOEPNewsletter(!!preferences.oep_newsletter);
-        }
-      } catch (error) {
-        console.error('Error fetching preferences:', error);
-      }
-    };
-    fetchPreferences();
-  }, []);
 
   const handleSwitchChange = async (type: 'research' | 'oep' | 'oepNewsletter', value: boolean) => {
     try {
-      setIsLoading(true);
-      const response = await fetch('/api/newsletter', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          acceptOEP: type === 'oep' ? value : acceptOEP,
-          research_accepted: type === 'research' ? value : acceptResearch,
-          oep_newsletter: type === 'oepNewsletter' ? value : acceptOEPNewsletter,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to update preferences');
-      }
-
-      if (type === 'research') {
-        setAcceptResearch(value);
-      } else if (type === 'oep') {
-        setAcceptOEP(value);
-      } else {
-        setAcceptOEPNewsletter(value);
-      }
+      const updateObj = type === 'research' 
+        ? { research_accepted: value }
+        : type === 'oep'
+          ? { oep_accepted: value }
+          : { oep_newsletter: value };
       
-      // Show success message
-      setShowSuccess(true);
-      setTimeout(() => setShowSuccess(false), 3000);
+      const success = await updatePreferences(updateObj);
+      
+      if (success) {
+        // Show success message
+        setShowSuccess(true);
+        setTimeout(() => setShowSuccess(false), 3000);
+      }
     } catch (error) {
       console.error('Error updating preferences:', error);
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -124,15 +87,15 @@ export default function SettingsOptions() {
                   <span className="text-xs text-white/60">{t('newsletter')}</span>
                   <Switch
                     disabled={isLoading}
-                    checked={acceptOEP}
+                    checked={preferences.oep_accepted}
                     onChange={(value) => handleSwitchChange('oep', value)}
                     className={`${
-                      acceptOEP ? 'bg-blue-600' : 'bg-gray-700'
+                      preferences.oep_accepted ? 'bg-blue-600' : 'bg-gray-700'
                     } relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2`}
                   >
                     <span
                       className={`${
-                        acceptOEP ? 'translate-x-5' : 'translate-x-1'
+                        preferences.oep_accepted ? 'translate-x-5' : 'translate-x-1'
                       } inline-block h-3 w-3 transform rounded-full bg-white transition-transform`}
                     />
                   </Switch>
@@ -141,15 +104,15 @@ export default function SettingsOptions() {
                   <span className="text-xs text-white/60">{t('oepNewsletter')}</span>
                   <Switch
                     disabled={isLoading}
-                    checked={acceptOEPNewsletter}
+                    checked={preferences.oep_newsletter}
                     onChange={(value) => handleSwitchChange('oepNewsletter', value)}
                     className={`${
-                      acceptOEPNewsletter ? 'bg-blue-600' : 'bg-gray-700'
+                      preferences.oep_newsletter ? 'bg-blue-600' : 'bg-gray-700'
                     } relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2`}
                   >
                     <span
                       className={`${
-                        acceptOEPNewsletter ? 'translate-x-5' : 'translate-x-1'
+                        preferences.oep_newsletter ? 'translate-x-5' : 'translate-x-1'
                       } inline-block h-3 w-3 transform rounded-full bg-white transition-transform`}
                     />
                   </Switch>
@@ -158,15 +121,15 @@ export default function SettingsOptions() {
                   <span className="text-xs text-white/60">{t('research')}</span>
                   <Switch
                     disabled={isLoading}
-                    checked={acceptResearch}
+                    checked={preferences.research_accepted}
                     onChange={(value) => handleSwitchChange('research', value)}
                     className={`${
-                      acceptResearch ? 'bg-blue-600' : 'bg-gray-700'
+                      preferences.research_accepted ? 'bg-blue-600' : 'bg-gray-700'
                     } relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2`}
                   >
                     <span
                       className={`${
-                        acceptResearch ? 'translate-x-5' : 'translate-x-1'
+                        preferences.research_accepted ? 'translate-x-5' : 'translate-x-1'
                       } inline-block h-3 w-3 transform rounded-full bg-white transition-transform`}
                     />
                   </Switch>
