@@ -111,11 +111,11 @@ export default function DashboardLoginButtons({
           ) : (
             service === 'bluesky' ? (
               <>
-                {t('services.connect_bluesky_before')} <span className="font-bold">{blueskyNotFollowed}</span> {t('services.connect_bluesky_after')}
+                {t('services.connect_bluesky_before')} <span className="font-bold text-[#d6356f]">{blueskyNotFollowed}</span> {t('services.connect_bluesky_after')}
               </>
             ) : service === 'mastodon' ? (
               <>
-                {t('services.connect_mastodon_before')} <span className="font-bold">{mastodonNotFollowed}</span> {t('services.connect_mastodon_after')}
+                {t('services.connect_mastodon_before')} <span className="font-bold text-[#d6356f]">{mastodonNotFollowed}</span> {t('services.connect_mastodon_after')}
               </>
             ) : (
               t('services.connect')
