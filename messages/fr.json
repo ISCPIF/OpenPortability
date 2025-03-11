@@ -401,7 +401,7 @@
       "emailLabel": "Inscrivez votre mail pour rester informé.e (optionnel) :",
       "emailPlaceholder": "pseudo@nomdedomaine.com",
       "consent": "Je souhaite contribuer à la mobilisation autour d'OpenPortability avec {link_oep} et rester informé.e de leur futurs actions",
-      "researchConsent": "Je souhaite partager avec le CNRS mon graphe de connexions à des fins de recherche. Il sera traité de manière aggrégée. Aucun donnée personnelle ne sera rendu publique.",
+      "researchConsent": "Je souhaite partager avec le CNRS mon graphe de connexions à des fins de recherche. Il sera traité de manière aggrégée. Aucune donnée personnelle ne sera rendue publique.",
       "errors": {
         "missingEmail": "E-mail manquant"
       }
