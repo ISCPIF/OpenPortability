@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import { useTranslations } from 'next-intl';
 import { FaCheck, FaUsers } from "react-icons/fa";
 import Image from 'next/image';
@@ -65,7 +66,7 @@ export default function MigrateStats({ stats, session, simpleView = false }: Sta
   const t = useTranslations('migrateSea');
   const isMobile = useIsMobile();
 
-  // console.log("stats from MigrateStats", stats)
+  console.log("isMobile --->", isMobile)
 
   if (!stats) return null;
 
@@ -79,8 +80,8 @@ export default function MigrateStats({ stats, session, simpleView = false }: Sta
 
   // Classes conditionnelles basées sur la taille de l'écran
   const titleClass = isMobile 
-    ? `${caveat.className} text-[3rem] text-[#d6356f] z-[15] text-center font-bold` 
-    : `${caveat.className} text-[5rem] text-[#d6356f] z-[15] text-center font-bold`;
+    ? `${caveat.className} text-[2.5rem] leading-tight text-[#d6356f] z-[15] text-center font-bold` 
+    : `${caveat.className} text-[5rem] whitespace-nowrap text-[#d6356f] z-[15] text-center font-bold`;
   
   const numberClass = isMobile 
     ? `${plex.className} text-[40px] text-[#66D9E8] font-bold` 
@@ -107,7 +108,14 @@ export default function MigrateStats({ stats, session, simpleView = false }: Sta
   return (
     <div className={`w-full ${containerMargin}`}>
       <h1 className={titleClass}>
-        {t('title')}
+        {isMobile 
+          ? t('title').split(' ').map((word, index, array) => (
+              <React.Fragment key={index}>
+                {word}
+                {index < array.length - 1 && <br />}
+              </React.Fragment>
+            ))
+          : t('title')}
       </h1>
 
       {!simpleView && (
