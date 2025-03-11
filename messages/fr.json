@@ -431,7 +431,7 @@
     "close": "Fermer"
   },
   "ReconnexionOptions": {
-    "title": "Choisissez comment vous souhaitez vous reconnecter à vos abonnements",
+    "title": "Choisissez votre reconnexion :",
     "titleNotUploadYet": "OpenPortability a trouvé des comptes sur Bluesky et Mastodon que vous suiviez à priori sur X/Twitter :",
     "not_onboarded_title": "Pour une reconnection plus complète, importez votre archive X/Twitter :",
     "not_onboarded_description": "Pas de probleme nous avons trouvé des connexions pour vous d'apres vos associations de compte. Pour plus de comptes a associer et un meilluer ciblage, nous vous conseillons quand meme d'importer votre archive de donnees Twitter/X",
@@ -523,12 +523,12 @@
     "close": "Fermer"
   },
   "SuccessAutomaticReconnexion": {
-    "congratulations": "Un grand bravo",
-    "secondObjective": "Vous avez terminé le 2ème objectif et vous vous êtes reconnecté à {count} comptes. Vous êtes arrivé à bon port !",
+    "congratulations": "Bravo",
+    "secondObjective": "Vous vous êtes reconnecté à {count} comptes. Invitez vos contacts à faire de même !",
     "notification": "Nous continuerons à vous informer si de nouveaux comptes peuvent être reconnectés, par mail ou par le réseau de votre choix, selon vos préférences.",
     "stats": {
-      "blueskyFollowing": "Reconnexions sur Bluesky",
-      "mastodonFollowing": "Reconnexions sur Mastodon"
+      "blueskyFollowing": "Reconnexions",
+      "mastodonFollowing": "Reconnexions"
     },
     "goToDashboard": "Retourner à la reconnexion",
     "firstObjective": "1er objectif réussi, vous êtes inscrit.e pour le voyage !",
