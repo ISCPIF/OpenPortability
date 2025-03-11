@@ -526,10 +526,10 @@ export default function UploadPage() {
           </div>
 
           <div className="rounded-xl p-4  max-w-2xl  relative">
-            <h3 className={`${plex.className} text-xl font-bold mb-4 text-white text-center`}>{t('helpModal.title')}</h3>
-            <div className={`${plex.className} text-justify`}>
+            <h3 className={`${plex.className} text-xl font-bold mb-4 text-white text-center text-white`}>{t('helpModal.title')}</h3>
+            <div className={`${plex.className} text-justify text-white`}>
               <p>{t('helpModal.description')}</p>
-              <ol className="list-decimal list-inside space-y-2">
+              <ol className="list-decimal list-inside space-y-2 text-white">
                 {t.raw('helpModal.steps').map((step: string, index: number) => (
                   <li key={index}>{step}</li>
                 ))}
