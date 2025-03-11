@@ -45,7 +45,7 @@
       "description": "En uploadant vos fichiers Twitter/X, vous confirmez que :",
       "conditions": {
         "ownership": "Vous êtes le propriétaire légitime de ces données.",
-        "cnrsUsage": "Vous acceptez que les donnees fournies soient utilisées par le Centre Nationale de la Recherche Scientifique (CNRS) dans le cadre de l'opération OpenPortability.",
+        "cnrsUsage": "Vous acceptez que les donnees fournies soient utilisées par le Centre Nationale de la Recherche Scientifique (CNRS) dans le cadre du projet de recherche OpenPortability.",
         "profileCreation": "Vous comprenez que ces données seront utilisées pour créer votre profil sur OpenPortability."
       },
       "buttons": {
