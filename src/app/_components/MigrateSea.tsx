@@ -108,19 +108,33 @@ export default function MigrateSea({ stats }: SeaProps) {
   const Boats = () => {
     return (
       <>
-        <Boat model={3} top={120} left={40} scale={2} zindex={20} />
-        <Boat model={2} top={140} left={60} scale={1.2} zindex={20} />
-        <Boat model={4} top={130} left={75} scale={1.2} zindex={20} />
-        <Boat model={1} top={120} left={25} scale={1.2} zindex={20} />
-        {/* <Boat model={6} top={130} left={100} scale={1.2} zindex={20} /> */}
-        {/* <Boat model={7} top={190} left={10} scale={1.2} zindex={20} /> */}
+        <Boat model={3} top={100} left={40} scale={2} zindex={20} />
+        <Boat model={2} top={110} left={60} scale={1.2} zindex={20} />
+        {/* <Boat model={4} top={130} left={77} scale={1.2} zindex={20} /> */}
+        <Boat model={1} top={90} left={25} scale={1.2} zindex={20} />
+        {/* <Boat model={6} top={140} left={100} scale={1.2} zindex={20} /> */}
+        {/* <Boat model={7} top={130} left={10} scale={1.2} zindex={20} /> */}
       </>
     );
   };
 
   return (
     <div className={`absolute top-0 left-0 w-full ${isMobile ? 'h-[11rem]' : 'h-[23rem]'}`}>
-      <Image src={seaBackground} fill alt="" className="object-cover"></Image>
+      {/* Container pour l'arrière-plan répété */}
+      <div className="absolute top-0 left-0 w-full h-full overflow-hidden">
+        {/* Ajout d'un conteneur pour gérer le motif répété */}
+        <div className="w-full h-full">
+          {/* Répéter l'image plusieurs fois - style inline pour éliminer tout espace */}
+          <div className="sea-bg-repeat h-full flex flex-nowrap" style={{ fontSize: 0 }}>
+            <Image src={seaBackground} alt="" height={isMobile ? 176 : 368} width={800} className="block" style={{ margin: 0, padding: 0 }} />
+            <Image src={seaBackground} alt="" height={isMobile ? 176 : 368} width={800} className="block" style={{ margin: 0, padding: 0 }} />
+            <Image src={seaBackground} alt="" height={isMobile ? 176 : 368} width={800} className="block" style={{ margin: 0, padding: 0 }} />
+            {/* <Image src={seaBackground} alt="" height={isMobile ? 176 : 368} width={600} className="block" style={{ margin: 0, padding: 0 }} /> */}
+            {/* <Image src={seaBackground} alt="" height={isMobile ? 176 : 368} width={400} className="block" style={{ margin: 0, padding: 0 }} /> */}
+          </div>
+        </div>
+      </div>
+      
       {/* Modifier le padding-top en fonction du type d'appareil */}
       <div className={`relative z-[5] ${isMobile ? 'flex items-center justify-center h-full' : 'pt-12'}`}>
         <div className="relative z-[5]">
@@ -131,7 +145,7 @@ export default function MigrateSea({ stats }: SeaProps) {
             height={125}
             className="mx-auto"
           />
-          <div className="w-full">
+          <div className="w-max">
             {/* N'afficher les bateaux que sur les écrans non-mobiles */}
             {!isMobile && <Boats />}
           </div>
