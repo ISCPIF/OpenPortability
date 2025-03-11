@@ -21,8 +21,14 @@ export default async function Home() {
       redirect(`/${locale}/auth/signin`);
     }
     
+    if (!session.user.has_onboarded){
     // console.log("➡️ [Home] Redirecting to dashboard...");
     redirect(`/${locale}/dashboard`);
+    }
+    else
+    {
+      redirect(`/${locale}/reconnect`);
+    }
   } catch (error) {
     console.error("❌ [Home] Error:", error);
     throw error;
