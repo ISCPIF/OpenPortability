@@ -276,6 +276,7 @@
     "logoCNRS": {
       "alt": "CNRS, Centre national de la recherche scientifique"
     },
+    "downloadingContacts": "Vos contacts sont en train d'être téléchargés. Il vous faudra ensuite valider la reconnexion.",
     "progress": {
       "total": {
         "title": "Progression totale",
@@ -302,8 +303,9 @@
       "following": "Abonnements"
     },
     "button": {
-      "dashboard": "Retourner au dashboard"
-    }
+      "dashboard": "Aller à la reconnexion"
+    },
+    "redirecting": "Redirection automatique dans"
   },
   "profile": {
     "unlinkConfirmation": "Êtes-vous sûr de vouloir délier votre compte {provider} ?",
