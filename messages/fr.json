@@ -397,7 +397,7 @@
     "description": "Vous êtes sur le point d'exercer votre droit à la portabilité de vos données depuis X vers BlueSky et/ou Mastodon tout en participant à un projet de recherche sur les réseaux sociaux. Cela vous prendra 5min.\n\nOpenPortability va référencer vos identités numériques et vous aider à recréer progressivement votre communauté sur BlueSky et/ou Mastodon, sans impact sur votre compte X.\n\nAu fur et à mesure que d'autres utilisateurs s'inscriront sur OpenPortability les liens référencés sur X seront recréés sur BlueSky ou Mastodon avec leur accord. N'hésitez pas à encourager vos abonnés à faire de même !\n\nCette \"copie\" de votre réseau social peut prendre plusieurs jours.\n\nEn utilisant OpenPortability, vous acceptez que vos données soient traitées conformément à {lien} et consentez au transfert éventuel de vos données en dehors de l'Union européenne (ex. serveurs BlueSky).",
     "privacyPolicyLink": "la note d'information sur la protection des données",
     "newsletter": {
-      "subtitle": "Je souhaite être accompagné.e par OpenPortability.",
+      "subtitle": "Je souhaite être accompagné.e et informé.e par OpenPortability via les réseaux sociaux ou par mail.",
       "emailLabel": "Inscrivez votre mail pour rester informé.e (optionnel) :",
       "emailPlaceholder": "pseudo@nomdedomaine.com",
       "consent": "Je souhaite contribuer à la mobilisation autour d'OpenPortability avec {link_oep} et rester informé.e de leur futurs actions",
