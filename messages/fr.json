@@ -423,7 +423,8 @@
     "migrationComplete": "Migration terminée !",
     "migrationProgress": "{current} comptes migrés sur {total}",
     "migrationCompleteStats": "{count} comptes migrés avec succès",
-    "needBothAccounts": "Commencez par associer vos comptes Bluesky et/ou mastodon pour vous reconnecter a vos contacts",
+    "needBothAccounts": "Commencez par associer vos comptes Bluesky et/ou mastodon pour vous reconnecter à {count} contacts",
+    "noUploadYet": "{count} comptes ont a priori été retrouvés parmis ceux que vous suiviez sur X",
     "minimize": "Réduire",
     "close": "Fermer"
   },
