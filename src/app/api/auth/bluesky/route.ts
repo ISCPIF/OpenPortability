@@ -42,7 +42,7 @@ async function blueskyPostHandler(req: Request) {
       logger.logInfo('API', 'POST /api/auth/bluesky', 'Updating existing Bluesky profile', userId)
       await blueskyRepository.updateBlueskyProfile(userId, profile)
       await blueskyRepository.linkBlueskyAccount(userId, authResult.data)
-    } else if (userId) {
+    } else if (userId && userId !== "anonymous") {
       // L'utilisateur est connecté mais pas lié à ce compte Bluesky
       logger.logInfo('API', 'POST /api/auth/bluesky', 'Linking Bluesky account to existing user', userId)
       await blueskyRepository.updateBlueskyProfile(userId, profile)
