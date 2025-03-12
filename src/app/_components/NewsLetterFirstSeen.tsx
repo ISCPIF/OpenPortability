@@ -160,8 +160,8 @@ export default function NewsLetterFirstSeen({ userId, onSubscribe, onClose }: Ne
 
 
   return (
-    <div className="bg-white rounded-2xl p-4 max-w-2xl w-full relative max-h-[90vh] overflow-y-auto">
-      <div className="absolute top-4 right-4 flex items-center gap-2">
+  <div className="bg-white rounded-2xl p-4 max-w-2xl md:max-w-3xl w-full relative max-h-[90vh] overflow-y-auto mx-auto">
+  <div className="absolute top-4 right-4 flex items-center gap-2">
         {/* Language Selector */}
         <div className="relative mr-6">
           <button
@@ -218,7 +218,7 @@ export default function NewsLetterFirstSeen({ userId, onSubscribe, onClose }: Ne
         />
 
         <div className="text-center">
-          <h2 className="text-2xl font-semibold mb-2">{t('title')}</h2>
+          <h2 className="text-2xl font-semibold mb-2 text-black">{t('title')}</h2>
           <div className="text-sm text-gray-600 text-center">
             {t.raw('description').split('\n').map((line, index) => {
               const parts = line.split(/\{(lien)\}/);
