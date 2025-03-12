@@ -15,8 +15,6 @@ import { useDashboardState } from '@/hooks/useDashboardState';
 import NewsletterSection from '@/app/_components/dashboard/NewsletterSection';
 import OnboardingSection from '@/app/_components/dashboard/OnboardingSection';
 import TutorialSection from '@/app/_components/dashboard/TutorialSection';
-import NewsLetterFirstSeen from '@/app/_components/NewsLetterFirstSeen';
-
 
 export default function DashboardPage() {
   const {
@@ -66,32 +64,6 @@ export default function DashboardPage() {
           <LoginSea />
         </div>
       </div>
-
-      {/* Newsletter modal pour première visite */}
-      <AnimatePresence>
-        {session?.user && !session.user.have_seen_newsletter && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="relative my-4"
-            >
-              <NewsLetterFirstSeen
-                userId={session.user.id}
-                onClose={() => {
-                  update();
-                  session.user.have_seen_newsletter = true;
-                }}
-                onSubscribe={() => {
-                  setShowNewsletterModal(false);
-                  update();
-                }}
-              />
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
 
       <div className="relative w-full">
         <div className="max-w-3xl mx-auto">
