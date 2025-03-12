@@ -289,6 +289,7 @@
     "logoCNRS": {
       "alt": "CNRS, French National Centre for Scientific Research"
     },
+    "downloadingContacts": "Your contacts are being downloaded. You will then need to validate the reconnection.",
     "progress": {
       "total": {
         "title": "Total Progress",
@@ -316,7 +317,8 @@
     },
     "button": {
       "dashboard": "Return to dashboard"
-    }
+    },
+    "redirecting": "Automatic redirection in"
   },
   "profile": {
     "unlinkConfirmation": "Are you sure you want to unlink your {provider} account?",
@@ -426,10 +428,13 @@
     "deselectAll": "Deselect all",
     "startMigration": "Start migration",
     "needBothAccounts": "Start by linking your Bluesky and/or Mastodon accounts to reconnect with your contacts",
-    "migrating": "Migrating..."
+    "migrating": "Migrating...",
+    "close" : "Close",
+    "noUploadYet": "{count} accounts have apparently been found among those you were following on X"
   },
   "ReconnexionOptions": {
     "title": "Choose how you want to reconnect to your followings",
+    "titleNotUploadYet": "OpenPortability has found accounts on Bluesky and Mastodon that you were apparently following on X/Twitter:",
     "not_onboarded_title": "Haven't completed all the objectives of your Twitter/X migration?",
     "not_onboarded_description": "No problem, we found connections for you based on your account associations. For more accounts to associate and better targeting, we still recommend importing your Twitter/X data archive",
     "buttons": {
