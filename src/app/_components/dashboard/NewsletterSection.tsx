@@ -55,8 +55,8 @@ export default function NewsletterSection({
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="relative my-4 w-full max-w-md"
-            >
+              className="relative my-4 w-full max-w-md md:max-w-3xl mx-auto"
+              >
               <NewsletterFirstSeen
                 userId={userId}
                 onClose={() => {
@@ -89,8 +89,8 @@ export default function NewsletterSection({
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-md"
-            >
+              className="w-full max-w-md md:max-w-3xl mx-auto"
+              >
               <NewsletterRequest
                 userId={userId}
                 onClose={() => setShowModal(false)}
