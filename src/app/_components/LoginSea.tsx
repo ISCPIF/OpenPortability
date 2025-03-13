@@ -9,6 +9,7 @@ import { useSession } from 'next-auth/react';
 import seaBackground from '../../../public/sea-wave.svg';
 import Boat from './Boat';
 import logo from '../../../public/logo/logo-openport-blanc.svg';
+import { useState, useEffect } from 'react';
 
 interface SeaProps {
   progress: number;
@@ -23,11 +24,35 @@ export default function LoginSea() {
   const isSigninPage = pathname.includes('/auth/signin');
   const isDashboardPage = pathname.includes('/dashboard');
 
+  // Determine if mobile based on client-side rendering
+  const [isMobile, setIsMobile] = useState(false);
+  
+  useEffect(() => {
+    const checkIsMobile = () => {
+      setIsMobile(window.innerWidth < 640);
+    };
+    
+    checkIsMobile();
+    window.addEventListener('resize', checkIsMobile);
+    return () => window.removeEventListener('resize', checkIsMobile);
+  }, []);
+
   console.log("Session -->", session)
 
   return (
     <div className="relative w-full h-[300px] sm:h-[350px] md:h-[400px] lg:h-[450px]">
-      <Image src={seaBackground} alt="" className="absolute top-0 left-0 w-full h-full object-cover" priority />
+      {/* Container pour l'arrière-plan répété */}
+      <div className="absolute top-0 left-0 w-full h-full overflow-hidden">
+        {/* Ajout d'un conteneur pour gérer le motif répété */}
+        <div className="w-full h-full">
+          {/* Répéter l'image plusieurs fois - style inline pour éliminer tout espace */}
+          <div className="sea-bg-repeat h-full flex flex-nowrap" style={{ fontSize: 0 }}>
+            <Image src={seaBackground} alt="" height={isMobile ? 300 : 450} width={800} className="block" style={{ margin: 0, padding: 0 }} priority />
+            <Image src={seaBackground} alt="" height={isMobile ? 300 : 450} width={800} className="block" style={{ margin: 0, padding: 0 }} />
+            <Image src={seaBackground} alt="" height={isMobile ? 300 : 450} width={800} className="block" style={{ margin: 0, padding: 0 }} />
+          </div>
+        </div>
+      </div>
       <div className="relative z-10 flex flex-col items-center pt-8 px-4 text-center">
         <Image
           src={logo}
@@ -56,7 +81,7 @@ export default function LoginSea() {
           </p>
         )}
       </div>
-      <Boat model={5} top={66} left={30} scale={0.7} />
+      <Boat model={5} top={60} left={30} scale={0.7} />
     </div>
   );
 }

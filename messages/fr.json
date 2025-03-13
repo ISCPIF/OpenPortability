@@ -196,7 +196,9 @@
       "nextSteps": "Effectuez les étapes suivantes pour voguer vers de nouveaux horizons !"
     },
     "importButton": "Importer mon archive Twitter/X",
+    "import_description": "Importez votre archive pour profiter pleinement de l'expérience OpenPortability",
     "no_archive_yet": "Je n'ai pas encore mon archive",
+    "no_archive_description": "Retrouvez certains de vos reconnexions parmi les comptes que vous suiviez a priori sur Twitter/X",
     "shareModal": {
       "title": "Partager votre voyage",
       "shareOn": "Partager sur {platform}",
@@ -426,14 +428,14 @@
     "migrationProgress": "{current} comptes migrés sur {total}",
     "migrationCompleteStats": "{count} comptes migrés avec succès",
     "needBothAccounts": "Commencez par associer vos comptes Bluesky et/ou mastodon pour vous reconnecter à {count} contacts",
-    "noUploadYet": "{count} comptes ont a priori été retrouvés parmis ceux que vous suiviez sur X",
+    "noUploadYet": "{count} comptes ont été retrouvés parmis ceux que vous suiviez a priori sur X",
     "minimize": "Réduire",
     "close": "Fermer"
   },
   "ReconnexionOptions": {
     "title": "Choisissez votre reconnexion :",
     "titleNotUploadYet": "OpenPortability a trouvé des comptes sur Bluesky et Mastodon que vous suiviez à priori sur X/Twitter :",
-    "not_onboarded_title": "Pour une reconnection plus complète, importez votre archive X/Twitter :",
+    "not_onboarded_title": "\nPour une reconnection plus complète, importez votre archive X/Twitter :",
     "not_onboarded_description": "Pas de probleme nous avons trouvé des connexions pour vous d'apres vos associations de compte. Pour plus de comptes a associer et un meilluer ciblage, nous vous conseillons quand meme d'importer votre archive de donnees Twitter/X",
     "buttons": {
       "automatic": "RECONNECTEZ-MOI AUTOMATIQUEMENT",
@@ -525,6 +527,8 @@
   "SuccessAutomaticReconnexion": {
     "congratulations": "Bravo",
     "secondObjective": "Vous vous êtes reconnecté à {count} comptes. Invitez vos contacts à faire de même !",
+    "reconnectWithoutOnboarding": "\nVous avez été reconnecté à {count} comptes.\nPour une reconnexion plus complète, importez votre archive :",
+    "uploadArchiveButton" : "Importer mon archive",
     "notification": "Nous continuerons à vous informer si de nouveaux comptes peuvent être reconnectés, par mail ou par le réseau de votre choix, selon vos préférences.",
     "stats": {
       "blueskyFollowing": "Reconnexions",

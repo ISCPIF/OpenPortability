@@ -78,7 +78,7 @@ export default function ReconnexionOptions({ onAutomatic, onManual, globalStats,
           {!has_onboarded && (
           <div className="border border-[#2a39a9] rounded-lg mt-4">
             <div className="text-white mb-4 sm:mb-6">
-              <p className="font-bold text-center mb-2 text-sm sm:text-base">{t('not_onboarded_title')}</p>
+            <p className="font-bold text-center mb-2 text-sm sm:text-base whitespace-pre-line">{t('not_onboarded_title')}</p>
             </div>
             <div className="flex justify-center">
               <motion.button

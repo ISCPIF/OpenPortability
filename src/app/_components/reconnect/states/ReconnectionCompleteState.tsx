@@ -29,7 +29,7 @@ export default function ReconnectionCompleteState({
       <SuccessAutomaticReconnexion
         session={{
           user: {
-            twitter_username: session.user?.twitter_username || session.user?.bluesky_username || session.user?.mastodon_username || '',
+            twitter_username: session.user?.twitter_username ?? "",
             bluesky_username: session.user.bluesky_username ?? "",
             mastodon_username: session.user.mastodon_username ?? "",
             mastodon_instance: session.user.mastodon_instance ?? "",
