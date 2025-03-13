@@ -160,37 +160,43 @@ export default function SuccessAutomaticReconnexion({
         </div>
 
         {/* Statistiques */}
-        <div className={`w-full ${
+        <div className={`w-auto ${
           session.user.bluesky_username && session.user.mastodon_username
             ? 'grid grid-cols-1 sm:grid-cols-2 gap-8 sm:gap-12'
             : 'flex justify-center'
         }`}>
           {session.user.mastodon_username && (
-            <div className="flex flex-col items-center p-2 justify-center rounded-xl aspect-square bg-[#1f2498]/30 border border-[#ebece7]/20 backdrop-blur-sm hover:border-[#ebece7]/40 transition-all duration-300">
-              <div className="w-24 h-24 sm:w-28 sm:h-28 relative mb-2">
-                <Image
-                  src={MastoLogo}
-                  alt="Mastodon Logo"
-                  fill
-                  className="object-contain"
-                />
+            <div className="inline-flex items-center py-3 px-4 rounded-xl bg-[#1f2498]/30  mx-auto">
+              <div className="flex items-center gap-2">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 relative">
+                  <Image
+                    src={MastoLogo}
+                    alt="Mastodon Logo"
+                    fill
+                    className="object-contain"
+                  />
+                </div>
+                <div className="bg-[#d6356f] text-white text-sm font-bold rounded-full min-w-[24px] min-h-[24px] flex items-center justify-center px-1.5 shadow-sm border border-[#1f2498]/30">
+                  +{stats.matches.mastodon.hasFollowed}
+                </div>
               </div>
-              <p className="text-3xl sm:text-4xl font-bold text-[#ebece7]">{stats.matches.mastodon.hasFollowed}</p>
-              <p className="text-sm sm:text-base text-[#ebece7]/80">{t('stats.mastodonFollowing')}</p>
             </div>
           )}
           {session.user.bluesky_username && (
-            <div className="flex flex-col items-center p-2 justify-center rounded-xl aspect-square bg-[#1f2498]/30 border border-[#ebece7]/20 backdrop-blur-sm hover:border-[#ebece7]/40 transition-all duration-300">
-              <div className="w-24 h-24 sm:w-28 sm:h-28 relative mb-2">
-                <Image
-                  src={BSLogo}
-                  alt="Bluesky Logo"
-                  fill
-                  className="object-contain "
-                />
+            <div className="inline-flex items-center py-3 px-4 rounded-xl bg-[#1f2498]/30 mx-auto">
+              <div className="flex items-center gap-2">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 relative">
+                  <Image
+                    src={BSLogo}
+                    alt="Bluesky Logo"
+                    fill
+                    className="object-contain"
+                  />
+                </div>
+                <div className="bg-[#d6356f] text-white text-sm font-bold rounded-full min-w-[24px] min-h-[24px] flex items-center justify-center px-1.5 shadow-sm border border-[#1f2498]/30">
+                  +{stats.matches.bluesky.hasFollowed}
+                </div>
               </div>
-              <p className="text-3xl sm:text-4xl font-bold text-[#ebece7]">{stats.matches.bluesky.hasFollowed}</p>
-              {/* <p className="text-sm sm:text-base text-[#ebece7]/80">{t('stats.blueskyFollowing')}</p> */}
             </div>
           )}
         </div>
