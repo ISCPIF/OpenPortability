@@ -40,7 +40,7 @@ export default function DashboardPage() {
   const router = useRouter();
 
   useEffect(() => {
-    if (hasOnboarded) {
+    if (hasOnboarded && hasMastodon && hasTwitter && hasBluesky) {
       router.push(`/${locale}/reconnect`);
     }
   }, [hasOnboarded, router, locale]);
@@ -75,26 +75,7 @@ export default function DashboardPage() {
 
       <div className="relative w-full bg-transparent">
         <div className="max-w-3xl mx-auto">
-          <div className="relative z-10">
-            {/* Contenu conditionnel basé sur l'état d'onboarding */}
-            {hasOnboarded ? (
-              <>
-                <LaunchReconnection
-                  session={{
-                    user: {
-                      twitter_username: session.user.twitter_username,
-                      bluesky_username: session.user.bluesky_username,
-                      mastodon_username: session.user.mastodon_username,
-                      mastodon_instance: session.user.mastodon_instance
-                    }
-                  }}
-                  totalProcessed={globalStats?.users?.total || 0}
-                  totalInDatabase={(globalStats?.connections?.following || 0) + (globalStats?.connections?.followers || 0)}
-                  userStats={stats}
-                />
-              </>
-            ) : null}
-          </div>
+   
 
           {/* Section d'onboarding conditionnelle */}
           {(connectedServicesCount < 3 || !hasOnboarded) && (

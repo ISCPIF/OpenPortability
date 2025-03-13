@@ -74,10 +74,10 @@
         },
         "bluesky": "BlueSky",
         "connect": "Sign in to get started",
-        "connect_bluesky_before": "We found",
-        "connect_bluesky_after": "accounts to follow on Bluesky, sign in to retrieve your subscriptions",
-        "connect_mastodon_before": "We found",
-        "connect_mastodon_after": "accounts to follow on Mastodon, sign in to retrieve your subscriptions",
+        "connect_bluesky_before": "I'm linking my Bluesky account: ",
+        "connect_bluesky_after": " accounts to reconnect.",
+        "connect_mastodon_before": "I'm linking my Mastodon account",
+        "connect_mastodon_after": " accounts to reconnect.",
         "refresh": "Sign in again",
         "reconnect": {
           "bluesky": "(!) Your BlueSky session has expired. For security reasons, we only use temporary access tokens that need to be renewed regularly.",
@@ -211,6 +211,8 @@
     },
     "importButton": "Import my Twitter/X archive",
     "no_archive_yet": "I don't have my archive yet",
+    "no_archive_description": "Find some of your reconnections among the accounts you were apparently following on Twitter/X",
+    "import_description": "Import your archive to fully enjoy the OpenPortability experience",
     "shareModal": {
       "title": "Share your journey",
       "shareOn": "Share on {platform}",
@@ -538,6 +540,8 @@
     "congratulations": "Congratulations",
     "secondObjective": "You've reconnected with {count} accounts. Invite your contacts to do the same !",
     "notification": "We'll continue to notify you if new accounts can be reconnected, by email or through your preferred network, according to your preferences.",
+    "reconnectWithoutOnboarding": "\nYou have been reconnected to {count} accounts.\nFor a more complete reconnection, import your archive:",
+    "uploadArchiveButton" : "Import my Twitter/X archive",
     "stats": {
       "blueskyFollowing": "Reconnections",
       "mastodonFollowing": "Reconnections"
@@ -575,5 +579,12 @@
     "subtitle": "Complex Systems Institute Paris Ile de France | January 2025",
     "content": "<h2>CNRS ISC PIF</h2><p>Data protection information notice for scientific research Project Open Portability</p><p>Social networks, particularly Twitter (now X), have from the beginning been privileged objects of research, especially in the field of computational social sciences.</p><p>A historic transition is underway in the social network landscape. The centralized model, embodied by X (formerly Twitter), is experiencing a massive exodus of users to alternative platforms like BlueSky and Mastodon. Several million accounts have migrated in just a few weeks, marking a major shift towards decentralized and open networks.</p><p>This transition is a major social, economic, and technological phenomenon that may modify the global digital space, particularly in Europe, and could allow Europe to regain some digital sovereignty.</p><h2>I. Project and Processing Description</h2><p>The research objectives are as follows: analyze the difference between open and closed micro-blogging digital environments from the perspective of social dynamics and online debates. Study as a case study the ongoing migration between X and spaces based on open protocols AT Protocol and Activity Pub, and study the appropriation of decentralized digital spaces over time (5-year horizon).</p><p>The OpenPortability project involves:</p><ul><li>Data collection for data portability between social networks</li><li>Data collection for creating a snapshot of X network's social structure</li><li>Data collection for creating snapshots of alternative networks' social structures</li><li>Data portability</li><li>Data processing and analysis</li></ul><h2>II. Data Collection, Recipients, and Retention</h2><p>Data collected directly from individuals and processed are:</p><ul><li>Digital identifiers on social networks (username ID)</li><li>Social network profile names</li><li>Email addresses</li></ul><p>Bluesky's personal data protection policy can be found at: <link>https://bsky.social/about/support/privacy-policy</link></p><p>Mastodon's personal data protection policy can be accessed at <link>https://joinmastodon.org/servers</link></p><h2>III. Security Measures</h2><p>To ensure data confidentiality and protection, measures are taken in accordance with the State's information systems security policy, applied to CNRS. Data is hosted in France on CNRS servers.</p><h2>IV. Exercise of Your Rights</h2><p>You can access and obtain a copy of your data, object to the processing of this data, or have it rectified. You also have the right to limit the processing of your data. You can exercise these rights by contacting the data controller at the Complex Systems Institute-Paris Ile de France, located at 113 rue Nationale 75013 Paris, or through the contact form available at <link>https://openportability.org/</link></p><p>You can also contact the CNRS Data Protection Officer (DPO) at: CNRS - Data Protection Service, 2 rue Jean Zay, 54519 Vandoeuvre-lès-Nancy - dpd.demandes@cnrs.fr.</p><p>If you believe your Information Technology and Civil Liberties rights are not being respected, you can file a complaint online with the CNIL, 3 Place de Fontenoy, TSA 80715 – 75334 Paris Cedex 07 (<link>https://www.cnil.fr/</link>).</p>",
     "backToSignIn": "Back to the OpenPortability Plateform"
-  }
+  },
+  "blueskyPreviewModale": {
+"shareOn": "Share on {platform}",
+"previewTitle": "Preview your post on {platform}",
+"publish": "Publish",
+"cancel": "Cancel"
+}
+
 }
