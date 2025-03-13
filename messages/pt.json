@@ -209,6 +209,8 @@
         },
         "importButton": "Importar meu arquivo do Twitter/X",
         "no_archive_yet": "Ainda não tenho meu arquivo",
+        "no_archive_description": "Encontre algumas de suas reconexões entre as contas que você aparentemente seguia no Twitter/X",
+        "import_description": "Importe seu arquivo para aproveitar ao máximo a experiência do OpenPortability",
         "shareModal": {
             "title": "Compartilhe sua jornada",
             "shareOn": "Compartilhar no {plataforma}",
@@ -383,6 +385,7 @@
             "followedMastodon": "Reconexões concluídas no Mastodon"
         },
         "title": "Escolha como deseja se reconectar com seus seguidores",
+        "titleNotUploadYet": "O OpenPortability encontrou contas no Bluesky e Mastodon que você aparentemente seguia no X/Twitter:",
         "not_onboarded_title": "Não completou todos os objetivos da sua migração do Twitter/X?",
 "not_onboarded_description": "Sem problema, encontramos conexões para você com base nas associações da sua conta. Para mais contas para associar e melhor direcionamento, ainda recomendamos importar seu arquivo de dados do Twitter/X",
         "buttons": {
@@ -419,6 +422,8 @@
                 "processed": "{processed} / {total}"
             }
         },
+        "downloadingContacts": "Seus contatos estão sendo baixados. Em seguida, você precisará validar a reconexão.",
+        "redirecting": "Redirecionamento automático em",
         "status": {
             "processing": "Processamento",
             "title": "Status",
@@ -502,7 +507,9 @@
         "deselectAll": "Desmarcar tudo",
         "startMigration": "Iniciar a migração",
         "migrating": "Migrando...",
-        "needBothAccounts": "Comece vinculando suas contas do Bluesky e/ou Mastodon para se reconectar com seus contatos"
+        "needBothAccounts": "Comece vinculando suas contas do Bluesky e/ou Mastodon para se reconectar com seus contatos",
+        "close": "Fechar",
+        "noUploadYet": "{count} contas aparentemente foram encontradas entre aquelas que você seguia no X"
     },
     "settings": {
         "logout": "Sair",
@@ -528,6 +535,8 @@
             "mastodonFollowing": "Seguidores encontrados no Mastodon",
             "blueskyFollowing": "Seguidores encontrados no Bluesky"
         },
+        "reconnectWithoutOnboarding": "\nVocê foi reconectado a {count} contas.\nPara uma reconexão mais completa, importe seu arquivo:",
+        "uploadArchiveButton": "Importar meu arquivo do Twitter/X",
         "firstObjective": "Com o primeiro objetivo concluído, você está registrado para a jornada!",
         "congratulations": "Parabéns",
         "secondObjective": "Você concluiu o segundo objetivo e se reconectou com {count} contas. Você chegou ao seu destino!",
@@ -555,7 +564,8 @@
         },
         "launchButton": "Inicie sua reconexão com {count} contas!",
         "alreadyReconnected": "Já reconectamos você com {count} contas. Volte mais tarde para continuar sua reconexão!",
-        "shareText" : "🚨#eXodo em andamento! Acabei de me inscrever no #OpenPortability para manter contato com minha comunidade no #BlueSky e #Mastodon. {count} conexões pendentes foram adicionadas! Em 1 minuto, você também pode garantir que não perderá seus seguidores! ➡️ https://OpenPortability.org"
+        "shareText" : "🚨#eXodo em andamento! Acabei de me inscrever no #OpenPortability para manter contato com minha comunidade no #BlueSky e #Mastodon. {count} conexões pendentes foram adicionadas! Em 1 minuto, você também pode garantir que não perderá seus seguidores! ➡️ https://OpenPortability.org",
+        "shareTextNotConnected": "🚨#eXodo em andamento! Acabei de me inscrever no #OpenPortability para manter contato com minha comunidade no #BlueSky e no #Mastodon. {count} conexões pendentes foram adicionadas! Em apenas 1 minuto, você também pode garantir que não perderá seus assinantes! ➡️ https://OpenPortability.org"
     },
     "refreshToken": {
         "title": "Necessidade de reconexão",
@@ -566,5 +576,11 @@
         "subtitle": "Instituto de Sistemas Complexos Paris Ile de France | Janeiro de 2025",
         "content": "<h2>CNRS ISC PIF</h2><p>Aviso de informações sobre proteção de dados para pesquisa científica Projeto Open Portability</p><p>As redes sociais, particularmente o Twitter (agora X), têm sido desde o início objetos privilegiados de pesquisa, especialmente no campo das ciências sociais computacionais.</p><p>Uma transição histórica está em andamento no cenário das redes sociais. O modelo centralizado, incorporado pelo X (antigo Twitter), está passando por um êxodo massivo de usuários para plataformas alternativas como BlueSky e Mastodon. Vários milhões de contas migraram em apenas algumas semanas, marcando uma grande mudança em direção a redes descentralizadas e abertas.</p><p>Essa transição é um grande fenômeno social, econômico e tecnológico que pode modificar o espaço digital global, particularmente na Europa, e pode permitir que a Europa recupere alguma soberania digital.</p><h2>I. Descrição do Projeto e Processamento</h2><p>Os objetivos da pesquisa são os seguintes: analisar a diferença entre ambientes digitais de microblog abertos e fechados da perspectiva da dinâmica social e dos debates online. Estude como estudo de caso a migração em andamento entre X e espaços baseados em protocolos abertos AT Protocol e Activity Pub, e estude a apropriação de espaços digitais descentralizados ao longo do tempo (horizonte de 5 anos).</p><p>O projeto OpenPortability envolve:</p><ul><li>Coleta de dados para portabilidade de dados entre redes sociais</li><li>Coleta de dados para criar um instantâneo da estrutura social da rede X</li><li>Coleta de dados para criar instantâneos das estruturas sociais de redes alternativas</li><li>Portabilidade de dados</li><li>Processamento e análise de dados</li></ul><h2>II. Coleta de dados, destinatários e retenção</h2><p>Os dados coletados diretamente de indivíduos e processados são:</p><ul><li>Identificadores digitais em redes sociais (ID de nome de usuário)</li><li>Nomes de perfis de redes sociais</li><li>Endereços de e-mail</li></ul><p>A política de proteção de dados pessoais da Bluesky pode ser encontrada em: <link>https://bsky.social/about/support/privacy-policy</link></p><p>A política de proteção de dados pessoais da Mastodon pode ser acessada em <link>https://joinmastodon.org/servers</link></p><h2>III. Medidas de segurança</h2><p>Para garantir a confidencialidade e a proteção dos dados, são tomadas medidas de acordo com a política de segurança de sistemas de informação do Estado, aplicada ao CNRS. Os dados são hospedados na França em servidores do CNRS.</p><h2>IV. Exercício de seus direitos</h2><p>Você pode acessar e obter uma cópia de seus dados, se opor ao processamento desses dados ou retificá-los. Você também tem o direito de limitar o processamento dos seus dados. Você pode exercer esses direitos entrando em contato com o controlador de dados no Complex Systems Institute-Paris Ile de France, localizado em 113 rue Nationale 75013 Paris, ou por meio do formulário de contato disponível em <link>https://openportability.org/</link></p><p>Você também pode entrar em contato com o CNRS Data Protection Officer (DPO) em: CNRS - Data Protection Service, 2 rue Jean Zay, 54519 Vandoeuvre-lès-Nancy - dpd.demandes@cnrs.fr.</p><p>Se você acredita que seus direitos de Tecnologia da Informação e Liberdades Civis não estão sendo respeitados, você pode registrar uma reclamação on-line com o CNIL, 3 Place de Fontenoy, TSA 80715 – 75334 Paris Cedex 07 (<link>https://www.cnil.fr/</link>).</p>",
         "backToSignIn": "Voltar para a plataforma OpenPortability"
+    },
+    "blueskyPreviewModale": {
+        "shareOn": "Compartilhar no {platform}",
+        "previewTitle": "Visualize sua postagem no {platform}",
+        "publish": "Publicar",
+        "cancel": "Cancelar"
     }
 }

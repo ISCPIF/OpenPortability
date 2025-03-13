@@ -80,7 +80,10 @@
     },
     "progressSteps": {
         "import": {
-            "title": "Subir mi archivo de X/Twitter"
+            "title": "Subir mi archivo de X/Twitter",
+            "description": {
+                "withStats": "{following} seguidos, {followers} seguidores"
+            }
         },
         "share": {
             "title": "Compartir con mi comunidad"
@@ -149,10 +152,10 @@
             "twitter": "Twitter/X",
             "bluesky": "Bluesky",
             "connect": "Conéctate para empezar",
-            "connect_bluesky_before": "Hemos encontrado",
-            "connect_bluesky_after": "cuentas para seguir en Bluesky, conéctate para recuperar tus suscripciones",
-            "connect_mastodon_before": "Hemos encontrado",
-            "connect_mastodon_after": "cuentas para seguir en Mastodon, conéctate para recuperar tus suscripciones",
+            "connect_bluesky_before": "Estoy vinculando mi cuenta de Bluesky: ",
+            "connect_bluesky_after": " cuentas para reconectar.",
+            "connect_mastodon_before": "Estoy vinculando mi cuenta de Mastodon",
+            "connect_mastodon_after": " cuentas para reconectar.",
             "refresh": "Vuelve a conectarte",
             "reconnect": {
               "bluesky": "(!) Tu sesión de Bluesky ha expirado. Por motivos de seguridad, solo utilizamos tokens de acceso temporales que deben renovarse regularmente.",
@@ -201,7 +204,9 @@
         },
         "logoCNRS": {
             "alt": "CNRS, Centro Nacional por la Investigación Científica, Francia"
-        }
+        },
+        "downloadingContacts": "Tus contactos se están descargando. A continuación deberás validar la reconexión.",
+        "redirecting": "Redirección automática en"
     },
     "dashboard": {
         "migrationStep": {
@@ -235,7 +240,9 @@
             "description": "Descubra como migrar fácilmente de Twitter/X a Mastodon y Bluesky",
             "watchVideo": "Mire el vídeo"
         },
-        "no_archive_yet": "Aún no tengo mi archivo"
+        "no_archive_yet": "Aún no tengo mi archivo",
+        "import_description": "Importa tu archivo para disfrutar completamente de la experiencia OpenPortability",
+        "no_archive_description": "Encuentra algunas de tus conexiones entre las cuentas que aparentemente seguías en Twitter/X"
     },
     "profile": {
         "errors": {
@@ -263,7 +270,8 @@
         },
         "logoCNRS": {
             "alt": "CNRS, Centro Nacional para la Investigación Científica, Francia"
-        }
+        },
+        "embark": "Sube tu archivo para embarcar a tu comunidad"
     },
     "migrationComplete": {
         "error": {
@@ -429,7 +437,8 @@
             "manual": "OpenPortability te mostrará las cuentas que encuentre en Bluesky y Mastodon para que puedas elegir si las sigues o no",
             "automatic": "OpenPortability te reconectará con tus seguidores de X durante 30 días"
         },
-        "title": "Elige cómo quieres reconectar con las personas a las que sigues"
+        "title": "Elige cómo quieres reconectar con las personas a las que sigues",
+        "titleNotUploadYet": "OpenPortability ha encontrado cuentas en Bluesky y Mastodon que aparentemente seguías en X/Twitter:"
     },
     "migrateSea": {
         "title": "¡La Gran Reconexión!",
@@ -490,13 +499,16 @@
     "SuccessAutomaticReconnexion": {
         "notification": "Seguiremos notificándote si se pueden reconectar nuevas cuentas, ya sea por correo electrónico o a través de tu red preferida, de acuerdo con tus preferencias.",
         "congratulations": "Enhorabuena",
-        "secondObjective": "Has completado el segundo objetivo y te has reconectado con {count} cuentas. ¡Has llegado a tu nueva comunidad!",
+        "secondObjective": "Te has reconectado con {count} cuentas. ¡Invita a tus contactos a hacer lo mismo!",
+        "reconnectWithoutOnboarding": "\nHas sido reconectado con {count} cuentas.\nPara una reconexión más completa, importa tu archivo:",
+        "uploadArchiveButton": "Importar mi archivo de Twitter/X",
         "stats": {
-            "blueskyFollowing": "Seguidos en Bluesky",
-            "mastodonFollowing": "Seguidos en Mastodon"
+            "blueskyFollowing": "Reconexiones",
+            "mastodonFollowing": "Reconexiones"
         },
         "goToDashboard": "Ir al dashboard",
-        "shareMessage": "🔥 ¡Acabo de reconectarme con {count} contactos de #X en BlueSky/Mastodon! Ejerce tu derecho a la portabilidad de datos con #OpenPortability\n\n🎯 {effectiveFollowers} nuevos seguidores\n\n➡️ https://openportability.org"
+        "shareMessage": "¡Acabo de reconectarme con {count} contactos de #X en BlueSky/Mastodon! Ejerce tu derecho a la portabilidad de datos con #OpenPortability\n\n¡{effectiveFollowers} nuevos seguidores!\n\n➡️ https://openportability.org",
+        "firstObjective": "1er objetivo completado, ¡estás registrado/a para el viaje!"
     },
     "AutomaticReconnexion": {
         "accountsToConnect": "Cuentas para conectar",
@@ -537,7 +549,8 @@
             "totalImported": "Total importadas"
         },
         "alreadyReconnected": "Ya te hemos reconectado con {count} cuentas. ¡Vuelve más adelante para continuar tu reconexión!",
-        "shareText" : "🚨¡#eXodo en curso! Acabo de registrarme en #OpenPortability para mantener el contacto con mi comunidad en #BlueSky y #Mastodon. ¡Se han añadido {count} conexiones pendientes! En 1 minuto, ¡tú también asegúrate de no perder a tus seguidores! ➡️ https://OpenPortability.org"
+        "shareText" : "¡#eXodo en curso! Acabo de registrarme en #OpenPortability para mantener el contacto con mi comunidad en #BlueSky y #Mastodon. ¡Se han añadido {count} conexiones pendientes! En 1 minuto, ¡tú también asegúrate de no perder a tus seguidores! ➡️ https://OpenPortability.org",
+        "shareTextNotConnected": "¡#eXodo en progreso! Acabo de registrarme en #OpenPortability para mantenerme en contacto con mi comunidad en #BlueSky y #Mastodon. ¡Se han añadido {count} conexiones pendientes! ¡En solo 1 minuto, tú también puedes asegurarte de no perder tus suscriptores! ➡️ https://OpenPortability.org"
     },
     "migrate": {
         "title": "Migrar tus suscripciones",
@@ -549,7 +562,20 @@
         "deselectAll": "Deseleccionar todo",
         "startMigration": "Iniciar migración",
         "migrating": "Migrando...",
-        "needBothAccounts": "Comience vinculando sus cuentas de Bluesky y/o Mastodon para reconectarse con sus contactos"
+        "needBothAccounts": "Comience vinculando sus cuentas de Bluesky y/o Mastodon para reconectarse con sus contactos",
+        "close": "Cerrar",
+        "noUploadYet": "{count} cuentas han sido aparentemente encontradas entre las que seguías en X",
+        "no_archive_description": "Encuentra algunas de tus reconexiones entre las cuentas que aparentemente seguías en Twitter/X",
+        "import_description": "Importa tu archivo para disfrutar plenamente de la experiencia OpenPortability",
+        "downloadingContacts": "Tus contactos están siendo descargados. Luego tendrás que validar la reconexión.",
+        "redirecting": "Redirección automática en",
+        "titleNotUploadYet": "OpenPortability ha encontrado cuentas en Bluesky y Mastodon que aparentemente seguías en X/Twitter:"
+    },
+    "blueskyPreviewModale": {
+        "cancel": "Cancelar",
+        "previewTitle": "Vista previa de tu publicación en {platform}",
+        "publish": "Publicar",
+        "shareOn": "Compartir en {platform}"
     },
     "privacy_policy": {
         "backToSignIn": "Vuelve a la plataforma OpenPortability",
