@@ -41,29 +41,13 @@ export default function ReconnectPage() {
     refreshStats
   } = useReconnectState()
 
-  const dataLoading = isLoading || 
-  // (status === "loading") || 
-  !session || 
-  stats === undefined || 
-  globalStats === undefined;
-
-  console.log('État de chargement:', {
-    isLoading,
-    hasSession: !!session,
-    hasStats: stats !== undefined,
-    hasGlobalStats: globalStats !== undefined
-  });
-
-  console.log(stats)
-
-// Utilisez cette nouvelle condition à la place de isLoading
-  if (dataLoading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-[#2a39a9] relative w-full max-w-[90rem] m-auto">
         <div className="container mx-auto py-12">
           <div className="container flex flex-col m-auto text-center text-[#E2E4DF]">
             <div className="m-auto relative my-32 lg:my-40">
-              <LoadingIndicator msg="Chargement en cours..." textSize="base" />
+              <LoadingIndicator msg="Loading..." />
             </div>
           </div>
         </div>

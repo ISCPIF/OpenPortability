@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { plex } from '@/app/fonts/plex';
 import { motion } from 'framer-motion';
@@ -11,6 +11,8 @@ import BSLogo from '../../../public/v2/statut=BS-defaut.svg';
 import MastoLogo from '../../../public/v2/statut=Masto-Defaut.svg';
 import { handleShare } from '@/lib/utils';
 import PartageButton from './PartageButton';
+import BlueSkyPreviewModal from './BlueSkyPreviewModal';
+
 
 interface SuccessAutomaticReconnexionProps {
   session: {
@@ -51,6 +53,9 @@ export default function SuccessAutomaticReconnexion({
   onSuccess,
 }: SuccessAutomaticReconnexionProps) {
 
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [shareMessage, setShareMessage] = useState('');
+
   const username = session.user.twitter_username || session.user.bluesky_username || session.user.mastodon_username;
   const t = useTranslations('SuccessAutomaticReconnexion');
   const totalReconnected = (session.user.bluesky_username ? stats.matches.bluesky.hasFollowed : 0) + 
@@ -58,13 +63,29 @@ export default function SuccessAutomaticReconnexion({
 
   const onShareClick = (platform: string) => {
     const message = t('shareMessage', {
-      // username: session.user.twitter_username,
       count: totalReconnected,
       effectiveFollowers: stats.connections.totalEffectiveFollowers || 0
     });
-    console.log("sesionn from onShareCLick", session)
-    handleShare(message, platform, session, () => {}, () => {});
+    
+    if (platform === 'bluesky') {
+      // Pour BlueSky, on stocke le message et on ouvre la modale
+      setShareMessage(message);
+      setShowPreviewModal(true);
+    } else {
+      // Pour les autres plateformes, comportement normal
+      handleShare(message, platform, session, () => {}, () => {});
+    }
   };
+
+  const handleShowBlueSkyPreview = () => {
+    const message = t('shareMessage', {
+      count: totalReconnected,
+      effectiveFollowers: stats.connections.totalEffectiveFollowers || 0
+    });
+    setShareMessage(message);
+    setShowPreviewModal(true);
+  };
+                          
 
   console.log("stats from SuccessAutomaticReconnexion", totalReconnected)
   useEffect(() => {
@@ -112,16 +133,26 @@ export default function SuccessAutomaticReconnexion({
         )}
 
                   {/* Boutons de partage */}
-                <div className="w-full p-4">
-                  <PartageButton
-                    onShare={onShareClick}
-                    providers={{
-                      bluesky: !!session.user.bluesky_username,
-                      mastodon: !!session.user.mastodon_username,
-                      twitter: !!session.user.twitter_username
-                    }}
+                  <div className="w-full p-4">
+                    <PartageButton
+                      onShare={onShareClick}
+                      onShowBlueSkyPreview={handleShowBlueSkyPreview}
+                      providers={{
+                        bluesky: !!session.user.bluesky_username,
+                        mastodon: !!session.user.mastodon_username,
+                        twitter: !!session.user.twitter_username
+                      }}
+                    />
+                  </div>
+
+                  <BlueSkyPreviewModal
+            isOpen={showPreviewModal}
+                        onClose={() => setShowPreviewModal(false)}
+                        message={shareMessage}
+                        session={session}
+                        onSuccess={() => {}}
+                    onError={() => {}}
                   />
-                </div>
                   
           <p className=" justify-center items-center text-center text-base md:text-lg text-[#ebece7]">
             {t('notification')}
