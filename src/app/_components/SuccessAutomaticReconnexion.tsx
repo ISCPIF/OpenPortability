@@ -15,7 +15,7 @@ import PartageButton from './PartageButton';
 interface SuccessAutomaticReconnexionProps {
   session: {
     user: {
-      twitter_username: string;
+      twitter_username?: string;
       bluesky_username?: string;
       mastodon_username?: string;
       mastodon_instance?: string;
@@ -50,6 +50,8 @@ export default function SuccessAutomaticReconnexion({
   stats,
   onSuccess,
 }: SuccessAutomaticReconnexionProps) {
+
+  const username = session.user.twitter_username || session.user.bluesky_username || session.user.mastodon_username;
   const t = useTranslations('SuccessAutomaticReconnexion');
   const totalReconnected = (session.user.bluesky_username ? stats.matches.bluesky.hasFollowed : 0) + 
                           (session.user.mastodon_username ? stats.matches.mastodon.hasFollowed : 0);
@@ -80,10 +82,34 @@ export default function SuccessAutomaticReconnexion({
       <div className="w-full flex flex-col items-center gap-6 sm:gap-8">
         {/* Message de félicitations */}
         <div className="flex flex-col justify-center items-center text-center w-full">
-          <h2 className={`${plex.className} text-xl sm:text-2xl md:text-3xl font-bold mb-4 text-[#ebece7]`}>
-            {t('congratulations')} <span className="text-[#d6356f]">@{session.user.twitter_username}</span> !{' '}
-            {t('secondObjective', { count: totalReconnected })}
-          </h2>
+        <h2 className={`${plex.className} text-xl sm:text-2xl font-bold mb-4 text-[#ebece7]`}>
+          {t('congratulations')} <span className="text-[#d6356f]">@{username}</span> !{' '}
+          {session.user.has_onboarded 
+            ? t('secondObjective', { count: totalReconnected })
+            : (
+                <>
+                  {t('reconnectWithoutOnboarding', { count: totalReconnected })
+                    .split('\n')
+                    .map((line, index) => (
+                      <span key={index} className="block">
+                        {line}
+                      </span>
+                    ))}
+                </>
+              )
+          }
+        </h2>
+
+        {!session.user.has_onboarded && (
+          <div className="mt-2 mb-4">
+            <a 
+              href="/upload" 
+              className="inline-flex items-center border border-transparent rounded-full p-3 text-base font-medium shadow-sm text-white bg-[#d6356f] hover:bg-[#c02a61] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#d6356f]"
+            >
+              {t('uploadArchiveButton')}
+            </a>
+          </div>
+        )}
 
                   {/* Boutons de partage */}
                 <div className="w-full p-4">
@@ -97,7 +123,7 @@ export default function SuccessAutomaticReconnexion({
                   />
                 </div>
                   
-          <p className="text-base md:text-lg text-[#ebece7] mb-6">
+          <p className=" justify-center items-center text-center text-base md:text-lg text-[#ebece7]">
             {t('notification')}
           </p>
         </div>
@@ -109,7 +135,7 @@ export default function SuccessAutomaticReconnexion({
             : 'flex justify-center'
         }`}>
           {session.user.mastodon_username && (
-            <div className="flex flex-col items-center justify-center rounded-xl aspect-square bg-[#1f2498]/30 border border-[#ebece7]/20 backdrop-blur-sm hover:border-[#ebece7]/40 transition-all duration-300">
+            <div className="flex flex-col items-center p-2 justify-center rounded-xl aspect-square bg-[#1f2498]/30 border border-[#ebece7]/20 backdrop-blur-sm hover:border-[#ebece7]/40 transition-all duration-300">
               <div className="w-24 h-24 sm:w-28 sm:h-28 relative mb-2">
                 <Image
                   src={MastoLogo}
@@ -123,17 +149,17 @@ export default function SuccessAutomaticReconnexion({
             </div>
           )}
           {session.user.bluesky_username && (
-            <div className="flex flex-col items-center justify-center rounded-xl aspect-square bg-[#1f2498]/30 border border-[#ebece7]/20 backdrop-blur-sm hover:border-[#ebece7]/40 transition-all duration-300">
+            <div className="flex flex-col items-center p-2 justify-center rounded-xl aspect-square bg-[#1f2498]/30 border border-[#ebece7]/20 backdrop-blur-sm hover:border-[#ebece7]/40 transition-all duration-300">
               <div className="w-24 h-24 sm:w-28 sm:h-28 relative mb-2">
                 <Image
                   src={BSLogo}
                   alt="Bluesky Logo"
                   fill
-                  className="object-contain"
+                  className="object-contain "
                 />
               </div>
               <p className="text-3xl sm:text-4xl font-bold text-[#ebece7]">{stats.matches.bluesky.hasFollowed}</p>
-              <p className="text-sm sm:text-base text-[#ebece7]/80">{t('stats.blueskyFollowing')}</p>
+              {/* <p className="text-sm sm:text-base text-[#ebece7]/80">{t('stats.blueskyFollowing')}</p> */}
             </div>
           )}
         </div>
@@ -163,7 +189,7 @@ export default function SuccessAutomaticReconnexion({
                 window.location.reload();
               }
             }}
-            className="inline-block w-fit py-3 px-4 sm:p-4 bg-[#d6356f] text-[#ebece7] text-sm sm:text-base rounded-xl hover:bg-[#c02d61] transition-colors"
+            className="inline-block w-fit py-3 px-4 sm:p-4 bg-[#d6356f] text-[#ebece7] text-sm sm:text-base rounded-full hover:bg-[#c02d61] transition-colors"
           >
             {t('goToDashboard')}
           </button>

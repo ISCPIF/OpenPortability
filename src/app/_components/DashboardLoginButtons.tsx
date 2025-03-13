@@ -127,8 +127,8 @@ export default function DashboardLoginButtons({
         variants={itemVariants}
         initial="hidden"
         animate="visible"
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
+        whileHover={{ scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
         onClick={() => {
           if (service === 'twitter') {
             handleTwitterSignIn()
@@ -137,20 +137,25 @@ export default function DashboardLoginButtons({
           }
         }}
         disabled={isLoading}
-        className="w-full flex text-left justify-between px-8 py-4 bg-white rounded-full text-black font-medium hover:bg-gray-50 transition-colors relative overflow-hidden group"
+        className={`${plex.className} flex-shrink-0 sm:flex-1 flex text-left justify-between py-5 sm:py-5 px-5 sm:px-6 rounded-full text-sm sm:text-base font-bold transition-colors relative overflow-hidden group ${
+          service === 'twitter' 
+            ? 'bg-[#d6356f] text-white hover:opacity-95' 
+            : service === 'bluesky' 
+              ? 'bg-gradient-to-r from-[#1185fe] to-[#0063d3] text-white hover:opacity-95' 
+              : 'bg-white text-[#2a39a9] hover:bg-gray-50'
+        }`}
       >
-        <div className="flex gap-3 text-left items-start">
+        <div className="flex gap-3 text-left items-center">
           <Image src={icon} alt={service} width={24} height={24} />
-          <span>{label}</span>
+          <span className="uppercase">{label}</span>
         </div>
-        <span className="text-gray-400 group-hover:text-black transition-colors">›</span>
       </motion.button>
     </div>
   )
 
   return (
     <div className="flex flex-col gap-4">
-      <div className={`grid grid-cols-1 ${Object.values(connectedServices).filter(v => !v).length === 1 ? 'sm:grid-cols-1' : 'sm:grid-cols-2'} gap-4`}>
+      <div className={`grid grid-cols-1 ${Object.values(connectedServices).filter(v => !v).length === 1 ? 'sm:grid-cols-1' : 'sm:grid-cols-2'} gap-4 sm:gap-8 max-w-3xl mx-auto`}>
         {!connectedServices.twitter && (
           <div className="flex flex-col">
             {renderServiceButton('twitter', twitterIcon, t('connectedDashboard.twitter'))}

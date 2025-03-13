@@ -23,30 +23,48 @@ export default function OnboardingSection({
   console.log("****************************************",session)
   
   return (
-    <div className="w-full flex flex-col gap-4 items-center justify-center text-center">
-      <motion.button
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        onClick={() => {
-          router.push('/upload');
-        }}
-        className="w-full flex items-center justify-between py-4 sm:py-6 bg-white rounded-full text-black font-medium relative overflow-hidden group"
-      >
-        <div className="flex text-center gap-2 mx-auto text-base sm:text-lg">
-          <Upload className="w-5 h-5 sm:w-6 sm:h-6" />
-          <span>{t('importButton')}</span>
+    <div className="w-full flex flex-col gap-6 mt-8 sm:mt-0 items-center justify-center">
+      <div className="w-full bg-transparent p-4 sm:p-6 rounded-lg">
+        <div className="flex flex-col space-y-6 sm:space-y-8 max-w-3xl mx-auto">
+                    {/* No archive option */}
+                    {session?.twitter_id && (
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-8">
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => router.push('/reconnect')}
+                className={`${plex.className} flex-shrink-0 sm:flex-1 rounded-full bg-white text-[#2a39a9] py-5 sm:py-5 px-5 sm:px-6 text-sm sm:text-base font-bold hover:bg-gray-50 transition-colors`}
+              >
+                <span className="uppercase">{t('no_archive_yet')}</span>
+              </motion.button>
+              <div className="text-white text-xl sm:text-2xl hidden sm:block">›</div>
+              <div className={`${plex.className} text-xs sm:text-sm text-white flex-1 text-center sm:text-left sm:text-justify`}>
+                {t('no_archive_description')}
+              </div>
+            </div>
+          )}
+          
+          {/* Import option */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-8">
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => {
+                router.push('/upload');
+              }}
+              className={`${plex.className} flex-shrink-0 sm:flex-1 rounded-full bg-[#d6356f] text-white py-5 sm:py-5 px-5 sm:px-6 text-sm sm:text-base font-bold flex items-center justify-center gap-2 sm:gap-3`}
+            >
+              {/* <Upload className="w-4 h-4 sm:w-5 sm:h-5" /> */}
+              <span className="uppercase">{t('importButton')}</span>
+            </motion.button>
+            <div className="text-white text-xl sm:text-2xl hidden sm:block">›</div>
+            <div className={`${plex.className} text-xs sm:text-sm text-white flex-1 text-center sm:text-left sm:text-justify`}>
+              {t('import_description')}
+            </div>
+          </div>
+
         </div>
-      </motion.button>
-      
-      {session?.twitter_id && (
-        <button
-          onClick={() => router.push('/reconnect')}
-          className={`mt-4 sm:mt-6 text-sm text-white text-center hover:text-[#d6356f] transition-colors ${plex.className} mb-4 sm:mb-6`}
-          style={{ fontStyle: 'italic' }}
-        >
-          {t('no_archive_yet')}
-        </button>
-      )}
+      </div>
     </div>
   );
 }

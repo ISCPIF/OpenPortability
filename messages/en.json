@@ -536,11 +536,11 @@
   },
   "SuccessAutomaticReconnexion": {
     "congratulations": "Congratulations",
-    "secondObjective": "You've completed the 2nd objective and reconnected with {count} accounts. You've reached your destination!",
+    "secondObjective": "You've reconnected with {count} accounts. Invite your contacts to do the same !",
     "notification": "We'll continue to notify you if new accounts can be reconnected, by email or through your preferred network, according to your preferences.",
     "stats": {
-      "blueskyFollowing": "Followings found on Bluesky",
-      "mastodonFollowing": "Followings found on Mastodon"
+      "blueskyFollowing": "Reconnections",
+      "mastodonFollowing": "Reconnections"
     },
     "firstObjective": "1st objective completed, you're registered for the journey!",
     "goToDashboard": "Return back",

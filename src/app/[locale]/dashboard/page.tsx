@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import Header from '@/app/_components/Header';
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
@@ -36,6 +36,14 @@ export default function DashboardPage() {
   } = useDashboardState();
   
   const t = useTranslations('dashboard');
+  const { locale } = useParams();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (hasOnboarded) {
+      router.push(`/${locale}/reconnect`);
+    }
+  }, [hasOnboarded, router, locale]);
 
   if (isLoading) {
     return (
@@ -65,7 +73,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <div className="relative w-full">
+      <div className="relative w-full bg-transparent">
         <div className="max-w-3xl mx-auto">
           <div className="relative z-10">
             {/* Contenu conditionnel basé sur l'état d'onboarding */}
@@ -90,8 +98,8 @@ export default function DashboardPage() {
 
           {/* Section d'onboarding conditionnelle */}
           {(connectedServicesCount < 3 || !hasOnboarded) && (
-            <div className="flex justify-center items-center w-full">
-              <div className="w-full backdrop-blur-xs rounded-2xl p-4">
+            <div className="flex justify-center items-center w-full sm:-mt-16 md:-mt-24">
+            <div className="w-full backdrop-blur-xs rounded-2xl">
                 {!hasOnboarded && (
                   <OnboardingSection 
                     session={session?.user} 
