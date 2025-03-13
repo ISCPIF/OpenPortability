@@ -147,15 +147,15 @@ export default function DashboardLoginButtons({
       >
         <div className="flex gap-3 text-left items-center">
           <Image src={icon} alt={service} width={24} height={24} />
-          <span className="uppercase">{label}</span>
+          <span className="uppercase text-sm">{label}</span>
         </div>
       </motion.button>
     </div>
   )
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className={`grid grid-cols-1 ${Object.values(connectedServices).filter(v => !v).length === 1 ? 'sm:grid-cols-1' : 'sm:grid-cols-2'} gap-4 sm:gap-8 max-w-3xl mx-auto`}>
+    <div className="flex flex-col gap-6 p-4">
+      <div className={`grid grid-cols-1 ${Object.values(connectedServices).filter(v => !v).length === 1 ? 'sm:grid-cols-1' : 'sm:grid-cols-2'} gap-8 max-w-3xl mx-auto`}>
         {!connectedServices.twitter && (
           <div className="flex flex-col">
             {renderServiceButton('twitter', twitterIcon, t('connectedDashboard.twitter'))}
