@@ -57,6 +57,7 @@ export default function LargeFilesPage() {
   const [error, setError] = useState<string | null>(null);
   const [jobStatus, setJobStatus] = useState<JobStatus | null>(null);
   const [stats, setStats] = useState<Stats | null>(null);
+  const [redirectCountdown, setRedirectCountdown] = useState<number>(10); // Compteur pour la redirection
 
   // Vérifier l'authentification
   useEffect(() => {
@@ -137,6 +138,33 @@ export default function LargeFilesPage() {
   const animationDuration = isSmallUpload ? 5 : 0.5;
   const animationEase = isSmallUpload ? "linear" : "easeOut";
 
+  // Redirection automatique après 10 secondes quand le job est terminé
+  useEffect(() => {
+    if (jobStatus?.status === 'completed') {
+      // Mise à jour du compteur à rebours
+      const countdownInterval = setInterval(() => {
+        setRedirectCountdown((prevCount) => {
+          if (prevCount <= 1) {
+            clearInterval(countdownInterval);
+            return 0;
+          }
+          return prevCount - 1;
+        });
+      }, 1000);
+      
+      // Redirection après 10 secondes
+      const redirectTimeout = setTimeout(() => {
+        const locale = params.locale as string || 'fr';
+        router.push(`/${locale}/reconnect`);
+      }, 10000); // 10 secondes
+
+      return () => {
+        clearTimeout(redirectTimeout);
+        clearInterval(countdownInterval);
+      };
+    }
+  }, [jobStatus?.status, router, params.locale]);
+
   if (status === 'loading' || !session) {
     return <div className="min-h-screen bg-[#2a39a9] relative w-full max-w-[90rem] m-auto">
       <div className="container mx-auto py-12">
@@ -169,6 +197,11 @@ export default function LargeFilesPage() {
             {jobStatus && (
               <div className="text-white">
                 <div className="space-y-6">
+                  {/* Message about contacts being downloaded */}
+                  <div className="text-center mb-6 px-4 py-3 bg-white/10 rounded-lg">
+                    <p className="text-white">{t('downloadingContacts')}</p>
+                  </div>
+                  
                   {/* Global Progress */}
                   <div className="mb-6">
                     <div className="flex justify-between mb-2">
@@ -264,20 +297,27 @@ export default function LargeFilesPage() {
                   </div>
 
                   {jobStatus.status === 'completed' && (
-                    <div className="grid grid-cols-2 gap-6 mt-6 text-center">
-                      <div className="p-4 bg-black/20 rounded-xl">
-                        <p className="text-3xl font-bold text-pink-400">
-                          {followerCount.toLocaleString()}
-                        </p>
-                        <p className="text-sm text-white/60 mt-1">{t('stats.followers')}</p>
+                    <>
+                      <div className="grid grid-cols-2 gap-6 mt-6 text-center">
+                        <div className="p-4 bg-black/20 rounded-xl">
+                          <p className="text-3xl font-bold text-pink-400">
+                            {followerCount.toLocaleString()}
+                          </p>
+                          <p className="text-sm text-white/60 mt-1">{t('stats.followers')}</p>
+                        </div>
+                        <div className="p-4 bg-black/20 rounded-xl">
+                          <p className="text-3xl font-bold text-blue-400">
+                            {followingCount.toLocaleString()}
+                          </p>
+                          <p className="text-sm text-white/60 mt-1">{t('stats.following')}</p>
+                        </div>
                       </div>
-                      <div className="p-4 bg-black/20 rounded-xl">
-                        <p className="text-3xl font-bold text-blue-400">
-                          {followingCount.toLocaleString()}
-                        </p>
-                        <p className="text-sm text-white/60 mt-1">{t('stats.following')}</p>
+
+                      {/* Affichage du compte à rebours */}
+                      <div className="mt-4 text-center text-white/70">
+                        <p>{t('redirecting')} {redirectCountdown}s</p>
                       </div>
-                    </div>
+                    </>
                   )}
 
                   {jobStatus.error && (
@@ -292,7 +332,7 @@ export default function LargeFilesPage() {
                       whileTap={{ scale: 0.98 }}
                       onClick={() => {
                         const locale = params.locale as string || 'fr';
-                        router.push(`/${locale}/dashboard`);
+                        router.push(`/${locale}/reconnect`);
                       }}
                       className="w-full mt-6 bg-white text-gray-800 py-3 px-4 rounded-xl 
                       hover:bg-gray-50 transition-all duration-200 

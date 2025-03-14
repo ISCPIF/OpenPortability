@@ -28,7 +28,7 @@ export default function StatsReconnexion({ globalStats }: StatsReconnexionProps)
   const sources = globalStats?.users?.onboarded || 0;
 
   return (
-    <div className="mt-12 w-full grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-8">
+    <div className="w-full grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-8">
       {/* Connexions totales */}
       <div className="bg-[#1A237E] rounded-lg p-4 text-center text-white">
         <div className="text-2xl font-bold mb-2 mt-8">
