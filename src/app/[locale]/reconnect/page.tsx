@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense } from 'react'
+import { Suspense, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 
 import Header from '@/app/_components/Header'
@@ -41,7 +41,17 @@ export default function ReconnectPage() {
     refreshStats
   } = useReconnectState()
 
-  if (isLoading) {
+  // Forcer un rafraîchissement des statistiques au chargement initial
+  useEffect(() => {
+    // Forcer le rechargement des données au premier rendu
+    const loadInitialData = async () => {
+      await refreshStats();
+    };
+    
+    loadInitialData();
+  }, [refreshStats]);
+
+  if (isLoading || !stats || !globalStats) {
     return (
       <div className="min-h-screen bg-[#2a39a9] relative w-full max-w-[90rem] m-auto">
         <div className="container mx-auto py-12">
