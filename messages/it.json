@@ -80,7 +80,8 @@
             "reconnect": {
             "bluesky": "(!) La tua sessione BlueSky è scaduta. Per motivi di sicurezza, utilizziamo solo token di accesso temporanei che devono essere rinnovati regolarmente.",
             "mastodon": "(!) Abbiamo bisogno di autorizzazioni aggiuntive per consentire la riconnessione con i tuoi abbonamenti. Accedi di nuovo per autorizzare queste nuove funzionalità."
-            }
+            },
+            "connect": "Accedi per iniziare"
         },
         "connectedDashboard": {
             "twitter": "Connettiti a Twitter/X",
@@ -231,7 +232,9 @@
             "title": "Spiegazione del tutorial passo dopo passo",
             "description": "Scopri come migrare facilmente da Twitter/X a Mastodon e Bluesky",
             "watchVideo": "Guarda il video"
-        }
+        },
+        "import_description": "Importa il tuo archivio per goderti appieno l'esperienza OpenPortability",
+        "no_archive_description": "Trova alcuni dei tuoi contatti tra gli account che seguivi su Twitter/X"
     },
     "dashboardSea": {
         "welcome": "Benvenuto in OpenPortability!",
@@ -315,7 +318,9 @@
         },
         "button": {
             "dashboard": "Ritorna al pannello di controllo"
-        }
+        },
+        "downloadingContacts": "I tuoi contatti sono in fase di download. Dovrai poi convalidare la riconnessione.",
+        "redirecting": "Reindirizzamento automatico tra"
     },
     "profile": {
         "unlinkConfirmation": "Sei sicuro di voler disconnettere il tuo account {provider}?",
@@ -423,12 +428,16 @@
         "selectAll": "Seleziona tutto",
         "deselectAll": "Deseleziona tutto",
         "startMigration": "Inizia la migrazione",
-        "migrating": "Migrando..."
+        "migrating": "Migrando...",
+        "close": "Chiudi",
+        "needBothAccounts": "Inizia collegando i tuoi account Bluesky e/o Mastodon per riconnetterti con i tuoi contatti",
+        "noUploadYet": "{count} account sono stati apparentemente trovati tra quelli che seguivi su X"
     },
     "ReconnexionOptions": {
         "title": "Scegli come vuoi riconnetterti ai tuoi seguiti",
         "not_onboarded_title": "Non hai completato tutti gli obiettivi della tua migrazione da Twitter/X?",
 "not_onboarded_description": "Nessun problema, abbiamo trovato delle connessioni per te basate sulle associazioni del tuo account. Per trovare più account da associare e un targeting migliore, ti consigliamo comunque di importare il tuo archivio dati di Twitter/X",
+        "titleNotUploadYet": "OpenPortability ha trovato account su Bluesky e Mastodon che seguivi apparentemente su X/Twitter:",
         "buttons": {
             "automatic": "RICOLLEGAMI AUTOMATICAMENTE",
             "manual": "SCELGO GLI ACCOUNT DA RICOLLEGARE"
@@ -528,6 +537,8 @@
         "congratulations": "Congratulazioni",
         "secondObjective": "Hai completato il 2° obiettivo e ti sei ricollegato con {count} account. Hai raggiunto la tua destinazione!",
         "notification": "Continueremo a informarti se nuovi account possono essere ricollegati, via email o attraverso la tua rete preferita, secondo le tue preferenze.",
+        "reconnectWithoutOnboarding": "\nSei stato riconnesso a {count} account.\nPer una riconnessione più completa, importa il tuo archivio:",
+        "uploadArchiveButton" : "Importa il mio archivio",
         "stats": {
             "blueskyFollowing": "Seguiti trovati su Bluesky",
             "mastodonFollowing": "Seguiti trovati su Mastodon"
@@ -556,7 +567,14 @@
             "totalImported": "Totale importato"
         },
         "alreadyReconnected": "Ti abbiamo già ricollegato con {count} account. Torna più tardi per continuare la tua riconnessione!",
-        "shareText" : "🚨#eXodo in corso! Mi sono appena iscritto a #OpenPortability per mantenere i contatti con la mia comunità su #BlueSky e #Mastodon. Sono state aggiunte {count} connessioni in attesa! In 1 minuto, assicurati anche tu di non perdere i tuoi follower! ➡️ https://OpenPortability.org"
+        "shareText" : "🚨#eXodo in corso! Mi sono appena iscritto a #OpenPortability per mantenere i contatti con la mia comunità su #BlueSky e #Mastodon. Sono state aggiunte {count} connessioni in attesa! In 1 minuto, assicurati anche tu di non perdere i tuoi follower! ➡️ https://OpenPortability.org",
+        "shareTextNotConnected": "🚨#eXodo in corso! Mi sono appena iscritto a #OpenPortability per restare in contatto con la mia community su #BlueSky e #Mastodon. {count} connessioni in sospeso sono state aggiunte! In appena 1 minuto, anche tu puoi assicurarti di non perdere i tuoi abbonati! ➡️ https://OpenPortability.org"
+    },
+    "blueskyPreviewModale": {
+        "shareOn": "Condividi su {platform}",
+        "previewTitle": "Anteprima del tuo post su {platform}",
+        "publish": "Pubblica",
+        "cancel": "Annulla"
     },
     "privacy_policy": {
         "title": "Informativa sulla protezione dei dati",

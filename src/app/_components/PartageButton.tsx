@@ -11,6 +11,7 @@ import twitterIcon from '../../../public/newSVG/X.svg'
 
 interface PartageButtonProps {
   onShare: (platform: string) => void;
+  onShowBlueSkyPreview?: () => void; // Nouvelle prop pour déclencher la modale
   providers: {
     twitter?: boolean;
     bluesky?: boolean;
@@ -18,10 +19,18 @@ interface PartageButtonProps {
   };
 }
 
-export default function PartageButton({ onShare, providers }: PartageButtonProps) {
+export default function PartageButton({ onShare, onShowBlueSkyPreview, providers }: PartageButtonProps) {
   const t = useTranslations('partageButton')
 
-  // console.log
+  const handleClick = (platform: string) => {
+    if (platform === 'bluesky' && onShowBlueSkyPreview) {
+      // Si c'est BlueSky et qu'on a fourni la fonction pour afficher la prévisualisation
+      onShowBlueSkyPreview()
+    } else {
+      // Sinon, on utilise le comportement normal
+      onShare(platform)
+    }
+  }
 
   return (
     <div className="flex flex-wrap justify-center gap-4">
@@ -29,7 +38,7 @@ export default function PartageButton({ onShare, providers }: PartageButtonProps
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          onClick={() => onShare('mastodon')}
+          onClick={() => handleClick('mastodon')}
           className={`inline-flex items-center gap-2 px-6 py-3 
                    bg-white hover:bg-gray-50
                    text-[#2a39a9] font-semibold rounded-full transition-all duration-200 ${plex.className}`}
@@ -49,7 +58,7 @@ export default function PartageButton({ onShare, providers }: PartageButtonProps
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          onClick={() => onShare('bluesky')}
+          onClick={() => handleClick('bluesky')}
           className={`inline-flex items-center gap-2 px-6 py-3 
                    bg-white hover:bg-gray-50
                    text-[#2a39a9] font-semibold rounded-full transition-all duration-200 ${plex.className}`}
@@ -69,7 +78,7 @@ export default function PartageButton({ onShare, providers }: PartageButtonProps
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          onClick={() => onShare('twitter')}
+          onClick={() => handleClick('twitter')}
           className={`inline-flex items-center gap-2 px-6 py-3 
                    bg-white hover:bg-gray-50
                    text-[#2a39a9] font-semibold rounded-full transition-all duration-200 ${plex.className}`}

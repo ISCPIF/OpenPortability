@@ -55,7 +55,7 @@ export default function RefreshTokenModale({ providers, mastodonInstances, onClo
           connectedServices={connectedServices}
           hasUploadedArchive={true}
           onLoadingChange={setIsLoading}
-          mastodonInstances={mastodonInstances}
+          instances={mastodonInstances}
         />
 
         <button

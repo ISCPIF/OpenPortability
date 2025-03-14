@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import Header from '@/app/_components/Header';
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
@@ -15,8 +15,6 @@ import { useDashboardState } from '@/hooks/useDashboardState';
 import NewsletterSection from '@/app/_components/dashboard/NewsletterSection';
 import OnboardingSection from '@/app/_components/dashboard/OnboardingSection';
 import TutorialSection from '@/app/_components/dashboard/TutorialSection';
-import NewsLetterFirstSeen from '@/app/_components/NewsLetterFirstSeen';
-
 
 export default function DashboardPage() {
   const {
@@ -38,6 +36,14 @@ export default function DashboardPage() {
   } = useDashboardState();
   
   const t = useTranslations('dashboard');
+  const { locale } = useParams();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (hasOnboarded && hasMastodon && hasTwitter && hasBluesky) {
+      router.push(`/${locale}/reconnect`);
+    }
+  }, [hasOnboarded, router, locale]);
 
   if (isLoading) {
     return (
@@ -67,59 +73,14 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Newsletter modal pour première visite */}
-      <AnimatePresence>
-        {session?.user && !session.user.have_seen_newsletter && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="relative my-4"
-            >
-              <NewsLetterFirstSeen
-                userId={session.user.id}
-                onClose={() => {
-                  update();
-                  session.user.have_seen_newsletter = true;
-                }}
-                onSubscribe={() => {
-                  setShowNewsletterModal(false);
-                  update();
-                }}
-              />
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      <div className="relative w-full">
+      <div className="relative w-full bg-transparent">
         <div className="max-w-3xl mx-auto">
-          <div className="relative z-10">
-            {/* Contenu conditionnel basé sur l'état d'onboarding */}
-            {hasOnboarded ? (
-              <>
-                <LaunchReconnection
-                  session={{
-                    user: {
-                      twitter_username: session.user.twitter_username,
-                      bluesky_username: session.user.bluesky_username,
-                      mastodon_username: session.user.mastodon_username,
-                      mastodon_instance: session.user.mastodon_instance
-                    }
-                  }}
-                  totalProcessed={globalStats?.users?.total || 0}
-                  totalInDatabase={(globalStats?.connections?.following || 0) + (globalStats?.connections?.followers || 0)}
-                  userStats={stats}
-                />
-              </>
-            ) : null}
-          </div>
+   
 
           {/* Section d'onboarding conditionnelle */}
           {(connectedServicesCount < 3 || !hasOnboarded) && (
-            <div className="flex justify-center items-center w-full">
-              <div className="w-full backdrop-blur-xs rounded-2xl p-4">
+            <div className="flex justify-center items-center w-full sm:-mt-16 md:-mt-24">
+            <div className="w-full backdrop-blur-xs rounded-2xl">
                 {!hasOnboarded && (
                   <OnboardingSection 
                     session={session?.user} 

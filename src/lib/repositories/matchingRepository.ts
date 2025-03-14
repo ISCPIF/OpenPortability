@@ -1,5 +1,6 @@
 import { MatchingTarget } from '../types/matching';
 import { supabase, authClient } from '../supabase';
+import { logError, logWarning, logInfo, logDebug } from '../log_utils';
 
 export class MatchingRepository {
   private supabase;
@@ -50,7 +51,11 @@ export class MatchingRepository {
       .eq('target_twitter_id', targetId);
 
     if (updateError) {
-      console.error('Failed to update follow status:', updateError);
+      logError('Repository', 'MatchingRepository.updateFollowStatus', updateError, userId, {
+        targetId,
+        platform,
+        success
+      });
       throw updateError;
     }
   }
@@ -62,13 +67,6 @@ export class MatchingRepository {
     success: boolean,
     error?: string
   ): Promise<void> {
-    console.log('[MatchingRepository.updateFollowStatusBatch] Starting database update:', {
-      platform,
-      userId,
-      targetIds,
-      success,
-      error
-    });
 
     const now = new Date().toISOString();
     const updates = platform === 'bluesky' 
@@ -82,9 +80,6 @@ export class MatchingRepository {
           followed_at_mastodon: success ? now : null,
           // follow_error_mastodon: error
         };
-
-    console.log('[MatchingRepository.updateFollowStatusBatch] Applying updates:', updates);
-
     const { error: updateError } = await this.supabase
       .from('sources_targets')
       .update(updates)
@@ -92,11 +87,13 @@ export class MatchingRepository {
       .in('target_twitter_id', targetIds);
 
     if (updateError) {
-      console.error('[MatchingRepository.updateFollowStatusBatch] Failed to update follow status batch:', updateError);
+      logError('Repository', 'MatchingRepository.updateFollowStatusBatch', updateError, userId, {
+        targetCount: targetIds.length,
+        platform,
+        success
+      });
       throw updateError;
     }
-
-    console.log('[MatchingRepository.updateFollowStatusBatch] Successfully updated follow status for batch');
   }
 
   async updateSourcesFollowersStatusBatch(
@@ -106,13 +103,6 @@ export class MatchingRepository {
     success: boolean,
     error?: string
   ): Promise<void> {
-    console.log('[MatchingRepository.updateSourcesFollowersStatusBatch] Starting database update:', {
-      platform,
-      followerTwitterId,
-      sourceTwitterIds,
-      success,
-      error
-    });
 
     // Get the UUIDs for the source Twitter IDs
     const { data: sourceUsers, error: sourceError } = await this.authClient
@@ -121,12 +111,19 @@ export class MatchingRepository {
       .in('twitter_id', sourceTwitterIds);
 
     if (sourceError) {
-      console.error('[MatchingRepository.updateSourcesFollowersStatusBatch] Error getting source UUIDs:', sourceError);
+      logError('Repository', 'MatchingRepository.updateSourcesFollowersStatusBatch', sourceError, 'unknown', {
+        followerTwitterId,
+        sourceTwitterIds,
+        context: 'Error getting source UUIDs'
+      });
       throw new Error(`Failed to get source UUIDs: ${sourceError.message}`);
     }
 
     if (!sourceUsers || sourceUsers.length === 0) {
-      console.error('[MatchingRepository.updateSourcesFollowersStatusBatch] No users found for Twitter IDs:', sourceTwitterIds);
+      logWarning('Repository', 'MatchingRepository.updateSourcesFollowersStatusBatch', 'No users found for Twitter IDs', 'unknown', {
+        followerTwitterId,
+        sourceTwitterIds
+      });
       throw new Error('No users found for the given Twitter IDs');
     }
 
@@ -153,11 +150,14 @@ export class MatchingRepository {
       .in('source_id', sourceUUIDs);
 
     if (updateError) {
-      console.error('[MatchingRepository.updateSourcesFollowersStatusBatch] Error updating follow status:', updateError);
+      logError('Repository', 'MatchingRepository.updateSourcesFollowersStatusBatch', updateError, 'unknown', {
+        followerTwitterId,
+        sourceUUIDs,
+        platform,
+        context: 'Error updating follow status'
+      });
       throw new Error(`Failed to update follow status: ${updateError.message}`);
     }
-
-    console.log('[MatchingRepository.updateSourcesFollowersStatusBatch] Successfully updated follow status');
   }
 
   async updateSourcesFollowersStatus(
@@ -175,16 +175,24 @@ export class MatchingRepository {
     pageSize: number = 1000,
     pageNumber: number = 0
   ): Promise<{ data: StoredProcedureTarget[] | null; error: any }> {
-    console.log('[MatchingRepository] getSourcesFromFollower called with:', { twitterId, pageSize, pageNumber });
     const result = await this.supabase.rpc('get_sources_from_follower', {
       follower_twitter_id_param: twitterId,
       page_size: pageSize,
       page_number: pageNumber
     });
-    console.log('[MatchingRepository] getSourcesFromFollower result:', { 
-      dataLength: result.data?.length || 0,
-      error: result.error
-    });
+    
+    if (result.error) {
+      logError('Repository', 'MatchingRepository.getSourcesFromFollower', result.error, 'unknown', { 
+        twitterId, 
+        context: 'Error getting sources from follower' 
+      });
+    } else {
+      logDebug('Repository', 'MatchingRepository.getSourcesFromFollower', 'Successfully retrieved sources', 'unknown', { 
+        twitterId, 
+        dataLength: result.data?.length || 0 
+      });
+    }
+    
     return result;
   }
 }
