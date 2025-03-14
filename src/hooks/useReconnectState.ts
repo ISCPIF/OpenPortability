@@ -143,17 +143,22 @@ export function useReconnectState() {
         await fetchMatches();
       }
       
-      setIsLoading(false);
+      // Ne définir isLoading=false que si les stats sont disponibles
+      if (stats) {
+        setIsLoading(false);
+      }
     };
 
     if (session) {
       loadData();
+    } else if (status !== "loading" && !statsLoading) {
+      setIsLoading(false);
     } else {
-      setIsLoading(status === "loading" || statsLoading);
+      setIsLoading(true);
     }
     
     // No need for cleanup function as we're using global variables
-  }, [session, status, router, statsLoading, authVerifyTokens, fetchMatches]);
+  }, [session, status, router, statsLoading, stats, authVerifyTokens, fetchMatches]);
 
   // Fonction pour mettre à jour l'option de reconnexion automatique
   const updateAutomaticReconnect = async (value: boolean) => {

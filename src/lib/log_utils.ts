@@ -396,7 +396,7 @@ export function withLogging(handler: Function) {
 }
 
 // Exporter une instance unique du logger pour éviter de multiples fichiers
-export default {
+const logger = {
   logInfo,
   logError,
   logWarning,
@@ -406,3 +406,5 @@ export default {
   startPerformanceTimer,
   withLogging
 };
+
+export default logger;
