@@ -210,6 +210,8 @@
     },
     "importButton": "Importera mitt Twitter/X-arkiv",
     "no_archive_yet": "Jag har inte mitt arkiv än",
+    "no_archive_description": "Hitta några av dina återanslutningar bland konton du uppenbarligen följde på Twitter/X",
+    "import_description": "Importera ditt arkiv för att till fullo njuta av OpenPortability-upplevelsen",
     "shareModal": {
       "title": "Dela din resa",
       "shareOn": "Dela på {platform}",
@@ -315,7 +317,9 @@
     },
     "button": {
       "dashboard": "Tillbaka till instrumentpanelen"
-    }
+    },
+    "downloadingContacts": "Dina kontakter laddas ner. Du behöver sedan validera återanslutningen.",
+    "redirecting": "Automatisk omdirigering om"
   },
   "profile": {
     "unlinkConfirmation": "Är du säker på att du vill koppla bort ditt {provider}-konto?",
@@ -423,7 +427,10 @@
     "selectAll": "Välj alla",
     "deselectAll": "Avmarkera alla",
     "startMigration": "Starta migration",
-    "migrating": "Migrerar..."
+    "migrating": "Migrerar...",
+    "close": "Stäng",
+    "needBothAccounts": "Börja med att länka dina Bluesky och/eller Mastodon-konton för att återansluta med dina kontakter",
+    "noUploadYet": "{count} konton har uppenbarligen hittats bland dem du följde på X"
   },
   "ReconnexionOptions": {
     "title": "Välj hur du vill återansluta till dina följande",
@@ -457,7 +464,8 @@
     "matchMessage": "{matchCount} passagerare hittades under ditt första migrationssteg!\nNu är det dags att aktivera anslutningen med de du vill\nansluta till dina nya nätverk.",
     "stats": {
       "awaitingConnection": "av dina följda konton väntar på\nanslutning!",
-      "alreadyTransferred": "prenumeranter har redan överförts!"
+      "alreadyTransferred": "prenumeranter har redan överförts!",
+      "effectiveFollowers": "följare som fåtts genom OpenPortability"
     }
   },
   "ManualReconnexion": {
@@ -470,7 +478,8 @@
     "xAccountPseudo": "Kontoalias",
     "mastodonBlueskyCorrespondence": "Mastodon/Bluesky Korrespondens",
     "followOnBluesky": "Följ på Bluesky",
-    "followOnMastodon": "Följ på Mastodon"
+    "followOnMastodon": "Följ på Mastodon",
+    "showOnlyNotFollowed": "Visa endast nya konton"
   },
   "AccountToMigrate": {
     "followOnBluesky": "Följ på Bluesky",
@@ -526,6 +535,8 @@
     "congratulations": "Grattis",
     "secondObjective": "Du har slutfört det andra målet och återanslutit med {count} konton. Du har nått din destination!",
     "notification": "Vi fortsätter att meddela dig om nya konton kan återanslutas, via e-post eller ditt föredragna nätverk enligt dina preferenser.",
+    "reconnectWithoutOnboarding": "\nDu har återanslutits till {count} konton.\nFör en mer komplett återanslutning, importera ditt arkiv:",
+    "uploadArchiveButton": "Importera mitt Twitter/X-arkiv",
     "stats": {
       "blueskyFollowing": "Följare som hittats på Bluesky",
       "mastodonFollowing": "Följare som hittats på Mastodon"
@@ -554,12 +565,19 @@
       "totalImported": "Totalt importerade"
     },
     "alreadyReconnected": "Vi har redan återanslutit dig med {count} konton. Kom tillbaka senare för att fortsätta din återanslutning!",
-    "shareText" : "🚨#eXodus pågår! Jag har precis registrerat mig på #OpenPortability för att hålla kontakten med mitt community på #BlueSky och #Mastodon. {count} väntande anslutningar har lagts till! På 1 minut kan även du se till att inte förlora dina följare! ➡️ https://OpenPortability.org"
+    "shareText" : "🚨#eXodus pågår! Jag har precis registrerat mig på #OpenPortability för att hålla kontakten med mitt community på #BlueSky och #Mastodon. {count} väntande anslutningar har lagts till! På 1 minut kan även du se till att inte förlora dina följare! ➡️ https://OpenPortability.org",
+    "shareTextNotConnected": "🚨#eXode pågår! Jag har precis registrerat mig på #OpenPortability för att hålla kontakten med mitt community på #BlueSky och #Mastodon. {count} väntande anslutningar har lagts till! På bara 1 minut kan även du se till att du inte förlorar dina prenumeranter! ➡️ https://OpenPortability.org"
   },
   "privacy_policy": {
     "title": "Dataskyddsinformation",
     "subtitle": "Institutet för komplicerade system Paris Ile de France | Januari 2025",
     "content": "<h2>CNRS ISC PIF</h2><p>Dataskyddsinformation för det vetenskapliga forskningsprojektet Open Portability</p><p>Sociala nätverk, särskilt Twitter (nu X), har från början varit privilegierade forskningsobjekt, särskilt inom området för beräkningsmässiga samhällsvetenskaper.</p><p>En historisk övergång pågår i det sociala nätverkets rådande landskap. Den centraliserade modellen, som X (tidigare Twitter) står för, upplever en massiv användarövergång till alternativa plattformar som BlueSky och Mastodon. Flera miljoner konton har migrerat på bara några veckor, vilket markerar ett stort skifte mot decentraliserade och öppna nätverk.</p><p>Denna övergång är ett betydande socialt, ekonomiskt och teknologiskt fenomen som kan modifiera det globala digitala rummet, särskilt i Europa, och kan låta Europa återfå en del digital suveränitet.</p><h2>I. Projekt- och Behandlingsbeskrivning</h2><p>Forskningsmålen är följande:analysera skillnaden mellan öppna och stängda mikrobloggningsmiljöer utifrån sociala dynamiker och online-debatter. Studera som ett fallstudie den pågående migrationen mellan X och utrymmen baserade på öppna protokoll, AT-protokollet och Activity Pub, och studera tillägnandet av decentraliserade digitala utrymmen över tid (5-års horisont).</p><p>OpenPortability-projektet involverar:</p><ul><li>Datainsamling för dataportabilitet mellan sociala nätverk</li><li>Datainsamling för att skapa en översikt av X nätverkets sociala struktur</li><li>Datainsamling för att skapa översikter av alternativa nätverks sociala strukturer</li><li>Dataportabilitet</li><li>Databehandling och analys</li></ul><h2>II. Datainsamling, Mottagare och Förvaring</h2><p>Data som samlas in direkt från individer och behandlas är:</p><ul><li>Digitala identifierare på sociala nätverk (användarnamn ID)</li><li>Profilnamn på sociala nätverk</li><li>E-postadresser</li></ul><p>Blueskys policy för skydd av personuppgifter finns på:<link>https://bsky.social/about/support/privacy-policy</link></p><p>Mastodons policy för skydd av personuppgifter kan nås på <link>https://joinmastodon.org/servers</link></p><h2>III. Säkerhetsåtgärder</h2><p>För att säkerställa datas konfidentialitet och skydd vidtas åtgärder i enlighet med Statens informationssystemssäkerhetspolicy, tillämpad på CNRS. Data lagras i Frankrike på CNRS-servrar.</p><h2>IV. Utövande av Dina Rättigheter</h2><p>Du kan få tillgång till och erhålla en kopia av dina data, motsätta dig behandlingen av dessa data eller få dem rättade. Du har också rätten att begränsa behandlingen av dina data. Du kan utöva dessa rättigheter genom att kontakta datakontrollaren vid Institutet för Komplicerade System-Paris Ile de France, med adressen 113 rue Nationale 75013 Paris, eller via kontaktformuläret tillgängligt på <link>https://openportability.org/</link></p><p>Du kan också kontakta CNRS:s dataskyddsombud (DPO) på:CNRS - Dataskyddstjänst, 2 rue Jean Zay, 54519 Vandoeuvre-lès-Nancy - dpd.demandes@cnrs.fr.</p><p>Om du anser att dina rättigheter av Informationsteknik och Medborgerliga Friheter inte respekteras, kan du lämna in ett klagomål online till CNIL, 3 Place de Fontenoy, TSA 80715 – 75334 Paris Cedex 07 (<link>https://www.cnil.fr/</link>).</p>",
     "backToSignIn": "Tillbaka till OpenPortability-plattformen"
+  },
+  "blueskyPreviewModale": {
+    "shareOn": "Dela på {platform}",
+    "previewTitle": "Förhandsgranska ditt inlägg på {platform}",
+    "publish": "Publicera",
+    "cancel": "Avbryt"
   }
 }

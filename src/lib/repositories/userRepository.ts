@@ -1,6 +1,7 @@
 import { UserUpdate, ShareEvent } from '../types/user';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { authClient, supabase } from '../supabase';
+import { logError, logWarning } from '../log_utils';
 
 export class UserRepository {
     
@@ -10,7 +11,10 @@ export class UserRepository {
       .update(update)
       .eq('id', userId);
     
-    if (error) throw error;
+    if (error) {
+      logError('Repository', 'UserRepository.updateUser', error, userId, { update });
+      throw error;
+    }
   }
 
   async getUser(userId: string) {
@@ -20,7 +24,10 @@ export class UserRepository {
       .eq('id', userId)
       .single();
     
-    if (error) throw error;
+    if (error) {
+      logError('Repository', 'UserRepository.getUser', error, userId);
+      throw error;
+    }
     return data;
   }
 
@@ -29,7 +36,10 @@ export class UserRepository {
       .from('share_events')
       .insert(event);
     
-    if (error) throw error;
+    if (error) {
+      logError('Repository', 'UserRepository.createShareEvent', error, event.source_id, { event });
+      throw error;
+    }
   }
 
   async getShareEvents(userId: string): Promise<ShareEvent[]> {
@@ -40,8 +50,7 @@ export class UserRepository {
       .order('created_at', { ascending: false });
     
     if (error) { 
-      
-      console.log(error); 
+      logError('Repository', 'UserRepository.getShareEvents', error, userId);
       throw error;
     }
     return data;
@@ -54,7 +63,7 @@ export class UserRepository {
       .eq('source_id', userId);
     
     if (error) {
-      console.log(error);
+      logError('Repository', 'UserRepository.hasShareEvents', error, userId);
       throw error;
     }
     

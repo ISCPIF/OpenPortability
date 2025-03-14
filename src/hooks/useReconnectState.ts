@@ -1,18 +1,27 @@
 // src/hooks/useReconnectState.ts
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useStats } from './useStats';
 import { useMastodonInstances } from './useMastodonInstances';
 import { MatchingTarget, MatchedFollower } from '@/lib/types/matching';
+import { useAuthTokens } from './useAuthTokens'; // Import useAuthTokens
 
 type AccountToFollow = MatchingTarget | MatchedFollower;
+
+// Module-level variables to track API calls across component instances
+// This helps with React Strict Mode double-mounting
+const globalMatchesFetched = { current: false };
+// Shared promise for concurrent matching requests
+let activeMatchingPromise: Promise<any> | null = null;
 
 export function useReconnectState() {
   const { data: session, status, update } = useSession();
   const router = useRouter();
   const { stats, globalStats, isLoading: statsLoading, refreshStats } = useStats();
   const mastodonInstances = useMastodonInstances();
+  // Use useAuthTokens hook instead of making our own API call
+  const { missingProviders: authMissingProviders, verifyTokens: authVerifyTokens } = useAuthTokens();
   
   const [isLoading, setIsLoading] = useState(true);
   const [isMigrating, setIsMigrating] = useState(false);
@@ -30,6 +39,9 @@ export function useReconnectState() {
   const [missingProviders, setMissingProviders] = useState<('bluesky' | 'mastodon')[]>([]);
   const [isReconnectionComplete, setIsReconnectionComplete] = useState(false);
   
+  // Use ref to track API calls
+  const matchesFetchedRef = useRef(globalMatchesFetched.current);
+  
   // Déterminer quels comptes sont connectés
   const hasMastodon = session?.user?.mastodon_username;
   const hasBluesky = session?.user?.bluesky_username;
@@ -43,6 +55,74 @@ export function useReconnectState() {
     !!hasTwitter
   ].filter(Boolean).length;
 
+  // Update missingProviders when authMissingProviders changes
+  useEffect(() => {
+    if (authMissingProviders.length > 0) {
+      setMissingProviders(authMissingProviders);
+    }
+  }, [authMissingProviders]);
+
+  const fetchMatches = useCallback(async () => {
+    // Skip if already fetched (check both local and global state)
+    if (matchesFetchedRef.current || globalMatchesFetched.current) {
+      matchesFetchedRef.current = true;
+      globalMatchesFetched.current = true;
+      console.log("Matches already fetched, skipping API call");
+      return;
+    }
+    
+    // If there's an active matching request in progress, reuse that promise
+    if (activeMatchingPromise) {
+      console.log("Matching already in progress, reusing existing promise");
+      return activeMatchingPromise;
+    }
+    
+    // Create a new matching promise
+    console.log("Starting new matching fetch");
+    activeMatchingPromise = (async () => {
+      try {
+        console.log("Fetching matches...");
+        const matchesResponse = await fetch('/api/migrate/matching_found', {
+          headers: {
+            'Cache-Control': 'no-cache',
+            'X-Request-ID': `matching-found-${Date.now()}` // Add unique identifier
+          }
+        });
+
+        const matchesData = await matchesResponse.json();
+        setAccountsToProcess(matchesData.matches.following);
+        
+        matchesFetchedRef.current = true;
+        globalMatchesFetched.current = true;
+
+        if (matchesData.error) {
+          console.error("Error fetching matches:", matchesData.error);
+        }
+        
+        return matchesData;
+      } catch (error) {
+        console.error("Error in fetchMatches:", error);
+        throw error;
+      } finally {
+        // Clear the active promise reference when done
+        activeMatchingPromise = null;
+      }
+    })();
+    
+    return activeMatchingPromise;
+  }, []);
+
+  // Reset global flags when user session changes
+  useEffect(() => {
+    if (session?.user?.id) {
+      // Keep the flags if the user is the same
+    } else {
+      // Reset flags when session changes or is cleared
+      globalMatchesFetched.current = false;
+      matchesFetchedRef.current = false;
+    }
+  }, [session?.user?.id]);
+
   // Vérifier les tokens et charger les données
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -55,52 +135,12 @@ export function useReconnectState() {
       return;
     }
 
-    const verifyTokens = async () => {
-      try {
-        const response = await fetch('/api/auth/refresh', {
-          method: 'POST',
-          headers: {
-            'Cache-Control': 'no-cache'
-          }
-        });
-        const data = await response.json();
-
-        if (!data.success && data.providers) {
-          setMissingProviders(data.providers);
-        }
-      } catch (error) {
-        console.error('Error verifying tokens:', error);
-      }
-    };
-
-    const fetchMatches = async () => {
-      try {
-        const matchesResponse = await fetch('/api/migrate/matching_found', {
-          headers: {
-            'Cache-Control': 'no-cache'
-          }
-        });
-
-        const matchesData = await matchesResponse.json();
-        setAccountsToProcess(matchesData.matches.following);
-
-        if (matchesData.error) {
-          console.error("Error fetching matches:", matchesData.error);
-        }
-      } catch (error) {
-        console.error("Error in fetchMatches:", error);
-      }
-    };
-
     const loadData = async () => {
-      await verifyTokens();
+      // Use authVerifyTokens from useAuthTokens instead of our own verifyTokens function
+      await authVerifyTokens();
       
       if (session?.user?.has_onboarded || session?.user?.twitter_id) {
         await fetchMatches();
-      }
-      
-      if (session?.user?.hasOwnProperty('automatic_reconnect')) {
-        setIsAutomaticReconnect(Boolean(session.user.automatic_reconnect));
       }
       
       setIsLoading(false);
@@ -111,7 +151,9 @@ export function useReconnectState() {
     } else {
       setIsLoading(status === "loading" || statsLoading);
     }
-  }, [session, status, router, statsLoading]);
+    
+    // No need for cleanup function as we're using global variables
+  }, [session, status, router, statsLoading, authVerifyTokens, fetchMatches]);
 
   // Fonction pour mettre à jour l'option de reconnexion automatique
   const updateAutomaticReconnect = async (value: boolean) => {

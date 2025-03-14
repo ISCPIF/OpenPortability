@@ -18,9 +18,9 @@ export function useDashboardState() {
   const [progress, setProgress] = useState(0);
   
   // Déterminer quels comptes sont connectés
-  const hasMastodon = session?.user?.mastodon_id;
-  const hasBluesky = session?.user?.bluesky_id;
-  const hasTwitter = session?.user?.twitter_id;
+  const hasMastodon = session?.user?.mastodon_username;
+  const hasBluesky = session?.user?.bluesky_username;
+  const hasTwitter = session?.user?.twitter_username;
   const hasOnboarded = session?.user?.has_onboarded;
   const connectedServicesCount = [hasMastodon, hasBluesky, hasTwitter].filter(Boolean).length;
   

@@ -1,5 +1,6 @@
 // src/app/_components/reconnect/ReconnectContainer.tsx
 import { AnimatePresence } from 'framer-motion';
+import { memo, useMemo } from 'react';
 import { ReconnectState, determineReconnectState } from '@/lib/states/reconnectStates';
 
 // États importés
@@ -31,7 +32,7 @@ type ReconnectContainerProps = {
   refreshStats: () => void;
 };
 
-export default function ReconnectContainer({
+function ReconnectContainer({
   session,
   stats,
   globalStats,
@@ -50,29 +51,39 @@ export default function ReconnectContainer({
   refreshStats,
 }: ReconnectContainerProps) {
   
-  // Déterminer l'état actuel de la page
-  const currentState = determineReconnectState({
+  // Memoize the state determination to prevent recalculation on every render
+  const currentState = useMemo(() => {
+    return determineReconnectState({
+      isLoading,
+      isAuthenticated: !!session,
+      hasOnboarded: !!session?.user?.has_onboarded,
+      hasTwitter: !!session?.user?.twitter_username,
+      hasBluesky: !!session?.user?.bluesky_username,
+      hasMastodon: !!session?.user?.mastodon_username,
+      missingProviders,
+      statsLoaded: !!stats,
+      blueskyNotFollowed: stats?.matches.bluesky.notFollowed ?? 0,
+      mastodonNotFollowed: stats?.matches.mastodon.notFollowed ?? 0,
+      isReconnectionComplete,
+      isAutomaticReconnect,
+      showOptions,
+      blueskyHasFollowed: stats?.matches.bluesky.hasFollowed ?? 0,
+      mastodonHasFollowed: stats?.matches.mastodon.hasFollowed ?? 0,
+    });
+  }, [
     isLoading,
-    isAuthenticated: !!session,
-    hasOnboarded: !!session?.user?.has_onboarded,
-    hasTwitter: !!session?.user?.twitter_username,
-    hasBluesky: !!session?.user?.bluesky_username,
-    hasMastodon: !!session?.user?.mastodon_username,
+    session,
     missingProviders,
-    statsLoaded: !!stats,
-    blueskyNotFollowed: stats?.matches.bluesky.notFollowed ?? 0,
-    mastodonNotFollowed: stats?.matches.mastodon.notFollowed ?? 0,
+    stats,
     isReconnectionComplete,
     isAutomaticReconnect,
-    showOptions,
-    blueskyHasFollowed: stats?.matches.bluesky.hasFollowed ?? 0,
-    mastodonHasFollowed: stats?.matches.mastodon.hasFollowed ?? 0,
-  });
+    showOptions
+  ]);
 
-  // Debugging
-  console.log("Current state:", currentState);
-  console.log("isAutomaticReconnect:", isAutomaticReconnect);
-  console.log("showOptions:", showOptions);
+  // Remove debugging logs in production
+  // console.log("Current state:", currentState);
+  // console.log("isAutomaticReconnect:", isAutomaticReconnect);
+  // console.log("showOptions:", showOptions);
 
   // Utiliser AnimatePresence pour une seule condition au lieu de plusieurs
   return (
@@ -151,3 +162,6 @@ export default function ReconnectContainer({
     </div>
   );
 }
+
+// Memoize the component to prevent unnecessary re-renders
+export default memo(ReconnectContainer);

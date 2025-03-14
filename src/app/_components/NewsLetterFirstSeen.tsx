@@ -38,34 +38,35 @@ export default function NewsLetterFirstSeen({ userId, onSubscribe, onClose }: Ne
   const [email, setEmail] = useState('')
   const [acceptOEP, setAcceptOEP] = useState(false)
   const [acceptResearch, setAcceptResearch] = useState(false)
+  const [hqx_newsletter, setHqxNewsletter] = useState(false)
   const [error, setError] = useState('')
   const [isLanguageOpen, setIsLanguageOpen] = useState(false)
   const t = useTranslations('firstSeen')
   const pathname = usePathname()
 
-  useEffect(() => {
-    const fetchPreferences = async () => {
-      console.log('Fetching preferences...');
-      try {
-        const response = await fetch('/api/newsletter', { method: 'GET' });
-        console.log('Response status:', response.status);
-        if (response.ok) {
-          const responseData = await response.json();
-          console.log('Preferences data:', responseData);
-          // Access the nested data object
-          const preferences = responseData.data;
-          // Force boolean values with !!
-          setAcceptResearch(!!preferences.research_accepted);
-          setAcceptOEP(!!preferences.oep_accepted);
-          console.log('Set research to:', !!preferences.research_accepted);
-          console.log('Set OEP to:', !!preferences.oep_accepted);
-        }
-      } catch (error) {
-        console.error('Error fetching preferences:', error);
-      }
-    };
-    fetchPreferences();
-  }, []);
+  // useEffect(() => {
+  //   const fetchPreferences = async () => {
+  //     console.log('Fetching preferences...');
+  //     try {
+  //       const response = await fetch('/api/newsletter', { method: 'GET' });
+  //       console.log('Response status:', response.status);
+  //       if (response.ok) {
+  //         const responseData = await response.json();
+  //         console.log('Preferences data:', responseData);
+  //         // Access the nested data object
+  //         const preferences = responseData.data;
+  //         // Force boolean values with !!
+  //         setAcceptResearch(!!preferences.research_accepted);
+  //         setAcceptOEP(!!preferences.oep_accepted);
+  //         console.log('Set research to:', !!preferences.research_accepted);
+  //         console.log('Set OEP to:', !!preferences.oep_accepted);
+  //       }
+  //     } catch (error) {
+  //       console.error('Error fetching preferences:', error);
+  //     }
+  //   };
+  //   fetchPreferences();
+  // }, []);
 
   const languages = [
     { code: 'fr', name: 'FR' },
@@ -117,6 +118,7 @@ export default function NewsLetterFirstSeen({ userId, onSubscribe, onClose }: Ne
       // Get the current state values at the time of submission
       const currentResearch = acceptResearch;
       const currentOEP = acceptOEP;
+      const currentHqxNewsletter = hqx_newsletter;
 
       // Si c'est un submit, on continue avec la requête POST normale
       const response = await fetch(`/api/newsletter`, {
@@ -129,6 +131,7 @@ export default function NewsLetterFirstSeen({ userId, onSubscribe, onClose }: Ne
           acceptHQX: true,
           acceptOEP: currentOEP,
           research_accepted: currentResearch,
+          hqx_newsletter: currentHqxNewsletter,
           have_seen_newsletter: true
         }),
       })
@@ -157,8 +160,8 @@ export default function NewsLetterFirstSeen({ userId, onSubscribe, onClose }: Ne
 
 
   return (
-    <div className="bg-white rounded-2xl p-4 max-w-2xl w-full relative max-h-[90vh] overflow-y-auto">
-      <div className="absolute top-4 right-4 flex items-center gap-2">
+  <div className="bg-white rounded-2xl p-4 max-w-2xl md:max-w-3xl w-full relative max-h-[90vh] overflow-y-auto mx-auto">
+  <div className="absolute top-4 right-4 flex items-center gap-2">
         {/* Language Selector */}
         <div className="relative mr-6">
           <button
@@ -215,7 +218,7 @@ export default function NewsLetterFirstSeen({ userId, onSubscribe, onClose }: Ne
         />
 
         <div className="text-center">
-          <h2 className="text-2xl font-semibold mb-2">{t('title')}</h2>
+          <h2 className="text-2xl font-semibold mb-2 text-black">{t('title')}</h2>
           <div className="text-sm text-gray-600 text-center">
             {t.raw('description').split('\n').map((line, index) => {
               const parts = line.split(/\{(lien)\}/);
@@ -261,8 +264,26 @@ export default function NewsLetterFirstSeen({ userId, onSubscribe, onClose }: Ne
               </span>
             </div>
         
-          <div className="space-y-2 text-center text-sm">
-            <p className="text-gray-600 text-sm">{t('newsletter.subtitle')}</p>
+          <div className="space-y-2 text-sm">
+            <div className="flex items-center space-x-3">
+              <Switch
+                checked={hqx_newsletter}
+                onChange={(newValue) => setHqxNewsletter(newValue)}
+                className={`${
+                  hqx_newsletter ? 'bg-blue-600' : 'bg-gray-200'
+                } relative inline-flex h-[24px] w-[44px] shrink-0 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2`}
+              >
+                <span
+                  className={`${
+                    hqx_newsletter ? 'translate-x-[22px]' : 'translate-x-[2px]'
+                  } inline-block h-[20px] w-[20px] transform rounded-full bg-white transition-transform`}
+                />
+              </Switch>
+              <span className="text-sm text-gray-700">
+              {t('newsletter.subtitle')}
+              </span>
+              {/* <p className="text-gray-700 text-sm">{t('newsletter.subtitle')}</p> */}
+            </div>
           </div>
 
           <div className="space-y-4">
@@ -278,6 +299,7 @@ export default function NewsLetterFirstSeen({ userId, onSubscribe, onClose }: Ne
                 onChange={(e) => setEmail(e.target.value)}
               />
             </div>
+          
 
             <div className="flex items-center space-x-3">
               <Switch
