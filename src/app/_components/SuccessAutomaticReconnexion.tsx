@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { plex } from '@/app/fonts/plex';
@@ -123,12 +124,12 @@ export default function SuccessAutomaticReconnexion({
 
         {!session.user.has_onboarded && (
           <div className="mt-2 mb-4">
-            <a 
+            <Link 
               href="/upload" 
               className="inline-flex items-center border border-transparent rounded-full p-3 text-base font-medium shadow-sm text-white bg-[#d6356f] hover:bg-[#c02a61] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#d6356f]"
             >
               {t('uploadArchiveButton')}
-            </a>
+            </Link>
           </div>
         )}
 
