@@ -15,6 +15,8 @@ import { useDashboardState } from '@/hooks/useDashboardState';
 import NewsletterSection from '@/app/_components/dashboard/NewsletterSection';
 import OnboardingSection from '@/app/_components/dashboard/OnboardingSection';
 import TutorialSection from '@/app/_components/dashboard/TutorialSection';
+import { RequestNewsLetterDM } from '@/app/_components/RequestNewsLetterDM';
+import { useBotNewsletterState } from '@/hooks/useBotNewsletterState';
 
 export default function DashboardPage() {
   const {
@@ -34,6 +36,13 @@ export default function DashboardPage() {
     hasOnboarded,
     connectedServicesCount
   } = useDashboardState();
+
+  const {
+    showRequestNewsLetterDMModal: showBotNewsletterModal,
+    setShowRequestNewsLetterDMModal: setShowBotNewsletterModal,
+    isNewsletterFirstSeenOpen,
+    setIsNewsletterFirstSeenOpen
+  } = useBotNewsletterState();
   
   const t = useTranslations('dashboard');
   const { locale } = useParams();
@@ -44,6 +53,11 @@ export default function DashboardPage() {
       router.push(`/${locale}/reconnect`);
     }
   }, [hasOnboarded, router, locale]);
+
+  const handleNewsletterFirstSeenOpen = (isOpen: boolean) => {
+    setIsNewsletterFirstSeenOpen(isOpen);
+  };
+  
 
   if (isLoading) {
     return (
@@ -108,13 +122,38 @@ export default function DashboardPage() {
           <div className="space-y-8 sm:space-y-16 mt-8 sm:mt-16 mb-16">
             {/* Section newsletter */}
             {session?.user?.id && (
-              <NewsletterSection 
-                userId={session.user.id}
-                showModal={showNewsletterModal}
-                setShowModal={setShowNewsletterModal}
-                onUpdate={update}
-                haveSeenNewsletter={!!session.user.have_seen_newsletter}
-              />
+              <>
+            <NewsletterSection 
+              userId={session.user.id}
+              showModal={showNewsletterModal}
+              setShowModal={setShowNewsletterModal}
+              onUpdate={update}
+              haveSeenNewsletter={!!session.user.have_seen_newsletter}
+              onModalOpenChange={handleNewsletterFirstSeenOpen}
+            />
+    
+                
+                {/* Bouton pour tester les DMs Bluesky */}
+                {/* {session.user.bluesky_username && (
+                  <div className="flex flex-col items-center text-center px-4 mt-8">
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => setShowBotNewsletterModal(true)}
+                      className="group inline-flex items-center gap-2 sm:gap-3 text-indigo-200 hover:text-white transition-colors underline decoration-indigo-500"
+                    >
+                      <span className={`text-base sm:text-lg`}>{t('bluesky.testDM')}</span>
+                    </motion.button>
+                  </div>
+                )} */}
+                
+                {/* Modal pour tester les DMs Bluesky */}
+                <RequestNewsLetterDM 
+                  isOpen={showBotNewsletterModal} 
+                  onClose={() => setShowBotNewsletterModal(false)} 
+                />
+    
+              </>
             )}
 
             {/* Section tutoriel */}

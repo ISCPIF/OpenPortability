@@ -15,6 +15,7 @@ type NewsletterSectionProps = {
   setShowModal: (show: boolean) => void;
   onUpdate: () => void;
   haveSeenNewsletter: boolean;
+  onModalOpenChange?: (isOpen: boolean) => void;
 };
 
 export default function NewsletterSection({ 
@@ -22,7 +23,8 @@ export default function NewsletterSection({
   showModal, 
   setShowModal, 
   onUpdate,
-  haveSeenNewsletter
+  haveSeenNewsletter,
+  onModalOpenChange
 }: NewsletterSectionProps) {
   const t = useTranslations('dashboard');
   
@@ -40,7 +42,10 @@ export default function NewsletterSection({
         <motion.button
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
-          onClick={() => setShowModal(true)}
+          onClick={() => {
+            setShowModal(true);
+            if (onModalOpenChange) onModalOpenChange(true);
+          }}
           className="group inline-flex items-center gap-2 sm:gap-3 text-indigo-200 hover:text-white transition-colors underline decoration-indigo-500"
         >
           <span className={`${plex.className} text-base sm:text-lg`}>{t('newsletter.subscribe')}</span>
@@ -61,10 +66,12 @@ export default function NewsletterSection({
                 userId={userId}
                 onClose={() => {
                   onUpdate();
+                  if (onModalOpenChange) onModalOpenChange(false);
                 }}
                 onSubscribe={() => {
                   setShowModal(false);
                   onUpdate();
+                  if (onModalOpenChange) onModalOpenChange(false);
                 }}
               />
             </motion.div>
@@ -81,7 +88,10 @@ export default function NewsletterSection({
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
             onClick={(e) => {
-              if (e.target === e.currentTarget) setShowModal(false);
+              if (e.target === e.currentTarget) {
+                setShowModal(false);
+                if (onModalOpenChange) onModalOpenChange(false);
+              }
             }}
           >
             <motion.div
@@ -93,10 +103,14 @@ export default function NewsletterSection({
               >
               <NewsletterRequest
                 userId={userId}
-                onClose={() => setShowModal(false)}
+                onClose={() => {
+                  setShowModal(false);
+                  if (onModalOpenChange) onModalOpenChange(false);
+                }}
                 onSubscribe={() => {
                   setShowModal(false);
                   onUpdate();
+                  if (onModalOpenChange) onModalOpenChange(false);
                 }}
               />
             </motion.div>

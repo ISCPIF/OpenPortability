@@ -190,6 +190,9 @@
     "loading": "Chargement de vos données...",
     "addSocialNetwork": "Ajouter un réseau social",
     "addSocialNetworkDescription": "Connectez-vous à d'autres réseaux sociaux pour enrichir votre expérience",
+    "bluesky": {
+      "testDM": "Tester les messages directs Bluesky"
+    },
     "migrationStep": {
       "completed1": "Bravo ! Vous avez terminé la première des deux étapes de la migration.",
       "completed2": "N'oubliez par d'inviter vos abonnés à s’inscrire sur OpenPortability. En 1min ils pourront être reconnectés à votre compte, même sans leur archive.\nLa phase 2 de la reconnexion interviendra dans quelques jours. Selon vos préférences, vous recevrez une notification par e-mail ou pourrez suivre le lancement sur nos comptes X, BlueSky et Mastodon.\nRestez à l’affût, de belles surprises vous attendent !",
@@ -336,6 +339,7 @@
     "newsletter": "Newsletter OpenPortability",
     "research": "Programme de recherche CNRS",
     "oepNewsletter" : "Newsletter On Est Prêts",
+    "dmConsent": "Autoriser les DM sur Bluesky",
     "preferencesUpdated": "Préférences mises à jour",
     "notifications": {
       "title": "Notifications",
@@ -343,7 +347,29 @@
       "oepNewsletter": "Être informé.e des initiatives de On est prêt"
     }
   },
-"support": {
+"NewsletterConsent": {
+    "title": "Newsletter de HelloQuitteX",
+    "description": "Pour recevoir nos notifications, nous pouvons vous envoyer des messages directs sur BlueSky afin de vous informer des nouvelles fonctionnalités et des mises à jour.",
+    "testDM": "Tester la messagerie directe",
+    "testing": "Test en cours...",
+    "followPlatform": "Suivre HelloQuitteX",
+    "followMessageError": "Pour recevoir nos messages, vous devez d'abord suivre notre compte HelloQuitteX sur BlueSky.",
+    "messagesDisabledError": "Vous avez désactivé les messages entrants sur BlueSky. Vous pouvez vous abonner par email ci-dessous.",
+    "subscribeByEmail": "S'abonner par email",
+    "subscribeByEmailDescription": "Recevez nos mises à jour directement dans votre boîte de réception.",
+    "emailLabel": "Adresse email",
+    "emailPlaceholder": "votre@email.com",
+    "emailInvalid": "Veuillez entrer une adresse email valide",
+    "newsLetterSwitch": "Je souhaite recevoir la newsletter HelloQuitteX",
+    "oepConsent": "J'accepte de recevoir des informations sur OpenPortability",
+    "researchConsent": "J'accepte que mes données soient utilisées à des fins de recherche",
+    "subscribe": "S'abonner",
+    "submitting": "Traitement en cours...",
+    "subscriptionSuccess": "Merci ! Votre inscription à la newsletter a été confirmée.",
+    "dmSuccess": "Super ! Vous pouvez maintenant recevoir nos messages directs sur BlueSky.",
+    "close": "Fermer"
+  },
+  "support": {
     "modal": {
       "title": "Un problème ?",
       "description": "Envoyez-nous un message et nous vous répondrons dans les plus brefs délais.",
@@ -415,6 +441,7 @@
   },
   "migrate": {
     "title": "Migration de vos abonnements",
+    "connect_missing_service": "Connecter le service manquant",
     "matches_found": "correspondances trouvées",
     "followers": "Abonnés",
     "following": "Abonnements",

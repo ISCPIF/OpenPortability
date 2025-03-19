@@ -301,5 +301,43 @@ export class BlueskyService implements IBlueskyService {
     return error.message || 'An unexpected error occurred'
   }
 
+  /**
+   * Suit le compte officiel du bot de l'application
+   * @returns Un résultat indiquant si l'opération a réussi
+   */
+  async followBot(): Promise<{ success: boolean; error?: string }> {
+    try {
+      // Vérifier que l'agent est connecté
+      if (!this.agent.session) {
+        throw new Error('Not authenticated: Please login first');
+      }
 
+      // Récupérer le handle du bot depuis les variables d'environnement
+      const botHandle = process.env.BLUESKY_BOT_USERNAME || 'helloqitto.bsky.social';
+      
+      // Récupérer le profil du bot pour obtenir son DID
+      try {
+        const profile = await this.getProfile(botHandle);
+        
+        // Suivre le compte du bot
+        await this.agent.follow(profile.did);
+        
+        return { 
+          success: true 
+        };
+      } catch (profileError) {
+        console.error('[BlueskyService.followBot] Error getting bot profile:', profileError);
+        return {
+          success: false,
+          error: `Failed to get bot profile: ${this.formatError(profileError)}`
+        };
+      }
+    } catch (error) {
+      console.error('[BlueskyService.followBot] Error following bot:', error);
+      return {
+        success: false,
+        error: this.formatError(error)
+      };
+    }
+  }
 }

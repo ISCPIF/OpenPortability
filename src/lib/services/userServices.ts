@@ -96,4 +96,87 @@ export class UserService {
       throw error;
     }
   }
+
+  /**
+   * Récupère les consentements actifs d'un utilisateur
+   * 
+   * @param userId Identifiant de l'utilisateur
+   * @returns Un objet avec les types de consentement comme clés et les valeurs de consentement comme valeurs
+   */
+  async getUserActiveConsents(userId: string): Promise<Record<string, boolean>> {
+    return this.repository.getUserActiveConsents(userId);
+  }
+
+  /**
+   * Récupère l'historique des consentements d'un utilisateur pour un type de consentement donné
+   * 
+   * @param userId Identifiant de l'utilisateur
+   * @param consentType Type de consentement (ou undefined pour récupérer tous les types)
+   * @returns Tableau d'historique des consentements
+   */
+  async getConsentHistory(
+    userId: string, 
+    consentType?: string
+  ): Promise<Array<{
+    consent_type: string;
+    consent_value: boolean;
+    consent_timestamp: string;
+    is_active: boolean;
+  }>> {
+    return this.repository.getConsentHistory(userId, consentType);
+  }
+
+  /**
+   * Vérifie si un utilisateur a donné son consentement pour un type spécifique
+   * 
+   * @param userId Identifiant de l'utilisateur
+   * @param consentType Type de consentement à vérifier
+   * @returns true si l'utilisateur a un consentement actif et positif, false sinon
+   */
+  async hasActiveConsent(userId: string, consentType: string): Promise<boolean> {
+    const consents = await this.getUserActiveConsents(userId);
+    return !!consents[consentType];
+  }
+
+  /**
+   * Enregistre un consentement utilisateur
+   * 
+   * @param userId Identifiant de l'utilisateur
+   * @param consentType Type de consentement (email_newsletter, bluesky_dm, etc.)
+   * @param consentValue Valeur du consentement (true/false)
+   * @param metadata Métadonnées additionnelles à stocker (user-agent, etc.)
+   * @returns Le consentement créé
+   */
+  async recordConsent(
+    userId: string,
+    consentType: string,
+    consentValue: boolean,
+    metadata: Record<string, any> = {}
+  ): Promise<any> {
+    if (!userId) {
+      throw new Error('User ID is required to record consent');
+    }
+    
+    if (!consentType) {
+      throw new Error('Consent type is required');
+    }
+    
+    // Vérifier que consentType est une valeur valide
+    const validConsentTypes = [
+      'email_newsletter',
+      'bluesky_dm',
+      'research_participation',
+      'oep_newsletter'
+    ];
+    
+    if (!validConsentTypes.includes(consentType)) {
+      throw new Error(`Invalid consent type: ${consentType}`);
+    }
+    
+    return this.repository.insertNewsletterConsent(userId, consentType, consentValue, metadata);
+  }
+
+  async updateUserOnboarded(userId: string, onboarded: boolean): Promise<void> {
+    // TODO: implementer la mise à jour de l'utilisateur onboarded
+  }
 }
