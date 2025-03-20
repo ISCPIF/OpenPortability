@@ -23,6 +23,7 @@ export default function LoginSea() {
 
   const isSigninPage = pathname.includes('/auth/signin');
   const isDashboardPage = pathname.includes('/dashboard');
+  const isSettingsPage = pathname.includes('/settings');
 
   // Determine if mobile based on client-side rendering
   const [isMobile, setIsMobile] = useState(false);
@@ -40,7 +41,7 @@ export default function LoginSea() {
   console.log("Session -->", session)
 
   return (
-    <div className="relative w-full h-[300px] sm:h-[350px] md:h-[400px] lg:h-[450px]">
+    <div className={`relative w-full ${isSettingsPage ? 'h-[350px]' : 'h-[350px] sm:h-[350px] md:h-[400px] lg:h-[450px]'}`}>
       {/* Container pour l'arrière-plan répété */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden">
         {/* Ajout d'un conteneur pour gérer le motif répété */}
@@ -48,6 +49,9 @@ export default function LoginSea() {
           {/* Répéter l'image plusieurs fois - style inline pour éliminer tout espace */}
           <div className="sea-bg-repeat h-full flex flex-nowrap" style={{ fontSize: 0 }}>
             <Image src={seaBackground} alt="" height={isMobile ? 300 : 450} width={800} className="block" style={{ margin: 0, padding: 0 }} priority />
+            <Image src={seaBackground} alt="" height={isMobile ? 300 : 450} width={800} className="block" style={{ margin: 0, padding: 0 }} />
+            <Image src={seaBackground} alt="" height={isMobile ? 300 : 450} width={800} className="block" style={{ margin: 0, padding: 0 }} />
+            <Image src={seaBackground} alt="" height={isMobile ? 300 : 450} width={800} className="block" style={{ margin: 0, padding: 0 }} />
             <Image src={seaBackground} alt="" height={isMobile ? 300 : 450} width={800} className="block" style={{ margin: 0, padding: 0 }} />
             <Image src={seaBackground} alt="" height={isMobile ? 300 : 450} width={800} className="block" style={{ margin: 0, padding: 0 }} />
           </div>
@@ -62,7 +66,7 @@ export default function LoginSea() {
           className="mx-auto sm:w-[250px] md:w-[306px]"
         />
         <h1 className={`${plex.className} text-2xl lg:text-3xl mt-4`}>{t('title')}</h1>
-        {!session?.user.has_onboarded && (
+        {!session?.user.has_onboarded && !isSettingsPage && (
           <p className={`${plex.className} text-lg lg:text-xl my-4 lg:my-6 max-w-md`}>
             {isSigninPage 
               ? t('subtitle') 
@@ -72,7 +76,7 @@ export default function LoginSea() {
             }
           </p>
         )}
-        {isDashboardPage && session?.user && !session.user.has_onboarded && (
+        {isDashboardPage && session?.user && !session.user.has_onboarded && !isSettingsPage && (
           <p className={`${plex.className} text-lg lg:text-xl mt-4 max-w-md`}>
             <span className="font-extrabold text-white">{t('welcome')}</span>{' '}
             <span className="font-extrabold text-[#d6356f]">
