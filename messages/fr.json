@@ -4,7 +4,8 @@
       "profile": {
         "username": "@{username}"
       },
-      "returnToFirstStep": "Retourner à la première étape"
+      "returnToFirstStep": "Retourner à la première étape",
+      "settings" : "Réglages et notifications"
     },
     "connectedAccounts": {
       "connectedWith": "Vous êtes connecté avec {services} ",
@@ -13,6 +14,12 @@
         "twitter": "Twitter/X",
         "bluesky": "BlueSky",
         "mastodon": "Mastodon"
+      },
+      "yourAccounts": "Vos comptes connectés",
+      "connected": "Connecté",
+      "unlinkButton": "Déconnecter {provider}",
+      "errors": {
+        "lastAccount": "Vous devez conserver au moins un compte connecté"
       }
     },
     "blueskyLogin": {
@@ -329,25 +336,61 @@
   },
 "settings": {
     "logout": "Déconnexion",
+    "updateSuccess" : "Préférences mises à jour",
     "deleteAccount": "Supprimer mon compte",
     "deleteConfirm": {
       "title": "Supprimer le compte",
-      "message": "Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible et entraînera la suppression de :\n\n• Toutes vos données importées\n• Tous vos comptes liés (Twitter/X, BlueSky, Mastodon)\n• Votre profil OpenPortability",
+      "message1": "Cette action est irréversible et entraînera la suppression de :",
+      "message2": "• Toutes vos données importées",
+      "message3": "• Tous vos comptes liés (Twitter/X, BlueSky, Mastodon)",
+      "message4": "• Votre profil OpenPortability",
       "cancel": "Annuler",
       "confirm": "Oui, supprimer mon compte"
     },
-    "newsletter": "Newsletter OpenPortability",
-    "research": "Programme de recherche CNRS",
-    "oepNewsletter" : "Newsletter On Est Prêts",
+    "newsletter": {
+      "title": "Newsletter OpenPortability",
+      "description": "Recevoir les updates de OpenPortability"
+    },
+    "research": {
+      "title": "Programme de recherche CNRS",
+      "description": "J'accepte que mes données soient utilisées à des fins de recherche"
+    },
+    "oepNewsletter" : {
+      "title": "Newsletter On Est Prêts",
+      "description": "Être informé.e des initiatives de On est prêt"
+    },
     "dmConsent": "Autoriser les DM sur Bluesky",
+    "mastodonConsent": "Autoriser les DM sur Mastodon",
+    "emailConsent": "Recevoir par email",
+    "dmDescription": "Recevoir les notifications par message direct",
+    "emailDescription": "Recevoir les notifications par email",
     "preferencesUpdated": "Préférences mises à jour",
+    "hqxNewsletter": {
+      "title": "Newsletter HelloQuitteX",
+      "description": "Recevoir les updates de OpenPortability"
+    },
+    "notificationOptions": "Options de notification",
+    "loading" : "chargement",
+    "accountSettings": "Paramètres du compte",
+    "testDmSection": "Tester les messages directs (DM)",
+    "testDmDescription": "Vous pouvez tester la réception de messages directs sur Bluesky pour vérifier que tout fonctionne correctement.",
     "notifications": {
       "title": "Notifications",
-      "hqxNewsletter": "Recevoir les updates de OpenPortability",
-      "oepNewsletter": "Être informé.e des initiatives de On est prêt"
+      "hqxNewsletter": {
+        "title": "Newsletter HelloQuitteX",
+        "description": "Recevoir les updates de OpenPortability"
+      },
+      "oepNewsletter": {
+        "title": "Newsletter OpenPortability",
+        "description": "Être informé.e des initiatives de On est prêt"
+      },
+      "research": {
+        "title": "Programme de recherche CNRS",
+        "description": "J'accepte que mes données soient utilisées à des fins de recherche"
+      }
     }
   },
-"NewsletterConsent": {
+  "NewsletterConsent": {
     "title": "Newsletter de HelloQuitteX",
     "description": "Pour recevoir nos notifications, nous pouvons vous envoyer des messages directs sur BlueSky afin de vous informer des nouvelles fonctionnalités et des mises à jour.",
     "testDM": "Tester la messagerie directe",

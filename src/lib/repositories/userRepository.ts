@@ -53,7 +53,7 @@ export class UserRepository {
       logError('Repository', 'UserRepository.getShareEvents', error, userId);
       throw error;
     }
-    return data;
+    return data || [];
   }
 
   async hasShareEvents(userId: string): Promise<boolean> {
@@ -132,6 +132,42 @@ export class UserRepository {
     }
     
     return data || [];
+  }
+
+  /**
+   * Met à jour un consentement dans la table newsletter_consents
+   */
+  async updateConsent(userId: string, type: string, value: boolean): Promise<void> {
+    // Si value est true, on insère ou met à jour le consentement
+    if (value) {
+      const { error } = await supabase
+        .from('newsletter_consents')
+        .upsert({
+          user_id: userId,
+          consent_type: type,
+          consent_value: true,
+          is_active: true,
+          created_at: new Date().toISOString()
+        });
+      
+      if (error) {
+        logError('Repository', 'UserRepository.updateConsent', error, userId, { type, value });
+        throw error;
+      }
+    } 
+    // Si value est false, on désactive le consentement existant
+    else {
+      const { error } = await supabase
+        .from('newsletter_consents')
+        .update({ is_active: false })
+        .eq('user_id', userId)
+        .eq('consent_type', type);
+      
+      if (error) {
+        logError('Repository', 'UserRepository.updateConsent', error, userId, { type, value });
+        throw error;
+      }
+    }
   }
 
   /**
