@@ -177,7 +177,7 @@ export function useNewsletter() {
     if (!userId) return false;
     
     try {
-      setIsLoading(true);
+      // setIsLoading(true);
       const success = await updateNewsletterPreferences({
         email: newPrefs.email !== undefined ? newPrefs.email : newsletterData.preferences.email,
         acceptHQX: newPrefs.hqx_newsletter !== undefined ? newPrefs.hqx_newsletter : newsletterData.preferences.hqx_newsletter,
@@ -194,7 +194,8 @@ export function useNewsletter() {
             ...newPrefs
           }
         }));
-        await update();
+        // Nous ne mettons plus à jour la session ici car cela cause un rechargement
+        // await update();
         return true;
       }
       return false;
@@ -203,7 +204,7 @@ export function useNewsletter() {
       setError(error instanceof Error ? error : new Error('Unknown error'));
       return false;
     } finally {
-      setIsLoading(false);
+      // setIsLoading(false);
     }
   };
   

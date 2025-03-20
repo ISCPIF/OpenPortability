@@ -30,34 +30,36 @@ export default function ConnectedAccounts() {
     : connectedServices[0]
 
   return (
-    <div className="relative w-full max-w-md mx-auto">
-      <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
-        <div className="flex items-center gap-2">
-          <IoCheckmarkCircle className="text-green-500 size-10" />
+    <div className="relative w-full max-w-2xl mx-auto">
+      {/* Badge de succès */}
+      {/* <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
+        <div className="flex items-center gap-2 bg-green-500/10 backdrop-blur-sm px-4 py-1.5 rounded-full border border-green-500/20">
+          <IoCheckmarkCircle className="text-green-400 size-5" />
+          <span className="text-xs font-medium text-green-400">{t('connected')}</span>
         </div>
-      </div>
+      </div> */}
 
-      {/* Container principal */}
-      <div className="relative p-6 bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10">
+      {/* Container principal - Style plus moderne et épuré */}
+      <div className="relative p-6 bg-black/40 backdrop-blur-xl rounded-2xl border border-white/10">
         {/* Message de statut */}
-        <div className="absolute top-2 right-2">
-          <SettingsOptions />
-        </div>
-        <div className="mb-4">
-          <p className="text-center text-sm text-white/60">
+        <div className="mb-6">
+          <h2 className="text-lg font-medium text-white mb-1">
+            {t('yourAccounts')}
+          </h2>
+          <p className="text-sm text-white/60">
             {t('connectedWith', { services: formattedServices })}
           </p>
         </div>
 
         {/* Cartes de profil */}
-        <div className="space-y-3">
+        <div className="space-y-2">
           {hasTwitter && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3 }}
             >
-              <ProfileCard type="twitter" />
+              <ProfileCard type="twitter" showUnlink={true} />
             </motion.div>
           )}
           {hasBluesky && (
@@ -66,7 +68,7 @@ export default function ConnectedAccounts() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: 0.1 }}
             >
-              <ProfileCard type="bluesky" />
+              <ProfileCard type="bluesky" showUnlink={true} />
             </motion.div>
           )}
           {hasMastodon && (
@@ -75,13 +77,10 @@ export default function ConnectedAccounts() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: 0.2 }}
             >
-              <ProfileCard type="mastodon" />
+              <ProfileCard type="mastodon" showUnlink={true} />
             </motion.div>
           )}
         </div>
-
-        {/* Effet de gradient */}
-        <div className="absolute inset-0 -z-10 bg-gradient-to-br from-blue-500/10 via-purple-500/10 to-rose-500/10 blur-2xl rounded-2xl" />
       </div>
     </div>
   )

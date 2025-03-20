@@ -42,6 +42,13 @@ export class UserService {
     await this.repository.updateUser(userId, update);
   }
 
+  /**
+   * Met à jour un consentement spécifique pour un utilisateur
+   */
+  async updateConsent(userId: string, type: string, value: boolean): Promise<void> {
+    await this.repository.updateConsent(userId, type, value);
+  }
+
   async getNewsletterPreferences(userId: string): Promise<{
     email?: string;
     hqx_newsletter: boolean;
