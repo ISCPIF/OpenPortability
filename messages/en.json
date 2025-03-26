@@ -213,6 +213,8 @@
     "no_archive_yet": "I don't have my archive yet",
     "no_archive_description": "Find some of your reconnections among the accounts you were apparently following on Twitter/X",
     "import_description": "Import your archive to fully enjoy the OpenPortability experience",
+    "continue_to_reconnect": "Continue to reconnection",
+    "continue_to_reconnect_description": "Access the reconnection page to find your contacts on BlueSky and Mastodon",
     "shareModal": {
       "title": "Share your journey",
       "shareOn": "Share on {platform}",

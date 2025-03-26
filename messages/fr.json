@@ -199,6 +199,8 @@
     "import_description": "Importez votre archive pour profiter pleinement de l'expérience OpenPortability",
     "no_archive_yet": "Je n'ai pas encore mon archive",
     "no_archive_description": "Retrouvez certains de vos reconnexions parmi les comptes que vous suiviez a priori sur Twitter/X",
+    "continue_to_reconnect": "Continuer vers la reconnexion",
+    "continue_to_reconnect_description": "Accédez à la page de reconnexion pour retrouver vos contacts sur BlueSky et Mastodon",
     "shareModal": {
       "title": "Partager votre voyage",
       "shareOn": "Partager sur {platform}",
