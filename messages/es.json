@@ -242,7 +242,9 @@
         },
         "no_archive_yet": "Aún no tengo mi archivo",
         "import_description": "Importa tu archivo para disfrutar completamente de la experiencia OpenPortability",
-        "no_archive_description": "Encuentra algunas de tus conexiones entre las cuentas que aparentemente seguías en Twitter/X"
+        "no_archive_description": "Encuentra algunas de tus conexiones entre las cuentas que aparentemente seguías en Twitter/X",
+        "continue_to_reconnect": "Continuar a la reconexión",
+        "continue_to_reconnect_description": "Accede a la página de reconexión para encontrar tus contactos en BlueSky y Mastodon"
     },
     "profile": {
         "errors": {

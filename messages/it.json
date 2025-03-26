@@ -204,6 +204,8 @@
         "loading": "Caricamento dei tuoi dati...",
         "no_archive_yet": "Non ho ancora il mio archivio",
         "addSocialNetwork": "Aggiungi social network",
+        "continue_to_reconnect": "Continua alla riconnessione",
+        "continue_to_reconnect_description": "Accedi alla pagina di riconnessione per trovare i tuoi contatti su BlueSky e Mastodon",
         "addSocialNetworkDescription": "Collegati ad altri social network per migliorare la tua esperienza",
         "migrationStep": {
             "completed1": "Congratulazioni! Hai completato il primo dei due passi della migrazione.",

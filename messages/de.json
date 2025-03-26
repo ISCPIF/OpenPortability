@@ -258,7 +258,9 @@
             "completed2": "Vergiss nicht, deine Abonnent:innen einzuladen, sich bei OpenPortability zu registrieren. In einer Minute sind sie wieder mit deinem Konto verbunden, auch ohne ihr Archiv.\nPhase 2 kommt in ein paar Tagen! Je nach deinen Präferenzen erhältst du eine Benachrichtigung per E-Mail oder kannst unseren Start auf X, BlueSky und Mastodon verfolgen!\nBleib dran — es warten spannende Überraschungen auf dich!",
             "no_archive_yet": "Ich habe mein Archiv noch nicht",
             "no_archive_description": "Finde einige deiner Wiederverbindungen unter den Konten, denen du offenbar auf Twitter/X gefolgt bist",
-            "import_description": "Importiere dein Archiv, um die OpenPortability-Erfahrung voll zu genießen"
+            "import_description": "Importiere dein Archiv, um die OpenPortability-Erfahrung voll zu genießen",
+            "continue_to_reconnect": "Weiter zur Wiederverbindung",
+            "continue_to_reconnect_description": "Zugriff auf die Wiederverbindungsseite, um deine Kontakte auf BlueSky und Mastodon zu finden"
         },
         "importButton": "Importiere mein Twitter/X-Archiv",
         "newsletter": {

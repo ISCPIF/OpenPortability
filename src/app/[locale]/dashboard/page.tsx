@@ -77,20 +77,16 @@ export default function DashboardPage() {
         <div className="max-w-3xl mx-auto">
    
 
-          {/* Section d'onboarding conditionnelle */}
-          {(connectedServicesCount < 3 || !hasOnboarded) && (
-            <div className="flex justify-center items-center w-full sm:-mt-16 md:-mt-24">
+          {/* Section d'onboarding */}
+          <div className="flex justify-center items-center w-full sm:-mt-16 md:-mt-24">
             <div className="w-full backdrop-blur-xs rounded-2xl">
-                {!hasOnboarded && (
-                  <OnboardingSection 
-                    session={session?.user} 
-                    mastodonInstances={mastodonInstances}
-                    setIsLoading={setIsLoading}
-                  />
-                )}
-              </div>
+              <OnboardingSection 
+                session={session?.user} 
+                mastodonInstances={mastodonInstances}
+                setIsLoading={setIsLoading}
+              />
             </div>
-          )}
+          </div>
 
           <div className="mt-2">
                   <DashboardLoginButtons

@@ -186,11 +186,11 @@
     "redirecting": "Omdirigerar till instrumentpanelen..."
   },
   "signin": {
-"title": "Redo att resa mot nya horisonter?",
-"subtitle": "Börja med att ansluta till Twitter/X för att migrera dina data",
-"embark": "Ladda upp ditt arkiv för att ta med din gemenskap",
-"embarkOrLogin": "Ladda upp ditt arkiv eller logga in med Twitter/X för att ta med din gemenskap",
-"welcome" : "Vitne",
+    "title": "Redo att resa mot nya horisonter?",
+    "subtitle": "Börja med att ansluta till Twitter/X för att migrera dina data",
+    "embark": "Ladda upp ditt arkiv för att ta med din gemenskap",
+    "embarkOrLogin": "Ladda upp ditt arkiv eller logga in med Twitter/X för att ta med din gemenskap",
+    "welcome" : "Vitne",
     "loading": "Laddar information...",
     "logo": {
       "alt": "OpenPortability Logotyp"
@@ -212,6 +212,8 @@
     "no_archive_yet": "Jag har inte mitt arkiv än",
     "no_archive_description": "Hitta några av dina återanslutningar bland konton du uppenbarligen följde på Twitter/X",
     "import_description": "Importera ditt arkiv för att till fullo njuta av OpenPortability-upplevelsen",
+    "continue_to_reconnect": "Fortsätt till återanslutning",
+    "continue_to_reconnect_description": "Gå till återanslutningssidan för att hitta dina kontakter på BlueSky och Mastodon",
     "shareModal": {
       "title": "Dela din resa",
       "shareOn": "Dela på {platform}",

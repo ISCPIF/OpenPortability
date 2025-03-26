@@ -211,6 +211,8 @@
         "no_archive_yet": "Ainda não tenho meu arquivo",
         "no_archive_description": "Encontre algumas de suas reconexões entre as contas que você aparentemente seguia no Twitter/X",
         "import_description": "Importe seu arquivo para aproveitar ao máximo a experiência do OpenPortability",
+        "continue_to_reconnect": "Continuar para reconexão",
+        "continue_to_reconnect_description": "Acesse a página de reconexão para encontrar seus contatos no BlueSky e Mastodon",
         "shareModal": {
             "title": "Compartilhe sua jornada",
             "shareOn": "Compartilhar no {plataforma}",
