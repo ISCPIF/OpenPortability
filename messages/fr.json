@@ -477,7 +477,8 @@
       "researchConsent": "Je souhaite partager avec le CNRS mon graphe de connexions à des fins de recherche. Il sera traité de manière aggrégée. Aucune donnée personnelle ne sera rendue publique.",
       "errors": {
         "missingEmail": "E-mail manquant"
-      }
+      },
+      "personalizedSupport" : "Je souhaite recevoir un accompagnement personnalisé via les réseaux sociaux par OpenPortability"
     },
     "cta": "SOUMETTRE",
     "dismiss": "En cliquant sur 'soumettre', j'atteste que j'ai lu les conditions ci-dessus et j’y consens. Vous devez accepter les conditions d'utilisation pour continuer sur la plateforme OpenPortability"
