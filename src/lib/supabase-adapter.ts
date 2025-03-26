@@ -17,7 +17,7 @@ export interface CustomAdapterUser extends Omit<AdapterUser, 'image'> {
   hqx_newsletter: boolean
   oep_accepted: boolean
   have_seen_newsletter: boolean
-  have_seen_bot_newsletter: boolean
+  // have_seen_bot_newsletter: boolean
   research_accepted: boolean
   automatic_reconnect: boolean
   twitter_id?: string | null
@@ -119,7 +119,7 @@ export async function createUser(
         hqx_newsletter: existingUser.hqx_newsletter,
         oep_accepted: existingUser.oep_accepted,
         have_seen_newsletter: existingUser.have_seen_newsletter,
-        have_seen_bot_newsletter: existingUser.have_seen_bot_newsletter,
+        // have_seen_bot_newsletter: existingUser.have_seen_bot_newsletter,
         research_accepted: existingUser.research_accepted,
         automatic_reconnect: existingUser.automatic_reconnect,
         twitter_id: existingUser.twitter_id,
@@ -176,7 +176,7 @@ const providerIdField = `${provider}_id` as keyof CustomAdapterUser
       hqx_newsletter: false,
       oep_accepted: false,
       have_seen_newsletter: false,
-      have_seen_bot_newsletter: false,
+      // have_seen_bot_newsletter: false,
       research_accepted: false,
       automatic_reconnect: false,
       email: undefined
@@ -229,7 +229,7 @@ const providerIdField = `${provider}_id` as keyof CustomAdapterUser
     hqx_newsletter: false,
     oep_accepted: false,
     have_seen_newsletter: false,
-    have_seen_bot_newsletter: false,
+    // have_seen_bot_newsletter: false,
     research_accepted: false,
     automatic_reconnect: false,
     email: 'none'
@@ -279,7 +279,7 @@ export async function getUser(id: string): Promise<CustomAdapterUser | null> {
     hqx_newsletter: user.hqx_newsletter,
     oep_accepted: user.oep_accepted,
     have_seen_newsletter: user.have_seen_newsletter,
-    have_seen_bot_newsletter: user.have_seen_bot_newsletter,
+    // have_seen_bot_newsletter: user.have_seen_bot_newsletter,
     research_accepted: user.research_accepted,
     automatic_reconnect: user.automatic_reconnect,
     email: "none",
@@ -340,7 +340,7 @@ logger.logError('Auth', 'getUserByAccount', 'Error getting user by account', und
     hqx_newsletter: user.hqx_newsletter,
     oep_accepted: user.oep_accepted,
     have_seen_newsletter: user.have_seen_newsletter,
-    have_seen_bot_newsletter: user.have_seen_bot_newsletter,
+    // have_seen_bot_newsletter: user.have_seen_bot_newsletter,
     research_accepted: user.research_accepted,
     automatic_reconnect: user.automatic_reconnect,
     email: "none",
@@ -437,7 +437,7 @@ export async function updateUser(
     hqx_newsletter: user.hqx_newsletter,
     oep_accepted: user.oep_accepted,
     have_seen_newsletter: user.have_seen_newsletter,
-    have_seen_bot_newsletter: user.have_seen_bot_newsletter,
+    // have_seen_bot_newsletter: user.have_seen_bot_newsletter,
     research_accepted: user.research_accepted,
     automatic_reconnect: user.automatic_reconnect,
     email: "none",
@@ -543,7 +543,7 @@ export async function getSessionAndUser(sessionToken: string): Promise<{ session
       hqx_newsletter: user.hqx_newsletter,
       oep_accepted: user.oep_accepted,
       have_seen_newsletter: user.have_seen_newsletter,
-      have_seen_bot_newsletter: user.have_seen_bot_newsletter,
+      // have_seen_bot_newsletter: user.have_seen_bot_newsletter,
       research_accepted: user.research_accepted,
       automatic_reconnect: user.automatic_reconnect,
       email: "none",

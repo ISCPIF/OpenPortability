@@ -7,7 +7,7 @@ import { useNewsLetter } from '@/hooks/useNewsLetter';
 import { signOut, useSession } from 'next-auth/react';
 import { Switch, Dialog, Transition } from '@headlessui/react';
 import { isValidEmail } from '@/lib/utils';
-import { Trash2, ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { Trash2, ArrowLeft, CheckCircle2, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import PartialConnectedServicesState from '@/app/_components/reconnect/states/PartialConnectedServicesState';
@@ -41,7 +41,11 @@ export default function SettingsPage() {
     isTokenValid,
     invalidProviders,
     mastodonInstances,
-    checkTokenValidity
+    checkTokenValidity,
+    toggleOEPAccepted,
+    toggleResearchAccepted,
+    toggleDMConsent,
+    updateNewsletterWithEmail
   } = useNewsLetter();
 
   // États pour la section de suppression de compte
@@ -57,14 +61,14 @@ export default function SettingsPage() {
   const [testStatus, setTestStatus] = useState<'idle' | 'testing' | 'success' | 'failed'>('idle');
   const [error, setError] = useState<TaskErrorType | null>(null);
   
-  // États pour le formulaire d'email
+  // États pour gérer l'affichage du formulaire email
   const [showEmailForm, setShowEmailForm] = useState(false);
+  const [isSubmittingEmail, setIsSubmittingEmail] = useState(false);
   const [email, setEmail] = useState('');
+  const [emailError, setEmailError] = useState('');
   const [acceptOEP, setAcceptOEP] = useState(false);
   const [acceptResearch, setAcceptResearch] = useState(false);
   const [hqxNewsletter, setHqxNewsletter] = useState(true);
-  const [emailError, setEmailError] = useState('');
-  const [submittingEmail, setSubmittingEmail] = useState(false);
   const [emailSubmitSuccess, setEmailSubmitSuccess] = useState(false);
 
   // État local pour les préférences (état optimiste)
@@ -86,31 +90,149 @@ export default function SettingsPage() {
   // Gestionnaire de changement pour les switches
   const handleSwitchChange = async (type: 'research' | 'oep' | 'dm' | 'hqx', value: boolean) => {
     try {
-      // Créer l'objet de mise à jour
-      let updateObj: Partial<typeof preferences> = {};
+      if (type === 'hqx') {
+        if (value) {
+          // Afficher le formulaire email
+          setShowEmailForm(true);
+          setPreferences(prev => ({ ...prev, hqx_newsletter: true }));
+          return;
+        } else {
+          // Désactiver le consentement et cacher le formulaire
+          setShowEmailForm(false);
+          setPreferences(prev => ({ ...prev, hqx_newsletter: false }));
+          
+          // Utiliser le hook pour mettre à jour
+          const success = await updateNewsletterWithEmail(undefined, false);
+          
+          if (success) {
+            setShowSuccess(true);
+            setTimeout(() => setShowSuccess(false), 3000);
+          } else {
+            setPreferences(prev => ({ ...prev, ...apiPreferences }));
+          }
+          return;
+        }
+      }
+
+      // Pour les autres types, mise à jour immédiate via les méthodes du hook
+      let success = false;
       
+      // Mise à jour optimiste de l'état local
       switch (type) {
         case 'research':
-          updateObj = { research_accepted: value };
+          setPreferences(prev => ({ ...prev, research_accepted: value }));
+          success = await toggleResearchAccepted();
           break;
         case 'oep':
-          updateObj = { oep_accepted: value };
+          setPreferences(prev => ({ ...prev, oep_accepted: value }));
+          success = await toggleOEPAccepted();
           break;
         case 'dm':
-          updateObj = { dm_consent: value };
+          // Mise à jour optimiste de l'état local
+          setPreferences(prev => ({ ...prev, dm_consent: value }));
+          
+          // Appel direct à l'API pour éviter le rechargement de page
+          try {
+            const response = await fetch('/api/newsletter/request', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                consents: [{ type: 'personalized_support', value }]
+              }),
+            });
+            success = response.ok;
+          } catch (error) {
+            console.error('Error updating personalized support:', error);
+            success = false;
+          }
           break;
-        case 'hqx':
-          updateObj = { hqx_newsletter: value };
+        default:
+          return;
+      }
+      
+      if (success) {
+        setShowSuccess(true);
+        setTimeout(() => setShowSuccess(false), 3000);
+      } else {
+        setPreferences(prev => ({ ...prev, ...apiPreferences }));
+      }
+    } catch (error) {
+      console.error('Error updating preferences:', error);
+      setPreferences(prev => ({ ...prev, ...apiPreferences }));
+    }
+  };
+
+  // Gestionnaire pour l'enregistrement de l'email
+  const handleEmailSubmit = async () => {
+    try {
+      if (!email || !isValidEmail(email)) {
+        setEmailError(t('newsletter.errors.missingEmail'));
+        return;
+      }
+
+      setIsSubmittingEmail(true);
+      setEmailError('');
+
+      // Utiliser le hook pour mettre à jour
+      const success = await updateNewsletterWithEmail(email, true);
+
+      if (success) {
+        // Mettre à jour l'état local
+        setPreferences(prev => ({ ...prev, hqx_newsletter: true }));
+        setShowSuccess(true);
+        setTimeout(() => setShowSuccess(false), 3000);
+        setShowEmailForm(false);
+      } else {
+        throw new Error('Failed to update newsletter preferences');
+      }
+    } catch (error) {
+      console.error('Error updating newsletter preferences:', error);
+      setEmailError(t('newsletter.errors.updateFailed'));
+    } finally {
+      setIsSubmittingEmail(false);
+    }
+  };
+
+  const handleDMConsentChange = async (type: 'bluesky_dm' | 'mastodon_dm' | 'email_newsletter', value: boolean) => {
+    try {
+      // Créer l'objet de mise à jour
+      let updateObj: Partial<typeof preferences> = {};
+      let consents: Array<{ type: string; value: boolean }> = [];
+      
+      switch (type) {
+        case 'bluesky_dm':
+          updateObj = { bluesky_dm: value };
+          consents = [{ type: 'bluesky_dm', value: value }];
+          if (value) {
+            // Si on active le DM Bluesky, lancer le test
+            // await handleDMTest();
+          }
+          break;
+        case 'mastodon_dm':
+          updateObj = { mastodon_dm: value };
+          consents = [{ type: 'mastodon_dm', value: value }];
+          break;
+        case 'email_newsletter':
+          updateObj = { email_newsletter: value };
+          consents = [{ type: 'email_newsletter', value: value }];
           break;
       }
       
       // Mettre à jour l'état local immédiatement (mise à jour optimiste)
       setPreferences(prev => ({ ...prev, ...updateObj }));
       
-      // Faire la mise à jour en arrière-plan
-      const success = await updatePreferences(updateObj);
-      
-      if (success) {
+      // Envoyer la mise à jour des consentements
+      const response = await fetch('/api/newsletter/request', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ consents }),
+      });
+
+      if (response.ok) {
         // Afficher le message de succès
         setShowSuccess(true);
         setTimeout(() => setShowSuccess(false), 3000);
@@ -119,149 +241,9 @@ export default function SettingsPage() {
         setPreferences(prev => ({ ...prev, ...apiPreferences }));
       }
     } catch (error) {
-      console.error('Error updating preferences:', error);
-      // Réinitialiser l'état local si la mise à jour échoue
-      setPreferences(prev => ({ ...prev, ...apiPreferences }));
-    }
-  };
-
-  const handleDMConsentChange = async (type: 'bluesky_dm' | 'mastodon_dm' | 'email_newsletter', value: boolean) => {
-    try {
-      // Créer l'objet de mise à jour
-      let updateObj: Partial<typeof preferences> = {};
-      
-      switch (type) {
-        case 'bluesky_dm':
-          updateObj = { bluesky_dm: value };
-          if (value) {
-            // Si on active le DM Bluesky, lancer le test
-            await handleDMTest();
-          }
-          break;
-        case 'mastodon_dm':
-          updateObj = { mastodon_dm: value };
-          break;
-        case 'email_newsletter':
-          updateObj = { email_newsletter: value };
-          break;
-      }
-      
-      // Mettre à jour l'état local immédiatement (mise à jour optimiste)
-      setPreferences(prev => ({ ...prev, ...updateObj }));
-      
-      // Mettre à jour les préférences via l'API
-      const response = await fetch('/api/newsletter/request', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          type,
-          value
-        }),
-      });
-
-      if (response.ok) {
-        // Afficher le message de succès
-        setShowSuccess(true);
-        setTimeout(() => setShowSuccess(false), 3000);
-      } else {
-        // En cas d'échec, restaurer l'état précédent
-        setPreferences(prev => ({ ...prev, ...apiPreferences }));
-      }
-    } catch (error) {
       console.error('Error updating DM consent:', error);
       // Réinitialiser l'état local si la mise à jour échoue
       setPreferences(prev => ({ ...prev, ...apiPreferences }));
-    }
-  };
-
-  const handleDMTest = async () => {
-    if (!session?.user?.id || !session?.user?.bluesky_username || testingDM) return;
-    
-    setTestingDM(true);
-    setTestStatus('testing');
-    setError(null);
-    setShowFollowButton(false);
-    
-    try {
-      const response = await fetch('/api/bluesky/test-dm', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: session.user.id,
-          handle: session.user.bluesky_username,
-        }),
-      });
-      
-      const data = await response.json();
-      
-      if (data.task_id) {
-        await pollTaskStatus(data.task_id);
-      } else {
-        setTestStatus('failed');
-        setError({ type: 'generic', message: 'No task ID returned' });
-      }
-    } catch (error) {
-      console.error('Error testing DM:', error);
-      setTestStatus('failed');
-      setError({ type: 'generic', message: String(error) });
-    } finally {
-      setTestingDM(false);
-    }
-  };
-
-  const pollTaskStatus = async (taskId: string) => {
-    try {
-      let maxRetries = 30; // 1 minute max (30 * 2 secondes)
-      let retryCount = 0;
-      
-      while (retryCount < maxRetries) {
-        await new Promise(resolve => setTimeout(resolve, 2000)); // Attendre 2 secondes
-        
-        const response = await fetch(`/api/tasks/${taskId}`);
-        if (!response.ok) throw new Error('Failed to check task status');
-        
-        const data = await response.json();
-        const task = data.task || data;
-        
-        if (task.status === 'completed') {
-          if (task.result?.success) {
-            setTestStatus('success');
-            return;
-          } else {
-            setTestStatus('failed');
-            const needsFollow = task.result?.needs_follow;
-            setError({
-              type: needsFollow ? 'needsFollow' : 'generic',
-              message: task.result?.error || task.error_log || 'Une erreur est survenue'
-            });
-            if (needsFollow) setShowFollowButton(true);
-            return;
-          }
-        } 
-        
-        if (task.status === 'failed') {
-          setTestStatus('failed');
-          setError({ 
-            type: 'generic', 
-            message: task.error_log || 'Une erreur est survenue' 
-          });
-          return;
-        }
-        
-        retryCount++;
-      }
-      
-      throw new Error('Le test a pris trop de temps');
-      
-    } catch (error) {
-      console.error('Error polling task status:', error);
-      setTestStatus('failed');
-      setError({ 
-        type: 'generic', 
-        message: error instanceof Error ? error.message : 'Une erreur est survenue' 
-      });
     }
   };
 
@@ -345,54 +327,6 @@ export default function SettingsPage() {
     }
   };
 
-  // Gestion de l'inscription via email
-  const handleEmailSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // Vérifier la validité de l'email
-    if (!email || !isValidEmail(email)) {
-      setEmailError(tNewsLetter('invalidEmail'));
-      return;
-    }
-    
-    setEmailError('');
-    setSubmittingEmail(true);
-    
-    try {
-      const response = await fetch('/api/users/bot-newsletter', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email,
-          acceptOEP,
-          acceptResearch,
-          hqxNewsletter,
-        }),
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to submit email');
-      }
-      
-      // Mise à jour des préférences
-      await updatePreferences({
-        email,
-        oep_accepted: acceptOEP,
-        research_accepted: acceptResearch,
-        hqx_newsletter: hqxNewsletter,
-      });
-      
-      setEmailSubmitSuccess(true);
-    } catch (error) {
-      console.error('Error submitting email:', error);
-      setEmailError(String(error));
-    } finally {
-      setSubmittingEmail(false);
-    }
-  };
-
   // Afficher l'indicateur de chargement si les données sont en cours de chargement
   if (isLoading) {
     return (
@@ -428,7 +362,7 @@ export default function SettingsPage() {
               {t('notificationOptions')}
             </h2>
             <div className="space-y-6">
-              {/* Newsletter HelloQuitteX et options DM */}
+              {/* Newsletter HelloQuitteX */}
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
@@ -436,7 +370,7 @@ export default function SettingsPage() {
                     <p className="text-xs text-white/60 mt-1">{t('notifications.hqxNewsletter.description')}</p>
                   </div>
                   <Switch
-                    checked={preferences.hqx_newsletter || false}
+                    checked={preferences.hqx_newsletter}
                     onChange={(value) => handleSwitchChange('hqx', value)}
                     className={`${
                       preferences.hqx_newsletter ? 'bg-[#d6356f]' : 'bg-gray-700'
@@ -451,89 +385,92 @@ export default function SettingsPage() {
                   </Switch>
                 </div>
 
-                {/* Options DM conditionnelles */}
-                {preferences.hqx_newsletter && (
+                {showEmailForm && (
                   <div className="ml-6 space-y-4 border-l-2 border-white/10 pl-4">
-                    {/* Email */}
+                    <div className="flex flex-col space-y-2">
+                      <label htmlFor="email" className="text-sm font-medium text-white">
+                        {t('emailLabel')}
+                      </label>
+                      <input
+                        type="email"
+                        id="email"
+                        value={email}
+                        onChange={(e) => {
+                          setEmail(e.target.value);
+                          setEmailError('');
+                        }}
+                        placeholder={t('emailPlaceholder')}
+                        className={`w-full px-3 py-2 bg-white/10 border ${
+                          emailError ? 'border-red-500' : 'border-white/20'
+                        } rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-[#d6356f] focus:border-transparent`}
+                      />
+                      {emailError && (
+                        <p className="text-xs text-red-500 mt-1">{emailError}</p>
+                      )}
+                    </div>
+                    <button
+                      onClick={handleEmailSubmit}
+                      disabled={isSubmittingEmail}
+                      className="flex items-center justify-center gap-2 px-6 py-2.5 bg-[#d6356f] text-white rounded-full disabled:opacity-50"
+                    >
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span className="text-sm">{t('save')}</span>
+                    </button>
+                  </div>
+                )}
+
+                {/* Accompagnement personnalisé */}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-sm font-medium text-white">{t('notifications.personalizedSupport.title')}</h3>
+                    <p className="text-xs text-white/60 mt-1">{t('notifications.personalizedSupport.description')}</p>
+                  </div>
+                  <Switch
+                    checked={preferences.dm_consent || false}
+                    onChange={(value) => handleSwitchChange('dm', value)}
+                    className={`${
+                      preferences.dm_consent ? 'bg-[#d6356f]' : 'bg-gray-700'
+                    } relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none`}
+                  >
+                    <span className="sr-only">{t('notifications.personalizedSupport.title')}</span>
+                    <span
+                      className={`${
+                        preferences.dm_consent ? 'translate-x-6' : 'translate-x-1'
+                      } inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
+                    />
+                  </Switch>
+                </div>
+
+                {/* Options DM conditionnelles */}
+                {preferences.dm_consent && (
+                  <div className="ml-6 space-y-4 border-l-2 border-white/10 pl-4">
+                    {/* Bluesky DM */}
                     <div className="flex items-center justify-between">
                       <div>
-                        <h3 className="text-sm font-medium text-white">{t('emailConsent')}</h3>
-                        <p className="text-xs text-white/60 mt-1">{t('emailDescription')}</p>
+                        <h3 className="text-sm font-medium text-white">{t('notifications.blueskyDm.title')}</h3>
+                        <p className="text-xs text-white/60 mt-1">{t('notifications.blueskyDm.description')}</p>
                       </div>
                       <Switch
-                        checked={preferences.email_newsletter || false}
-                        onChange={(value) => handleDMConsentChange('email_newsletter', value)}
+                        checked={preferences.bluesky_dm || false}
+                        onChange={(value) => handleDMConsentChange('bluesky_dm', value)}
                         className={`${
-                          preferences.email_newsletter ? 'bg-[#d6356f]' : 'bg-gray-700'
+                          preferences.bluesky_dm ? 'bg-[#d6356f]' : 'bg-gray-700'
                         } relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none`}
                       >
-                        <span className="sr-only">{t('emailConsent')}</span>
+                        <span className="sr-only">{t('notifications.blueskyDm.title')}</span>
                         <span
                           className={`${
-                            preferences.email_newsletter ? 'translate-x-6' : 'translate-x-1'
+                            preferences.bluesky_dm ? 'translate-x-6' : 'translate-x-1'
                           } inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
                         />
                       </Switch>
                     </div>
 
-                    {/* DM Bluesky */}
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h3 className="text-sm font-medium text-white">{t('dmConsent')}</h3>
-                          <p className="text-xs text-white/60 mt-1">{t('dmDescription')}</p>
-                        </div>
-                        <Switch
-                          checked={preferences.bluesky_dm || false}
-                          onChange={(value) => handleDMConsentChange('bluesky_dm', value)}
-                          className={`${
-                            preferences.bluesky_dm ? 'bg-[#d6356f]' : 'bg-gray-700'
-                          } relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none`}
-                        >
-                          <span className="sr-only">{t('dmConsent')}</span>
-                          <span
-                            className={`${
-                              preferences.bluesky_dm ? 'translate-x-6' : 'translate-x-1'
-                            } inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
-                          />
-                        </Switch>
-                      </div>
-
-                      {/* Affichage du statut du test DM */}
-                      {testStatus !== 'idle' && (
-                        <div className="mt-2">
-                          {testStatus === 'testing' && (
-                            <p className="text-sm text-white/80">Test en cours...</p>
-                          )}
-                          {testStatus === 'success' && (
-                            <p className="text-sm text-green-500">Test réussi !</p>
-                          )}
-                          {testStatus === 'failed' && (
-                            <div className="space-y-2">
-                              <p className="text-sm text-red-500">
-                                {error?.type === 'needsFollow' 
-                                  ? "Vous devez d'abord suivre notre compte" 
-                                  : error?.message || 'Une erreur est survenue'}
-                              </p>
-                              {showFollowButton && (
-                                <button
-                                  onClick={() => window.open('https://bsky.app/profile/helloquittex.bsky.social', '_blank')}
-                                  className="text-sm text-blue-400 hover:text-blue-300"
-                                >
-                                  Suivre notre compte
-                                </button>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* DM Mastodon */}
+                    {/* Mastodon DM */}
                     <div className="flex items-center justify-between">
                       <div>
-                        <h3 className="text-sm font-medium text-white">{t('mastodonConsent')}</h3>
-                        <p className="text-xs text-white/60 mt-1">{t('dmDescription')}</p>
+                        <h3 className="text-sm font-medium text-white">{t('notifications.mastodonDm.title')}</h3>
+                        <p className="text-xs text-white/60 mt-1">{t('notifications.mastodonDm.description')}</p>
                       </div>
                       <Switch
                         checked={preferences.mastodon_dm || false}
@@ -542,7 +479,7 @@ export default function SettingsPage() {
                           preferences.mastodon_dm ? 'bg-[#d6356f]' : 'bg-gray-700'
                         } relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none`}
                       >
-                        <span className="sr-only">{t('mastodonConsent')}</span>
+                        <span className="sr-only">{t('notifications.mastodonDm.title')}</span>
                         <span
                           className={`${
                             preferences.mastodon_dm ? 'translate-x-6' : 'translate-x-1'

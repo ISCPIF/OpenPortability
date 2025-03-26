@@ -1,17 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import {
-  fetchNewsletterData,
   updateNewsletterPreferences,
-  updateBotNewsletterSeen,
   NewsletterData,
   NewsletterPreferencesData,
-  NewsletterConsentsData,
-  invalidateCache
+  NewsletterConsentsData
 } from '@/lib/services/newsletterService';
 
 // Types of consents we track
-export type ConsentType = 'email_newsletter' | 'bluesky_dm' | 'research_participation' | 'oep_newsletter';
+export type ConsentType = 'email_newsletter' | 'personalized_support' | 'research_participation' | 'oep_newsletter'  ;
 
 /**
  * A comprehensive hook for managing all newsletter-related functionality
@@ -20,6 +17,69 @@ export function useNewsletter() {
   const { data: session, update } = useSession();
   const userId = session?.user?.id;
   
+  // Cache mechanism for API calls
+  let lastFetchTime = 0;
+  let globalFetchPromise: Promise<NewsletterData> | null = null;
+  const CACHE_DURATION = 5000; // 5 seconds cache
+
+  /**
+   * Fetches all newsletter data (preferences and consents)
+   */
+  const fetchNewsletterData = async (): Promise<NewsletterData> => {
+    // If we have an existing promise and it's recent, return it
+    const now = Date.now();
+    if (globalFetchPromise && now - lastFetchTime < CACHE_DURATION) {
+      return globalFetchPromise;
+    }
+
+    // Otherwise create a new promise and store it
+    lastFetchTime = now;
+    globalFetchPromise = new Promise<NewsletterData>(async (resolve, reject) => {
+      try {
+        const response = await fetch('/api/newsletter/request', {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' }
+        });
+
+        if (!response.ok) {
+          reject(new Error('Failed to fetch newsletter data'));
+          return;
+        }
+
+        const data = await response.json();
+
+        if (!data.success) {
+          reject(new Error('API returned unsuccessful response'));
+          return;
+        }
+
+        // Map API response to our data structure
+        const combinedData: NewsletterData = {
+          preferences: {
+            email: data.data.email,
+            research_accepted: !!data.data.research_accepted,
+            oep_accepted: !!data.data.oep_accepted,
+            hqx_newsletter: !!data.data.hqx_newsletter,
+            have_seen_newsletter: !!data.data.have_seen_newsletter,
+          },
+          consents: {
+            email_newsletter: !!data.data.consents?.email_newsletter,
+            personalized_support: !!(data.data.consents?.bluesky_dm || data.data.consents?.mastodon_dm),
+            research_participation: !!data.data.consents?.research_participation,
+            oep_newsletter: !!data.data.consents?.oep_newsletter
+          }
+        };
+
+        resolve(combinedData);
+      } catch (error) {
+        console.error('Error fetching newsletter data:', error);
+        reject(error);
+      }
+    });
+
+    return globalFetchPromise;
+  };
+
   // Newsletter data
   const [newsletterData, setNewsletterData] = useState<NewsletterData>({
     preferences: {
@@ -28,11 +88,11 @@ export function useNewsletter() {
       oep_accepted: false,
       research_accepted: false,
       have_seen_newsletter: false,
-      have_seen_bot_newsletter: false
+      // have_seen_bot_newsletter: false
     },
     consents: {
       email_newsletter: false,
-      bluesky_dm: false,
+      personalized_support: false,
       research_participation: false,
       oep_newsletter: false
     }
@@ -54,10 +114,10 @@ export function useNewsletter() {
   
   // Derived states
   const hasBlueskyHandle = !!session?.user?.bluesky_handle || !!session?.user?.bluesky_username;
-  const shouldShowBotNewsletterModal = 
+  const shouldShowPersonalizedSupportModal = 
     hasBlueskyHandle && 
     newsletterData.preferences.hqx_newsletter && 
-    !newsletterData.preferences.have_seen_bot_newsletter && 
+    !newsletterData.consents.personalized_support && 
     !isNewsletterFirstSeenOpen;
   
   // Fetch newsletter data
@@ -68,7 +128,7 @@ export function useNewsletter() {
       setIsLoading(true);
       
       if (force) {
-        invalidateCache();
+        // invalidateCache();
       }
       
       const data = await fetchNewsletterData();
@@ -146,44 +206,25 @@ export function useNewsletter() {
     }
   }, [hasBlueskyHandle, isTokenValid, isCheckingToken, checkTokenValidity]);
   
-  // Check if we should show the bot newsletter modal
+  // Check if we should show the personalized support modal
   useEffect(() => {
-    if (shouldShowBotNewsletterModal && !showRequestNewsLetterDMModal && isTokenValid !== false) {
+    if (shouldShowPersonalizedSupportModal && !showRequestNewsLetterDMModal && isTokenValid !== false) {
       setShowRequestNewsLetterDMModal(true);
-      console.log("use Effect setting a true ShowRequestNewsLetterDMModal")
-
     }
-
-    console.log("use Effect ShowRequestNewsLetterDMModal")
-  }, [shouldShowBotNewsletterModal, showRequestNewsLetterDMModal, isTokenValid]);
-  
-  // Mark bot newsletter as seen when modal is shown
-  useEffect(() => {
-    const markAsSeen = async () => {
-      if (
-        showRequestNewsLetterDMModal && 
-        !newsletterData.preferences.have_seen_bot_newsletter && 
-        userId
-      ) {
-        await markBotNewsletterSeen();
-      }
-    };
-    
-    markAsSeen();
-  }, [showRequestNewsLetterDMModal, newsletterData.preferences.have_seen_bot_newsletter, userId]);
+  }, [shouldShowPersonalizedSupportModal, showRequestNewsLetterDMModal, isTokenValid]);
   
   // Update preferences method
-  const updatePreferences = async (newPrefs: Partial<NewsletterPreferencesData>): Promise<boolean> => {
+  const updatePreferences = async (newPrefs: Partial<NewsletterPreferencesData> & { personalized_support?: boolean }): Promise<boolean> => {
     if (!userId) return false;
     
     try {
       // setIsLoading(true);
       const success = await updateNewsletterPreferences({
         email: newPrefs.email !== undefined ? newPrefs.email : newsletterData.preferences.email,
-        acceptHQX: newPrefs.hqx_newsletter !== undefined ? newPrefs.hqx_newsletter : newsletterData.preferences.hqx_newsletter,
-        acceptOEP: newPrefs.oep_accepted !== undefined ? newPrefs.oep_accepted : newsletterData.preferences.oep_accepted,
+        hqx_newsletter: newPrefs.hqx_newsletter !== undefined ? newPrefs.hqx_newsletter : newsletterData.preferences.hqx_newsletter,
+        oep_accepted: newPrefs.oep_accepted !== undefined ? newPrefs.oep_accepted : newsletterData.preferences.oep_accepted,
         research_accepted: newPrefs.research_accepted !== undefined ? newPrefs.research_accepted : newsletterData.preferences.research_accepted,
-        dm_consent: newsletterData.consents.bluesky_dm
+        personalized_support: newPrefs.personalized_support !== undefined ? newPrefs.personalized_support : newsletterData.consents.personalized_support
       });
       
       if (success) {
@@ -192,6 +233,10 @@ export function useNewsletter() {
           preferences: {
             ...prev.preferences,
             ...newPrefs
+          },
+          consents: {
+            ...prev.consents,
+            personalized_support: newPrefs.personalized_support !== undefined ? newPrefs.personalized_support : prev.consents.personalized_support
           }
         }));
         // Nous ne mettons plus à jour la session ici car cela cause un rechargement
@@ -207,6 +252,58 @@ export function useNewsletter() {
       // setIsLoading(false);
     }
   };
+
+  // New method to update newsletter with email
+  const updateNewsletterWithEmail = async (email: string | undefined, subscribe: boolean): Promise<boolean> => {
+    if (!userId) return false;
+    
+    try {
+      setIsLoading(true);
+      
+      // Prepare API request
+      const requestBody: any = {
+        consents: [{ type: 'email_newsletter', value: subscribe }]
+      };
+      
+      // Add email if subscribing and email is provided
+      if (subscribe && email) {
+        requestBody.email = email;
+      }
+      
+      // Make direct API call for newsletter update
+      const response = await fetch('/api/newsletter/request', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      });
+      
+      if (response.ok) {
+        // Update local state
+        setNewsletterData(prev => ({
+          ...prev,
+          preferences: {
+            ...prev.preferences,
+            hqx_newsletter: subscribe,
+            email: subscribe ? email : prev.preferences.email
+          },
+          consents: {
+            ...prev.consents,
+            email_newsletter: subscribe
+          }
+        }));
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('Error updating newsletter subscription:', error);
+      setError(error instanceof Error ? error : new Error('Unknown error'));
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  };
   
   // Update consents method
   const updateConsents = async (newConsents: Partial<NewsletterConsentsData>): Promise<boolean> => {
@@ -215,13 +312,13 @@ export function useNewsletter() {
     try {
       setIsLoading(true);
       
-      // Only handling dm_consent for now as that's all the API supports
+      // Only handling personalized_support for now as that's all the API supports
       const success = await updateNewsletterPreferences({
         email: newsletterData.preferences.email,
-        acceptHQX: newsletterData.preferences.hqx_newsletter,
-        acceptOEP: newsletterData.preferences.oep_accepted,
+        hqx_newsletter: newsletterData.preferences.hqx_newsletter,
+        oep_accepted: newsletterData.preferences.oep_accepted,
         research_accepted: newsletterData.preferences.research_accepted,
-        dm_consent: newConsents.bluesky_dm !== undefined ? newConsents.bluesky_dm : newsletterData.consents.bluesky_dm
+        personalized_support: newConsents.personalized_support !== undefined ? newConsents.personalized_support : newsletterData.consents.personalized_support
       });
       
       if (success) {
@@ -232,7 +329,7 @@ export function useNewsletter() {
             ...newConsents
           }
         }));
-        await update();
+        // await update();
         return true;
       }
       return false;
@@ -263,76 +360,18 @@ export function useNewsletter() {
   const hasConsent = useCallback((consentType: ConsentType): boolean => {
     switch(consentType) {
       case 'email_newsletter': return newsletterData.preferences.hqx_newsletter;
-      case 'bluesky_dm': return !!newsletterData.consents.bluesky_dm;
+      case 'personalized_support': return !!newsletterData.consents.personalized_support;
       case 'research_participation': return newsletterData.preferences.research_accepted;
       case 'oep_newsletter': return newsletterData.preferences.oep_accepted;
       default: return false;
     }
   }, [newsletterData]);
   
-  // Mark bot newsletter as seen
-  const markBotNewsletterSeen = async (): Promise<boolean> => {
-    if (!userId) return false;
-    
-    try {
-      setIsLoading(true);
-      const success = await updateBotNewsletterSeen(userId, true);
-      
-      if (success) {
-        setNewsletterData(prev => ({
-          ...prev,
-          preferences: {
-            ...prev.preferences,
-            have_seen_bot_newsletter: true
-          }
-        }));
-        await update();
-        return true;
-      }
-      return false;
-    } catch (error) {
-      console.error('Error marking bot newsletter as seen:', error);
-      setError(error instanceof Error ? error : new Error('Unknown error'));
-      return false;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  
-  // Reset bot newsletter seen
-  const resetBotNewsletterSeen = async (): Promise<boolean> => {
-    if (!userId) return false;
-    
-    try {
-      setIsLoading(true);
-      const success = await updateBotNewsletterSeen(userId, false);
-      
-      if (success) {
-        setNewsletterData(prev => ({
-          ...prev,
-          preferences: {
-            ...prev.preferences,
-            have_seen_bot_newsletter: false
-          }
-        }));
-        await update();
-        return true;
-      }
-      return false;
-    } catch (error) {
-      console.error('Error resetting bot newsletter seen:', error);
-      setError(error instanceof Error ? error : new Error('Unknown error'));
-      return false;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  
   // Conveniences for common actions
   const toggleHQXNewsletter = () => togglePreference('hqx_newsletter');
   const toggleOEPAccepted = () => togglePreference('oep_accepted');
   const toggleResearchAccepted = () => togglePreference('research_accepted');
-  const toggleDMConsent = () => toggleConsent('bluesky_dm');
+  const toggleDMConsent = () => toggleConsent('personalized_support');
   
   return {
     // Preferences data
@@ -345,21 +384,13 @@ export function useNewsletter() {
     oep_accepted: newsletterData.preferences.oep_accepted,
     research_accepted: newsletterData.preferences.research_accepted,
     have_seen_newsletter: newsletterData.preferences.have_seen_newsletter,
-    have_seen_bot_newsletter: newsletterData.preferences.have_seen_bot_newsletter,
-    dm_consent: newsletterData.consents.bluesky_dm,
+    dm_consent: newsletterData.consents.personalized_support,
     
     // Loading state
     isLoading,
     error,
-    isReady: !isLoading && !!userId,
     
-    // Derived states
-    hasBlueskyHandle,
-    shouldShowBotNewsletterModal,
-    
-    // UI states
-    showRequestNewsLetterDMModal,
-    setShowRequestNewsLetterDMModal,
+    // Newsletter first seen dialog
     isNewsletterFirstSeenOpen,
     setIsNewsletterFirstSeenOpen,
     
@@ -383,10 +414,7 @@ export function useNewsletter() {
     toggleOEPAccepted,
     toggleResearchAccepted,
     toggleDMConsent,
-    
-    // Methods - bot newsletter
-    resetBotNewsletterSeen,
-    markBotNewsletterSeen
+    updateNewsletterWithEmail
   };
 }
 
