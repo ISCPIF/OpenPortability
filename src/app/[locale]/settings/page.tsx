@@ -81,6 +81,8 @@ export default function SettingsPage() {
     setIsLoading(apiLoading);
   }, [apiPreferences, apiLoading]);
 
+  console.log('preferences', apiPreferences)
+
   // Variables dérivées pour le test DM
   const hasDMConsent = preferences.dm_consent === true;
   const hasBlueskyUsername = session?.user?.bluesky_username;
