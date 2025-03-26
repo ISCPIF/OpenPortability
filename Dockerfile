@@ -1,9 +1,12 @@
 # Build stage
-FROM node:18-alpine AS builder
+FROM node:20-alpine AS builder
 
 # Create non-root user
 RUN addgroup -g 1001 appgroup && \
     adduser -u 1001 -G appgroup -s /bin/sh -D appuser
+
+RUN npm install -g npm@11.2.0
+
 
 WORKDIR /app
 
@@ -19,6 +22,7 @@ RUN mkdir -p node_modules && chown -R appuser:appgroup node_modules
 # Switch to non-root user
 USER appuser
 
+
 RUN npm install
 
 # Copy source with correct ownership
@@ -27,13 +31,17 @@ COPY --chown=appuser:appgroup . .
 RUN npm run build
 
 # Production stage
-FROM node:18-alpine AS production
+FROM node:20-alpine AS production
 
 # Create the same non-root user in production stage
 RUN addgroup -g 1001 appgroup && \
     adduser -u 1001 -G appgroup -s /bin/sh -D appuser
 
+RUN npm install -g npm@11.2.0
+
+
 WORKDIR /app
+
 
 # Set ownership of the working directory
 RUN chown -R appuser:appgroup /app
@@ -50,6 +58,7 @@ RUN mkdir -p node_modules && chown -R appuser:appgroup node_modules
 
 # Switch to non-root user
 USER appuser
+
 
 RUN npm install --production
 
