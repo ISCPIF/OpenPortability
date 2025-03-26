@@ -77,16 +77,20 @@ export class UserRepository {
    * @returns Un objet avec les types de consentement comme clés et les valeurs de consentement comme valeurs
    */
   async getUserActiveConsents(userId: string): Promise<Record<string, boolean>> {
+    console.log(' [UserRepository.getUserActiveConsents] Querying DB for user:', userId);
     const { data, error } = await supabase
-      .from('newsletter_consents')
+      .from('users_consents')
       .select('consent_type, consent_value')
       .eq('user_id', userId)
       .eq('is_active', true);
     
     if (error) {
+      console.error(' [UserRepository.getUserActiveConsents] DB Error:', error);
       logError('Repository', 'UserRepository.getUserActiveConsents', error, userId);
       throw error;
     }
+
+    console.log(' [UserRepository.getUserActiveConsents] Raw DB results:', data);
 
     // Transformer les résultats en objet
     const consents: Record<string, boolean> = {};
@@ -94,6 +98,7 @@ export class UserRepository {
       consents[item.consent_type] = item.consent_value;
     });
     
+    console.log(' [UserRepository.getUserActiveConsents] Transformed consents:', consents);
     return consents;
   }
 
@@ -114,7 +119,7 @@ export class UserRepository {
     is_active: boolean;
   }>> {
     let query = supabase
-      .from('newsletter_consents')
+      .from('users_consents')
       .select('consent_type, consent_value, consent_timestamp, is_active')
       .eq('user_id', userId)
       .order('consent_timestamp', { ascending: false });
@@ -135,38 +140,30 @@ export class UserRepository {
   }
 
   /**
-   * Met à jour un consentement dans la table newsletter_consents
+   * Met à jour un consentement spécifique pour un utilisateur
    */
-  async updateConsent(userId: string, type: string, value: boolean): Promise<void> {
-    // Si value est true, on insère ou met à jour le consentement
-    if (value) {
-      const { error } = await supabase
-        .from('newsletter_consents')
-        .upsert({
-          user_id: userId,
-          consent_type: type,
-          consent_value: true,
-          is_active: true,
-          created_at: new Date().toISOString()
-        });
-      
-      if (error) {
-        logError('Repository', 'UserRepository.updateConsent', error, userId, { type, value });
-        throw error;
-      }
-    } 
-    // Si value est false, on désactive le consentement existant
-    else {
-      const { error } = await supabase
-        .from('newsletter_consents')
-        .update({ is_active: false })
-        .eq('user_id', userId)
-        .eq('consent_type', type);
-      
-      if (error) {
-        logError('Repository', 'UserRepository.updateConsent', error, userId, { type, value });
-        throw error;
-      }
+  async updateConsent(
+    userId: string, 
+    type: string, 
+    value: boolean,
+    metadata?: {
+      ip_address?: string;
+      user_agent?: string;
+    }
+  ): Promise<void> {
+    const { error } = await supabase
+      .from('users_consents')
+      .insert({
+        user_id: userId,
+        consent_type: type,
+        consent_value: value,
+        ip_address: metadata?.ip_address,
+        user_agent: metadata?.user_agent
+      });
+
+    if (error) {
+      logError('Repository', 'UserRepository.updateConsent', error, userId);
+      throw error;
     }
   }
 
@@ -195,7 +192,7 @@ export class UserRepository {
     
     // D'abord, désactiver tous les anciens consentements du même type
     const { error: deactivateError } = await supabase
-      .from('newsletter_consents')
+      .from('users_consents')
       .update({ is_active: false })
       .eq('user_id', userId)
       .eq('consent_type', consentType)
@@ -212,7 +209,7 @@ export class UserRepository {
     
     // Ensuite, insérer le nouveau consentement
     const { data, error } = await supabase
-      .from('newsletter_consents')
+      .from('users_consents')
       .insert({
         user_id: userId,
         consent_type: consentType,

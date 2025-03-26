@@ -39,6 +39,7 @@ export default function NewsLetterFirstSeen({ userId, onSubscribe, onClose }: Ne
   const [acceptOEP, setAcceptOEP] = useState(false)
   const [acceptResearch, setAcceptResearch] = useState(false)
   const [hqx_newsletter, setHqxNewsletter] = useState(false)
+  const [personalizedSupport, setPersonalizedSupport] = useState(false)
   const [error, setError] = useState('')
   const [isLanguageOpen, setIsLanguageOpen] = useState(false)
   const t = useTranslations('firstSeen')
@@ -119,30 +120,49 @@ export default function NewsLetterFirstSeen({ userId, onSubscribe, onClose }: Ne
       const currentResearch = acceptResearch;
       const currentOEP = acceptOEP;
       const currentHqxNewsletter = hqx_newsletter;
+      const currentPersonalizedSupport = personalizedSupport;
 
-      // Si c'est un submit, on continue avec la requête POST normale
-      const response = await fetch(`/api/newsletter`, {
+      // Envoyer une seule requête avec tous les consentements
+      const response = await fetch(`/api/newsletter/request`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          email,
-          acceptHQX: true,
-          acceptOEP: currentOEP,
-          research_accepted: currentResearch,
-          hqx_newsletter: currentHqxNewsletter,
-          have_seen_newsletter: true
+          consents: [
+            { type: 'email_newsletter', value: currentHqxNewsletter },
+            { type: 'oep_newsletter', value: currentOEP },
+            { type: 'research_participation', value: currentResearch },
+            { type: 'personalized_support', value: currentPersonalizedSupport }
+          ]
         }),
-      })
+      });
 
       if (!response.ok) {
-        const data = await response.json()
-        if (data.error === 'Missing required fields') {
-          setError(t('newsletter.errors.missingEmail'))
-          return
+        throw new Error('Failed to update consents')
+      }
+
+      // Mettre à jour l'email si nécessaire
+      if (currentHqxNewsletter && email) {
+        const response = await fetch(`/api/newsletter`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: email,
+            have_seen_newsletter: true
+          }),
+        });
+
+        if (!response.ok) {
+          const data = await response.json()
+          if (data.error === 'Missing required fields') {
+            setError(t('newsletter.errors.missingEmail'))
+            return
+          }
+          throw new Error(data.error || 'Failed to update email')
         }
-        throw new Error(data.error || 'Failed to update preferences')
       }
 
       onSubscribe?.()
@@ -155,7 +175,13 @@ export default function NewsLetterFirstSeen({ userId, onSubscribe, onClose }: Ne
     }
   }
 
-  const handleSubmit = () => updatePreferences(true)
+  const handleSubmit = () => {
+    if (hqx_newsletter && (!email || !isValidEmail(email))) {
+      setError(t('newsletter.errors.missingEmail'))
+      return
+    }
+    updatePreferences(true)
+  }
   const handleDismiss = () => updatePreferences(false)
 
 
@@ -284,55 +310,75 @@ export default function NewsLetterFirstSeen({ userId, onSubscribe, onClose }: Ne
               </span>
               {/* <p className="text-gray-700 text-sm">{t('newsletter.subtitle')}</p> */}
             </div>
-          </div>
 
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                {t('newsletter.emailLabel')}
-              </label>
-              <input
-                type="email"
-                placeholder={t('newsletter.emailPlaceholder')}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
-          
-
-            <div className="flex items-center space-x-3">
-              <Switch
-                checked={acceptOEP}
-                onChange={(newValue) => handleSwitchChange('oep', newValue)}
-                className={`${
-                  acceptOEP ? 'bg-blue-600' : 'bg-gray-200'
-                } relative inline-flex h-[24px] w-[44px] shrink-0 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2`}
-              >
-                <span
-                  className={`${
-                    acceptOEP ? 'translate-x-[22px]' : 'translate-x-[2px]'
-                  } inline-block h-[20px] w-[20px] transform rounded-full bg-white transition-transform`}
+            {/* Champ email conditionnel */}
+            {hqx_newsletter && (
+              <div className="mt-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  {t('newsletter.emailLabel')} <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="email"
+                  placeholder={t('newsletter.emailPlaceholder')}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
                 />
-              </Switch>
-              <span className="text-sm text-gray-700">
-                {t.raw('newsletter.consent').split(/\{(link_oep)\}/).map((part, index) => {
-                  if (part === 'link_oep') {
-                    return (
-                      <NewsletterLink key="oep" href="https://onestpret.com">
-                        On est Prêt
-                      </NewsletterLink>
-                    );
-                  }
-                  return <span key={index}>{part}</span>;
-                })}
-              </span>
-            </div>
-
-            {error && (
-              <p className="text-red-500 text-sm mt-2">{error}</p>
+              </div>
             )}
           </div>
+
+          <div className="flex items-center space-x-3">
+            <Switch
+              checked={personalizedSupport}
+              onChange={setPersonalizedSupport}
+              className={`${
+                personalizedSupport ? 'bg-blue-600' : 'bg-gray-200'
+              } relative inline-flex h-[24px] w-[44px] shrink-0 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2`}
+            >
+              <span
+                className={`${
+                  personalizedSupport ? 'translate-x-[22px]' : 'translate-x-[2px]'
+                } inline-block h-[20px] w-[20px] transform rounded-full bg-white transition-transform`}
+              />
+            </Switch>
+            <span className="text-sm text-gray-700">
+              {t('newsletter.personalizedSupport')}
+            </span>
+          </div>
+
+          <div className="flex items-center space-x-3">
+            <Switch
+              checked={acceptOEP}
+              onChange={(newValue) => handleSwitchChange('oep', newValue)}
+              className={`${
+                acceptOEP ? 'bg-blue-600' : 'bg-gray-200'
+              } relative inline-flex h-[24px] w-[44px] shrink-0 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2`}
+            >
+              <span
+                className={`${
+                  acceptOEP ? 'translate-x-[22px]' : 'translate-x-[2px]'
+                } inline-block h-[20px] w-[20px] transform rounded-full bg-white transition-transform`}
+              />
+            </Switch>
+            <span className="text-sm text-gray-700">
+              {t.raw('newsletter.consent').split(/\{(link_oep)\}/).map((part, index) => {
+                if (part === 'link_oep') {
+                  return (
+                    <NewsletterLink key="oep" href="https://onestpret.com">
+                      On est Prêt
+                    </NewsletterLink>
+                  );
+                }
+                return <span key={index}>{part}</span>;
+              })}
+            </span>
+          </div>
+
+          {error && (
+            <p className="text-red-500 text-sm mt-2">{error}</p>
+          )}
         </div>
 
         <button

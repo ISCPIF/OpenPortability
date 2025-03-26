@@ -43,34 +43,77 @@ export class UserService {
   }
 
   /**
-   * Met à jour un consentement spécifique pour un utilisateur
+   * Met à jour l'email d'un utilisateur dans next-auth.users
    */
-  async updateConsent(userId: string, type: string, value: boolean): Promise<void> {
-    await this.repository.updateConsent(userId, type, value);
+  async updateEmail(userId: string, email: string): Promise<void> {
+    if (!email) {
+      throw new Error('Email is required');
+    }
+    await this.repository.updateUser(userId, { email });
   }
 
+  /**
+   * Met à jour le statut have_seen_newsletter d'un utilisateur
+   */
+  async updateHaveSeenNewsletter(userId: string): Promise<void> {
+    await this.repository.updateUser(userId, {
+      have_seen_newsletter: true
+    });
+  }
+
+  /**
+   * Met à jour un consentement spécifique pour un utilisateur
+   */
+  async updateConsent(
+    userId: string, 
+    type: string, 
+    value: boolean,
+    metadata?: {
+      ip_address?: string;
+      user_agent?: string;
+    }
+  ): Promise<void> {
+    await this.repository.updateConsent(userId, type, value, metadata);
+  }
+
+  /**
+   * Récupère les préférences newsletter d'un utilisateur
+   */
   async getNewsletterPreferences(userId: string): Promise<{
     email?: string;
     hqx_newsletter: boolean;
     oep_accepted: boolean;
     research_accepted: boolean;
-    have_seen_newsletter: boolean;
+    // have_seen_newsletter: boolean;
   }> {
+    console.log('🔍 [UserService.getNewsletterPreferences] Getting preferences for user:', userId);
     try {
+      // Récupérer l'email de l'utilisateur et have_seen_newsletter
       const user = await this.repository.getUser(userId);
       if (!user) {
         throw new Error('User not found');
       }
 
+      // Récupérer les consentements actifs
+      const activeConsents = await this.repository.getUserActiveConsents(userId);
+      
+      console.log('✅ [UserService.getNewsletterPreferences] Got preferences:', {
+        email: user.email,
+        hqx_newsletter: activeConsents['email_newsletter'] || false,
+        oep_accepted: activeConsents['oep_newsletter'] || false,
+        research_accepted: activeConsents['research_participation'] || false,
+        // have_seen_newsletter: user.have_seen_newsletter
+      });
+
       return {
         email: user.email,
-        hqx_newsletter: user.hqx_newsletter,
-        oep_accepted: user.oep_accepted,
-        research_accepted: user.research_accepted,
-        have_seen_newsletter: user.have_seen_newsletter
+        hqx_newsletter: activeConsents['email_newsletter'] || false,
+        oep_accepted: activeConsents['oep_newsletter'] || false,
+        research_accepted: activeConsents['research_participation'] || false,
+        // have_seen_newsletter: user.have_seen_newsletter
       };
     } catch (error) {
-      console.error('Failed to get newsletter preferences:', error);
+      console.error('❌ [UserService.getNewsletterPreferences] Error:', error);
       throw error;
     }
   }
@@ -111,7 +154,15 @@ export class UserService {
    * @returns Un objet avec les types de consentement comme clés et les valeurs de consentement comme valeurs
    */
   async getUserActiveConsents(userId: string): Promise<Record<string, boolean>> {
-    return this.repository.getUserActiveConsents(userId);
+    console.log('🔍 [UserService.getUserActiveConsents] Getting consents for user:', userId);
+    try {
+      const consents = await this.repository.getUserActiveConsents(userId);
+      console.log('✅ [UserService.getUserActiveConsents] Got consents:', consents);
+      return consents;
+    } catch (error) {
+      console.error('❌ [UserService.getUserActiveConsents] Error:', error);
+      throw error;
+    }
   }
 
   /**
