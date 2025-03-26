@@ -37,22 +37,20 @@ async function newsletterConsentsHandler(request: NextRequest) {
     
     console.log('📊 Raw data:', { preferences, consents });
     
-    // Fusionner les données
+    // Fusionner les données en utilisant les consentements reçus
     const response = {
       ...preferences,
+      // dm_consent: consents.personalized_support || false,  // Ajouter dm_consent directement dans l'objet principal
       consents: {
-        email_newsletter: preferences.hqx_newsletter,
-        personalized_support: consents.bluesky_dm || consents.mastodon_dm || false,
-        research_participation: preferences.research_accepted,
-        oep_newsletter: preferences.oep_accepted
+        email_newsletter: consents.email_newsletter || false,
+        personalized_support: consents.personalized_support || false,
+        research_participation: consents.research_participation || false,
+        oep_newsletter: consents.oep_newsletter || false
       }
     };
     
     console.log('✅ GET /api/newsletter/request - Success:', response);
-    return NextResponse.json({
-      success: true,
-      data: response
-    });
+    return NextResponse.json(response);
   } catch (error) {
     console.error('❌ GET /api/newsletter/request - Error:', error);
     logger.logError('API', 'GET /api/newsletter/request', error);
