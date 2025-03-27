@@ -29,24 +29,18 @@ async function newsletterConsentsHandler(request: NextRequest) {
     const userService = new UserService();
     console.log('🔍 Fetching data for user:', session.user.id);
     
-    // Récupérer à la fois les préférences et les consentements actifs
-    const [preferences, consents] = await Promise.all([
-      userService.getNewsletterPreferences(session.user.id),
+    // Ne récupérer que les consentements actifs et l'email
+    const [consents] = await Promise.all([
+      // userService.getUser(session.user.id),
       userService.getUserActiveConsents(session.user.id)
     ]);
     
-    console.log('📊 Raw data:', { preferences, consents });
+    console.log('📊 Raw data:', { consents });
     
-    // Fusionner les données en utilisant les consentements reçus
+    // Retourner uniquement les consentements et l'email
     const response = {
-      ...preferences,
-      // dm_consent: consents.personalized_support || false,  // Ajouter dm_consent directement dans l'objet principal
-      consents: {
-        email_newsletter: consents.email_newsletter || false,
-        personalized_support: consents.personalized_support || false,
-        research_participation: consents.research_participation || false,
-        oep_newsletter: consents.oep_newsletter || false
-      }
+      email: session.user?.email,
+      ...consents
     };
     
     console.log('✅ GET /api/newsletter/request - Success:', response);
