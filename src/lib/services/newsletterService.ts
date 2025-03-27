@@ -7,6 +7,7 @@ export interface NewsletterPreferencesData {
   oep_accepted: boolean;
   research_accepted: boolean;
   have_seen_newsletter: boolean;
+  personalized_support: boolean;
 }
 
 export interface NewsletterConsentsData {
@@ -34,15 +35,28 @@ export const updateNewsletterPreferences = async (
   }
 ): Promise<boolean> => {
   try {
-    // Update preferences
-    const response = await fetch('/api/newsletter', {
+    // Convertir les préférences en consentements
+    const consents = [];
+    if (typeof data.hqx_newsletter !== 'undefined') {
+      consents.push({ type: 'email_newsletter', value: data.hqx_newsletter });
+    }
+    if (typeof data.oep_accepted !== 'undefined') {
+      consents.push({ type: 'oep_newsletter', value: data.oep_accepted });
+    }
+    if (typeof data.research_accepted !== 'undefined') {
+      consents.push({ type: 'research_participation', value: data.research_accepted });
+    }
+    if (typeof data.personalized_support !== 'undefined') {
+      consents.push({ type: 'personalized_support', value: data.personalized_support });
+    }
+
+    // Update preferences using the /api/newsletter/request endpoint
+    const response = await fetch('/api/newsletter/request', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         email: data.email,
-        hqx_newsletter: data.hqx_newsletter,
-        oep_accepted: data.oep_accepted,
-        research_accepted: data.research_accepted
+        consents
       })
     });
     
@@ -50,23 +64,9 @@ export const updateNewsletterPreferences = async (
       console.error('Failed to update newsletter preferences');
       return false;
     }
-    
-    // Update personalized support consent if provided
-    if (typeof data.personalized_support !== 'undefined') {
-      const consentResponse = await fetch('/api/newsletter/request', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: 'personalized_support',
-          value: data.personalized_support
-        })
-      });
-      
-      if (!consentResponse.ok) {
-        console.error('Failed to update personalized support consent');
-        return false;
-      }
-    }
+
+    // Attendre que la réponse soit complètement traitée
+    await response.json();
     
     return true;
   } catch (error) {
