@@ -1,14 +1,15 @@
 'use client'
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSession, signIn, signOut } from "next-auth/react";
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, Globe, Settings, LogOut } from 'lucide-react';
+import { ChevronDown, Globe, Settings, LogOut, MessageSquare, Bell } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { usePathname } from 'next/navigation';
 import { plex } from '@/app/fonts/plex';
+import { useDashboardState } from '@/hooks/useDashboardState';
 
 const Header = () => {
   const { data: session } = useSession();
@@ -16,6 +17,9 @@ const Header = () => {
   const [isLanguageOpen, setIsLanguageOpen] = useState(false);
   const t = useTranslations('header');
   const pathname = usePathname();
+  const { showBlueSkyDMNotification } = useDashboardState();
+
+  // console.log("showBlueSkyDMNotification ->",showBlueSkyDMNotification)
 
   const languages = [
     { code: 'fr', name: 'FR'},
@@ -101,6 +105,8 @@ const Header = () => {
               <div className="flex items-center gap-6">
                 {session && (
                   <div className="flex items-center gap-6">
+                    {/* Notification pour tester les DMs Bluesky */}
+
                     {/* Profil avec menu déroulant */}
                     <div className="relative">
                       <div className="flex items-center gap-3">
@@ -125,6 +131,23 @@ const Header = () => {
                             <Settings className="w-5 h-5 text-white" />
                             <span className="hidden group-hover:block text-sm text-white">{t('settings')}</span>
                           </Link>
+
+                          {showBlueSkyDMNotification && (
+                            <Link
+                              href="/settings?highlight=bluesky_dm"
+                              className="relative p-2 rounded-full hover:bg-white/10 transition-colors"
+                              title={t('notifications.testBlueSkyDM')}
+                              aria-label={t('notifications.testBlueSkyDM')}
+                            >
+                              <div className="relative">
+                                <MessageSquare className="w-5 h-5 text-white" />
+                                <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#d6356f] opacity-75"></span>
+                                  <span className="relative inline-flex rounded-full h-3 w-3 bg-[#d6356f]"></span>
+                                </span>
+                              </div>
+                            </Link>
+                          )}
                           <button
                             onClick={async () => {
                               try {
@@ -150,6 +173,8 @@ const Header = () => {
                             title={t('logout')}
                             aria-label={t('logout')}
                           >
+
+                  
                             <LogOut className="w-5 h-5 text-white" />
                             <span className="hidden group-hover:block text-sm text-white">{t('logout')}</span>
                           </button>
