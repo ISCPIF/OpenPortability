@@ -47,30 +47,21 @@ export function useNewsletter() {
         }
 
         const data = await response.json();
-
-        if (!data.success) {
-          reject(new Error('API returned unsuccessful response'));
-          return;
-        }
-
-        // Map API response to our data structure
-        const combinedData: NewsletterData = {
+        
+        // Extraire l'email et les consentements
+        const { email, ...consents } = data;
+        
+        resolve({
           preferences: {
-            email: data.data.email,
-            research_accepted: !!data.data.research_accepted,
-            oep_accepted: !!data.data.oep_accepted,
-            hqx_newsletter: !!data.data.hqx_newsletter,
-            have_seen_newsletter: !!data.data.have_seen_newsletter,
+            email,
+            // Utiliser directement les noms de la base de données
+            hqx_newsletter: consents.email_newsletter || false,
+            oep_accepted: consents.oep_newsletter || false,
+            research_accepted: consents.research_participation || false,
+            personalized_support: consents.personalized_support || false
           },
-          consents: {
-            email_newsletter: !!data.data.consents?.email_newsletter,
-            personalized_support: !!(data.data.consents?.bluesky_dm || data.data.consents?.mastodon_dm),
-            research_participation: !!data.data.consents?.research_participation,
-            oep_newsletter: !!data.data.consents?.oep_newsletter
-          }
-        };
-
-        resolve(combinedData);
+          consents
+        });
       } catch (error) {
         console.error('Error fetching newsletter data:', error);
         reject(error);
@@ -88,7 +79,7 @@ export function useNewsletter() {
       oep_accepted: false,
       research_accepted: false,
       have_seen_newsletter: false,
-      // have_seen_bot_newsletter: false
+      personalized_support: false
     },
     consents: {
       email_newsletter: false,
@@ -117,7 +108,7 @@ export function useNewsletter() {
   const shouldShowPersonalizedSupportModal = 
     hasBlueskyHandle && 
     newsletterData.preferences.hqx_newsletter && 
-    !newsletterData.consents.personalized_support && 
+    !newsletterData.preferences.personalized_support && 
     !isNewsletterFirstSeenOpen;
   
   // Fetch newsletter data
@@ -214,33 +205,32 @@ export function useNewsletter() {
   }, [shouldShowPersonalizedSupportModal, showRequestNewsLetterDMModal, isTokenValid]);
   
   // Update preferences method
-  const updatePreferences = async (newPrefs: Partial<NewsletterPreferencesData> & { personalized_support?: boolean }): Promise<boolean> => {
+  const updatePreferences = async (newPrefs: Partial<NewsletterPreferencesData>): Promise<boolean> => {
     if (!userId) return false;
     
     try {
-      // setIsLoading(true);
       const success = await updateNewsletterPreferences({
         email: newPrefs.email !== undefined ? newPrefs.email : newsletterData.preferences.email,
         hqx_newsletter: newPrefs.hqx_newsletter !== undefined ? newPrefs.hqx_newsletter : newsletterData.preferences.hqx_newsletter,
         oep_accepted: newPrefs.oep_accepted !== undefined ? newPrefs.oep_accepted : newsletterData.preferences.oep_accepted,
         research_accepted: newPrefs.research_accepted !== undefined ? newPrefs.research_accepted : newsletterData.preferences.research_accepted,
-        personalized_support: newPrefs.personalized_support !== undefined ? newPrefs.personalized_support : newsletterData.consents.personalized_support
+        personalized_support: newPrefs.personalized_support !== undefined ? newPrefs.personalized_support : newsletterData.preferences.personalized_support
       });
       
       if (success) {
+        // Mise à jour locale
         setNewsletterData(prev => ({
           ...prev,
           preferences: {
             ...prev.preferences,
             ...newPrefs
-          },
-          consents: {
-            ...prev.consents,
-            personalized_support: newPrefs.personalized_support !== undefined ? newPrefs.personalized_support : prev.consents.personalized_support
           }
         }));
-        // Nous ne mettons plus à jour la session ici car cela cause un rechargement
-        // await update();
+
+        // Invalider le cache
+        lastFetchTime = 0;
+        globalFetchPromise = null;
+
         return true;
       }
       return false;
@@ -248,8 +238,6 @@ export function useNewsletter() {
       console.error('Error updating preferences:', error);
       setError(error instanceof Error ? error : new Error('Unknown error'));
       return false;
-    } finally {
-      // setIsLoading(false);
     }
   };
 
@@ -360,7 +348,7 @@ export function useNewsletter() {
   const hasConsent = useCallback((consentType: ConsentType): boolean => {
     switch(consentType) {
       case 'email_newsletter': return newsletterData.preferences.hqx_newsletter;
-      case 'personalized_support': return !!newsletterData.consents.personalized_support;
+      case 'personalized_support': return !!newsletterData.preferences.personalized_support;
       case 'research_participation': return newsletterData.preferences.research_accepted;
       case 'oep_newsletter': return newsletterData.preferences.oep_accepted;
       default: return false;
@@ -371,11 +359,18 @@ export function useNewsletter() {
   const toggleHQXNewsletter = () => togglePreference('hqx_newsletter');
   const toggleOEPAccepted = () => togglePreference('oep_accepted');
   const toggleResearchAccepted = () => togglePreference('research_accepted');
-  const toggleDMConsent = () => toggleConsent('personalized_support');
+  const togglePersonalizedSupport = () => togglePreference('personalized_support');
   
   return {
     // Preferences data
-    preferences: newsletterData.preferences,
+    preferences: {
+      email: newsletterData.preferences.email,
+      hqx_newsletter: newsletterData.preferences.hqx_newsletter,
+      oep_accepted: newsletterData.preferences.oep_accepted,
+      research_accepted: newsletterData.preferences.research_accepted,
+      have_seen_newsletter: newsletterData.preferences.have_seen_newsletter,
+      personalized_support: newsletterData.preferences.personalized_support
+    },
     consents: newsletterData.consents,
     
     // Individual preference values (for convenience)
@@ -384,7 +379,7 @@ export function useNewsletter() {
     oep_accepted: newsletterData.preferences.oep_accepted,
     research_accepted: newsletterData.preferences.research_accepted,
     have_seen_newsletter: newsletterData.preferences.have_seen_newsletter,
-    dm_consent: newsletterData.consents.personalized_support,
+    personalized_support: newsletterData.preferences.personalized_support,
     
     // Loading state
     isLoading,
@@ -413,7 +408,7 @@ export function useNewsletter() {
     toggleHQXNewsletter,
     toggleOEPAccepted,
     toggleResearchAccepted,
-    toggleDMConsent,
+    togglePersonalizedSupport,
     updateNewsletterWithEmail
   };
 }

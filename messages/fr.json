@@ -366,7 +366,7 @@
     "emailDescription": "Recevoir les notifications par email",
     "preferencesUpdated": "Préférences mises à jour",
     "hqxNewsletter": {
-      "title": "Newsletter HelloQuitteX",
+      "title": "Newsletter OpenPortability",
       "description": "Recevoir les updates de OpenPortability"
     },
     "notificationOptions": "Options de notification",
@@ -377,18 +377,33 @@
     "notifications": {
       "title": "Notifications",
       "hqxNewsletter": {
-        "title": "Newsletter HelloQuitteX",
-        "description": "Recevoir les updates de OpenPortability"
+        "title": "Newsletter OpenPortability",
+        "description": "Être informé.e des dernières mises a jour et nouvelles fonctionnalités de la plateforme OpenPortability"
+      },
+      "personalizedSupport": {
+        "title": "Accompagnement personnalisé",
+        "description": "Je souhaite recevoir une actualisation des nouvelles connections par message privé sur les réseaux sociaux par OpenPortability"
+      },
+      "blueskyDm": {
+        "title": "Messages Bluesky",
+        "description": "Je souhaite recevoir des messages privés sur BlueSky de la part de la plateforme OpenPortability"
+      },
+      "mastodonDm": {
+        "title": "Messages Mastodon",
+        "description": "Je souhaite recevoir des messages privés sur Mastodon de la part de la plateforme OpenPortability"
       },
       "oepNewsletter": {
-        "title": "Newsletter OpenPortability",
+        "title": "Newsletter On Est Prêts",
         "description": "Être informé.e des initiatives de On est prêt"
       },
       "research": {
         "title": "Programme de recherche CNRS",
-        "description": "J'accepte que mes données soient utilisées à des fins de recherche"
+        "description": "Je souhaite partager avec le CNRS mon graphe de connexions à des fins de recherche. Il sera traité de manière aggrégée. Aucune donnée personnelle ne sera rendue publique."
       }
-    }
+    },
+    "emailLabel" : "Entrez votre adresse email (obligatoire)",
+    "emailPlaceholder": "Votre adresse email",
+    "save": "Enregistrer"
   },
   "NewsletterConsent": {
     "title": "Newsletter de HelloQuitteX",

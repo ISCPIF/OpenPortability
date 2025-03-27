@@ -14,6 +14,7 @@ export class UserService {
     acceptHQX?: boolean;
     acceptOEP?: boolean;
     research_accepted?: boolean;
+    personalized_support?: boolean;
   }): Promise<void> {
     const update: NewsletterUpdate = {
       have_seen_newsletter: true
@@ -37,6 +38,10 @@ export class UserService {
 
     if (typeof data.research_accepted !== 'undefined') {
       update.research_accepted = data.research_accepted;
+    }
+
+    if (typeof data.personalized_support !== 'undefined') {
+      update.personalized_support = data.personalized_support;
     }
 
     await this.repository.updateUser(userId, update);
