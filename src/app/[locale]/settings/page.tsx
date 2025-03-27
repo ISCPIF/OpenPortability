@@ -16,6 +16,7 @@ import LoginSea from '@/app/_components/LoginSea';
 import Footer from '@/app/_components/Footer';
 import LoadingIndicator from '@/app/_components/LoadingIndicator';
 import ConnectedAccounts from '@/app/_components/ConnectedAccounts';
+import SwitchSettingsSection from '@/app/_components/settings/SwitchSettingsSection';
 
 // Type pour les erreurs de test DM
 interface TaskErrorType {
@@ -322,196 +323,21 @@ export default function SettingsPage() {
       <div className="relative w-full bg-transparent">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
           {/* Section Notifications */}
-          <div className="bg-white/5 rounded-xl p-6 backdrop-blur-sm border border-white/10">
-            <h2 className={`${plex.className} text-lg font-medium text-white mb-6`}>
-              {t('notificationOptions')}
-            </h2>
-            <div className="space-y-6">
-              {/* Newsletter HelloQuitteX */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between w-full">
-                  <div className="flex-grow pr-4">
-                    <h3 className="text-sm font-medium text-white">{t('notifications.hqxNewsletter.title')}</h3>
-                    <p className="text-xs text-white/60 mt-1">{t('notifications.hqxNewsletter.description')}</p>
-                  </div>
-                  <div className="flex-shrink-0">
-                    <Switch
-                      checked={apiPreferences.hqx_newsletter}
-                      onChange={(value) => handleSwitchChange('hqx', value)}
-                      className={`${
-                        apiPreferences.hqx_newsletter ? 'bg-[#d6356f]' : 'bg-gray-700'
-                      } relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none`}
-                    >
-                      <span className="sr-only">{t('notifications.hqxNewsletter.title')}</span>
-                      <span
-                        className={`${
-                          apiPreferences.hqx_newsletter ? 'translate-x-6' : 'translate-x-1'
-                        } inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
-                      />
-                    </Switch>
-                  </div>
-                </div>
-
-                {showEmailForm && (
-                  <div className="ml-6 space-y-4 border-l-2 border-white/10 pl-4">
-                    <div className="flex flex-col space-y-2">
-                      <label htmlFor="email" className="text-sm font-medium text-white">
-                        {t('emailLabel')}
-                      </label>
-                      <input
-                        type="email"
-                        id="email"
-                        value={email}
-                        onChange={(e) => {
-                          setEmail(e.target.value);
-                          setEmailError('');
-                        }}
-                        placeholder={t('emailPlaceholder')}
-                        className={`w-full px-3 py-2 bg-white/10 border ${
-                          emailError ? 'border-red-500' : 'border-white/20'
-                        } rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-[#d6356f] focus:border-transparent`}
-                      />
-                      {emailError && (
-                        <p className="text-xs text-red-500 mt-1">{emailError}</p>
-                      )}
-                    </div>
-                    <button
-                      onClick={handleEmailSubmit}
-                      disabled={isSubmittingEmail}
-                      className="flex items-center justify-center gap-2 px-6 py-2.5 bg-[#d6356f] text-white rounded-full disabled:opacity-50"
-                    >
-                      <CheckCircle2 className="w-4 h-4" />
-                      <span className="text-sm">{t('save')}</span>
-                    </button>
-                  </div>
-                )}
-
-                {/* Accompagnement personnalisé */}
-                <div className="flex items-center justify-between w-full">
-                  <div className="flex-grow pr-4">
-                    <h3 className="text-sm font-medium text-white">{t('notifications.personalizedSupport.title')}</h3>
-                    <p className="text-xs text-white/60 mt-1">{t('notifications.personalizedSupport.description')}</p>
-                  </div>
-                  <div className="flex-shrink-0">
-                    <Switch
-                      checked={apiPreferences.personalized_support}
-                      onChange={(value) => handleSwitchChange('personalized_support', value)}
-                      className={`${
-                        apiPreferences.personalized_support ? 'bg-[#d6356f]' : 'bg-gray-700'
-                      } relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none`}
-                    >
-                      <span className="sr-only">{t('notifications.personalizedSupport.title')}</span>
-                      <span
-                        className={`${
-                          apiPreferences.personalized_support ? 'translate-x-6' : 'translate-x-1'
-                        } inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
-                      />
-                    </Switch>
-                  </div>
-                </div>
-
-                {/* Options DM conditionnelles */}
-                {apiPreferences.personalized_support && (
-                  <div className="ml-6 space-y-4 border-l-2 border-white/10 pl-4">
-                    {/* Bluesky DM */}
-                    <div className="flex items-center justify-between w-full">
-                      <div className="flex-grow pr-4">
-                        <h3 className="text-sm font-medium text-white">{t('notifications.blueskyDm.title')}</h3>
-                        <p className="text-xs text-white/60 mt-1">{t('notifications.blueskyDm.description')}</p>
-                      </div>
-                      <div className="flex-shrink-0">
-                        <Switch
-                          checked={apiPreferences.bluesky_dm}
-                          onChange={(value) => handleDMConsentChange('bluesky_dm', value)}
-                          className={`${
-                            apiPreferences.bluesky_dm ? 'bg-[#d6356f]' : 'bg-gray-700'
-                          } relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none`}
-                        >
-                          <span className="sr-only">{t('notifications.blueskyDm.title')}</span>
-                          <span
-                            className={`${
-                              apiPreferences.bluesky_dm ? 'translate-x-6' : 'translate-x-1'
-                            } inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
-                          />
-                        </Switch>
-                      </div>
-                    </div>
-
-                    {/* Mastodon DM */}
-                    <div className="flex items-center justify-between w-full">
-                      <div className="flex-grow pr-4">
-                        <h3 className="text-sm font-medium text-white">{t('notifications.mastodonDm.title')}</h3>
-                        <p className="text-xs text-white/60 mt-1">{t('notifications.mastodonDm.description')}</p>
-                      </div>
-                      <div className="flex-shrink-0">
-                        <Switch
-                          checked={apiPreferences.mastodon_dm}
-                          onChange={(value) => handleDMConsentChange('mastodon_dm', value)}
-                          className={`${
-                            apiPreferences.mastodon_dm ? 'bg-[#d6356f]' : 'bg-gray-700'
-                          } relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none`}
-                        >
-                          <span className="sr-only">{t('notifications.mastodonDm.title')}</span>
-                          <span
-                            className={`${
-                              apiPreferences.mastodon_dm ? 'translate-x-6' : 'translate-x-1'
-                            } inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
-                          />
-                        </Switch>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Newsletter OpenPortability */}
-              <div className="flex items-center justify-between w-full">
-                <div className="flex-grow pr-4">
-                  <h3 className="text-sm font-medium text-white">{t('notifications.oepNewsletter.title')}</h3>
-                  <p className="text-xs text-white/60 mt-1">{t('notifications.oepNewsletter.description')}</p>
-                </div>
-                <div className="flex-shrink-0">
-                  <Switch
-                    checked={apiPreferences.oep_accepted}
-                    onChange={(value) => handleSwitchChange('oep', value)}
-                    className={`${
-                      apiPreferences.oep_accepted ? 'bg-[#d6356f]' : 'bg-gray-700'
-                    } relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none`}
-                  >
-                    <span className="sr-only">{t('notifications.oepNewsletter.title')}</span>
-                    <span
-                      className={`${
-                        apiPreferences.oep_accepted ? 'translate-x-6' : 'translate-x-1'
-                      } inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
-                    />
-                  </Switch>
-                </div>
-              </div>
-
-              {/* Programme CNRS */}
-              <div className="flex items-center justify-between w-full">
-                <div className="flex-grow pr-4">
-                  <h3 className="text-sm font-medium text-white">{t('notifications.research.title')}</h3>
-                  <p className="text-xs text-white/60 mt-1">{t('notifications.research.description')}</p>
-                </div>
-                <div className="flex-shrink-0">
-                  <Switch
-                    checked={apiPreferences.research_accepted}
-                    onChange={(value) => handleSwitchChange('research', value)}
-                    className={`${
-                      apiPreferences.research_accepted ? 'bg-[#d6356f]' : 'bg-gray-700'
-                    } relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none`}
-                  >
-                    <span className="sr-only">{t('notifications.research.title')}</span>
-                    <span
-                      className={`${
-                        apiPreferences.research_accepted ? 'translate-x-6' : 'translate-x-1'
-                      } inline-block h-4 w-4 transform rounded-full bg-white transition-transform`}
-                    />
-                  </Switch>
-                </div>
-              </div>
-            </div>
+          <div className="bg-[#2a39a9] p-6 rounded-lg shadow-lg">
+            <h2 className="text-xl font-semibold text-white mb-6">{t('notificationOptions')}</h2>
+            <SwitchSettingsSection
+              apiPreferences={apiPreferences}
+              onSwitchChange={handleSwitchChange}
+              onDMConsentChange={handleDMConsentChange}
+              showEmailForm={showEmailForm}
+              setShowEmailForm={setShowEmailForm}
+              email={email}
+              setEmail={setEmail}
+              emailError={emailError}
+              setEmailError={setEmailError}
+              handleEmailSubmit={handleEmailSubmit}
+              isSubmittingEmail={isSubmittingEmail}
+            />
           </div>
 
           {/* Section Comptes et Suppression */}
