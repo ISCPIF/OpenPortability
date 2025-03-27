@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/app/auth';
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from '@/lib/supabase';
 
 export async function POST(request: NextRequest) {
   try {
@@ -23,12 +23,6 @@ export async function POST(request: NextRequest) {
         { status: 403 }
       );
     }
-
-    // Créer une connexion à Supabase
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
-    
     // Créer une nouvelle tâche Python pour le test DM
     const { data, error } = await supabase
       .from('python_tasks')
