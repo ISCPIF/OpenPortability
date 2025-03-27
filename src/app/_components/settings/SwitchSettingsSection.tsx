@@ -3,18 +3,12 @@
 import { Switch } from '@headlessui/react';
 import { useTranslations } from 'next-intl';
 import { CheckCircle2 } from 'lucide-react';
+import { plex } from '@/app/fonts/plex';
+import { ConsentType } from '@/hooks/useNewsLetter';
 
 interface SwitchSettingsSectionProps {
-  apiPreferences: {
-    hqx_newsletter?: boolean;
-    personalized_support?: boolean;
-    bluesky_dm?: boolean;
-    mastodon_dm?: boolean;
-    oep_accepted?: boolean;
-    research_accepted?: boolean;
-  };
-  onSwitchChange: (type: 'research' | 'oep' | 'personalized_support' | 'hqx', value: boolean) => Promise<void>;
-  onDMConsentChange: (type: 'bluesky_dm' | 'mastodon_dm' | 'email_newsletter', value: boolean) => Promise<void>;
+  consents: { [key in ConsentType]?: boolean };
+  onConsentChange: (type: ConsentType, value: boolean) => Promise<void>;
   showEmailForm: boolean;
   setShowEmailForm: (show: boolean) => void;
   email: string;
@@ -26,9 +20,8 @@ interface SwitchSettingsSectionProps {
 }
 
 export default function SwitchSettingsSection({
-  apiPreferences,
-  onSwitchChange,
-  onDMConsentChange,
+  consents,
+  onConsentChange,
   showEmailForm,
   setShowEmailForm,
   email,
@@ -41,16 +34,17 @@ export default function SwitchSettingsSection({
   const t = useTranslations('settings');
 
   const renderSwitch = (
+    type: ConsentType,
     title: string,
     description: string,
     checked: boolean,
     onChange: (value: boolean) => void,
     srText?: string
   ) => (
-    <div className="flex items-center justify-between w-full">
-      <div className="flex-grow pr-4">
-        <h3 className="text-sm font-medium text-white">{title}</h3>
-        <p className="text-xs text-white/60 mt-1">{description}</p>
+    <div className="flex items-center justify-between w-full bg-white/5 p-4 rounded-lg backdrop-blur-sm border border-white/10 hover:bg-white/10 transition-colors">
+      <div className="flex-grow pr-6">
+        <h3 className={`${plex.className} text-sm font-medium text-white`}>{title}</h3>
+        <p className="text-xs text-white/70 mt-2 text-justify">{description}</p>
       </div>
       <div className="flex-shrink-0">
         <Switch
@@ -58,7 +52,7 @@ export default function SwitchSettingsSection({
           onChange={onChange}
           className={`${
             checked ? 'bg-[#d6356f]' : 'bg-gray-700'
-          } relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none`}
+          } relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-[#d6356f] focus:ring-offset-2 focus:ring-offset-[#2a39a9]`}
         >
           <span className="sr-only">{srText || title}</span>
           <span
@@ -76,24 +70,24 @@ export default function SwitchSettingsSection({
       {/* Newsletter HelloQuitteX */}
       <div className="space-y-4">
         {renderSwitch(
+          'email_newsletter',
           t('notifications.hqxNewsletter.title'),
           t('notifications.hqxNewsletter.description'),
-          apiPreferences.hqx_newsletter || false,
+          consents.email_newsletter || false,
           (value) => {
+            onConsentChange('email_newsletter', value);
             if (value) {
-              onSwitchChange('hqx', value);
               setShowEmailForm(true);
             } else {
-              onSwitchChange('hqx', value);
               setShowEmailForm(false);
             }
           }
         )}
 
         {showEmailForm && (
-          <div className="ml-6 space-y-4 border-l-2 border-white/10 pl-4">
-            <div className="flex flex-col space-y-2">
-              <label htmlFor="email" className="text-sm font-medium text-white">
+          <div className="ml-6 space-y-4 border-l-2 border-white/20 pl-6">
+            <div className="flex flex-col space-y-3">
+              <label htmlFor="email" className={`${plex.className} text-sm font-medium text-white`}>
                 {t('emailLabel')}
               </label>
               <input
@@ -105,9 +99,9 @@ export default function SwitchSettingsSection({
                   setEmailError('');
                 }}
                 placeholder={t('emailPlaceholder')}
-                className={`w-full px-3 py-2 bg-white/10 border ${
+                className={`w-full px-4 py-3 bg-white/5 border ${
                   emailError ? 'border-red-500' : 'border-white/20'
-                } rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-[#d6356f] focus:border-transparent`}
+                } rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-[#d6356f] focus:border-transparent backdrop-blur-sm`}
               />
               {emailError && (
                 <p className="text-xs text-red-500 mt-1">{emailError}</p>
@@ -116,58 +110,31 @@ export default function SwitchSettingsSection({
             <button
               onClick={handleEmailSubmit}
               disabled={isSubmittingEmail}
-              className="flex items-center justify-center gap-2 px-6 py-2.5 bg-[#d6356f] text-white rounded-full disabled:opacity-50"
+              className={`${plex.className} w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-3 bg-[#d6356f] text-white rounded-full disabled:opacity-50 hover:bg-[#e6457f] transition-colors font-medium`}
             >
               <CheckCircle2 className="w-4 h-4" />
               <span className="text-sm">{t('save')}</span>
             </button>
           </div>
         )}
-
-        {/* Accompagnement personnalisé */}
-        {renderSwitch(
-          t('notifications.personalizedSupport.title'),
-          t('notifications.personalizedSupport.description'),
-          apiPreferences.personalized_support || false,
-          (value) => onSwitchChange('personalized_support', value)
-        )}
-
-        {/* Options DM conditionnelles */}
-        {apiPreferences.personalized_support && (
-          <div className="ml-6 space-y-4 border-l-2 border-white/10 pl-4">
-            {/* Bluesky DM */}
-            {renderSwitch(
-              t('notifications.blueskyDm.title'),
-              t('notifications.blueskyDm.description'),
-              apiPreferences.bluesky_dm || false,
-              (value) => onDMConsentChange('bluesky_dm', value)
-            )}
-
-            {/* Mastodon DM */}
-            {renderSwitch(
-              t('notifications.mastodonDm.title'),
-              t('notifications.mastodonDm.description'),
-              apiPreferences.mastodon_dm || false,
-              (value) => onDMConsentChange('mastodon_dm', value)
-            )}
-          </div>
-        )}
       </div>
 
-      {/* Newsletter OpenPortability */}
+      {/* OEP Newsletter */}
       {renderSwitch(
+        'oep_newsletter',
         t('notifications.oepNewsletter.title'),
         t('notifications.oepNewsletter.description'),
-        apiPreferences.oep_accepted || false,
-        (value) => onSwitchChange('oep', value)
+        consents.oep_newsletter || false,
+        (value) => onConsentChange('oep_newsletter', value)
       )}
 
-      {/* Programme CNRS */}
+      {/* Research Participation */}
       {renderSwitch(
+        'research_participation',
         t('notifications.research.title'),
         t('notifications.research.description'),
-        apiPreferences.research_accepted || false,
-        (value) => onSwitchChange('research', value)
+        consents.research_participation || false,
+        (value) => onConsentChange('research_participation', value)
       )}
     </div>
   );

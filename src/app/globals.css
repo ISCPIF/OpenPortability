@@ -61,3 +61,20 @@ body {
 .animation-delay-4000 {
   animation-delay: 4s;
 }
+
+/* Animation de mise en évidence pour la section de support personnalisé */
+@keyframes highlight-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(214, 53, 111, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(214, 53, 111, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(214, 53, 111, 0);
+  }
+}
+
+.highlight-animation {
+  animation: highlight-pulse 1s ease-in-out 3;
+}

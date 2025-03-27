@@ -1,416 +1,128 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import {
-  updateNewsletterPreferences,
-  NewsletterData,
-  NewsletterPreferencesData,
-  NewsletterConsentsData
+  fetchNewsletterData,
+  updateNewsletterConsent,
+  ConsentType,
+  NewsletterData
 } from '@/lib/services/newsletterService';
 
-// Types of consents we track
-export type ConsentType = 'email_newsletter' | 'personalized_support' | 'research_participation' | 'oep_newsletter'  ;
-
 /**
- * A comprehensive hook for managing all newsletter-related functionality
+ * A hook for managing newsletter preferences and consents
  */
 export function useNewsletter() {
-  const { data: session, update } = useSession();
-  const userId = session?.user?.id;
-  
-  // Cache mechanism for API calls
-  let lastFetchTime = 0;
-  let globalFetchPromise: Promise<NewsletterData> | null = null;
-  const CACHE_DURATION = 5000; // 5 seconds cache
-
-  /**
-   * Fetches all newsletter data (preferences and consents)
-   */
-  const fetchNewsletterData = async (): Promise<NewsletterData> => {
-    // If we have an existing promise and it's recent, return it
-    const now = Date.now();
-    if (globalFetchPromise && now - lastFetchTime < CACHE_DURATION) {
-      return globalFetchPromise;
-    }
-
-    // Otherwise create a new promise and store it
-    lastFetchTime = now;
-    globalFetchPromise = new Promise<NewsletterData>(async (resolve, reject) => {
-      try {
-        const response = await fetch('/api/newsletter/request', {
-          method: 'GET',
-          headers: { 'Content-Type': 'application/json' }
-        });
-
-        if (!response.ok) {
-          reject(new Error('Failed to fetch newsletter data'));
-          return;
-        }
-
-        const data = await response.json();
-        
-        // Extraire l'email et les consentements
-        const { email, ...consents } = data;
-        
-        resolve({
-          preferences: {
-            email,
-            // Utiliser directement les noms de la base de données
-            hqx_newsletter: consents.email_newsletter || false,
-            oep_accepted: consents.oep_newsletter || false,
-            research_accepted: consents.research_participation || false,
-            personalized_support: consents.personalized_support || false
-          },
-          consents
-        });
-      } catch (error) {
-        console.error('Error fetching newsletter data:', error);
-        reject(error);
-      }
-    });
-
-    return globalFetchPromise;
-  };
-
-  // Newsletter data
-  const [newsletterData, setNewsletterData] = useState<NewsletterData>({
-    preferences: {
-      email: undefined,
-      hqx_newsletter: false,
-      oep_accepted: false,
-      research_accepted: false,
-      have_seen_newsletter: false,
-      personalized_support: false
-    },
+  const { data: session } = useSession();
+  const [data, setData] = useState<NewsletterData>({
+    email: undefined,
     consents: {
       email_newsletter: false,
-      personalized_support: false,
+      oep_newsletter: false,
       research_participation: false,
-      oep_newsletter: false
+      personalized_support: false,
+      bluesky_dm: false,
+      mastodon_dm: false
     }
   });
-  
-  // Loading state
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
-  
-  // UI state
-  const [showRequestNewsLetterDMModal, setShowRequestNewsLetterDMModal] = useState(false);
-  const [isNewsletterFirstSeenOpen, setIsNewsletterFirstSeenOpen] = useState(false);
-  
-  // Token check state
-  const [isTokenValid, setIsTokenValid] = useState<boolean | null>(null);
-  const [isCheckingToken, setIsCheckingToken] = useState(false);
-  const [invalidProviders, setInvalidProviders] = useState<string[]>([]);
-  const [mastodonInstances, setMastodonInstances] = useState<string[]>([]);
-  
-  // Derived states
-  const hasBlueskyHandle = !!session?.user?.bluesky_handle || !!session?.user?.bluesky_username;
-  const shouldShowPersonalizedSupportModal = 
-    hasBlueskyHandle && 
-    newsletterData.preferences.hqx_newsletter && 
-    !newsletterData.preferences.personalized_support && 
-    !isNewsletterFirstSeenOpen;
-  
-  // Fetch newsletter data
-  const refreshData = useCallback(async (force = false) => {
-    if (!userId) return;
-    
-    try {
-      setIsLoading(true);
-      
-      if (force) {
-        // invalidateCache();
-      }
-      
-      const data = await fetchNewsletterData();
-      setNewsletterData(data);
-    } catch (error) {
-      console.error('Error fetching newsletter data:', error);
-      setError(error instanceof Error ? error : new Error('Unknown error'));
-    } finally {
-      setIsLoading(false);
-    }
-  }, [userId]);
-  
-  // Initial fetch
+
+  // Load initial data
   useEffect(() => {
-    if (userId) {
-      refreshData();
-    }
-  }, [userId, refreshData]);
-  
-  // Fetch Mastodon instances
-  useEffect(() => {
-    const fetchMastodonInstances = async () => {
+    const loadData = async () => {
       try {
-        const response = await fetch('/api/auth/mastodon');
-        if (response.ok) {
-          const data = await response.json();
-          setMastodonInstances(data.instances || []);
-        }
-      } catch (error) {
-        console.error('Error fetching Mastodon instances:', error);
+        setIsLoading(true);
+        const newsletterData = await fetchNewsletterData();
+        setData(newsletterData);
+        setError(null);
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error('Failed to load newsletter data'));
+      } finally {
+        setIsLoading(false);
       }
     };
 
-    fetchMastodonInstances();
+    loadData();
   }, []);
 
-  // Vérifier la validité du token
-  const checkTokenValidity = useCallback(async () => {
-    if (!session?.user?.id) return false;
-    
-    setIsCheckingToken(true);
-    
+  /**
+   * Update a single consent value
+   */
+  const updateConsent = async (type: ConsentType, value: boolean) => {
     try {
-      const response = await fetch('/api/auth/refresh', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      });
-      
-      const data = await response.json();
-      
-      if (response.ok && data.success) {
-        setIsTokenValid(true);
-        setInvalidProviders([]);
-        return true;
-      } else {
-        setIsTokenValid(false);
-        setInvalidProviders(data.providers || []);
-        return false;
-      }
-    } catch (error) {
-      console.error('Error checking token validity:', error);
-      setIsTokenValid(false);
-      return false;
-    } finally {
-      setIsCheckingToken(false);
-    }
-  }, [session?.user?.id]);
+      // Optimistic update
+      setData(prev => ({
+        ...prev,
+        consents: { ...prev.consents, [type]: value }
+      }));
 
-  // Vérifier le token quand les dépendances changent
-  useEffect(() => {
-    if (hasBlueskyHandle && isTokenValid === null && !isCheckingToken) {
-      checkTokenValidity();
-    }
-  }, [hasBlueskyHandle, isTokenValid, isCheckingToken, checkTokenValidity]);
-  
-  // Check if we should show the personalized support modal
-  useEffect(() => {
-    if (shouldShowPersonalizedSupportModal && !showRequestNewsLetterDMModal && isTokenValid !== false) {
-      setShowRequestNewsLetterDMModal(true);
-    }
-  }, [shouldShowPersonalizedSupportModal, showRequestNewsLetterDMModal, isTokenValid]);
-  
-  // Update preferences method
-  const updatePreferences = async (newPrefs: Partial<NewsletterPreferencesData>): Promise<boolean> => {
-    if (!userId) return false;
-    
-    try {
-      const success = await updateNewsletterPreferences({
-        email: newPrefs.email !== undefined ? newPrefs.email : newsletterData.preferences.email,
-        hqx_newsletter: newPrefs.hqx_newsletter !== undefined ? newPrefs.hqx_newsletter : newsletterData.preferences.hqx_newsletter,
-        oep_accepted: newPrefs.oep_accepted !== undefined ? newPrefs.oep_accepted : newsletterData.preferences.oep_accepted,
-        research_accepted: newPrefs.research_accepted !== undefined ? newPrefs.research_accepted : newsletterData.preferences.research_accepted,
-        personalized_support: newPrefs.personalized_support !== undefined ? newPrefs.personalized_support : newsletterData.preferences.personalized_support
-      });
-      
-      if (success) {
-        // Mise à jour locale
-        setNewsletterData(prev => ({
+      const success = await updateNewsletterConsent({ type, value }, data.email);
+
+      if (!success) {
+        // Revert on failure
+        setData(prev => ({
           ...prev,
-          preferences: {
-            ...prev.preferences,
-            ...newPrefs
-          }
+          consents: { ...prev.consents, [type]: !value }
         }));
-
-        // Invalider le cache
-        lastFetchTime = 0;
-        globalFetchPromise = null;
-
-        return true;
+        throw new Error(`Failed to update ${type}`);
       }
-      return false;
-    } catch (error) {
-      console.error('Error updating preferences:', error);
-      setError(error instanceof Error ? error : new Error('Unknown error'));
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error('Failed to update consent'));
       return false;
     }
+    return true;
   };
 
-  // New method to update newsletter with email
-  const updateNewsletterWithEmail = async (email: string | undefined, subscribe: boolean): Promise<boolean> => {
-    if (!userId) return false;
-    
+  /**
+   * Update email and newsletter consent together
+   */
+  const updateEmailWithNewsletter = async (email: string, subscribeToNewsletter: boolean) => {
     try {
-      setIsLoading(true);
-      
-      // Prepare API request
-      const requestBody: any = {
-        consents: [{ type: 'email_newsletter', value: subscribe }]
-      };
-      
-      // Add email if subscribing and email is provided
-      if (subscribe && email) {
-        requestBody.email = email;
-      }
-      
-      // Make direct API call for newsletter update
-      const response = await fetch('/api/newsletter/request', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody),
-      });
-      
-      if (response.ok) {
-        // Update local state
-        setNewsletterData(prev => ({
+      // Optimistic update
+      setData(prev => ({
+        ...prev,
+        email,
+        consents: { ...prev.consents, email_newsletter: subscribeToNewsletter }
+      }));
+
+      const success = await updateNewsletterConsent(
+        { type: 'email_newsletter', value: subscribeToNewsletter },
+        email
+      );
+
+      if (!success) {
+        // Revert on failure
+        setData(prev => ({
           ...prev,
-          preferences: {
-            ...prev.preferences,
-            hqx_newsletter: subscribe,
-            email: subscribe ? email : prev.preferences.email
-          },
-          consents: {
-            ...prev.consents,
-            email_newsletter: subscribe
-          }
+          email: prev.email,
+          consents: { ...prev.consents, email_newsletter: !subscribeToNewsletter }
         }));
-        return true;
+        throw new Error('Failed to update email subscription');
       }
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error('Failed to update email'));
       return false;
-    } catch (error) {
-      console.error('Error updating newsletter subscription:', error);
-      setError(error instanceof Error ? error : new Error('Unknown error'));
-      return false;
-    } finally {
-      setIsLoading(false);
     }
+    return true;
   };
-  
-  // Update consents method
-  const updateConsents = async (newConsents: Partial<NewsletterConsentsData>): Promise<boolean> => {
-    if (!userId) return false;
-    
-    try {
-      setIsLoading(true);
-      
-      // Only handling personalized_support for now as that's all the API supports
-      const success = await updateNewsletterPreferences({
-        email: newsletterData.preferences.email,
-        hqx_newsletter: newsletterData.preferences.hqx_newsletter,
-        oep_accepted: newsletterData.preferences.oep_accepted,
-        research_accepted: newsletterData.preferences.research_accepted,
-        personalized_support: newConsents.personalized_support !== undefined ? newConsents.personalized_support : newsletterData.consents.personalized_support
-      });
-      
-      if (success) {
-        setNewsletterData(prev => ({
-          ...prev,
-          consents: {
-            ...prev.consents,
-            ...newConsents
-          }
-        }));
-        // await update();
-        return true;
-      }
-      return false;
-    } catch (error) {
-      console.error('Error updating consents:', error);
-      setError(error instanceof Error ? error : new Error('Unknown error'));
-      return false;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  
-  // Toggle preference
-  const togglePreference = async (key: keyof NewsletterPreferencesData): Promise<boolean> => {
-    const newValue = !newsletterData.preferences[key];
-    const update = { [key]: newValue } as Partial<NewsletterPreferencesData>;
-    return updatePreferences(update);
-  };
-  
-  // Toggle consent
-  const toggleConsent = async (key: keyof NewsletterConsentsData): Promise<boolean> => {
-    const newValue = !newsletterData.consents[key];
-    const update = { [key]: newValue } as Partial<NewsletterConsentsData>;
-    return updateConsents(update);
-  };
-  
-  // Check if user has consented to a specific type
-  const hasConsent = useCallback((consentType: ConsentType): boolean => {
-    switch(consentType) {
-      case 'email_newsletter': return newsletterData.preferences.hqx_newsletter;
-      case 'personalized_support': return !!newsletterData.preferences.personalized_support;
-      case 'research_participation': return newsletterData.preferences.research_accepted;
-      case 'oep_newsletter': return newsletterData.preferences.oep_accepted;
-      default: return false;
-    }
-  }, [newsletterData]);
-  
-  // Conveniences for common actions
-  const toggleHQXNewsletter = () => togglePreference('hqx_newsletter');
-  const toggleOEPAccepted = () => togglePreference('oep_accepted');
-  const toggleResearchAccepted = () => togglePreference('research_accepted');
-  const togglePersonalizedSupport = () => togglePreference('personalized_support');
-  
+
+  // Helper getters for common consents
+  const getConsent = (type: ConsentType) => data.consents[type] ?? false;
+
   return {
-    // Preferences data
-    preferences: {
-      email: newsletterData.preferences.email,
-      hqx_newsletter: newsletterData.preferences.hqx_newsletter,
-      oep_accepted: newsletterData.preferences.oep_accepted,
-      research_accepted: newsletterData.preferences.research_accepted,
-      have_seen_newsletter: newsletterData.preferences.have_seen_newsletter,
-      personalized_support: newsletterData.preferences.personalized_support
-    },
-    consents: newsletterData.consents,
-    
-    // Individual preference values (for convenience)
-    email: newsletterData.preferences.email,
-    hqx_newsletter: newsletterData.preferences.hqx_newsletter,
-    oep_accepted: newsletterData.preferences.oep_accepted,
-    research_accepted: newsletterData.preferences.research_accepted,
-    have_seen_newsletter: newsletterData.preferences.have_seen_newsletter,
-    personalized_support: newsletterData.preferences.personalized_support,
-    
-    // Loading state
+    email: data.email,
+    consents: data.consents,
     isLoading,
     error,
-    
-    // Newsletter first seen dialog
-    isNewsletterFirstSeenOpen,
-    setIsNewsletterFirstSeenOpen,
-    
-    // Token validity
-    isTokenValid,
-    isCheckingToken,
-    invalidProviders,
-    mastodonInstances,
-    checkTokenValidity,
-    
-    // Methods - core
-    updatePreferences,
-    updateConsents,
-    togglePreference,
-    toggleConsent,
-    hasConsent,
-    refreshData: (force = false) => refreshData(force),
-    
-    // Methods - conveniences
-    toggleHQXNewsletter,
-    toggleOEPAccepted,
-    toggleResearchAccepted,
-    togglePersonalizedSupport,
-    updateNewsletterWithEmail
+    updateConsent,
+    updateEmailWithNewsletter,
+    // Common consent getters
+    hqxNewsletter: getConsent('email_newsletter'),
+    oepAccepted: getConsent('oep_newsletter'),
+    researchAccepted: getConsent('research_participation'),
+    personalizedSupport: getConsent('personalized_support'),
+    blueskyDm: getConsent('bluesky_dm'),
+    mastodonDm: getConsent('mastodon_dm'),
   };
 }
 
-export { useNewsletter as useNewsLetter };
+export type { ConsentType };

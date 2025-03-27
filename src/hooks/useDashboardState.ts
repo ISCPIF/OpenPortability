@@ -5,17 +5,20 @@ import { useRouter } from 'next/navigation';
 import { useStats } from './useStats';
 import { useMastodonInstances } from './useMastodonInstances';
 import { UserSession } from '@/lib/types/common';
+import { useNewsLetter } from './useNewsLetter';
 
 export function useDashboardState() {
   const { data: session, status, update } = useSession();
   const router = useRouter();
   const { stats, globalStats, isLoading: statsLoading } = useStats();
   const mastodonInstances = useMastodonInstances();
+  const { preferences: apiPreferences, isLoading: preferencesLoading } = useNewsLetter();
   
   const [isLoading, setIsLoading] = useState(true);
   const [showNewsletterModal, setShowNewsletterModal] = useState(false);
   const [isShared, setIsShared] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [showBlueSkyDMNotification, setShowBlueSkyDMNotification] = useState(false);
   
   // Déterminer quels comptes sont connectés
   const hasMastodon = session?.user?.mastodon_username;
@@ -31,8 +34,22 @@ export function useDashboardState() {
       return;
     }
     
-    setIsLoading(status === "loading" || statsLoading);
-  }, [status, router, statsLoading]);
+    setIsLoading(status === "loading" || statsLoading || preferencesLoading);
+  }, [status, router, statsLoading, preferencesLoading]);
+  
+  // Vérifier si l'utilisateur a activé le support personnalisé et a un compte Bluesky lié
+  useEffect(() => {
+    if (
+      apiPreferences?.personalized_support && 
+      session?.user?.bluesky_username
+      ) {
+      setShowBlueSkyDMNotification(true);
+    } else {
+      setShowBlueSkyDMNotification(false);
+    }
+  }, [apiPreferences, session]);
+
+  // console.log()
   
   return {
     session,
@@ -52,6 +69,8 @@ export function useDashboardState() {
     hasBluesky,
     hasTwitter,
     hasOnboarded,
-    connectedServicesCount
+    connectedServicesCount,
+    apiPreferences,
+    showBlueSkyDMNotification
   };
 }
