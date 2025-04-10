@@ -105,53 +105,40 @@ async function recoverStalledTasks() {
   }
 }
 
-// Vérifier les tâches en attente
-async function checkForPendingTasks() {
+// Fonction pour trouver et traiter une tâche
+async function findAndProcessTask(workerId: string): Promise<void> {
   try {
-    // Récupérer les tâches en attente
-    const { data, error } = await supabase
-      .from('python_tasks')
-      .select('*')
-      .match({ status: 'pending' })
-      .order('created_at', { ascending: true })
-      .limit(1);
-    
+    // Utiliser la fonction claim_next_pending_task pour récupérer et verrouiller la prochaine tâche
+    const { data: tasks, error } = await supabase
+      .rpc('claim_next_pending_task', { 
+        worker_id_input: workerId 
+      });
+
     if (error) {
-      throw new SupabaseError('Failed to query pending tasks', error);
-    }
-    
-    // Aucune tâche en attente
-    if (!data || data.length === 0) {
+      console.error(`❌ [Python Worker ${workerId}] Error claiming next task:`, error);
       return;
     }
-    
-    const task = data[0];
-    
-    console.log(`🔍 [Python Worker ${WORKER_CONFIG.id}] Found pending task: ${task.id} (type: ${task.task_type})`);
-    
-    // Mettre à jour le statut de la tâche en 'processing'
-    const { error: updateError } = await supabase
-      .from('python_tasks')
-      .update({ 
-        status: 'processing', 
-        worker_id: WORKER_CONFIG.id,
-        updated_at: new Date().toISOString() 
-      })
-      .match({ id: task.id, status: 'pending' });
-      
-    if (updateError) {
-      throw new SupabaseError('Failed to update task status', updateError);
+
+    console.log("task -->", tasks)
+
+    if (!tasks || tasks.length === 0) {
+      return;
     }
+
+    const task = tasks[0];
     
-    // Traiter la tâche
-    await processPythonTask(task, WORKER_CONFIG.id);
-    
-  } catch (error) {
-    if (error instanceof WorkerError) {
-      console.error(`❌ [Python Worker ${WORKER_CONFIG.id}] Error:`, error.message, error);
+    if (task.scheduled_for) {
+      const scheduledHour = new Date(task.scheduled_for);
+      console.log(`🔍 [Python Worker ${workerId}] Claimed task: ${task.id} (type: ${task.task_type}) scheduled for ${scheduledHour.toISOString()}`);
     } else {
-      console.error(`❌ [Python Worker ${WORKER_CONFIG.id}] Unexpected error:`, error);
+      console.log(`🔍 [Python Worker ${workerId}] Claimed task: ${task.id} (type: ${task.task_type})`);
     }
+
+    // Traiter la tâche
+    await processPythonTask(task, workerId);
+
+  } catch (error) {
+    console.error(`❌ [Python Worker ${workerId}] Error in findAndProcessTask:`, error);
   }
 }
 
@@ -192,8 +179,8 @@ async function startWorker() {
       // Attendre un peu pour éviter les collisions avec d'autres workers
       await randomSleep(100, 500);
       
-      // Vérifier les tâches en attente
-      await checkForPendingTasks();
+      // Trouver et traiter une tâche
+      await findAndProcessTask(WORKER_CONFIG.id);
       
       // Réinitialiser le compteur d'erreurs si tout va bien
       consecutiveErrors = 0;
