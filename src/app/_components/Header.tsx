@@ -17,7 +17,11 @@ const Header = () => {
   const [isLanguageOpen, setIsLanguageOpen] = useState(false);
   const t = useTranslations('header');
   const pathname = usePathname();
-  const { showBlueSkyDMNotification } = useDashboardState();
+  
+  // N'utilise useDashboardState que si on n'est pas sur la page signin
+  const isSignInPage = pathname.includes('/auth/signin');
+  const dashboardState = !isSignInPage ? useDashboardState() : null;
+  const showBlueSkyDMNotification = dashboardState?.showBlueSkyDMNotification || false;
 
   // console.log("showBlueSkyDMNotification ->",showBlueSkyDMNotification)
 
@@ -132,7 +136,7 @@ const Header = () => {
                             <span className="hidden group-hover:block text-sm text-white">{t('settings')}</span>
                           </Link>
 
-                          {showBlueSkyDMNotification && (
+                          {/* {showBlueSkyDMNotification && (
                             <Link
                               href="/settings?highlight=bluesky_dm"
                               className="relative p-2 rounded-full hover:bg-white/10 transition-colors"
@@ -147,7 +151,7 @@ const Header = () => {
                                 </span>
                               </div>
                             </Link>
-                          )}
+                          )} */}
                           <button
                             onClick={async () => {
                               try {

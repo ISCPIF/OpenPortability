@@ -36,7 +36,7 @@ export type PythonTaskType = 'test-dm' | 'send-reco-newsletter';
 export interface PythonTask {
   id: string;
   user_id: string;
-  status: 'pending' | 'processing' | 'completed' | 'failed';
+  status: 'pending' | 'processing' | 'completed' | 'failed' | 'waiting';
   task_type: PythonTaskType;
   payload: Record<string, any>;
   result?: Record<string, any> | null;
@@ -44,6 +44,8 @@ export interface PythonTask {
   created_at: string;
   updated_at: string;
   worker_id?: string | null;
+  platform: 'bluesky' | 'mastodon';
+  scheduled_for?: string;
 }
 
 /**
@@ -51,7 +53,7 @@ export interface PythonTask {
  */
 async function updateTaskStatus(
   taskId: string, 
-  status: 'pending' | 'processing' | 'completed' | 'failed',
+  status: 'pending' | 'processing' | 'completed' | 'failed' | 'waiting',
   result: Record<string, any> | null = null,
   errorLog: string | null = null
 ): Promise<void> {
@@ -59,9 +61,10 @@ async function updateTaskStatus(
     const { error } = await supabase
       .from('python_tasks')
       .update({
-        status,
+        status: status as string, // Cast en string pour éviter les guillemets
         result,
         error_log: errorLog,
+        worker_id: status === 'pending' ? null : undefined, // Réinitialiser worker_id si pending
         updated_at: new Date().toISOString()
       })
       .match({ id: taskId });
@@ -77,28 +80,93 @@ async function updateTaskStatus(
 }
 
 /**
- * Exécute le test DM via le script Python
+ * Met à jour le statut de support personnalisé pour un utilisateur
  */
-async function executeTestDm(task: PythonTask, workerId: string): Promise<Record<string, any>> {
+async function updatePersonalizedSupportStatus(
+  userId: string,
+  platform: 'bluesky' | 'mastodon',
+  isActive: boolean
+): Promise<void> {
   try {
-    console.log(`🐍 [Python Worker ${workerId}] Executing test-dm for user ${task.user_id} with handle ${task.payload.handle}`);
+    // Vérifier si une entrée existe déjà
+    const { data, error: selectError } = await supabase
+      .from('personalized_support_listing')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('platform', platform)
+      .single();
+
+    const now = new Date().toISOString();
+
+    if (selectError && selectError.code !== 'PGRST116') { // PGRST116 = not found
+      throw selectError;
+    }
+
+    if (data) {
+      // Mettre à jour l'entrée existante
+      const { error } = await supabase
+        .from('personalized_support_listing')
+        .update({
+          is_active: isActive,
+          updated_at: now
+        })
+        .eq('user_id', userId)
+        .eq('platform', platform);
+
+      if (error) throw error;
+    } else {
+      // Créer une nouvelle entrée
+      const { error } = await supabase
+        .from('personalized_support_listing')
+        .insert({
+          user_id: userId,
+          platform,
+          is_active: isActive,
+          created_at: now,
+          updated_at: now
+        });
+
+      if (error) throw error;
+    }
+
+    console.log(`✅ Updated personalized support status for user ${userId} on ${platform} to ${isActive}`);
+  } catch (error) {
+    console.error(`❌ Error updating personalized support status for user ${userId}:`, error);
+    throw error;
+  }
+}
+
+/**
+ * Exécute l'envoi d'un DM via le script Python
+ */
+async function executeDm(task: PythonTask, workerId: string, customMessage?: string): Promise<Record<string, any>> {
+  try {
+    console.log(`🐍 [Python Worker ${workerId}] Executing DM for user ${task.user_id} with handle ${task.payload.handle}`);
     
-    // Vérifier que le payload contient un handle Bluesky
+    // Vérifier que le payload contient un handle
     if (!task.payload.handle) {
-      throw new Error('Missing Bluesky handle in task payload');
+      throw new Error('Missing handle in task payload');
     }
     
-    // Chemin vers le script Python
-    const scriptPath = path.resolve(process.cwd(), './testDm.py');
+    // Chemin vers le script Python selon la plateforme
+    const scriptPath = path.resolve(process.cwd(), 
+      task.platform === 'bluesky' ? './testDm_bluesky.py' : './testDm_mastodon.py'
+    );
     
-    // Exécuter le script Python avec le handle comme argument en utilisant l'environnement virtuel
+    // Préparer les arguments pour le script Python
+    const args = [task.payload.handle];
+    if (customMessage) {
+      args.push(customMessage);
+    }
+    
+    // Exécuter le script Python avec les arguments en utilisant l'environnement virtuel
     const pythonExecutable = process.env.VIRTUAL_ENV ? `${process.env.VIRTUAL_ENV}/bin/python` : 'python3';
-    const { stdout, stderr } = await execPromise(`${pythonExecutable} ${scriptPath} ${task.payload.handle}`);
+    const { stdout, stderr } = await execPromise(`${pythonExecutable} ${scriptPath} ${args.map(arg => `'${arg}'`).join(' ')}`);
     
-    console.log(`🐍 [Python Worker ${workerId}] test-dm script output:`, stdout);
+    console.log(`🐍 [Python Worker ${workerId}] DM script output:`, stdout);
     
     if (stderr && !stdout.includes('Successfully sent DM') && !stdout.includes('Message envoyé avec succès')) {
-      console.error(`❌ [Python Worker ${workerId}] test-dm script error:`, stderr);
+      console.error(`❌ [Python Worker ${workerId}] DM script error:`, stderr);
       
       // Déterminer si l'utilisateur doit suivre la plateforme
       if (stderr.includes('recipient requires incoming messages to come from someone they follow') ||
@@ -130,56 +198,103 @@ async function executeTestDm(task: PythonTask, workerId: string): Promise<Record
       success: false,
       error: 'Unknown error sending DM'
     };
+    
   } catch (error) {
-    console.error(`❌ [Python Worker ${workerId}] Error in executeTestDm:`, error);
+    console.error(`❌ [Python Worker ${workerId}] Error in executeDm:`, error);
     throw error;
   }
 }
 
 /**
- * Exécute l'envoi de newsletter de recommandations
+ * Crée une nouvelle tâche newsletter programmée pour la semaine suivante
  */
-async function executeSendRecoNewsletter(task: PythonTask, workerId: string): Promise<Record<string, any>> {
+async function scheduleNextNewsletter(task: PythonTask): Promise<void> {
   try {
-    console.log(`🐍 [Python Worker ${workerId}] Executing send-reco-newsletter for user ${task.user_id}`);
-    
-    // Chemin vers le script Python
-    const scriptPath = path.resolve(process.cwd(), './sendRecoNewsletter.py');
-    
-    // Préparer les arguments JSON pour le script
-    const jsonArgs = JSON.stringify(task.payload);
-    
-    // Exécuter le script Python avec les arguments JSON en utilisant l'environnement virtuel
-    const pythonExecutable = process.env.VIRTUAL_ENV ? `${process.env.VIRTUAL_ENV}/bin/python` : 'python3';
-    const { stdout, stderr } = await execPromise(`${pythonExecutable} ${scriptPath} '${jsonArgs}'`);
-    
-    console.log(`🐍 [Python Worker ${workerId}] send-reco-newsletter script output:`, stdout);
-    
-    if (stderr) {
-      console.error(`❌ [Python Worker ${workerId}] send-reco-newsletter script error:`, stderr);
-      return {
-        success: false,
-        error: stderr
-      };
-    }
-    
-    // Analyser la sortie JSON
-    try {
-      const result = JSON.parse(stdout);
-      return {
-        success: true,
-        ...result
-      };
-    } catch (e) {
-      return {
-        success: true,
-        raw_output: stdout
-      };
-    }
+    // Utiliser la date actuelle si pas de scheduled_for
+    const currentDate = task.scheduled_for ? new Date(task.scheduled_for) : new Date();
+    const nextScheduledDate = new Date(currentDate);
+    nextScheduledDate.setDate(nextScheduledDate.getDate() + 7); // Ajoute 7 jours
+
+    const { error } = await supabase
+      .from('python_tasks')
+      .insert({
+        user_id: task.user_id,
+        status: 'pending',
+        task_type: 'send-reco-newsletter',
+        platform: task.platform,
+        scheduled_for: nextScheduledDate.toISOString(),
+        payload: task.payload, // Garder le même payload
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      });
+
+    if (error) throw error;
+    console.log(`✅ Scheduled next newsletter for user ${task.user_id} at ${nextScheduledDate.toISOString()}`);
   } catch (error) {
-    console.error(`❌ [Python Worker ${workerId}] Error in executeSendRecoNewsletter:`, error);
+    console.error(`❌ Error scheduling next newsletter:`, error);
     throw error;
   }
+}
+
+/**
+ * Vérifie si une tâche programmée doit être exécutée maintenant
+ */
+function shouldExecuteScheduledTask(task: PythonTask): boolean {
+  if (task.task_type === 'test-dm') return true;
+  
+  if (task.task_type === 'send-reco-newsletter') {
+    if (!task.scheduled_for) return false;
+    
+    const scheduledTime = new Date(task.scheduled_for);
+    const now = new Date();
+    
+    // Exécuter si l'heure programmée est passée
+    return scheduledTime <= now;
+  }
+  
+  return false;
+}
+
+/**
+ * Récupère les statistiques des utilisateurs qui ne nous suivent pas encore
+ */
+async function getUnfollowedStats(userId: string): Promise<{ bluesky: number, mastodon: number }> {
+  const PAGE_SIZE = 1000;
+  let page = 0;
+  let stats = { bluesky: 0, mastodon: 0 };
+  let hasMore = true;
+
+  while (hasMore) {
+    const { data, error } = await supabase.rpc('get_followable_targets', {
+      user_id: userId,
+      page_size: PAGE_SIZE,
+      page_number: page
+    });
+
+    if (error) {
+      console.error('Error fetching unfollowed stats:', error);
+      break;
+    }
+
+    if (!data || data.length === 0) {
+      hasMore = false;
+      break;
+    }
+
+    // Compter les utilisateurs non suivis sur chaque plateforme
+    data.forEach((target: any) => {
+      if (target.bluesky_handle && !target.has_follow_bluesky) {
+        stats.bluesky++;
+      }
+      if (target.mastodon_username && !target.has_follow_mastodon) {
+        stats.mastodon++;
+      }
+    });
+
+    page++;
+  }
+
+  return stats;
 }
 
 /**
@@ -189,16 +304,54 @@ export async function processPythonTask(task: PythonTask, workerId: string): Pro
   console.log(`🐍 [Python Worker ${workerId}] Processing task ${task.id} of type ${task.task_type}`);
   
   try {
+    // Vérifier si la tâche doit être exécutée maintenant
+    // if (task.scheduled_for) {
+    //   const scheduledHour = new Date(task.scheduled_for);
+    //   const now = new Date();
+    //   console.log(`⏰ Current time before truncation: ${now.toISOString()}`);
+      
+    //   // Arrondir les deux dates à l'heure
+    //   scheduledHour.setMinutes(0, 0, 0);
+    //   now.setMinutes(0, 0, 0);
+      
+    //   console.log(`⏰ Comparing dates after truncation:`);
+    //   console.log(`   - Scheduled hour: ${scheduledHour.toISOString()} (${scheduledHour.getTime()})`);
+    //   console.log(`   - Current hour:   ${now.toISOString()} (${now.getTime()})`);
+    //   console.log(`   - Difference:     ${(scheduledHour.getTime() - now.getTime()) / 1000 / 60} minutes`);
+      
+    //   if (scheduledHour > now) {
+    //     console.log(`⏰ Task ${task.id} is scheduled for later at ${task.scheduled_for}`);
+    //     // Remettre la tâche en pending pour qu'elle puisse être reprise plus tard
+    //     await updateTaskStatus(task.id, 'pending', null, null);
+    //     return;
+    //   } else {
+    //     console.log(`⏰ Task ${task.id} should be executed now (original schedule: ${task.scheduled_for})`);
+    //   }
+    // }
+
     let result: Record<string, any>;
     
     // Exécuter la fonction appropriée selon le type de tâche
     switch (task.task_type) {
       case 'test-dm':
-        result = await executeTestDm(task, workerId);
+        result = await executeDm(task, workerId);
+        await updatePersonalizedSupportStatus(task.user_id, task.platform, result.success);
         break;
         
       case 'send-reco-newsletter':
-        result = await executeSendRecoNewsletter(task, workerId);
+        // Récupérer les stats des utilisateurs non suivis
+        const stats = await getUnfollowedStats(task.user_id);
+        const platformStats = task.platform === 'bluesky' ? stats.bluesky : stats.mastodon;
+        
+        // Créer le message personnalisé
+        const message = `Bonjour ! Il y a ${platformStats} personnes que vous suiviez sur Twitter et qui sont maintenant sur ${task.platform === 'bluesky' ? 'Bluesky' : 'Mastodon'} ! Rendez-vous sur openportability.org pour les retrouver 🚀`;
+        
+        result = await executeDm(task, workerId, message);
+        await updatePersonalizedSupportStatus(task.user_id, task.platform, result.success);
+        
+        if (result.success) {
+          await scheduleNextNewsletter(task);
+        }
         break;
         
       default:
@@ -217,6 +370,13 @@ export async function processPythonTask(task: PythonTask, workerId: string): Pro
     
   } catch (error) {
     console.error(`❌ [Python Worker ${workerId}] Error processing task ${task.id}:`, error);
+    
+    // Mettre à jour le statut de support personnalisé en cas d'erreur
+    try {
+      await updatePersonalizedSupportStatus(task.user_id, task.platform, false);
+    } catch (supportError) {
+      console.error(`💥 [Python Worker ${workerId}] Failed to update support status:`, supportError);
+    }
     
     // Mettre à jour le statut en cas d'erreur
     try {

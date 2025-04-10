@@ -40,6 +40,8 @@ export default function NewsLetterFirstSeen({ userId, onSubscribe, onClose }: Ne
   const [acceptResearch, setAcceptResearch] = useState(false)
   const [hqx_newsletter, setHqxNewsletter] = useState(false)
   const [personalizedSupport, setPersonalizedSupport] = useState(false)
+  const [blueskyDm, setBlueskyDm] = useState(false)
+  const [mastodonDm, setMastodonDm] = useState(false)
   const [error, setError] = useState('')
   const [isLanguageOpen, setIsLanguageOpen] = useState(false)
   const t = useTranslations('firstSeen')
@@ -121,6 +123,8 @@ export default function NewsLetterFirstSeen({ userId, onSubscribe, onClose }: Ne
       const currentOEP = acceptOEP;
       const currentHqxNewsletter = hqx_newsletter;
       const currentPersonalizedSupport = personalizedSupport;
+      const currentBlueskyDm = blueskyDm;
+      const currentMastodonDm = mastodonDm;
 
       // Envoyer une seule requête avec tous les consentements
       const response = await fetch(`/api/newsletter/request`, {
@@ -133,7 +137,9 @@ export default function NewsLetterFirstSeen({ userId, onSubscribe, onClose }: Ne
             { type: 'email_newsletter', value: currentHqxNewsletter },
             { type: 'oep_newsletter', value: currentOEP },
             { type: 'research_participation', value: currentResearch },
-            { type: 'personalized_support', value: currentPersonalizedSupport }
+            { type: 'personalized_support', value: currentPersonalizedSupport },
+            { type: 'bluesky_dm', value: currentBlueskyDm },
+            { type: 'mastodon_dm', value: currentMastodonDm }
           ]
         }),
       });
@@ -347,6 +353,49 @@ export default function NewsLetterFirstSeen({ userId, onSubscribe, onClose }: Ne
               {t('newsletter.personalizedSupport')}
             </span>
           </div>
+
+          {/* Sub-switches for personalized support */}
+          {personalizedSupport && (
+            <div className="ml-8 space-y-3">
+              <div className="flex items-center space-x-3">
+                <Switch
+                  checked={blueskyDm}
+                  onChange={setBlueskyDm}
+                  className={`${
+                    blueskyDm ? 'bg-blue-600' : 'bg-gray-200'
+                  } relative inline-flex h-[24px] w-[44px] shrink-0 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2`}
+                >
+                  <span
+                    className={`${
+                      blueskyDm ? 'translate-x-[22px]' : 'translate-x-[2px]'
+                    } inline-block h-[20px] w-[20px] transform rounded-full bg-white transition-transform`}
+                  />
+                </Switch>
+                <span className="text-sm text-gray-700">
+                  {t('newsletter.blueskyDM')}
+                </span>
+              </div>
+
+              <div className="flex items-center space-x-3">
+                <Switch
+                  checked={mastodonDm}
+                  onChange={setMastodonDm}
+                  className={`${
+                    mastodonDm ? 'bg-blue-600' : 'bg-gray-200'
+                  } relative inline-flex h-[24px] w-[44px] shrink-0 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2`}
+                >
+                  <span
+                    className={`${
+                      mastodonDm ? 'translate-x-[22px]' : 'translate-x-[2px]'
+                    } inline-block h-[20px] w-[20px] transform rounded-full bg-white transition-transform`}
+                  />
+                </Switch>
+                <span className="text-sm text-gray-700">
+                  {t('newsletter.mastodonDM')}
+                </span>
+              </div>
+            </div>
+          )}
 
           <div className="flex items-center space-x-3">
             <Switch

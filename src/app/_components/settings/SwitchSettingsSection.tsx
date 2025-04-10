@@ -33,6 +33,8 @@ export default function SwitchSettingsSection({
 }: SwitchSettingsSectionProps) {
   const t = useTranslations('settings');
 
+
+  console.log("CONSENTS FRONT SWITCH", consents)
   const renderSwitch = (
     type: ConsentType,
     title: string,
@@ -73,7 +75,7 @@ export default function SwitchSettingsSection({
           'email_newsletter',
           t('notifications.hqxNewsletter.title'),
           t('notifications.hqxNewsletter.description'),
-          consents.email_newsletter || false,
+          consents?.email_newsletter ?? false,
           (value) => {
             onConsentChange('email_newsletter', value);
             if (value) {
@@ -124,7 +126,7 @@ export default function SwitchSettingsSection({
         'oep_newsletter',
         t('notifications.oepNewsletter.title'),
         t('notifications.oepNewsletter.description'),
-        consents.oep_newsletter || false,
+        consents?.oep_newsletter ?? false,
         (value) => onConsentChange('oep_newsletter', value)
       )}
 
@@ -133,8 +135,37 @@ export default function SwitchSettingsSection({
         'research_participation',
         t('notifications.research.title'),
         t('notifications.research.description'),
-        consents.research_participation || false,
+        consents?.research_participation ?? false,
         (value) => onConsentChange('research_participation', value)
+      )}
+
+      {/* Personalized Support */}
+      {renderSwitch(
+        'personalized_support',
+        t('notifications.personalizedSupport.title'),
+        t('notifications.personalizedSupport.description'),
+        consents?.personalized_support ?? false,
+        (value) => onConsentChange('personalized_support', value)
+      )}
+
+      {/* Sub-switches for personalized support */}
+      {consents?.personalized_support && (
+        <div className="ml-6 space-y-4 border-l-2 border-white/20 pl-6">
+          {renderSwitch(
+            'bluesky_dm',
+            t('notifications.blueskyDM.title'),
+            t('notifications.blueskyDM.description'),
+            consents?.bluesky_dm ?? false,
+            (value) => onConsentChange('bluesky_dm', value)
+          )}
+          {renderSwitch(
+            'mastodon_dm',
+            t('notifications.mastodonDM.title'),
+            t('notifications.mastodonDM.description'),
+            consents?.mastodon_dm ?? false,
+            (value) => onConsentChange('mastodon_dm', value)
+          )}
+        </div>
       )}
     </div>
   );

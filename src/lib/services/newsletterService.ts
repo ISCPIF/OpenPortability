@@ -6,6 +6,17 @@ export interface Consent {
   value: boolean;
 }
 
+// Type pour les données brutes reçues de l'API
+export interface RawNewsletterResponse {
+  email?: string;
+  email_newsletter?: boolean;
+  oep_newsletter?: boolean;
+  research_participation?: boolean;
+  personalized_support?: boolean;
+  bluesky_dm?: boolean;
+  mastodon_dm?: boolean;
+}
+
 export interface NewsletterData {
   email?: string;
   consents: {
@@ -16,7 +27,7 @@ export interface NewsletterData {
 /**
  * Fetches all newsletter data
  */
-export const fetchNewsletterData = async (): Promise<NewsletterData> => {
+export const fetchNewsletterData = async (): Promise<RawNewsletterResponse> => {
   const response = await fetch('/api/newsletter/request', {
     method: 'GET',
     headers: { 'Content-Type': 'application/json' }
