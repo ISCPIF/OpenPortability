@@ -17,9 +17,34 @@ async function deleteHandler() {
       }
 
     const userId = session.user.id
+
+    // Supprimer d'abord les newsletter_consents pour tous les utilisateurs
+    const { error: newsletterConsentError } = await supabase
+      .from('newsletter_consents')
+      .delete()
+      .eq('user_id', userId)
+
+    if (newsletterConsentError) {
+      logger.logError('API', 'DELETE /api/delete', new Error(newsletterConsentError.message), userId, { context: 'Deleting newsletter_consent' })
+      throw new Error(newsletterConsentError.message)
+    }
+    console.log('API', 'DELETE /api/delete', 'Successfully deleted newsletter_consent entries', userId)
+
+    // Supprimer les python_tasks
+    const { error: pythonTasksError } = await supabase
+      .from('python_tasks')
+      .delete()
+      .eq('user_id', userId)
+
+    if (pythonTasksError) {
+      logger.logError('API', 'DELETE /api/delete', new Error(pythonTasksError.message), userId, { context: 'Deleting python_tasks' })
+      throw new Error(pythonTasksError.message)
+    }
+    console.log('API', 'DELETE /api/delete', 'Successfully deleted python_tasks entries', userId)
+
     // 1. Si l'utilisateur a has_onboarded = true
     if (session.user.has_onboarded) {
-        logger.logInfo('API', 'DELETE /api/delete', 'User has onboarded, cleaning up public schema data', userId)
+        console.log('API', 'DELETE /api/delete', 'User has onboarded, cleaning up public schema data', userId)
 
         // Supprimer l'import_job dans le schema public
         const { error: importJobError } = await supabase
@@ -31,7 +56,7 @@ async function deleteHandler() {
           logger.logError('API', 'DELETE /api/delete', new Error(importJobError.message), userId, { context: 'Deleting import_job' })
           throw new Error(importJobError.message)
         }
-        logger.logInfo('API', 'DELETE /api/delete', 'Successfully deleted import_job', userId)
+        console.log('API', 'DELETE /api/delete', 'Successfully deleted import_job', userId)
 
         const { error: userStatsError } = await supabase
         .from('user_stats_cache')
@@ -42,7 +67,7 @@ async function deleteHandler() {
         logger.logError('API', 'DELETE /api/delete', new Error(userStatsError.message), userId, { context: 'Deleting user_stats_cache' })
         throw new Error(userStatsError.message)
       }
-      logger.logInfo('API', 'DELETE /api/delete', 'Successfully deleted userStatsCache', userId)
+      console.log('API', 'DELETE /api/delete', 'Successfully deleted userStatsCache', userId)
 
         const { error: sourceError } = await supabase
         .from('sources')
@@ -53,7 +78,7 @@ async function deleteHandler() {
         logger.logError('API', 'DELETE /api/delete', new Error(sourceError.message), userId, { context: 'Deleting source' })
         throw new Error(sourceError.message)
       }
-      logger.logInfo('API', 'DELETE /api/delete', 'Successfully deleted source', userId)
+      console.log('API', 'DELETE /api/delete', 'Successfully deleted source', userId)
 
       // Mettre à jour has_onboarded à false dans next-auth
       const { error: hasBoardError } = await authClient
@@ -65,7 +90,7 @@ async function deleteHandler() {
         logger.logError('API', 'DELETE /api/delete', new Error(hasBoardError.message), userId, { context: 'Updating has_onboarded' })
         throw new Error(hasBoardError.message)
       }
-      logger.logInfo('API', 'DELETE /api/delete', 'Successfully updated has_onboarded to false', userId)
+      console.log('API', 'DELETE /api/delete', 'Successfully updated has_onboarded to false', userId)
     }
 
     const { error: deleteError } = await authClient
@@ -77,7 +102,7 @@ async function deleteHandler() {
       logger.logError('API', 'DELETE /api/delete', new Error(deleteError.message), userId, { context: 'Deleting user' })
       throw new Error(deleteError.message)
     }
-    logger.logInfo('API', 'DELETE /api/delete', 'Successfully deleted user', userId)
+    console.log('API', 'DELETE /api/delete', 'Successfully deleted user', userId)
     
     return NextResponse.json(
       { message: 'Account deleted successfully' },

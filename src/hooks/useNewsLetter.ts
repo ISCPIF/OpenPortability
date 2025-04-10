@@ -4,7 +4,8 @@ import {
   fetchNewsletterData,
   updateNewsletterConsent,
   ConsentType,
-  NewsletterData
+  NewsletterData,
+  RawNewsletterResponse
 } from '@/lib/services/newsletterService';
 
 /**
@@ -31,7 +32,22 @@ export function useNewsletter() {
     const loadData = async () => {
       try {
         setIsLoading(true);
-        const newsletterData = await fetchNewsletterData();
+        const rawData: RawNewsletterResponse = await fetchNewsletterData();
+        console.log("NESLWTTER DATA FROM USENEWSLETTER --->", rawData);
+        
+        // Transformer les données brutes en NewsletterData
+        const newsletterData: NewsletterData = {
+          email: rawData.email,
+          consents: {
+            email_newsletter: rawData.email_newsletter ?? false,
+            oep_newsletter: rawData.oep_newsletter ?? false,
+            research_participation: rawData.research_participation ?? false,
+            personalized_support: rawData.personalized_support ?? false,
+            bluesky_dm: rawData.bluesky_dm ?? false,
+            mastodon_dm: rawData.mastodon_dm ?? false
+          }
+        };
+        
         setData(newsletterData);
         setError(null);
       } catch (err) {
@@ -106,11 +122,18 @@ export function useNewsletter() {
   };
 
   // Helper getters for common consents
-  const getConsent = (type: ConsentType) => data.consents[type] ?? false;
+  const getConsent = (type: ConsentType) => data?.consents?.[type] ?? false;
 
   return {
-    email: data.email,
-    consents: data.consents,
+    email: data?.email,
+    consents: data?.consents ?? {
+      email_newsletter: false,
+      oep_newsletter: false,
+      research_participation: false,
+      personalized_support: false,
+      bluesky_dm: false,
+      mastodon_dm: false
+    },
     isLoading,
     error,
     updateConsent,

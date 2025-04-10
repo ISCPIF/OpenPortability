@@ -159,10 +159,10 @@ export class UserService {
    * @returns Un objet avec les types de consentement comme clés et les valeurs de consentement comme valeurs
    */
   async getUserActiveConsents(userId: string): Promise<Record<string, boolean>> {
-    console.log('🔍 [UserService.getUserActiveConsents] Getting consents for user:', userId);
+    // console.log('🔍 [UserService.getUserActiveConsents] Getting consents for user:', userId);
     try {
       const consents = await this.repository.getUserActiveConsents(userId);
-      console.log('✅ [UserService.getUserActiveConsents] Got consents:', consents);
+      // console.log('✅ [UserService.getUserActiveConsents] Got consents:', consents);
       return consents;
     } catch (error) {
       console.error('❌ [UserService.getUserActiveConsents] Error:', error);

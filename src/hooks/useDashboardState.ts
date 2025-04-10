@@ -5,14 +5,14 @@ import { useRouter } from 'next/navigation';
 import { useStats } from './useStats';
 import { useMastodonInstances } from './useMastodonInstances';
 import { UserSession } from '@/lib/types/common';
-import { useNewsLetter } from './useNewsLetter';
+import { useNewsletter } from './useNewsLetter';
 
 export function useDashboardState() {
   const { data: session, status, update } = useSession();
   const router = useRouter();
   const { stats, globalStats, isLoading: statsLoading } = useStats();
   const mastodonInstances = useMastodonInstances();
-  const { preferences: apiPreferences, isLoading: preferencesLoading } = useNewsLetter();
+  const { consents: apiPreferences, isLoading: preferencesLoading } = useNewsletter();
   
   const [isLoading, setIsLoading] = useState(true);
   const [showNewsletterModal, setShowNewsletterModal] = useState(false);
