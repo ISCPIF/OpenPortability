@@ -245,4 +245,39 @@ export class UserRepository {
       }
     }
   }
+
+  async getUserLanguagePreference(userId: string) {
+    const { data, error } = await supabase
+      .from('language_pref')
+      .select('*')
+      .eq('user_id', userId)
+      .single();
+    
+    if (error) {
+      logError('Repository', 'UserRepository.getUserLanguagePreference', error, userId);
+      throw error;
+    }
+    
+    return data;
+  }
+
+  async updateLanguagePreference(
+    userId: string,
+    language: string,
+  ): Promise<void> {
+    const { error } = await supabase
+      .from('language_pref')
+      .upsert({
+        user_id: userId,
+        language,
+        updated_at: new Date().toISOString()
+      }, {
+        onConflict: 'user_id'
+      });
+
+    if (error) {
+      logError('Repository', 'UserRepository.updateLanguagePreference', error, userId);
+      throw error;
+    }
+  }
 }

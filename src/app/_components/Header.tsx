@@ -23,8 +23,6 @@ const Header = () => {
   const dashboardState = !isSignInPage ? useDashboardState() : null;
   const showBlueSkyDMNotification = dashboardState?.showBlueSkyDMNotification || false;
 
-  // console.log("showBlueSkyDMNotification ->",showBlueSkyDMNotification)
-
   const languages = [
     { code: 'fr', name: 'FR'},
     { code: 'en', name: 'EN'},
@@ -37,8 +35,24 @@ const Header = () => {
 
   const currentLocale = pathname.split('/')[1];
 
-  const switchLanguage = (locale: string) => {
+  const switchLanguage = async (locale: string) => {
     const newPath = pathname.replace(`/${currentLocale}`, `/${locale}`);
+    
+    // Si l'utilisateur est connecté, sauvegarder la préférence
+    if (session?.user?.id) {
+      try {
+        await fetch('/api/users/language', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ language: locale }),
+        });
+      } catch (error) {
+        console.error('Error saving language preference:', error);
+      }
+    }
+    
     window.location.href = newPath;
   };
 
