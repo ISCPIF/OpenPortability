@@ -1,5 +1,5 @@
 import { UserRepository } from '../repositories/userRepository';
-import { NewsletterUpdate, ShareEvent, User } from '../types/user';
+import { NewsletterUpdate, ShareEvent, User, RequestMetadata } from '../types/user';
 import { isValidEmail } from '../utils';
 
 export class UserService {
@@ -237,6 +237,28 @@ export class UserService {
     }
     
     return this.repository.insertNewsletterConsent(userId, consentType, consentValue, metadata);
+  }
+
+  async updateNewsletterConsent(
+    userId: string,
+    email: string | null,
+    value: boolean,
+    metadata: Record<string, any> = {}
+  ): Promise<void> {
+    // Valider l'email si fourni
+    if (email && !isValidEmail(email)) {
+      throw new Error('Invalid email format');
+    }
+
+    // Vérifier si l'email existe déjà pour un autre utilisateur
+    if (email) {
+      const existingUser = await this.repository.getUser(userId);
+      if (existingUser && existingUser.id !== userId) {
+        throw new Error('Email already exists');
+      }
+    }
+
+    await this.repository.updateNewsletterConsent(userId, email, value, metadata);
   }
 
   async updateUserOnboarded(userId: string, onboarded: boolean): Promise<void> {

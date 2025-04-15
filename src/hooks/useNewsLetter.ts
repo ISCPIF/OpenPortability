@@ -121,6 +121,39 @@ export function useNewsletter() {
     return true;
   };
 
+  /**
+   * Update multiple consents at once with optional email
+   */
+  const updateMultipleConsents = async (consents: { type: ConsentType, value: boolean }[], email?: string) => {
+    try {
+      // Optimistic update
+      setData(prev => ({
+        ...prev,
+        email: email || prev.email,
+        consents: {
+          ...prev.consents,
+          ...Object.fromEntries(consents.map(({ type, value }) => [type, value]))
+        }
+      }));
+
+      const success = await updateNewsletterConsent({ consents, email });
+
+      if (!success) {
+        // Revert on failure
+        setData(prev => ({
+          ...prev,
+          email: prev.email,
+          consents: { ...prev.consents }
+        }));
+        throw new Error('Failed to update consents');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error('Failed to update consents'));
+      return false;
+    }
+    return true;
+  };
+
   // Helper getters for common consents
   const getConsent = (type: ConsentType) => data?.consents?.[type] ?? false;
 
@@ -138,6 +171,7 @@ export function useNewsletter() {
     error,
     updateConsent,
     updateEmailWithNewsletter,
+    updateMultipleConsents,
     // Common consent getters
     hqxNewsletter: getConsent('email_newsletter'),
     oepAccepted: getConsent('oep_newsletter'),
