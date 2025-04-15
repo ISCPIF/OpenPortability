@@ -8,6 +8,7 @@ import NewsletterFirstSeen from '@/app/_components/NewsLetterFirstSeen';
 import notificationIcon from '../../../../public/newSVG/notif.svg';
 import { plex } from '@/app/fonts/plex';
 import { useTranslations } from 'next-intl';
+import { useNewsletter } from '@/hooks/useNewsLetter';
 
 type NewsletterSectionProps = {
   userId: string;
@@ -27,7 +28,15 @@ export default function NewsletterSection({
   onModalOpenChange
 }: NewsletterSectionProps) {
   const t = useTranslations('dashboard');
-  
+  const { hqxNewsletter: hasNewsletterConsent } = useNewsletter();
+
+  console.log('NewsletterSection', { hasNewsletterConsent, showModal });
+
+  // Ne rien afficher si l'utilisateur a déjà consenti
+  if (hasNewsletterConsent) {
+    return null;
+  }
+
   return (
     <>
       {/* Newsletter button */}

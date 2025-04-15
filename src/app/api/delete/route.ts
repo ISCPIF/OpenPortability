@@ -93,6 +93,18 @@ async function deleteHandler() {
       console.log('API', 'DELETE /api/delete', 'Successfully updated has_onboarded to false', userId)
     }
 
+    // Supprimer les entrées d'audit_log
+    const { error: auditLogError } = await supabase
+      .from('audit_log')
+      .delete()
+      .eq('user_id', userId)
+
+    if (auditLogError) {
+      logger.logError('API', 'DELETE /api/delete', new Error(auditLogError.message), userId, { context: 'Deleting audit_log entries' })
+      throw new Error(auditLogError.message)
+    }
+    console.log('API', 'DELETE /api/delete', 'Successfully deleted audit_log entries', userId)
+
     const { error: deleteError } = await authClient
     .from('users')
     .delete()

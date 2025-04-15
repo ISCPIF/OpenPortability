@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, memo } from 'react'
+import { useState, memo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, ChevronDown } from 'lucide-react'
 import { useTranslations } from 'next-intl'
@@ -12,7 +12,7 @@ import { Globe } from 'lucide-react'
 import { isValidEmail } from '@/lib/utils'
 import { Switch } from '@headlessui/react'
 import Link from 'next/link'
-
+import { useNewsletter, ConsentType } from '@/hooks/useNewsLetter'
 
 interface NewsLetterFirstSeenProps {
   userId: string
@@ -34,42 +34,25 @@ const NewsletterLink = memo(({ href, children }: { href: string; children: React
 NewsletterLink.displayName = 'NewsletterLink';
 
 export default function NewsLetterFirstSeen({ userId, onSubscribe, onClose }: NewsLetterFirstSeenProps) {
-  const [isLoading, setIsLoading] = useState(false)
+  const { updateMultipleConsents } = useNewsletter();
+  
   const [email, setEmail] = useState('')
-  const [acceptOEP, setAcceptOEP] = useState(false)
-  const [acceptResearch, setAcceptResearch] = useState(false)
-  const [hqx_newsletter, setHqxNewsletter] = useState(false)
-  const [personalizedSupport, setPersonalizedSupport] = useState(false)
-  const [blueskyDm, setBlueskyDm] = useState(false)
-  const [mastodonDm, setMastodonDm] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [isLanguageOpen, setIsLanguageOpen] = useState(false)
+  
+  // États locaux pour les consentements
+  const [localConsents, setLocalConsents] = useState({
+    email_newsletter: false,
+    oep_newsletter: false,
+    research_participation: false,
+    personalized_support: false,
+    bluesky_dm: false,
+    mastodon_dm: false
+  })
+  
   const t = useTranslations('firstSeen')
   const pathname = usePathname()
-
-  // useEffect(() => {
-  //   const fetchPreferences = async () => {
-  //     console.log('Fetching preferences...');
-  //     try {
-  //       const response = await fetch('/api/newsletter', { method: 'GET' });
-  //       console.log('Response status:', response.status);
-  //       if (response.ok) {
-  //         const responseData = await response.json();
-  //         console.log('Preferences data:', responseData);
-  //         // Access the nested data object
-  //         const preferences = responseData.data;
-  //         // Force boolean values with !!
-  //         setAcceptResearch(!!preferences.research_accepted);
-  //         setAcceptOEP(!!preferences.oep_accepted);
-  //         console.log('Set research to:', !!preferences.research_accepted);
-  //         console.log('Set OEP to:', !!preferences.oep_accepted);
-  //       }
-  //     } catch (error) {
-  //       console.error('Error fetching preferences:', error);
-  //     }
-  //   };
-  //   fetchPreferences();
-  // }, []);
 
   const languages = [
     { code: 'fr', name: 'FR' },
@@ -79,8 +62,8 @@ export default function NewsLetterFirstSeen({ userId, onSubscribe, onClose }: Ne
     { code: 'de', name: 'DE' },
     { code: 'sv', name: 'SV' },
     { code: 'pt', name: 'PT'},
-
-  ];
+  ]
+  
   const currentLocale = pathname.split('/')[1]
 
   const switchLanguage = (locale: string) => {
@@ -88,112 +71,73 @@ export default function NewsLetterFirstSeen({ userId, onSubscribe, onClose }: Ne
     window.location.href = newPath
   }
 
-  const handleSwitchChange = async (type: 'research' | 'oep', value: boolean) => {
-    console.log(`🔄 Switch changed: ${type} = ${value}`);
-    if (type === 'research') {
-      setAcceptResearch(value);
-      console.log('✅ Updated research to:', value);
-    } else {
-      setAcceptOEP(value);
-      console.log('✅ Updated OEP to:', value);
+  const handleLocalConsentChange = (type: ConsentType, value: boolean) => {
+    setLocalConsents(prev => ({
+      ...prev,
+      [type]: value,
+      // Si on désactive personalized_support, on désactive aussi les DMs
+      ...(type === 'personalized_support' && !value ? {
+        bluesky_dm: false,
+        mastodon_dm: false
+      } : {})
+    }))
+  }
+
+  const handleSubmit = async () => {
+    // Vérifier l'email si newsletter est activée
+    if (localConsents.email_newsletter && (!email || !isValidEmail(email))) {
+      setError(t('newsletter.errors.missingEmail'))
+      return
     }
-  };
 
-  const updatePreferences = async (submit: boolean) => {
+    setIsLoading(true)
+    setError('')
+
     try {
-      setIsLoading(true)
-      setError('')
+      // Préparer le tableau de tous les consentements avec leur valeur
+      const consentsToUpdate = Object.entries(localConsents).map(([type, value]) => ({
+        type: type as ConsentType,
+        value
+      }))
 
-      if (!submit) {
-        // Si c'est un dismiss, on fait juste une requête GET pour mettre à jour have_seen_newsletter
-        const response = await fetch(`/api/newsletter`, {
-          method: 'GET'
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to update preferences')
-        }
-
-        onClose?.()
-        return
-      }
-
-      // Get the current state values at the time of submission
-      const currentResearch = acceptResearch;
-      const currentOEP = acceptOEP;
-      const currentHqxNewsletter = hqx_newsletter;
-      const currentPersonalizedSupport = personalizedSupport;
-      const currentBlueskyDm = blueskyDm;
-      const currentMastodonDm = mastodonDm;
-
-      // Envoyer une seule requête avec tous les consentements
-      const response = await fetch(`/api/newsletter/request`, {
+      // Envoyer tous les consentements d'un coup
+      console.log("consents to update ---->", consentsToUpdate)
+      const response = await fetch('/api/newsletter/request', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          consents: [
-            { type: 'email_newsletter', value: currentHqxNewsletter },
-            { type: 'oep_newsletter', value: currentOEP },
-            { type: 'research_participation', value: currentResearch },
-            { type: 'personalized_support', value: currentPersonalizedSupport },
-            { type: 'bluesky_dm', value: currentBlueskyDm },
-            { type: 'mastodon_dm', value: currentMastodonDm }
-          ]
-        }),
-      });
+          consents: consentsToUpdate,
+          ...(localConsents.email_newsletter ? { email } : {})
+        })
+      })
 
-      if (!response.ok) {
-        throw new Error('Failed to update consents')
-      }
+      const data = await response.json()
 
-      // Mettre à jour l'email si nécessaire
-      if (currentHqxNewsletter && email) {
-        const response = await fetch(`/api/newsletter`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            email: email,
-            have_seen_newsletter: true
-          }),
-        });
-
-        if (!response.ok) {
-          const data = await response.json()
-          if (data.error === 'Missing required fields') {
-            setError(t('newsletter.errors.missingEmail'))
-            return
-          }
-          throw new Error(data.error || 'Failed to update email')
+      if (response.ok && data.success) {
+        onSubscribe?.()
+        onClose?.()
+      } else {
+        // Afficher l'erreur spécifique de l'API
+        const errorMessage = data.error?.message || t('newsletter.errors.updateFailed')
+        if (data.error?.code === '23505') {
+          setError(t('newsletter.errors.emailExists'))
+        } else {
+          setError(errorMessage)
         }
       }
-
-      onSubscribe?.()
-      onClose?.()
-    } catch (error) {
-      console.error('Error updating preferences:', error)
-      setError(error instanceof Error ? error.message : 'An error occurred')
+    } catch (err) {
+      console.error('Error updating consents:', err)
+      setError(t('newsletter.errors.updateFailed'))
     } finally {
       setIsLoading(false)
     }
   }
 
-  const handleSubmit = () => {
-    if (hqx_newsletter && (!email || !isValidEmail(email))) {
-      setError(t('newsletter.errors.missingEmail'))
-      return
-    }
-    updatePreferences(true)
-  }
-  const handleDismiss = () => updatePreferences(false)
-
-
   return (
-  <div className="bg-white rounded-2xl p-4 max-w-2xl md:max-w-3xl w-full relative max-h-[90vh] overflow-y-auto mx-auto">
-  <div className="absolute top-4 right-4 flex items-center gap-2">
+    <div className="bg-white rounded-2xl p-4 max-w-2xl md:max-w-3xl w-full relative max-h-[90vh] overflow-y-auto mx-auto">
+      <div className="absolute top-4 right-4 flex items-center gap-2">
         {/* Language Selector */}
         <div className="relative mr-6">
           <button
@@ -277,48 +221,46 @@ export default function NewsLetterFirstSeen({ userId, onSubscribe, onClose }: Ne
         </div>
 
         <div className="w-full max-w-xl bg-gray-100 p-6 rounded-lg space-y-4">
-        <div className="flex items-center space-x-3">
-              <Switch
-                checked={acceptResearch}
-                onChange={(newValue) => handleSwitchChange('research', newValue)}
+          <div className="flex items-center space-x-3">
+            <Switch
+              checked={localConsents.research_participation}
+              onChange={(value) => handleLocalConsentChange('research_participation', value)}
+              className={`${
+                localConsents.research_participation ? 'bg-blue-600' : 'bg-gray-200'
+              } relative inline-flex h-[24px] w-[44px] shrink-0 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2`}
+            >
+              <span
                 className={`${
-                  acceptResearch ? 'bg-blue-600' : 'bg-gray-200'
-                } relative inline-flex h-[24px] w-[44px] shrink-0 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2`}
-              >
-                <span
-                  className={`${
-                    acceptResearch ? 'translate-x-[22px]' : 'translate-x-[2px]'
-                  } inline-block h-[20px] w-[20px] transform rounded-full bg-white transition-transform`}
-                />
-              </Switch>
-              <span className="text-sm text-gray-700">
+                  localConsents.research_participation ? 'translate-x-[22px]' : 'translate-x-[2px]'
+                } inline-block h-[20px] w-[20px] transform rounded-full bg-white transition-transform`}
+              />
+            </Switch>
+            <span className="text-sm text-gray-700">
               {t('newsletter.researchConsent')}
-              </span>
-            </div>
-        
+            </span>
+          </div>
+
           <div className="space-y-2 text-sm">
             <div className="flex items-center space-x-3">
               <Switch
-                checked={hqx_newsletter}
-                onChange={(newValue) => setHqxNewsletter(newValue)}
+                checked={localConsents.email_newsletter}
+                onChange={(value) => handleLocalConsentChange('email_newsletter', value)}
                 className={`${
-                  hqx_newsletter ? 'bg-blue-600' : 'bg-gray-200'
+                  localConsents.email_newsletter ? 'bg-blue-600' : 'bg-gray-200'
                 } relative inline-flex h-[24px] w-[44px] shrink-0 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2`}
               >
                 <span
                   className={`${
-                    hqx_newsletter ? 'translate-x-[22px]' : 'translate-x-[2px]'
+                    localConsents.email_newsletter ? 'translate-x-[22px]' : 'translate-x-[2px]'
                   } inline-block h-[20px] w-[20px] transform rounded-full bg-white transition-transform`}
                 />
               </Switch>
               <span className="text-sm text-gray-700">
-              {t('newsletter.subtitle')}
+                {t('newsletter.subtitle')}
               </span>
-              {/* <p className="text-gray-700 text-sm">{t('newsletter.subtitle')}</p> */}
             </div>
 
-            {/* Champ email conditionnel */}
-            {hqx_newsletter && (
+            {localConsents.email_newsletter && (
               <div className="mt-2">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   {t('newsletter.emailLabel')} <span className="text-red-500">*</span>
@@ -337,15 +279,15 @@ export default function NewsLetterFirstSeen({ userId, onSubscribe, onClose }: Ne
 
           <div className="flex items-center space-x-3">
             <Switch
-              checked={personalizedSupport}
-              onChange={setPersonalizedSupport}
+              checked={localConsents.personalized_support}
+              onChange={(value) => handleLocalConsentChange('personalized_support', value)}
               className={`${
-                personalizedSupport ? 'bg-blue-600' : 'bg-gray-200'
+                localConsents.personalized_support ? 'bg-blue-600' : 'bg-gray-200'
               } relative inline-flex h-[24px] w-[44px] shrink-0 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2`}
             >
               <span
                 className={`${
-                  personalizedSupport ? 'translate-x-[22px]' : 'translate-x-[2px]'
+                  localConsents.personalized_support ? 'translate-x-[22px]' : 'translate-x-[2px]'
                 } inline-block h-[20px] w-[20px] transform rounded-full bg-white transition-transform`}
               />
             </Switch>
@@ -354,20 +296,19 @@ export default function NewsLetterFirstSeen({ userId, onSubscribe, onClose }: Ne
             </span>
           </div>
 
-          {/* Sub-switches for personalized support */}
-          {personalizedSupport && (
+          {localConsents.personalized_support && (
             <div className="ml-8 space-y-3">
               <div className="flex items-center space-x-3">
                 <Switch
-                  checked={blueskyDm}
-                  onChange={setBlueskyDm}
+                  checked={localConsents.bluesky_dm}
+                  onChange={(value) => handleLocalConsentChange('bluesky_dm', value)}
                   className={`${
-                    blueskyDm ? 'bg-blue-600' : 'bg-gray-200'
+                    localConsents.bluesky_dm ? 'bg-blue-600' : 'bg-gray-200'
                   } relative inline-flex h-[24px] w-[44px] shrink-0 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2`}
                 >
                   <span
                     className={`${
-                      blueskyDm ? 'translate-x-[22px]' : 'translate-x-[2px]'
+                      localConsents.bluesky_dm ? 'translate-x-[22px]' : 'translate-x-[2px]'
                     } inline-block h-[20px] w-[20px] transform rounded-full bg-white transition-transform`}
                   />
                 </Switch>
@@ -378,15 +319,15 @@ export default function NewsLetterFirstSeen({ userId, onSubscribe, onClose }: Ne
 
               <div className="flex items-center space-x-3">
                 <Switch
-                  checked={mastodonDm}
-                  onChange={setMastodonDm}
+                  checked={localConsents.mastodon_dm}
+                  onChange={(value) => handleLocalConsentChange('mastodon_dm', value)}
                   className={`${
-                    mastodonDm ? 'bg-blue-600' : 'bg-gray-200'
+                    localConsents.mastodon_dm ? 'bg-blue-600' : 'bg-gray-200'
                   } relative inline-flex h-[24px] w-[44px] shrink-0 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2`}
                 >
                   <span
                     className={`${
-                      mastodonDm ? 'translate-x-[22px]' : 'translate-x-[2px]'
+                      localConsents.mastodon_dm ? 'translate-x-[22px]' : 'translate-x-[2px]'
                     } inline-block h-[20px] w-[20px] transform rounded-full bg-white transition-transform`}
                   />
                 </Switch>
@@ -399,15 +340,15 @@ export default function NewsLetterFirstSeen({ userId, onSubscribe, onClose }: Ne
 
           <div className="flex items-center space-x-3">
             <Switch
-              checked={acceptOEP}
-              onChange={(newValue) => handleSwitchChange('oep', newValue)}
+              checked={localConsents.oep_newsletter}
+              onChange={(value) => handleLocalConsentChange('oep_newsletter', value)}
               className={`${
-                acceptOEP ? 'bg-blue-600' : 'bg-gray-200'
+                localConsents.oep_newsletter ? 'bg-blue-600' : 'bg-gray-200'
               } relative inline-flex h-[24px] w-[44px] shrink-0 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2`}
             >
               <span
                 className={`${
-                  acceptOEP ? 'translate-x-[22px]' : 'translate-x-[2px]'
+                  localConsents.oep_newsletter ? 'translate-x-[22px]' : 'translate-x-[2px]'
                 } inline-block h-[20px] w-[20px] transform rounded-full bg-white transition-transform`}
               />
             </Switch>
