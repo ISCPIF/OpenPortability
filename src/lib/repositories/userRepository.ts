@@ -182,32 +182,9 @@ export class UserRepository {
     consentValue: boolean,
     metadata: Record<string, any> = {}
   ): Promise<any> {
-    // Récupérer les consentements actifs actuels
-    const activeConsents = await this.getUserActiveConsents(userId);
-    
-    // Si le consentement actuel est identique, ne rien faire pour éviter les doublons
-    if (activeConsents[consentType] === consentValue) {
-      return null;
-    }
-    
-    // D'abord, désactiver tous les anciens consentements du même type
-    const { error: deactivateError } = await supabase
-      .from('newsletter_consents')
-      .update({ is_active: false })
-      .eq('user_id', userId)
-      .eq('consent_type', consentType)
-      .eq('is_active', true);
-    
-    if (deactivateError) {
-      logError('Repository', 'UserRepository.insertNewsletterConsent', deactivateError, userId, {
-        consentType,
-        consentValue,
-        operation: 'deactivate'
-      });
-      throw deactivateError;
-    }
-    
-    // Ensuite, insérer le nouveau consentement
+
+    console.log(' [UserRepository.insertNewsletterConsent] Inserting consent:', consentType, consentValue);
+    // Insérer le nouveau consentement (le trigger deactivate_previous_consents gérera la désactivation)
     const { data, error } = await supabase
       .from('newsletter_consents')
       .insert({
@@ -232,5 +209,40 @@ export class UserRepository {
     }
     
     return data;
+  }
+
+  async updateNewsletterConsent(
+    userId: string,
+    email: string | null,
+    value: boolean,
+    metadata: any
+  ): Promise<void> {
+    const { data, error } = await supabase
+      .from('newsletter_consents')
+      .upsert({
+        user_id: userId,
+        consent_type: 'email_newsletter',
+        consent_value: value,
+        ip_address: metadata.ip_address,
+        user_agent: metadata.user_agent
+      });
+
+    if (error) {
+      logError('Repository', 'UserRepository.updateNewsletterConsent', error);
+      throw error;
+    }
+
+    // Si un email est fourni, mettre à jour l'email de l'utilisateur
+    if (email) {
+      const { error: emailError } = await authClient
+        .from('users')
+        .update({ email })
+        .eq('id', userId);
+
+      if (emailError) {
+        logError('Repository', 'UserRepository.updateNewsletterConsent', emailError);
+        throw emailError;
+      }
+    }
   }
 }
