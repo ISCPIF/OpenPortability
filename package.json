@@ -27,7 +27,7 @@
     "framer-motion": "^12.4.7",
     "jszip": "^3.10.1",
     "lucide-react": "^0.475.0",
-    "next": "15.1.7",
+    "next": "^15.2.4",
     "next-auth": "^5.0.0-beta.25",
     "next-intl": "^3.26.5",
     "nodemailer": "^6.10.0",
