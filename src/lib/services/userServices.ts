@@ -1,5 +1,5 @@
 import { UserRepository } from '../repositories/userRepository';
-import { NewsletterUpdate, ShareEvent, User, RequestMetadata } from '../types/user';
+import { NewsletterUpdate, ShareEvent, User } from '../types/user';
 import { isValidEmail } from '../utils';
 
 export class UserService {
@@ -263,5 +263,36 @@ export class UserService {
 
   async updateUserOnboarded(userId: string, onboarded: boolean): Promise<void> {
     // TODO: implementer la mise à jour de l'utilisateur onboarded
+  }
+
+  async getLanguagePreference(userId: string) {
+    try {
+      const langPref = await this.repository.getUserLanguagePreference(userId);
+      return langPref || { language: 'en' }; // Default to English if no preference is set
+    } catch (error) {
+      console.error('❌ [UserService.getLanguagePreference] Error:', error);
+      throw error;
+    }
+  }
+
+  async updateLanguagePreference(
+    userId: string,
+    language: string,
+  ): Promise<void> {
+    if (!userId) {
+      throw new Error('User ID is required to update language preference');
+    }
+    
+    if (!language) {
+      throw new Error('Language is required');
+    }
+    
+    // Validate language code (you might want to add more validation)
+    const validLanguages = ['en', 'fr', 'es', 'de', 'it', 'sv', 'pt' ];
+    if (!validLanguages.includes(language.toLowerCase())) {
+      throw new Error(`Invalid language code: ${language}`);
+    }
+    
+    await this.repository.updateLanguagePreference(userId, language.toLowerCase());
   }
 }
