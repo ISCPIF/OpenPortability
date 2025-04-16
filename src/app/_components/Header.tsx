@@ -11,17 +11,85 @@ import { usePathname } from 'next/navigation';
 import { plex } from '@/app/fonts/plex';
 import { useDashboardState } from '@/hooks/useDashboardState';
 
-const Header = () => {
-  const { data: session } = useSession();
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
+const UnauthenticatedHeader = () => {
+  const t = useTranslations('header');
+  const pathname = usePathname();
+  const [isLanguageOpen, setIsLanguageOpen] = useState(false);
+  const currentLocale = pathname.split('/')[1];
+
+  const languages = [
+    { code: 'fr', name: 'FR'},
+    { code: 'en', name: 'EN'},
+    { code: 'es', name: 'ES'},
+    { code: 'it', name: 'IT'},
+    { code: 'de', name: 'DE'},
+    { code: 'sv', name: 'SV'},
+    { code: 'pt', name: 'PT'},
+  ];
+
+  const switchLanguage = (locale: string) => {
+    const newPath = pathname.replace(`/${currentLocale}`, `/${locale}`);
+    window.location.href = newPath;
+  };
+
+  return (
+    <header className="relative z-10">
+      <div className="absolute inset-0 bg-transparent pointer-events-none" />
+      <div className="relative">
+        <div className="container mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center ml-auto">
+              <div className="relative mr-6">
+                <button
+                  onClick={() => setIsLanguageOpen(!isLanguageOpen)}
+                  className="flex items-center gap-2 p-2 rounded-lg hover:bg-black/5 transition-colors"
+                >
+                  <Globe className="w-5 h-5 text-white" aria-hidden="true" />
+                  <span className="text-lg text-white">
+                    {languages.find(lang => lang.code === currentLocale)?.name}
+                  </span>
+                  <ChevronDown
+                    className={`w-4 h-4 text-white/60 transition-transform duration-200 
+                      ${isLanguageOpen ? 'rotate-180' : ''}`}
+                  />
+                </button>
+                <AnimatePresence>
+                  {isLanguageOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      className="absolute right-0 mt-2 w-40 origin-top-right"
+                    >
+                      <div className="bg-black/40 backdrop-blur-xl rounded-xl border border-black/10 shadow-xl overflow-hidden">
+                        {languages.map((lang) => (
+                          <button
+                            key={lang.code}
+                            onClick={() => switchLanguage(lang.code)}
+                            className="w-full px-4 py-2 text-sm text-white hover:bg-white/10 transition-colors text-left"
+                          >
+                            {lang.name}
+                          </button>
+                        ))}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+  );
+};
+
+const AuthenticatedHeader = () => {
+  const { data: session, status } = useSession();
   const [isLanguageOpen, setIsLanguageOpen] = useState(false);
   const t = useTranslations('header');
   const pathname = usePathname();
-  
-  // N'utilise useDashboardState que si on n'est pas sur la page signin
-  const isSignInPage = pathname.includes('/auth/signin');
-  const dashboardState = !isSignInPage ? useDashboardState() : null;
-  const showBlueSkyDMNotification = dashboardState?.showBlueSkyDMNotification || false;
+  // const dashboardState = useDashboardState();
 
   const languages = [
     { code: 'fr', name: 'FR'},
@@ -38,7 +106,6 @@ const Header = () => {
   const switchLanguage = async (locale: string) => {
     const newPath = pathname.replace(`/${currentLocale}`, `/${locale}`);
     
-    // Si l'utilisateur est connecté, sauvegarder la préférence
     if (session?.user?.id) {
       try {
         await fetch('/api/users/language', {
@@ -59,7 +126,6 @@ const Header = () => {
   return (
     <header className="relative z-10">
       <div className="absolute inset-0 bg-transparent pointer-events-none" />
-
       <div className="relative">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
@@ -134,7 +200,7 @@ const Header = () => {
                               {session.user?.name}
                             </p>
                             <p className="text-xs text-white/60">
-                              {t('profile.username', { username: session.user?.twitter_username })}
+                              {t('profile.username', { username: session.user?.twitter_username || session.user?.bluesky_username || session.user?.mastodon_username })}
                             </p>
                           </div>
                         </div>
@@ -208,6 +274,16 @@ const Header = () => {
       </div>
     </header>
   );
+};
+
+const Header = () => {
+  const { status } = useSession();
+  
+  if (status === "authenticated") {
+    return <AuthenticatedHeader />;
+  }
+  
+  return <UnauthenticatedHeader />;
 };
 
 export default Header;
