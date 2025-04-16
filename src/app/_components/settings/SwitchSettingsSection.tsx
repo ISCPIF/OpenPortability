@@ -5,6 +5,8 @@ import { useTranslations } from 'next-intl';
 import { CheckCircle2 } from 'lucide-react';
 import { plex } from '@/app/fonts/plex';
 import { ConsentType } from '@/hooks/useNewsLetter';
+import { useSession } from 'next-auth/react';
+import { toast } from 'sonner';
 
 interface SwitchSettingsSectionProps {
   consents: { [key in ConsentType]?: boolean };
@@ -19,6 +21,22 @@ interface SwitchSettingsSectionProps {
   isSubmittingEmail: boolean;
 }
 
+const CustomToast = ({ platform, message, buttonText }: { platform: string; message: string; buttonText: string }) => (
+  <div className={`${plex.className} flex flex-col space-y-3 p-4 bg-[#d6356f] text-white rounded-lg`}>
+    <div className="flex items-center space-x-2">
+      <div className="w-2 h-2 bg-white rounded-full" />
+      <span className="font-medium text-white/90">{platform === 'bluesky' ? 'Bluesky' : 'Mastodon'}</span>
+    </div>
+    <p className="text-sm text-white/80">{message}</p>
+    <button 
+      onClick={() => window.location.href = '/dashboard'}
+      className="px-4 py-2 bg-white text-[#d6356f] rounded-md text-sm font-medium hover:bg-white/90 transition-colors"
+    >
+      {buttonText}
+    </button>
+  </div>
+);
+
 export default function SwitchSettingsSection({
   consents,
   onConsentChange,
@@ -32,7 +50,34 @@ export default function SwitchSettingsSection({
   isSubmittingEmail,
 }: SwitchSettingsSectionProps) {
   const t = useTranslations('settings');
+  const { data: session } = useSession();
 
+  const handleDMConsentChange = (platform: 'bluesky' | 'mastodon', value: boolean) => {
+    if (!value) {
+      onConsentChange(`${platform}_dm` as ConsentType, false);
+      return;
+    }
+
+    const hasAccount = platform === 'bluesky' 
+      ? !!session?.user?.bluesky_username
+      : !!session?.user?.mastodon_username;
+
+    if (!hasAccount) {
+      toast.custom((id) => (
+        <CustomToast 
+          platform={platform}
+          message={t(`notifications.${platform}Dm.connectRequiredDescription`)}
+          buttonText={t(`notifications.${platform}Dm.goToDashboard`)}
+        />
+      ), {
+        position: 'top-right',
+        duration: 10000,
+      });
+      return;
+    }
+
+    onConsentChange(`${platform}_dm` as ConsentType, true);
+  };
 
   console.log("CONSENTS FRONT SWITCH", consents)
   const renderSwitch = (
@@ -153,17 +198,17 @@ export default function SwitchSettingsSection({
         <div className="ml-6 space-y-4 border-l-2 border-white/20 pl-6">
           {renderSwitch(
             'bluesky_dm',
-            t('notifications.blueskyDM.title'),
-            t('notifications.blueskyDM.description'),
+            t('notifications.blueskyDm.title'),
+            t('notifications.blueskyDm.description'),
             consents?.bluesky_dm ?? false,
-            (value) => onConsentChange('bluesky_dm', value)
+            (value) => handleDMConsentChange('bluesky', value)
           )}
           {renderSwitch(
             'mastodon_dm',
-            t('notifications.mastodonDM.title'),
-            t('notifications.mastodonDM.description'),
+            t('notifications.mastodonDm.title'),
+            t('notifications.mastodonDm.description'),
             consents?.mastodon_dm ?? false,
-            (value) => onConsentChange('mastodon_dm', value)
+            (value) => handleDMConsentChange('mastodon', value)
           )}
         </div>
       )}
