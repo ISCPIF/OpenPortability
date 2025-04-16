@@ -5,7 +5,7 @@ import { useSession, signIn, signOut } from "next-auth/react";
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, Globe, Settings, LogOut, MessageSquare, Bell } from 'lucide-react';
+import { ChevronDown, Globe, Settings, LogOut, MessageSquare, Bell, Home, ArrowLeft } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { usePathname } from 'next/navigation';
 import { plex } from '@/app/fonts/plex';
@@ -142,7 +142,7 @@ const AuthenticatedHeader = () => {
 
             <div className="flex items-center ml-auto">
               {/* Language Selector */}
-              <div className="relative mr-6">
+              <div className="relative mr-2">
                 <button
                   onClick={() => setIsLanguageOpen(!isLanguageOpen)}
                   className="flex items-center gap-2 p-2 rounded-lg hover:bg-black/5 transition-colors"
@@ -194,6 +194,28 @@ const AuthenticatedHeader = () => {
                     {/* Profil avec menu déroulant */}
                     <div className="relative">
                       <div className="flex items-center gap-3">
+
+                      {pathname.includes('/settings') ? (
+                            <Link
+                              href="/dashboard"
+                              className="group p-2 rounded-lg hover:bg-black/5 transition-colors flex items-center gap-2"
+                              title={t('returnToDashboard')}
+                              aria-label={t('returnToDashboard')}
+                            >
+                              <Home className="w-5 h-5 text-white" />
+                              <span className="hidden group-hover:block text-sm text-white">{t('returnToDashboard')}</span>
+                            </Link>
+                          ) : (
+                            <Link
+                              href="/settings"
+                              className="group p-2 rounded-lg hover:bg-black/5 transition-colors flex items-center gap-2"
+                              title={t('settings')}
+                              aria-label={t('settings')}
+                            >
+                              <Settings className="w-5 h-5 text-white" />
+                              <span className="hidden group-hover:block text-sm text-white">{t('settings')}</span>
+                            </Link>
+                          )}
                         <div className="p-2">
                           <div className="hidden sm:block">
                             <p className="text-sm font-medium text-white">
@@ -206,32 +228,6 @@ const AuthenticatedHeader = () => {
                         </div>
                         
                         <div className="flex items-center gap-2">
-                          <Link
-                            href="/settings"
-                            className="group p-2 rounded-lg hover:bg-black/5 transition-colors flex items-center gap-2"
-                            title={t('settings')}
-                            aria-label={t('settings')}
-                          >
-                            <Settings className="w-5 h-5 text-white" />
-                            <span className="hidden group-hover:block text-sm text-white">{t('settings')}</span>
-                          </Link>
-
-                          {/* {showBlueSkyDMNotification && (
-                            <Link
-                              href="/settings?highlight=bluesky_dm"
-                              className="relative p-2 rounded-full hover:bg-white/10 transition-colors"
-                              title={t('notifications.testBlueSkyDM')}
-                              aria-label={t('notifications.testBlueSkyDM')}
-                            >
-                              <div className="relative">
-                                <MessageSquare className="w-5 h-5 text-white" />
-                                <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#d6356f] opacity-75"></span>
-                                  <span className="relative inline-flex rounded-full h-3 w-3 bg-[#d6356f]"></span>
-                                </span>
-                              </div>
-                            </Link>
-                          )} */}
                           <button
                             onClick={async () => {
                               try {
