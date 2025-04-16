@@ -4,7 +4,7 @@
       "profile": {
         "username": "@{username}"
       },
-      "returnToFirstStep": "Retourner à la première étape",
+      "returnToDashboard": "Retour",
       "settings" : "Réglages et notifications"
     },
     "connectedAccounts": {
@@ -385,12 +385,18 @@
         "description": "Je souhaite recevoir une actualisation des nouvelles connections par message privé sur les réseaux sociaux par OpenPortability"
       },
       "blueskyDm": {
-        "title": "Messages Bluesky",
-        "description": "Je souhaite recevoir des messages privés sur BlueSky de la part de la plateforme OpenPortability"
+        "title": "Messages Privés Bluesky",
+        "description": "Recevoir des recommandations personnalisées via DM sur Bluesky.",
+        "connectRequired": "Compte Bluesky non connecté",
+        "connectRequiredDescription": "Vous devez d'abord connecter votre compte Bluesky pour activer cette fonctionnalité. Rendez-vous sur le tableau de bord pour vous connecter.",
+        "goToDashboard": "Aller au tableau de bord"
       },
       "mastodonDm": {
-        "title": "Messages Mastodon",
-        "description": "Je souhaite recevoir des messages privés sur Mastodon de la part de la plateforme OpenPortability"
+        "title": "Messages Privés Mastodon",
+        "description": "Recevoir des recommandations personnalisées via DM sur Mastodon.",
+        "connectRequired": "Compte Mastodon non connecté",
+        "connectRequiredDescription": "Vous devez d'abord connecter votre compte Mastodon pour activer cette fonctionnalité. Rendez-vous sur le tableau de bord pour vous connecter.",
+        "goToDashboard": "Aller au tableau de bord"
       },
       "oepNewsletter": {
         "title": "Newsletter On Est Prêts",
