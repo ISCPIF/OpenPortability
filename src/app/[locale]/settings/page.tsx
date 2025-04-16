@@ -161,7 +161,16 @@ export default function SettingsPage() {
                 {t('deleteAccount')}
               </h2>
               <p className="text-sm text-gray-300 mb-6 whitespace-pre-line">
-                {t('deleteConfirm.message')}
+                {t('deleteConfirm.message1')}
+              </p>
+              <p className="text-sm text-gray-300 mb-6 whitespace-pre-line">
+                {t('deleteConfirm.message2')}
+              </p>
+              <p className="text-sm text-gray-300 mb-6 whitespace-pre-line">
+                {t('deleteConfirm.message3')}
+              </p>
+              <p className="text-sm text-gray-300 mb-6 whitespace-pre-line">
+                {t('deleteConfirm.message4')}
               </p>
               <button
                 onClick={() => setShowDeleteConfirm(true)}
