@@ -65,7 +65,11 @@ export default function LoginSea() {
           height={82}
           className="mx-auto sm:w-[250px] md:w-[306px]"
         />
-        <h1 className={`${plex.className} text-2xl lg:text-3xl mt-4`}>{t('title')}</h1>
+        {!isSettingsPage && (
+          <h1 className={`${plex.className} text-2xl lg:text-3xl mt-4`}>{t('title')}</h1>
+
+        )}
+        {/* <h1 className={`${plex.className} text-2xl lg:text-3xl mt-4`}>{t('title')}</h1> */}
         {!session?.user.has_onboarded && !isSettingsPage && (
           <p className={`${plex.className} text-lg lg:text-xl my-4 lg:my-6 max-w-md`}>
             {isSigninPage 
