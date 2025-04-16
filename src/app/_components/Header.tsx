@@ -147,13 +147,14 @@ const AuthenticatedHeader = () => {
                   onClick={() => setIsLanguageOpen(!isLanguageOpen)}
                   className="flex items-center gap-2 p-2 rounded-lg hover:bg-black/5 transition-colors"
                 >
-                  <Globe className="w-5 h-5 text-white" aria-hidden="true" />
-                  <span className="text-lg text-white">
+                  <Globe className={`w-5 h-5 ${pathname.includes('/reconnect') ? 'text-gray-800' : 'text-white'}`} aria-hidden="true" />
+                  <span className={`text-lg ${pathname.includes('/reconnect') ? 'text-gray-800' : 'text-white'}`}>
                     {languages.find(lang => lang.code === currentLocale)?.name}
                   </span>
                   <ChevronDown
-                    className={`w-4 h-4 text-white/60 transition-transform duration-200 
-                      ${isLanguageOpen ? 'rotate-180' : ''}`}
+                    className={`w-4 h-4 transition-transform duration-200 
+                      ${isLanguageOpen ? 'rotate-180' : ''} 
+                      ${pathname.includes('/reconnect') ? 'text-gray-800/60' : 'text-white/60'}`}
                   />
                 </button>
 
@@ -165,7 +166,7 @@ const AuthenticatedHeader = () => {
                       exit={{ opacity: 0, y: -10 }}
                       className="absolute right-0 mt-2 w-40 origin-top-right"
                     >
-                      <div className="bg-black/40 backdrop-blur-xl rounded-xl border border-black/10 shadow-xl overflow-hidden">
+                      <div className={`${pathname.includes('/reconnect') ? 'bg-white/90' : 'bg-black/40'} backdrop-blur-xl rounded-xl border border-black/10 shadow-xl overflow-hidden`}>
                         {languages.map((lang) => (
                           <button
                             key={lang.code}
@@ -173,8 +174,8 @@ const AuthenticatedHeader = () => {
                               switchLanguage(lang.code);
                               setIsLanguageOpen(false);
                             }}
-                            className={`w-full px-4 py-2 text-xs ${plex.className} text-white hover:bg-white/10 transition-colors text-left flex items-center gap-2
-                              ${currentLocale === lang.code ? 'bg-white/5' : ''}`}
+                            className={`w-full px-4 py-2 text-xs ${plex.className} ${pathname.includes('/reconnect') ? 'text-gray-800 hover:bg-gray-100' : 'text-white hover:bg-white/10'} transition-colors text-left flex items-center gap-2
+                              ${currentLocale === lang.code ? pathname.includes('/reconnect') ? 'bg-gray-50' : 'bg-white/5' : ''}`}
                           >
                             <span className="text-base">{lang.name}</span>
                           </button>
@@ -189,8 +190,6 @@ const AuthenticatedHeader = () => {
               <div className="flex items-center gap-6">
                 {session && (
                   <div className="flex items-center gap-6">
-                    {/* Notification pour tester les DMs Bluesky */}
-
                     {/* Profil avec menu déroulant */}
                     <div className="relative">
                       <div className="flex items-center gap-3">
@@ -202,8 +201,8 @@ const AuthenticatedHeader = () => {
                               title={t('returnToDashboard')}
                               aria-label={t('returnToDashboard')}
                             >
-                              <Home className="w-5 h-5 text-white" />
-                              <span className="hidden group-hover:block text-sm text-white">{t('returnToDashboard')}</span>
+                              <Home className={`w-5 h-5 ${pathname.includes('/reconnect') ? 'text-gray-800' : 'text-white'}`} />
+                              <span className={`hidden group-hover:block text-sm ${pathname.includes('/reconnect') ? 'text-gray-800' : 'text-white'}`}>{t('returnToDashboard')}</span>
                             </Link>
                           ) : (
                             <Link
@@ -212,16 +211,13 @@ const AuthenticatedHeader = () => {
                               title={t('settings')}
                               aria-label={t('settings')}
                             >
-                              <Settings className="w-5 h-5 text-white" />
-                              <span className="hidden group-hover:block text-sm text-white">{t('settings')}</span>
+                              <Settings className={`w-5 h-5 ${pathname.includes('/reconnect') ? 'text-gray-800' : 'text-white'}`} />
+                              <span className={`hidden group-hover:block text-sm ${pathname.includes('/reconnect') ? 'text-gray-800' : 'text-white'}`}>{t('settings')}</span>
                             </Link>
                           )}
                         <div className="p-2">
                           <div className="hidden sm:block">
-                            <p className="text-sm font-medium text-white">
-                              {session.user?.name}
-                            </p>
-                            <p className="text-xs text-white/60">
+                            <p className={`text-xs ${pathname.includes('/reconnect') ? 'text-gray-600' : 'text-white/60'}`}>
                               {t('profile.username', { username: session.user?.twitter_username || session.user?.bluesky_username || session.user?.mastodon_username })}
                             </p>
                           </div>
@@ -255,8 +251,8 @@ const AuthenticatedHeader = () => {
                           >
 
                   
-                            <LogOut className="w-5 h-5 text-white" />
-                            <span className="hidden group-hover:block text-sm text-white">{t('logout')}</span>
+                            <LogOut className={`w-5 h-5 ${pathname.includes('/reconnect') ? 'text-gray-800' : 'text-white'}`} />
+                            <span className={`hidden group-hover:block text-sm ${pathname.includes('/reconnect') ? 'text-gray-800' : 'text-white'}`}>{t('logout')}</span>
                           </button>
                         </div>
                       </div>
