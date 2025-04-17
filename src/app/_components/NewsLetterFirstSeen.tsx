@@ -67,6 +67,41 @@ export default function NewsLetterFirstSeen({ userId, onSubscribe, onClose }: Ne
   
   const currentLocale = pathname.split('/')[1]
 
+  // Vérifier et sauvegarder la langue à la connexion
+  useEffect(() => {
+    const checkAndSaveLanguage = async () => {
+      // Vérifier si on a déjà une langue stockée pour cet utilisateur
+      const storedLanguage = localStorage.getItem(`user_language_${userId}`);
+      
+      if (userId && !storedLanguage) {
+        try {
+          // Vérifier si une préférence existe déjà
+          const response = await fetch('/api/users/language');
+          const data = await response.json();
+          
+          const languageToStore = data.language || currentLocale;
+          
+          // Si pas de préférence, sauvegarder la langue actuelle
+          if (!data.language) {
+            await fetch('/api/users/language', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ language: currentLocale }),
+            });
+          }
+          
+          // Stocker la langue pour cet utilisateur
+          localStorage.setItem(`user_language_${userId}`, languageToStore);
+        } catch (error) {
+          console.error('Error checking/saving language preference:', error);
+        }
+      }
+    };
+
+    checkAndSaveLanguage();
+  }, [userId, currentLocale]);
 
   const switchLanguage = async (locale: string) => {
     const newPath = pathname.replace(`/${currentLocale}`, `/${locale}`)
@@ -81,6 +116,8 @@ export default function NewsLetterFirstSeen({ userId, onSubscribe, onClose }: Ne
           },
           body: JSON.stringify({ language: locale }),
         });
+        // Mettre à jour le localStorage avec la nouvelle langue
+        localStorage.setItem(`user_language_${userId}`, locale);
       } catch (error) {
         console.error('Error saving language preference:', error);
       }

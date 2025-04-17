@@ -79,6 +79,9 @@ export default function SettingsPage() {
         throw new Error('Failed to delete account');
       }
 
+      // Supprimer la préférence de langue du localStorage
+      localStorage.removeItem(`user_language_${session?.user?.id}`);
+      
       signOut({ callbackUrl: '/' });
     } catch (error) {
       console.error('Error deleting account:', error);
