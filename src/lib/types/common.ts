@@ -10,6 +10,7 @@ export interface UserSession {
       mastodon_id?: string;
       has_onboarded?: boolean;
       have_seen_newsletter?: boolean;
+      have_seen_bot_newsletter?: boolean;
     }
   }
   

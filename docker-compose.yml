@@ -35,7 +35,6 @@ services:
       - /app/node_modules
       - shared-tmp:/app/tmp
       - app_logs:/app/logs
-
     env_file:
       - ./worker/.env
     environment:
@@ -47,6 +46,28 @@ services:
       - "host.docker.internal:host-gateway"
     depends_on:
       - app
+
+  python_worker:
+    build:
+      context: ./python_worker
+      dockerfile: Dockerfile
+    volumes:
+      - ./python_worker:/app
+      - /app/node_modules
+      - ./messengers:/app/messengers
+      - app_logs:/app/logs
+    env_file:
+      - .env.local
+    environment:
+      - NODE_ENV=development
+    networks:
+      - app_network
+      - supabase_network_goodbyex
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - app
+    restart: unless-stopped
 
   nginx:
     image: nginx:alpine
@@ -63,26 +84,24 @@ services:
       - app_network
     command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
 
-  # watcher:
+  # bluesky-dm-bot:
   #   build:
-  #     context: ./watcher
+  #     context: ./messengers/bluesky
   #     dockerfile: Dockerfile
-  #   environment:
-  #     - NODE_ENV=production
-  #   env_file:
-  #     - ./watcher/.env
   #   restart: unless-stopped
+  #   env_file:
+  #     - ./messengers/bluesky/.env
+  #   volumes:
+  #     - ./messengers/bluesky/logs:/app/logs
+  #     # - ./messengers/bluesky:/app
+  #     # - /app/node_modules
+  #     # - app_log:/app/logs
   #   networks:
   #     - app_network
   #     - supabase_network_goodbyex
   #   extra_hosts:
   #     - "host.docker.internal:host-gateway"
-  #   healthcheck:
-  #     test: ["CMD", "wget", "--spider", "-q", "host.docker.internal:54321"]
-  #     interval: 30s
-  #     timeout: 10s
-  #     retries: 3
-  #     start_period: 30s
+    
 
 networks:
   app_network:
