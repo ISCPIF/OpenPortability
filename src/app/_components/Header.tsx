@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSession, signIn, signOut } from "next-auth/react";
 import Link from 'next/link';
 import Image from 'next/image';
@@ -89,7 +89,7 @@ const AuthenticatedHeader = () => {
   const [isLanguageOpen, setIsLanguageOpen] = useState(false);
   const t = useTranslations('header');
   const pathname = usePathname();
-  // const dashboardState = useDashboardState();
+  const hasCheckedLanguage = useRef(false);
 
   const languages = [
     { code: 'fr', name: 'FR'},
@@ -103,6 +103,42 @@ const AuthenticatedHeader = () => {
 
   const currentLocale = pathname.split('/')[1];
 
+  // Vérifier et sauvegarder la langue à la connexion
+  useEffect(() => {
+    const checkAndSaveLanguage = async () => {
+      // Vérifier si on a déjà une langue stockée pour cet utilisateur
+      const storedLanguage = localStorage.getItem(`user_language_${session?.user?.id}`);
+      
+      if (session?.user?.id && !storedLanguage) {
+        try {
+          // Vérifier si une préférence existe déjà
+          const response = await fetch('/api/users/language');
+          const data = await response.json();
+          
+          const languageToStore = data.language || currentLocale;
+          
+          // Si pas de préférence, sauvegarder la langue actuelle
+          if (!data.language) {
+            await fetch('/api/users/language', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ language: currentLocale }),
+            });
+          }
+          
+          // Stocker la langue pour cet utilisateur
+          localStorage.setItem(`user_language_${session.user.id}`, languageToStore);
+        } catch (error) {
+          console.error('Error checking/saving language preference:', error);
+        }
+      }
+    };
+
+    checkAndSaveLanguage();
+  }, [session?.user?.id, currentLocale]);
+
   const switchLanguage = async (locale: string) => {
     const newPath = pathname.replace(`/${currentLocale}`, `/${locale}`);
     
@@ -115,6 +151,8 @@ const AuthenticatedHeader = () => {
           },
           body: JSON.stringify({ language: locale }),
         });
+        // Mettre à jour le localStorage avec la nouvelle langue
+        localStorage.setItem(`user_language_${session.user.id}`, locale);
       } catch (error) {
         console.error('Error saving language preference:', error);
       }
