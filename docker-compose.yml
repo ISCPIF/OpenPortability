@@ -54,10 +54,10 @@ services:
     volumes:
       - ./python_worker:/app
       - /app/node_modules
-      - ./messengers:/app/messengers
+      - ./messages:/app/messages
       - app_logs:/app/logs
     env_file:
-      - .env.local
+      - .env
     environment:
       - NODE_ENV=development
     networks:

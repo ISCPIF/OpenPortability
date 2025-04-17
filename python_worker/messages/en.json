@@ -1,0 +1,7 @@
+{
+    "testDm": "This is an automated test message from OpenPortability to verify we can reach you via DM. No action is required.",
+    "recoNewsletter": {
+      "singular": "Hello! There is ${count} person you followed on Twitter who is now on ${platformName}! Visit openportability.org to find them 🚀",
+      "plural": "Hello! There are ${count} people you followed on Twitter who are now on ${platformName}! Visit openportability.org to find them 🚀"
+    }
+}
