@@ -48,6 +48,18 @@ export interface PythonTask {
   scheduled_for?: string;
 }
 
+// Interface pour la structure des messages (peut être déplacée ou partagée si nécessaire)
+interface Messages {
+  testDm: string;
+  recoNewsletter: {
+    singular: string;
+    plural: string;
+  };
+}
+
+// Type pour l'objet contenant toutes les langues (peut être partagé depuis index.ts)
+type AllMessages = Record<string, Messages>;
+
 /**
  * Met à jour le statut d'une tâche dans la base de données
  */
@@ -298,9 +310,42 @@ async function getUnfollowedStats(userId: string): Promise<{ bluesky: number, ma
 }
 
 /**
+ * Récupère la langue préférée de l'utilisateur
+ */
+async function getUserLanguagePref(userId: string): Promise<string> {
+  try {
+    const { data, error } = await supabase
+      .from('language_pref')
+      .select('language')
+      .eq('user_id', userId)
+      .single(); // Assumes one preference per user
+
+    if (error && error.code !== 'PGRST116') { // PGRST116 = not found
+      console.error(`❌ Error fetching language preference for user ${userId}:`, error);
+      return 'en'; // Default to English on error
+    }
+
+    if (data) {
+      console.log(`🌐 User ${userId} language preference found: ${data.language}`);
+      return data.language;
+    } else {
+      console.log(`🌐 No language preference found for user ${userId}, defaulting to 'en'.`);
+      return 'en'; // Default to English if no preference found
+    }
+  } catch (error) {
+    console.error(`❌ Exception fetching language preference for user ${userId}:`, error);
+    return 'en'; // Default to English on exception
+  }
+}
+
+/**
  * Traite une tâche Python en fonction de son type
  */
-export async function processPythonTask(task: PythonTask, workerId: string): Promise<void> {
+export async function processPythonTask(
+  task: PythonTask, 
+  workerId: string, 
+  allMessages: AllMessages // Ajout du paramètre allMessages
+): Promise<void> { 
   console.log(`🐍 [Python Worker ${workerId}] Processing task ${task.id} of type ${task.task_type}`);
   
   try {
@@ -331,20 +376,48 @@ export async function processPythonTask(task: PythonTask, workerId: string): Pro
 
     let result: Record<string, any>;
     
+    // Récupérer la langue préférée de l'utilisateur au début
+    const userLang = await getUserLanguagePref(task.user_id);
+    console.log(`🌐 Processing task for user ${task.user_id} with language: ${userLang}`);
+
+    // Obtenir les messages pour la langue (avec fallback sur 'en')
+    const messages = allMessages[userLang] || allMessages['en'];
+    if (!messages) {
+        // Ceci ne devrait pas arriver si loadAllMessages dans index.ts garantit un fallback
+        console.error(`❌ Critical: No messages found for lang ${userLang} or fallback 'en'.`);
+        // Gérer l'erreur - peut-être utiliser un message codé en dur ici aussi
+        throw new Error(`Missing messages for language ${userLang}`);
+    }
+
     // Exécuter la fonction appropriée selon le type de tâche
     switch (task.task_type) {
-      case 'test-dm':
-        result = await executeDm(task, workerId);
+      case 'test-dm': { // Use block scope for clarity
+        // Utiliser le message de test DM depuis le fichier JSON
+        const testMessage = messages.testDm;
+        result = await executeDm(task, workerId, testMessage);
         await updatePersonalizedSupportStatus(task.user_id, task.platform, result.success);
         break;
+      }
         
-      case 'send-reco-newsletter':
+      case 'send-reco-newsletter': { // Use block scope for clarity
         // Récupérer les stats des utilisateurs non suivis
         const stats = await getUnfollowedStats(task.user_id);
         const platformStats = task.platform === 'bluesky' ? stats.bluesky : stats.mastodon;
         
-        // Créer le message personnalisé
-        const message = `Bonjour ! Il y a ${platformStats} personnes que vous suiviez sur Twitter et qui sont maintenant sur ${task.platform === 'bluesky' ? 'Bluesky' : 'Mastodon'} ! Rendez-vous sur openportability.org pour les retrouver 🚀`;
+        // Créer le message personnalisé basé sur la langue et les stats
+        const platformName = task.platform === 'bluesky' ? 'Bluesky' : 'Mastodon';
+        let messageTemplate: string;
+
+        if (platformStats === 1) {
+          messageTemplate = messages.recoNewsletter.singular;
+        } else {
+          messageTemplate = messages.recoNewsletter.plural;
+        }
+
+        // Remplacer les placeholders
+        const message = messageTemplate
+          .replace('${count}', platformStats.toString())
+          .replace('${platformName}', platformName);
         
         result = await executeDm(task, workerId, message);
         await updatePersonalizedSupportStatus(task.user_id, task.platform, result.success);
@@ -353,6 +426,7 @@ export async function processPythonTask(task: PythonTask, workerId: string): Pro
           await scheduleNextNewsletter(task);
         }
         break;
+      }
         
       default:
         throw new Error(`Unsupported task type: ${task.task_type}`);

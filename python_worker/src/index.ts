@@ -2,6 +2,8 @@
 import { createClient } from '@supabase/supabase-js';
 import * as dotenv from 'dotenv';
 import { processPythonTask } from './PythonProcessor';
+import fs from 'fs'; // Import fs
+import path from 'path'; // Import path
 
 // Charger les variables d'environnement au tout début
 dotenv.config();
@@ -31,6 +33,18 @@ interface WorkerConfig {
   stalledTaskTimeout: number;
 }
 
+// Interface pour la structure des messages (partagée)
+interface Messages {
+  testDm: string;
+  recoNewsletter: {
+    singular: string;
+    plural: string;
+  };
+}
+
+// Type pour l'objet contenant toutes les langues
+type AllMessages = Record<string, Messages>;
+
 const DEFAULT_CONFIG: WorkerConfig = {
   id: 'python_worker_1',
   pollingInterval: 5000,      // 5 secondes
@@ -44,6 +58,50 @@ const WORKER_CONFIG: WorkerConfig = {
 };
 
 console.log('🐍 [Python Worker] Starting with config:', WORKER_CONFIG);
+
+// Fonction pour charger tous les messages depuis le dossier messages
+function loadAllMessages(): AllMessages {
+  const messagesDir = path.join(__dirname, '../messages');
+  const allMessages: AllMessages = {};
+  const defaultLang = 'en';
+
+  try {
+    const files = fs.readdirSync(messagesDir);
+    files.forEach(file => {
+      if (file.endsWith('.json')) {
+        const lang = file.split('.')[0];
+        const filePath = path.join(messagesDir, file);
+        try {
+          const fileContent = fs.readFileSync(filePath, 'utf-8');
+          allMessages[lang] = JSON.parse(fileContent) as Messages;
+          console.log(`🌐 Loaded messages for language: ${lang}`);
+        } catch (error) {
+          console.error(`❌ Error loading or parsing ${filePath}:`, error);
+        }
+      }
+    });
+  } catch (error) {
+    console.error(`❌ Error reading messages directory ${messagesDir}:`, error);
+  }
+
+  // Vérifier que l'anglais (fallback) est chargé
+  if (!allMessages[defaultLang]) {
+    console.error(`❌ Critical: Default language '${defaultLang}' messages not found or failed to load!`);
+    // Optionally, provide hardcoded fallback if even EN fails
+    allMessages[defaultLang] = {
+        testDm: "This is an automated test message from OpenPortability to verify we can reach you via DM. No action is required.",
+        recoNewsletter: {
+            singular: "Hello! There is ${count} person you followed on Twitter who is now on ${platformName}! Visit openportability.org to find them 🚀",
+            plural: "Hello! There are ${count} people you followed on Twitter who are now on ${platformName}! Visit openportability.org to find them 🚀"
+        }
+    };
+  }
+
+  return allMessages;
+}
+
+// Charger tous les messages UNE SEULE FOIS au démarrage
+const ALL_MESSAGES = loadAllMessages();
 
 // Classes d'erreurs spécifiques
 class WorkerError extends Error {
@@ -106,7 +164,7 @@ async function recoverStalledTasks() {
 }
 
 // Fonction pour trouver et traiter une tâche
-async function findAndProcessTask(workerId: string): Promise<void> {
+async function findAndProcessTask(workerId: string, allMessages: AllMessages): Promise<void> {
   try {
     // Utiliser la fonction claim_next_pending_task pour récupérer et verrouiller la prochaine tâche
     const { data: tasks, error } = await supabase
@@ -134,8 +192,8 @@ async function findAndProcessTask(workerId: string): Promise<void> {
       console.log(`🔍 [Python Worker ${workerId}] Claimed task: ${task.id} (type: ${task.task_type})`);
     }
 
-    // Traiter la tâche
-    await processPythonTask(task, workerId);
+    // Traiter la tâche en passant les messages chargés
+    await processPythonTask(task, workerId, allMessages);
 
   } catch (error) {
     console.error(`❌ [Python Worker ${workerId}] Error in findAndProcessTask:`, error);
@@ -179,8 +237,8 @@ async function startWorker() {
       // Attendre un peu pour éviter les collisions avec d'autres workers
       await randomSleep(100, 500);
       
-      // Trouver et traiter une tâche
-      await findAndProcessTask(WORKER_CONFIG.id);
+      // Trouver et traiter une tâche, en passant les messages chargés
+      await findAndProcessTask(WORKER_CONFIG.id, ALL_MESSAGES);
       
       // Réinitialiser le compteur d'erreurs si tout va bien
       consecutiveErrors = 0;
