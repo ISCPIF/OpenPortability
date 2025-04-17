@@ -41,13 +41,6 @@ const nextConfig = {
     }
   ],
   output: 'standalone',
-  // experimental: {
-  //   // Activer turbotrace pour une meilleure performance de build
-  //   turbotrace: {
-  //     logLevel: 'error',
-  //     memoryLimit: 4000
-  //   }
-  // }
 };
 
 module.exports = withNextIntl(nextConfig);

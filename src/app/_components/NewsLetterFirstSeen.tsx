@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, memo } from 'react'
+import { useState, memo, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, ChevronDown } from 'lucide-react'
 import { useTranslations } from 'next-intl'
@@ -12,7 +12,7 @@ import { Globe } from 'lucide-react'
 import { isValidEmail } from '@/lib/utils'
 import { Switch } from '@headlessui/react'
 import Link from 'next/link'
-
+import { useNewsletter, ConsentType } from '@/hooks/useNewsLetter'
 
 interface NewsLetterFirstSeenProps {
   userId: string
@@ -34,39 +34,26 @@ const NewsletterLink = memo(({ href, children }: { href: string; children: React
 NewsletterLink.displayName = 'NewsletterLink';
 
 export default function NewsLetterFirstSeen({ userId, onSubscribe, onClose }: NewsLetterFirstSeenProps) {
-  const [isLoading, setIsLoading] = useState(false)
+  const { updateMultipleConsents } = useNewsletter();
+  
   const [email, setEmail] = useState('')
-  const [acceptOEP, setAcceptOEP] = useState(false)
-  const [acceptResearch, setAcceptResearch] = useState(false)
-  const [hqx_newsletter, setHqxNewsletter] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [isLanguageOpen, setIsLanguageOpen] = useState(false)
+  const [currentLanguage, setCurrentLanguage] = useState('')
+  
+  // États locaux pour les consentements
+  const [localConsents, setLocalConsents] = useState({
+    email_newsletter: false,
+    oep_newsletter: false,
+    research_participation: false,
+    personalized_support: false,
+    bluesky_dm: false,
+    mastodon_dm: false
+  })
+  
   const t = useTranslations('firstSeen')
   const pathname = usePathname()
-
-  // useEffect(() => {
-  //   const fetchPreferences = async () => {
-  //     console.log('Fetching preferences...');
-  //     try {
-  //       const response = await fetch('/api/newsletter', { method: 'GET' });
-  //       console.log('Response status:', response.status);
-  //       if (response.ok) {
-  //         const responseData = await response.json();
-  //         console.log('Preferences data:', responseData);
-  //         // Access the nested data object
-  //         const preferences = responseData.data;
-  //         // Force boolean values with !!
-  //         setAcceptResearch(!!preferences.research_accepted);
-  //         setAcceptOEP(!!preferences.oep_accepted);
-  //         console.log('Set research to:', !!preferences.research_accepted);
-  //         console.log('Set OEP to:', !!preferences.oep_accepted);
-  //       }
-  //     } catch (error) {
-  //       console.error('Error fetching preferences:', error);
-  //     }
-  //   };
-  //   fetchPreferences();
-  // }, []);
 
   const languages = [
     { code: 'fr', name: 'FR' },
@@ -76,105 +63,149 @@ export default function NewsLetterFirstSeen({ userId, onSubscribe, onClose }: Ne
     { code: 'de', name: 'DE' },
     { code: 'sv', name: 'SV' },
     { code: 'pt', name: 'PT'},
-
-  ];
+  ]
+  
   const currentLocale = pathname.split('/')[1]
 
-  const switchLanguage = (locale: string) => {
+  // Vérifier et sauvegarder la langue à la connexion
+  useEffect(() => {
+    const checkAndSaveLanguage = async () => {
+      // Vérifier si on a déjà une langue stockée pour cet utilisateur
+      const storedLanguage = localStorage.getItem(`user_language_${userId}`);
+      
+      if (userId && !storedLanguage) {
+        try {
+          // Vérifier si une préférence existe déjà
+          const response = await fetch('/api/users/language');
+          const data = await response.json();
+          
+          const languageToStore = data.language || currentLocale;
+          
+          // Si pas de préférence, sauvegarder la langue actuelle
+          if (!data.language) {
+            await fetch('/api/users/language', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ language: currentLocale }),
+            });
+          }
+          
+          // Stocker la langue pour cet utilisateur
+          localStorage.setItem(`user_language_${userId}`, languageToStore);
+        } catch (error) {
+          console.error('Error checking/saving language preference:', error);
+        }
+      }
+    };
+
+    checkAndSaveLanguage();
+  }, [userId, currentLocale]);
+
+  const switchLanguage = async (locale: string) => {
     const newPath = pathname.replace(`/${currentLocale}`, `/${locale}`)
+    
+    // Si un userId est fourni, sauvegarder la préférence
+    if (userId) {
+      try {
+        await fetch('/api/users/language', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ language: locale }),
+        });
+        // Mettre à jour le localStorage avec la nouvelle langue
+        localStorage.setItem(`user_language_${userId}`, locale);
+      } catch (error) {
+        console.error('Error saving language preference:', error);
+      }
+    }
+    
     window.location.href = newPath
   }
 
-  const handleSwitchChange = async (type: 'research' | 'oep', value: boolean) => {
-    console.log(`🔄 Switch changed: ${type} = ${value}`);
-    if (type === 'research') {
-      setAcceptResearch(value);
-      console.log('✅ Updated research to:', value);
-    } else {
-      setAcceptOEP(value);
-      console.log('✅ Updated OEP to:', value);
+  const handleLocalConsentChange = (type: ConsentType, value: boolean) => {
+    setLocalConsents(prev => ({
+      ...prev,
+      [type]: value,
+      // Si on désactive personalized_support, on désactive aussi les DMs
+      ...(type === 'personalized_support' && !value ? {
+        bluesky_dm: false,
+        mastodon_dm: false
+      } : {})
+    }))
+  }
+
+  const handleSubmit = async () => {
+    // Vérifier l'email si newsletter est activée
+    if (localConsents.email_newsletter && (!email || !isValidEmail(email))) {
+      setError(t('newsletter.errors.missingEmail'))
+      return
     }
-  };
 
-  const updatePreferences = async (submit: boolean) => {
+    setIsLoading(true)
+    setError('')
+
     try {
-      setIsLoading(true)
-      setError('')
+      // Préparer le tableau de tous les consentements avec leur valeur
+      const consentsToUpdate = Object.entries(localConsents).map(([type, value]) => ({
+        type: type as ConsentType,
+        value
+      }))
 
-      if (!submit) {
-        // Si c'est un dismiss, on fait juste une requête GET pour mettre à jour have_seen_newsletter
-        const response = await fetch(`/api/newsletter`, {
-          method: 'GET'
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to update preferences')
-        }
-
-        onClose?.()
-        return
-      }
-
-      // Get the current state values at the time of submission
-      const currentResearch = acceptResearch;
-      const currentOEP = acceptOEP;
-      const currentHqxNewsletter = hqx_newsletter;
-
-      // Si c'est un submit, on continue avec la requête POST normale
-      const response = await fetch(`/api/newsletter`, {
+      // Envoyer tous les consentements d'un coup
+      console.log("consents to update ---->", consentsToUpdate)
+      const response = await fetch('/api/newsletter/request', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          email,
-          acceptHQX: true,
-          acceptOEP: currentOEP,
-          research_accepted: currentResearch,
-          hqx_newsletter: currentHqxNewsletter,
-          have_seen_newsletter: true
-        }),
+          consents: consentsToUpdate,
+          ...(localConsents.email_newsletter ? { email } : {})
+        })
       })
 
-      if (!response.ok) {
-        const data = await response.json()
-        if (data.error === 'Missing required fields') {
-          setError(t('newsletter.errors.missingEmail'))
-          return
-        }
-        throw new Error(data.error || 'Failed to update preferences')
-      }
+      const data = await response.json()
 
-      onSubscribe?.()
-      onClose?.()
-    } catch (error) {
-      console.error('Error updating preferences:', error)
-      setError(error instanceof Error ? error.message : 'An error occurred')
+      if (response.ok && data.success) {
+        onSubscribe?.()
+        onClose?.()
+      } else {
+        // Afficher l'erreur spécifique de l'API
+        const errorMessage = data.error?.message || t('newsletter.errors.updateFailed')
+        if (data.error?.code === '23505') {
+          setError(t('newsletter.errors.emailExists'))
+        } else {
+          setError(errorMessage)
+        }
+      }
+    } catch (err) {
+      console.error('Error updating consents:', err)
+      setError(t('newsletter.errors.updateFailed'))
     } finally {
       setIsLoading(false)
     }
   }
 
-  const handleSubmit = () => updatePreferences(true)
-  const handleDismiss = () => updatePreferences(false)
-
-
   return (
-  <div className="bg-white rounded-2xl p-4 max-w-2xl md:max-w-3xl w-full relative max-h-[90vh] overflow-y-auto mx-auto">
-  <div className="absolute top-4 right-4 flex items-center gap-2">
-        {/* Language Selector */}
-        <div className="relative mr-6">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+      <div className="bg-white rounded-lg p-8 max-w-2xl w-full mx-4 relative">
+        {/* Language selector */}
+        <div className="absolute top-4 right-4 flex items-center space-x-2">
           <button
             onClick={() => setIsLanguageOpen(!isLanguageOpen)}
-            className="flex items-center gap-2 p-2 rounded-lg hover:bg-black/5 transition-colors"
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100 transition-colors"
           >
-            <Globe className="w-5 h-5 bg-black" aria-hidden="true" />
-            <span className="text-lg text-black">
+            <Globe className="w-5 h-5 text-gray-600" aria-hidden="true" />
+            <span className="text-sm text-gray-600">
               {languages.find(lang => lang.code === currentLocale)?.name}
             </span>
             <ChevronDown
-              className={`w-4 h-4 text-black/60 transition-transform duration-200 
-                    ${isLanguageOpen ? 'rotate-180' : ''}`}
+              className={`w-4 h-4 text-gray-400 transition-transform duration-200 
+                ${isLanguageOpen ? 'rotate-180' : ''}`}
             />
           </button>
 
@@ -184,9 +215,9 @@ export default function NewsLetterFirstSeen({ userId, onSubscribe, onClose }: Ne
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="absolute right-0 mt-2 w-40 origin-top-right"
+                className="absolute right-0 top-full mt-1 w-32 origin-top-right bg-white rounded-lg shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
               >
-                <div className="bg-white rounded-xl border border-gray-200 shadow-lg overflow-hidden">
+                <div className="py-1">
                   {languages.map((lang) => (
                     <button
                       key={lang.code}
@@ -194,10 +225,9 @@ export default function NewsLetterFirstSeen({ userId, onSubscribe, onClose }: Ne
                         switchLanguage(lang.code);
                         setIsLanguageOpen(false);
                       }}
-                      className={`w-full px-4 py-2 text-xs ${plex.className} text-gray-700 hover:bg-gray-50 transition-colors text-left flex items-center gap-2
+                      className={`w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2
                         ${currentLocale === lang.code ? 'bg-gray-50' : ''}`}
                     >
-                      <span className="text-base">{lang.flag}</span>
                       <span>{lang.name}</span>
                     </button>
                   ))}
@@ -206,112 +236,172 @@ export default function NewsLetterFirstSeen({ userId, onSubscribe, onClose }: Ne
             )}
           </AnimatePresence>
         </div>
-      </div>
 
-      <div className="flex flex-col items-center gap-1">
-        <Image
-          src={Badge}
-          alt="Logo"
-          width={80}
-          height={80}
-          className="mb-1"
-        />
+        <div className="flex flex-col items-center gap-1">
+          <Image
+            src={Badge}
+            alt="Logo"
+            width={80}
+            height={80}
+            className="mb-1"
+          />
 
-        <div className="text-center">
-          <h2 className="text-2xl font-semibold mb-2 text-black">{t('title')}</h2>
-          <div className="text-sm text-gray-600 text-center">
-            {t.raw('description').split('\n').map((line, index) => {
-              const parts = line.split(/\{(lien)\}/);
-              return (
-                <p key={index} className="mb-3">
-                  {parts.map((part, partIndex) => {
-                    if (part === 'lien') {
-                      return (
-                        <Link 
-                          key={partIndex}
-                          href={`/${currentLocale}/privacy_policy`} 
-                          className="text-blue-600 hover:underline"
-                        >
-                          {t('privacyPolicyLink')}
-                        </Link>
-                      );
-                    }
-                    return <span key={partIndex}>{part}</span>;
-                  })}
-                </p>
-              );
-            })}
+          <div className="text-center">
+            <h2 className="text-2xl font-semibold mb-2 text-black">{t('title')}</h2>
+            <div className="text-sm text-gray-600 text-center">
+              {t.raw('description').split('\n').map((line, index) => {
+                const parts = line.split(/\{(lien)\}/);
+                return (
+                  <p key={index} className="mb-3">
+                    {parts.map((part, partIndex) => {
+                      if (part === 'lien') {
+                        return (
+                          <Link 
+                            key={partIndex}
+                            href={`/${currentLocale}/privacy_policy`} 
+                            className="text-blue-600 hover:underline"
+                          >
+                            {t('privacyPolicyLink')}
+                          </Link>
+                        );
+                      }
+                      return <span key={partIndex}>{part}</span>;
+                    })}
+                  </p>
+                );
+              })}
+            </div>
           </div>
-        </div>
 
-        <div className="w-full max-w-xl bg-gray-100 p-6 rounded-lg space-y-4">
-        <div className="flex items-center space-x-3">
+          <div className="w-full max-w-xl bg-gray-100 p-6 rounded-lg space-y-4">
+            <div className="flex items-center space-x-3">
               <Switch
-                checked={acceptResearch}
-                onChange={(newValue) => handleSwitchChange('research', newValue)}
+                checked={localConsents.research_participation}
+                onChange={(value) => handleLocalConsentChange('research_participation', value)}
                 className={`${
-                  acceptResearch ? 'bg-blue-600' : 'bg-gray-200'
+                  localConsents.research_participation ? 'bg-blue-600' : 'bg-gray-200'
                 } relative inline-flex h-[24px] w-[44px] shrink-0 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2`}
               >
                 <span
                   className={`${
-                    acceptResearch ? 'translate-x-[22px]' : 'translate-x-[2px]'
+                    localConsents.research_participation ? 'translate-x-[22px]' : 'translate-x-[2px]'
                   } inline-block h-[20px] w-[20px] transform rounded-full bg-white transition-transform`}
                 />
               </Switch>
               <span className="text-sm text-gray-700">
-              {t('newsletter.researchConsent')}
+                {t('newsletter.researchConsent')}
               </span>
             </div>
-        
-          <div className="space-y-2 text-sm">
+
+            <div className="space-y-2 text-sm">
+              <div className="flex items-center space-x-3">
+                <Switch
+                  checked={localConsents.email_newsletter}
+                  onChange={(value) => handleLocalConsentChange('email_newsletter', value)}
+                  className={`${
+                    localConsents.email_newsletter ? 'bg-blue-600' : 'bg-gray-200'
+                  } relative inline-flex h-[24px] w-[44px] shrink-0 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2`}
+                >
+                  <span
+                    className={`${
+                      localConsents.email_newsletter ? 'translate-x-[22px]' : 'translate-x-[2px]'
+                    } inline-block h-[20px] w-[20px] transform rounded-full bg-white transition-transform`}
+                  />
+                </Switch>
+                <span className="text-sm text-gray-700">
+                  {t('newsletter.subtitle')}
+                </span>
+              </div>
+
+              {localConsents.email_newsletter && (
+                <div className="mt-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {t('newsletter.emailLabel')} <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    placeholder={t('newsletter.emailPlaceholder')}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                </div>
+              )}
+            </div>
+
             <div className="flex items-center space-x-3">
               <Switch
-                checked={hqx_newsletter}
-                onChange={(newValue) => setHqxNewsletter(newValue)}
+                checked={localConsents.personalized_support}
+                onChange={(value) => handleLocalConsentChange('personalized_support', value)}
                 className={`${
-                  hqx_newsletter ? 'bg-blue-600' : 'bg-gray-200'
+                  localConsents.personalized_support ? 'bg-blue-600' : 'bg-gray-200'
                 } relative inline-flex h-[24px] w-[44px] shrink-0 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2`}
               >
                 <span
                   className={`${
-                    hqx_newsletter ? 'translate-x-[22px]' : 'translate-x-[2px]'
+                    localConsents.personalized_support ? 'translate-x-[22px]' : 'translate-x-[2px]'
                   } inline-block h-[20px] w-[20px] transform rounded-full bg-white transition-transform`}
                 />
               </Switch>
               <span className="text-sm text-gray-700">
-              {t('newsletter.subtitle')}
+                {t('newsletter.personalizedSupport')}
               </span>
-              {/* <p className="text-gray-700 text-sm">{t('newsletter.subtitle')}</p> */}
             </div>
-          </div>
 
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                {t('newsletter.emailLabel')}
-              </label>
-              <input
-                type="email"
-                placeholder={t('newsletter.emailPlaceholder')}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
-          
+            {localConsents.personalized_support && (
+              <div className="ml-8 space-y-3">
+                <div className="flex items-center space-x-3">
+                  <Switch
+                    checked={localConsents.bluesky_dm}
+                    onChange={(value) => handleLocalConsentChange('bluesky_dm', value)}
+                    className={`${
+                      localConsents.bluesky_dm ? 'bg-blue-600' : 'bg-gray-200'
+                    } relative inline-flex h-[24px] w-[44px] shrink-0 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2`}
+                  >
+                    <span
+                      className={`${
+                        localConsents.bluesky_dm ? 'translate-x-[22px]' : 'translate-x-[2px]'
+                      } inline-block h-[20px] w-[20px] transform rounded-full bg-white transition-transform`}
+                    />
+                  </Switch>
+                  <span className="text-sm text-gray-700">
+                    {t('newsletter.blueskyDM')}
+                  </span>
+                </div>
+
+                <div className="flex items-center space-x-3">
+                  <Switch
+                    checked={localConsents.mastodon_dm}
+                    onChange={(value) => handleLocalConsentChange('mastodon_dm', value)}
+                    className={`${
+                      localConsents.mastodon_dm ? 'bg-blue-600' : 'bg-gray-200'
+                    } relative inline-flex h-[24px] w-[44px] shrink-0 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2`}
+                  >
+                    <span
+                      className={`${
+                        localConsents.mastodon_dm ? 'translate-x-[22px]' : 'translate-x-[2px]'
+                      } inline-block h-[20px] w-[20px] transform rounded-full bg-white transition-transform`}
+                    />
+                  </Switch>
+                  <span className="text-sm text-gray-700">
+                    {t('newsletter.mastodonDM')}
+                  </span>
+                </div>
+              </div>
+            )}
 
             <div className="flex items-center space-x-3">
               <Switch
-                checked={acceptOEP}
-                onChange={(newValue) => handleSwitchChange('oep', newValue)}
+                checked={localConsents.oep_newsletter}
+                onChange={(value) => handleLocalConsentChange('oep_newsletter', value)}
                 className={`${
-                  acceptOEP ? 'bg-blue-600' : 'bg-gray-200'
+                  localConsents.oep_newsletter ? 'bg-blue-600' : 'bg-gray-200'
                 } relative inline-flex h-[24px] w-[44px] shrink-0 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2`}
               >
                 <span
                   className={`${
-                    acceptOEP ? 'translate-x-[22px]' : 'translate-x-[2px]'
+                    localConsents.oep_newsletter ? 'translate-x-[22px]' : 'translate-x-[2px]'
                   } inline-block h-[20px] w-[20px] transform rounded-full bg-white transition-transform`}
                 />
               </Switch>
@@ -333,30 +423,30 @@ export default function NewsLetterFirstSeen({ userId, onSubscribe, onClose }: Ne
               <p className="text-red-500 text-sm mt-2">{error}</p>
             )}
           </div>
+
+          <button
+            onClick={handleSubmit}
+            disabled={isLoading}
+            className="mt-2 px-6 py-3 bg-[#46489B] text-white rounded-lg font-semibold hover:bg-opacity-90 
+                      transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isLoading ? (
+              <span className="flex items-center justify-center gap-2">
+                <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></span>
+                Loading...
+              </span>
+            ) : (
+              t('cta')
+            )}
+          </button>
+
+          <button
+            // onClick={}
+            className="text-gray-500 hover:text-gray-700 text-sm"
+          >
+            {t('dismiss')}
+          </button>
         </div>
-
-        <button
-          onClick={handleSubmit}
-          disabled={isLoading}
-          className="mt-2 px-6 py-3 bg-[#46489B] text-white rounded-lg font-semibold hover:bg-opacity-90 
-                    transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isLoading ? (
-            <span className="flex items-center justify-center gap-2">
-              <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></span>
-              Loading...
-            </span>
-          ) : (
-            t('cta')
-          )}
-        </button>
-
-        <button
-          // onClick={}
-          className="text-gray-500 hover:text-gray-700 text-sm"
-        >
-          {t('dismiss')}
-        </button>
       </div>
     </div>
   )

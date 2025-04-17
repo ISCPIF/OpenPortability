@@ -23,13 +23,14 @@ export interface User {
     automatic_reconnect: boolean;
     research_accepted: boolean;
     have_seen_newsletter: boolean;
+    personalized_support: boolean;
 }
 
 // Type pour les mises à jour utilisateur
 export type UserUpdate = Partial<Omit<User, 'id' | 'created_at' | 'updated_at'>>;
 
 // Types spécifiques pour différents types de mises à jour
-export interface NewsletterUpdate extends Pick<UserUpdate, 'email' | 'hqx_newsletter' | 'oep_accepted' | 'research_accepted' | 'have_seen_newsletter'> {}
+export interface NewsletterUpdate extends Pick<UserUpdate, 'email' | 'hqx_newsletter' | 'oep_accepted' | 'research_accepted' | 'have_seen_newsletter' | 'personalized_support'> {}
 
 export interface ShareUpdate extends Pick<UserUpdate, 'twitter_id' | 'twitter_username' | 'twitter_image' | 'bluesky_id' | 'bluesky_username' | 'bluesky_image' | 'mastodon_id' | 'mastodon_username' | 'mastodon_image' | 'mastodon_instance'> {}
 
