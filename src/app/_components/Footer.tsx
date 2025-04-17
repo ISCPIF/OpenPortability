@@ -49,7 +49,7 @@ const Footer = memo(() => {
   });
 
   return (
-    <footer className="w-full py-8 mt-auto bg-gradient-to-br from-[#2a39a9] to-[#1f2d8a] border-t border-indigo-500/20">
+    <footer className="w-full py-8 mt-auto bg-gradient-to-br bg-[#2a39a9]">
       <div className="container mx-auto px-4">
         <div className="flex flex-col items-center text-center gap-3">
           <div className="text-sm text-slate-300 font-space-grotesk">

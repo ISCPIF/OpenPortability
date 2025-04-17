@@ -1,5 +1,5 @@
 export interface MatchingTarget {
-  target_twitter_id: string;
+  target_twitter_id: string | null;
   bluesky_handle: string | null;
   mastodon_handle: string | null;
   mastodon_username: string | null;

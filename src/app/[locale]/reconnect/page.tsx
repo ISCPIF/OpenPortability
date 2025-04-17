@@ -8,14 +8,12 @@ import LoadingIndicator from '@/app/_components/LoadingIndicator'
 import Footer from '@/app/_components/Footer'
 import StatsReconnexion from '@/app/_components/StatsReconnexion'
 import { useReconnectState } from '@/hooks/useReconnectState'
+import MigrateSea from '@/app/_components/MigrateSea'
 
 // Nouveau composant conteneur pour gérer la logique conditionnelle
 import ReconnectContainer from '@/app/_components/reconnect/ReconnectContainer'
 
 // Dynamic imports for heavy components
-const MigrateSea = dynamic(() => import('@/app/_components/MigrateSea'), {
-  loading: () => <div className="animate-pulse bg-blue-900/50 h-[600px]" />
-})
 
 const MigrateStats = dynamic(() => import('@/app/_components/MigrateStats'), {
   loading: () => <div className="animate-pulse bg-blue-900/50 h-24" />
@@ -66,65 +64,66 @@ export default function ReconnectPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#2a39a9] w-full">
-      <div className="relative z-40">
+    <div className="min-h-screen bg-[#E8E9E4]">
+      <div className="relative z-40 bg-[#E8E9E4]">
         <Header />
       </div>
       
-      <div className="w-full">
+      <div className="bg-[#2a39a9] min-h-[calc(100vh-64px)]"> 
         <div className="flex flex-col text-center text-[#E2E4DF]">
           {/* Sea background that takes full width */}
           <Suspense fallback={<div className="animate-pulse bg-blue-900/50 h-[600px]" />}>
             <MigrateSea />
           </Suspense>
         </div>
-      </div>
 
-      <div className="relative w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="relative z-10 -mt-16 sm:-mt-24">
-          <Suspense fallback={<div className="animate-pulse bg-blue-900/50 h-24" />}>
-            <MigrateStats 
-              stats={stats} 
-              session={{
-                user: {
-                  twitter_username: session?.user?.twitter_username ?? "",
-                  bluesky_username: session?.user?.bluesky_username ?? "",
-                  mastodon_username: session?.user?.mastodon_username ?? ""
-                }
-              }}
-              simpleView={!session?.user?.bluesky_username && !session?.user?.mastodon_username}                
-            />
-          </Suspense>
-        </div>
-
-        {/* Composant conteneur qui gère l'affichage conditionnel */}
-        <ReconnectContainer
-          session={session}
-          stats={stats}
-          globalStats={globalStats}
-          mastodonInstances={mastodonInstances}
-          isLoading={isLoading}
-          setIsLoading={setIsLoading}
-          isAutomaticReconnect={isAutomaticReconnect}
-          showOptions={showOptions}
-          isReconnectionComplete={isReconnectionComplete}
-          missingProviders={missingProviders}
-          accountsToProcess={accountsToProcess}
-          migrationResults={migrationResults}
-          handleAutomaticReconnection={handleAutomaticReconnection}
-          handleManualReconnection={handleManualReconnection}
-          handleStartMigration={handleStartMigration}
-          refreshStats={refreshStats}
-        />
-
-        {/* Statistiques globales */}
-        <div className="w-full flex justify-center my-8">
-          <div className="w-full">
-            <StatsReconnexion globalStats={globalStats} />
+        <div className="relative w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="relative z-10 -mt-16 sm:-mt-24">
+            <Suspense fallback={<div className="animate-pulse bg-blue-900/50 h-24" />}>
+              <MigrateStats 
+                stats={stats} 
+                session={{
+                  user: {
+                    twitter_username: session?.user?.twitter_username ?? "",
+                    bluesky_username: session?.user?.bluesky_username ?? "",
+                    mastodon_username: session?.user?.mastodon_username ?? ""
+                  }
+                }}
+                simpleView={!session?.user?.bluesky_username && !session?.user?.mastodon_username}                
+              />
+            </Suspense>
           </div>
+
+          {/* Composant conteneur qui gère l'affichage conditionnel */}
+          <ReconnectContainer
+            session={session}
+            stats={stats}
+            globalStats={globalStats}
+            mastodonInstances={mastodonInstances}
+            isLoading={isLoading}
+            setIsLoading={setIsLoading}
+            isAutomaticReconnect={isAutomaticReconnect}
+            showOptions={showOptions}
+            isReconnectionComplete={isReconnectionComplete}
+            missingProviders={missingProviders}
+            accountsToProcess={accountsToProcess}
+            migrationResults={migrationResults}
+            handleAutomaticReconnection={handleAutomaticReconnection}
+            handleManualReconnection={handleManualReconnection}
+            handleStartMigration={handleStartMigration}
+            refreshStats={refreshStats}
+          />
+
+          {/* Statistiques globales */}
+          <div className="w-full flex justify-center my-8">
+            <div className="w-full">
+              <StatsReconnexion globalStats={globalStats} />
+            </div>
+          </div>
+         
         </div>
+        <Footer />
       </div>
-      <Footer />
     </div>
   )
 }

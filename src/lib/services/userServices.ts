@@ -14,6 +14,7 @@ export class UserService {
     acceptHQX?: boolean;
     acceptOEP?: boolean;
     research_accepted?: boolean;
+    personalized_support?: boolean;
   }): Promise<void> {
     const update: NewsletterUpdate = {
       have_seen_newsletter: true
@@ -39,31 +40,85 @@ export class UserService {
       update.research_accepted = data.research_accepted;
     }
 
+    if (typeof data.personalized_support !== 'undefined') {
+      update.personalized_support = data.personalized_support;
+    }
+
     await this.repository.updateUser(userId, update);
   }
 
+  /**
+   * Met à jour l'email d'un utilisateur dans next-auth.users
+   */
+  async updateEmail(userId: string, email: string): Promise<void> {
+    if (!email) {
+      throw new Error('Email is required');
+    }
+    await this.repository.updateUser(userId, { email });
+  }
+
+  /**
+   * Met à jour le statut have_seen_newsletter d'un utilisateur
+   */
+  async updateHaveSeenNewsletter(userId: string): Promise<void> {
+    await this.repository.updateUser(userId, {
+      have_seen_newsletter: true
+    });
+  }
+
+  /**
+   * Met à jour un consentement spécifique pour un utilisateur
+   */
+  async updateConsent(
+    userId: string, 
+    type: string, 
+    value: boolean,
+    metadata?: {
+      ip_address?: string;
+      user_agent?: string;
+    }
+  ): Promise<void> {
+    await this.repository.updateConsent(userId, type, value, metadata);
+  }
+
+  /**
+   * Récupère les préférences newsletter d'un utilisateur
+   */
   async getNewsletterPreferences(userId: string): Promise<{
     email?: string;
     hqx_newsletter: boolean;
     oep_accepted: boolean;
     research_accepted: boolean;
-    have_seen_newsletter: boolean;
+    // have_seen_newsletter: boolean;
   }> {
+    console.log('🔍 [UserService.getNewsletterPreferences] Getting preferences for user:', userId);
     try {
+      // Récupérer l'email de l'utilisateur et have_seen_newsletter
       const user = await this.repository.getUser(userId);
       if (!user) {
         throw new Error('User not found');
       }
 
+      // Récupérer les consentements actifs
+      const activeConsents = await this.repository.getUserActiveConsents(userId);
+      
+      console.log('✅ [UserService.getNewsletterPreferences] Got preferences:', {
+        email: user.email,
+        hqx_newsletter: activeConsents['email_newsletter'] || false,
+        oep_accepted: activeConsents['oep_newsletter'] || false,
+        research_accepted: activeConsents['research_participation'] || false,
+        // have_seen_newsletter: user.have_seen_newsletter
+      });
+
       return {
         email: user.email,
-        hqx_newsletter: user.hqx_newsletter,
-        oep_accepted: user.oep_accepted,
-        research_accepted: user.research_accepted,
-        have_seen_newsletter: user.have_seen_newsletter
+        hqx_newsletter: activeConsents['email_newsletter'] || false,
+        oep_accepted: activeConsents['oep_newsletter'] || false,
+        research_accepted: activeConsents['research_participation'] || false,
+        // have_seen_newsletter: user.have_seen_newsletter
       };
     } catch (error) {
-      console.error('Failed to get newsletter preferences:', error);
+      console.error('❌ [UserService.getNewsletterPreferences] Error:', error);
       throw error;
     }
   }
@@ -95,5 +150,149 @@ export class UserService {
       console.error('Failed to get share events:', error);
       throw error;
     }
+  }
+
+  /**
+   * Récupère les consentements actifs d'un utilisateur
+   * 
+   * @param userId Identifiant de l'utilisateur
+   * @returns Un objet avec les types de consentement comme clés et les valeurs de consentement comme valeurs
+   */
+  async getUserActiveConsents(userId: string): Promise<Record<string, boolean>> {
+    // console.log('🔍 [UserService.getUserActiveConsents] Getting consents for user:', userId);
+    try {
+      const consents = await this.repository.getUserActiveConsents(userId);
+      // console.log('✅ [UserService.getUserActiveConsents] Got consents:', consents);
+      return consents;
+    } catch (error) {
+      console.error('❌ [UserService.getUserActiveConsents] Error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Récupère l'historique des consentements d'un utilisateur pour un type de consentement donné
+   * 
+   * @param userId Identifiant de l'utilisateur
+   * @param consentType Type de consentement (ou undefined pour récupérer tous les types)
+   * @returns Tableau d'historique des consentements
+   */
+  async getConsentHistory(
+    userId: string, 
+    consentType?: string
+  ): Promise<Array<{
+    consent_type: string;
+    consent_value: boolean;
+    consent_timestamp: string;
+    is_active: boolean;
+  }>> {
+    return this.repository.getConsentHistory(userId, consentType);
+  }
+
+  /**
+   * Vérifie si un utilisateur a donné son consentement pour un type spécifique
+   * 
+   * @param userId Identifiant de l'utilisateur
+   * @param consentType Type de consentement à vérifier
+   * @returns true si l'utilisateur a un consentement actif et positif, false sinon
+   */
+  async hasActiveConsent(userId: string, consentType: string): Promise<boolean> {
+    const consents = await this.getUserActiveConsents(userId);
+    return !!consents[consentType];
+  }
+
+  /**
+   * Enregistre un consentement utilisateur
+   * 
+   * @param userId Identifiant de l'utilisateur
+   * @param consentType Type de consentement (email_newsletter, bluesky_dm, etc.)
+   * @param consentValue Valeur du consentement (true/false)
+   * @param metadata Métadonnées additionnelles à stocker (user-agent, etc.)
+   * @returns Le consentement créé
+   */
+  async recordConsent(
+    userId: string,
+    consentType: string,
+    consentValue: boolean,
+    metadata: Record<string, any> = {}
+  ): Promise<any> {
+    if (!userId) {
+      throw new Error('User ID is required to record consent');
+    }
+    
+    if (!consentType) {
+      throw new Error('Consent type is required');
+    }
+    
+    // Vérifier que consentType est une valeur valide
+    const validConsentTypes = [
+      'email_newsletter',
+      'bluesky_dm',
+      'research_participation',
+      'oep_newsletter'
+    ];
+    
+    if (!validConsentTypes.includes(consentType)) {
+      throw new Error(`Invalid consent type: ${consentType}`);
+    }
+    
+    return this.repository.insertNewsletterConsent(userId, consentType, consentValue, metadata);
+  }
+
+  async updateNewsletterConsent(
+    userId: string,
+    email: string | null,
+    value: boolean,
+    metadata: Record<string, any> = {}
+  ): Promise<void> {
+    // Valider l'email si fourni
+    if (email && !isValidEmail(email)) {
+      throw new Error('Invalid email format');
+    }
+
+    // Vérifier si l'email existe déjà pour un autre utilisateur
+    if (email) {
+      const existingUser = await this.repository.getUser(userId);
+      if (existingUser && existingUser.id !== userId) {
+        throw new Error('Email already exists');
+      }
+    }
+
+    await this.repository.updateNewsletterConsent(userId, email, value, metadata);
+  }
+
+  async updateUserOnboarded(userId: string, onboarded: boolean): Promise<void> {
+    // TODO: implementer la mise à jour de l'utilisateur onboarded
+  }
+
+  async getLanguagePreference(userId: string) {
+    try {
+      const langPref = await this.repository.getUserLanguagePreference(userId);
+      return langPref || { language: 'en' }; // Default to English if no preference is set
+    } catch (error) {
+      console.error('❌ [UserService.getLanguagePreference] Error:', error);
+      throw error;
+    }
+  }
+
+  async updateLanguagePreference(
+    userId: string,
+    language: string,
+  ): Promise<void> {
+    if (!userId) {
+      throw new Error('User ID is required to update language preference');
+    }
+    
+    if (!language) {
+      throw new Error('Language is required');
+    }
+    
+    // Validate language code (you might want to add more validation)
+    const validLanguages = ['en', 'fr', 'es', 'de', 'it', 'sv', 'pt' ];
+    if (!validLanguages.includes(language.toLowerCase())) {
+      throw new Error(`Invalid language code: ${language}`);
+    }
+    
+    await this.repository.updateLanguagePreference(userId, language.toLowerCase());
   }
 }

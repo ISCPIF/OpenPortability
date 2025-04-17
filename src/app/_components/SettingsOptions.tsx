@@ -16,13 +16,21 @@ export default function SettingsOptions() {
   const { preferences, isLoading, updatePreferences } = useNewsLetter()
   const t = useTranslations('settings')
 
-  const handleSwitchChange = async (type: 'research' | 'oep' | 'oepNewsletter', value: boolean) => {
+  const handleSwitchChange = async (type: 'research' | 'oep' | 'dm', value: boolean) => {
     try {
-      const updateObj = type === 'research' 
-        ? { research_accepted: value }
-        : type === 'oep'
-          ? { oep_accepted: value }
-          : { oep_newsletter: value };
+      let updateObj: Partial<typeof preferences> = {};
+      
+      switch (type) {
+        case 'research':
+          updateObj = { research_accepted: value };
+          break;
+        case 'oep':
+          updateObj = { oep_accepted: value };
+          break;
+        case 'dm':
+          updateObj = { dm_consent: value };
+          break;
+      }
       
       const success = await updatePreferences(updateObj);
       
@@ -101,18 +109,18 @@ export default function SettingsOptions() {
                   </Switch>
                 </div>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs text-white/60">{t('oepNewsletter')}</span>
+                  <span className="text-xs text-white/60">{t('dmConsent')}</span>
                   <Switch
                     disabled={isLoading}
-                    checked={preferences.oep_newsletter}
-                    onChange={(value) => handleSwitchChange('oepNewsletter', value)}
+                    checked={preferences.dm_consent}
+                    onChange={(value) => handleSwitchChange('dm', value)}
                     className={`${
-                      preferences.oep_newsletter ? 'bg-blue-600' : 'bg-gray-700'
+                      preferences.dm_consent ? 'bg-blue-600' : 'bg-gray-700'
                     } relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2`}
                   >
                     <span
                       className={`${
-                        preferences.oep_newsletter ? 'translate-x-5' : 'translate-x-1'
+                        preferences.dm_consent ? 'translate-x-5' : 'translate-x-1'
                       } inline-block h-3 w-3 transform rounded-full bg-white transition-transform`}
                     />
                   </Switch>

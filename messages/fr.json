@@ -4,7 +4,8 @@
       "profile": {
         "username": "@{username}"
       },
-      "returnToFirstStep": "Retourner à la première étape"
+      "returnToDashboard": "Vers la reconnexion",
+      "settings" : "Réglages et notifications"
     },
     "connectedAccounts": {
       "connectedWith": "Vous êtes connecté avec {services} ",
@@ -13,6 +14,12 @@
         "twitter": "Twitter/X",
         "bluesky": "BlueSky",
         "mastodon": "Mastodon"
+      },
+      "yourAccounts": "Vos comptes connectés",
+      "connected": "Connecté",
+      "unlinkButton": "Déconnecter {provider}",
+      "errors": {
+        "lastAccount": "Vous devez conserver au moins un compte connecté"
       }
     },
     "blueskyLogin": {
@@ -190,6 +197,9 @@
     "loading": "Chargement de vos données...",
     "addSocialNetwork": "Ajouter un réseau social",
     "addSocialNetworkDescription": "Connectez-vous à d'autres réseaux sociaux pour enrichir votre expérience",
+    "bluesky": {
+      "testDM": "Tester les messages directs Bluesky"
+    },
     "migrationStep": {
       "completed1": "Bravo ! Vous avez terminé la première des deux étapes de la migration.",
       "completed2": "N'oubliez par d'inviter vos abonnés à s’inscrire sur OpenPortability. En 1min ils pourront être reconnectés à votre compte, même sans leur archive.\nLa phase 2 de la reconnexion interviendra dans quelques jours. Selon vos préférences, vous recevrez une notification par e-mail ou pourrez suivre le lancement sur nos comptes X, BlueSky et Mastodon.\nRestez à l’affût, de belles surprises vous attendent !",
@@ -328,24 +338,104 @@
   },
 "settings": {
     "logout": "Déconnexion",
+    "updateSuccess" : "Préférences mises à jour",
     "deleteAccount": "Supprimer mon compte",
     "deleteConfirm": {
       "title": "Supprimer le compte",
-      "message": "Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible et entraînera la suppression de :\n\n• Toutes vos données importées\n• Tous vos comptes liés (Twitter/X, BlueSky, Mastodon)\n• Votre profil OpenPortability",
+      "message1": "Cette action est irréversible et entraînera la suppression de :",
+      "message2": "• Toutes vos données importées",
+      "message3": "• Tous vos comptes liés (Twitter/X, BlueSky, Mastodon)",
+      "message4": "• Votre profil OpenPortability",
       "cancel": "Annuler",
       "confirm": "Oui, supprimer mon compte"
     },
-    "newsletter": "Newsletter OpenPortability",
-    "research": "Programme de recherche CNRS",
-    "oepNewsletter" : "Newsletter On Est Prêts",
+    "newsletter": {
+      "title": "Newsletter OpenPortability",
+      "description": "Recevoir les updates de OpenPortability"
+    },
+    "research": {
+      "title": "Programme de recherche CNRS",
+      "description": "J'accepte que mes données soient utilisées à des fins de recherche"
+    },
+    "oepNewsletter" : {
+      "title": "Newsletter On Est Prêts",
+      "description": "Être informé.e des initiatives de On est prêt"
+    },
+    "dmConsent": "Autoriser les DM sur Bluesky",
+    "mastodonConsent": "Autoriser les DM sur Mastodon",
+    "emailConsent": "Recevoir par email",
+    "dmDescription": "Recevoir les notifications par message direct",
+    "emailDescription": "Recevoir les notifications par email",
     "preferencesUpdated": "Préférences mises à jour",
+    "hqxNewsletter": {
+      "title": "Newsletter OpenPortability",
+      "description": "Recevoir les updates de OpenPortability"
+    },
+    "notificationOptions": "Options de notification",
+    "loading" : "chargement",
+    "accountSettings": "Paramètres du compte",
+    "testDmSection": "Tester les messages directs (DM)",
+    "testDmDescription": "Vous pouvez tester la réception de messages directs sur Bluesky pour vérifier que tout fonctionne correctement.",
     "notifications": {
       "title": "Notifications",
-      "hqxNewsletter": "Recevoir les updates de OpenPortability",
-      "oepNewsletter": "Être informé.e des initiatives de On est prêt"
-    }
+      "hqxNewsletter": {
+        "title": "Newsletter OpenPortability",
+        "description": "Être informé.e des dernières mises a jour et nouvelles fonctionnalités de la plateforme OpenPortability"
+      },
+      "personalizedSupport": {
+        "title": "Accompagnement personnalisé",
+        "description": "Je souhaite recevoir une actualisation des nouvelles connections par message privé sur les réseaux sociaux par OpenPortability"
+      },
+      "blueskyDm": {
+        "title": "Messages Privés Bluesky",
+        "description": "Recevoir des recommandations personnalisées via DM sur Bluesky.",
+        "connectRequired": "Compte Bluesky non connecté",
+        "connectRequiredDescription": "Vous devez d'abord connecter votre compte Bluesky pour activer cette fonctionnalité. Rendez-vous sur le tableau de bord pour vous connecter.",
+        "goToDashboard": "Aller au tableau de bord"
+      },
+      "mastodonDm": {
+        "title": "Messages Privés Mastodon",
+        "description": "Recevoir des recommandations personnalisées via DM sur Mastodon.",
+        "connectRequired": "Compte Mastodon non connecté",
+        "connectRequiredDescription": "Vous devez d'abord connecter votre compte Mastodon pour activer cette fonctionnalité. Rendez-vous sur le tableau de bord pour vous connecter.",
+        "goToDashboard": "Aller au tableau de bord"
+      },
+      "oepNewsletter": {
+        "title": "Newsletter On Est Prêts",
+        "description": "Être informé.e des initiatives de On est prêt"
+      },
+      "research": {
+        "title": "Programme de recherche CNRS",
+        "description": "Je souhaite partager avec le CNRS mon graphe de connexions à des fins de recherche. Il sera traité de manière aggrégée. Aucune donnée personnelle ne sera rendue publique."
+      }
+    },
+    "emailLabel" : "Entrez votre adresse email (obligatoire)",
+    "emailPlaceholder": "Votre adresse email",
+    "save": "Enregistrer"
   },
-"support": {
+  "NewsletterConsent": {
+    "title": "Newsletter de HelloQuitteX",
+    "description": "Pour recevoir nos notifications, nous pouvons vous envoyer des messages directs sur BlueSky afin de vous informer des nouvelles fonctionnalités et des mises à jour.",
+    "testDM": "Tester la messagerie directe",
+    "testing": "Test en cours...",
+    "followPlatform": "Suivre HelloQuitteX",
+    "followMessageError": "Pour recevoir nos messages, vous devez d'abord suivre notre compte HelloQuitteX sur BlueSky.",
+    "messagesDisabledError": "Vous avez désactivé les messages entrants sur BlueSky. Vous pouvez vous abonner par email ci-dessous.",
+    "subscribeByEmail": "S'abonner par email",
+    "subscribeByEmailDescription": "Recevez nos mises à jour directement dans votre boîte de réception.",
+    "emailLabel": "Adresse email",
+    "emailPlaceholder": "votre@email.com",
+    "emailInvalid": "Veuillez entrer une adresse email valide",
+    "newsLetterSwitch": "Je souhaite recevoir la newsletter HelloQuitteX",
+    "oepConsent": "J'accepte de recevoir des informations sur OpenPortability",
+    "researchConsent": "J'accepte que mes données soient utilisées à des fins de recherche",
+    "subscribe": "S'abonner",
+    "submitting": "Traitement en cours...",
+    "subscriptionSuccess": "Merci ! Votre inscription à la newsletter a été confirmée.",
+    "dmSuccess": "Super ! Vous pouvez maintenant recevoir nos messages directs sur BlueSky.",
+    "close": "Fermer"
+  },
+  "support": {
     "modal": {
       "title": "Un problème ?",
       "description": "Envoyez-nous un message et nous vous répondrons dans les plus brefs délais.",
@@ -410,13 +500,15 @@
       "researchConsent": "Je souhaite partager avec le CNRS mon graphe de connexions à des fins de recherche. Il sera traité de manière aggrégée. Aucune donnée personnelle ne sera rendue publique.",
       "errors": {
         "missingEmail": "E-mail manquant"
-      }
+      },
+      "personalizedSupport" : "Je souhaite recevoir un accompagnement personnalisé via les réseaux sociaux par OpenPortability"
     },
     "cta": "SOUMETTRE",
     "dismiss": "En cliquant sur 'soumettre', j'atteste que j'ai lu les conditions ci-dessus et j’y consens. Vous devez accepter les conditions d'utilisation pour continuer sur la plateforme OpenPortability"
   },
   "migrate": {
     "title": "Migration de vos abonnements",
+    "connect_missing_service": "Connecter le service manquant",
     "matches_found": "correspondances trouvées",
     "followers": "Abonnés",
     "following": "Abonnements",

@@ -9,9 +9,10 @@ import { useTranslations } from 'next-intl'
 
 type ProfileCardProps = {
   type: 'twitter' | 'bluesky' | 'mastodon'
+  showUnlink?: boolean
 }
 
-export default function ProfileCard({ type }: ProfileCardProps) {
+export default function ProfileCard({ type, showUnlink = false }: ProfileCardProps) {
   const { data: session, update: updateSession } = useSession()
   const [isUnlinking, setIsUnlinking] = useState(false)
   const t = useTranslations('profile')
@@ -60,6 +61,22 @@ export default function ProfileCard({ type }: ProfileCardProps) {
 
   const isLastAccount = connectedAccounts <= 1
 
+  // Construire l'URL du profil
+  const getProfileUrl = () => {
+    switch (type) {
+      case 'twitter':
+        return `https://x.com/${profile.username}`
+      case 'bluesky':
+        return `https://bsky.app/profile/${profile.username}`
+      case 'mastodon':
+        return `https://${profile.instance}/@${profile.username}`
+      default:
+        return null
+    }
+  }
+
+  const profileUrl = getProfileUrl()
+
   const handleUnlink = async () => {
     if (!confirm(t('unlinkConfirmation', { provider: t(`providers.${type}`) }))) {
       return
@@ -95,45 +112,50 @@ export default function ProfileCard({ type }: ProfileCardProps) {
   }
   return (
     <div className="group">
-      <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-black/40 to-black/20 backdrop-blur-md rounded-lg border border-white/10 hover:border-white/20 transition-all duration-300">
-        {/* Avatar avec badge du réseau social */}
-        <div className="relative">
-          <div className="w-14 h-14 rounded-lg overflow-hidden ring-2 ring-white/20">
-            {profile.image && (
-              <Image
-                src={profile.image}
-                alt={`${profile.username || 'User'}'s avatar`}
-                fill
-                className="object-cover"
-                sizes="56px"
-              />
-            )}
-          </div>
-          {/* Badge du réseau social */}
-          <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-black/1 backdrop-blur-sm flex items-center justify-center ring-2 ring-white/10">
-            {profile.icon}
-          </div>
+      <div className="flex items-center gap-3 px-3 py-2 bg-white/5 hover:bg-white/10 rounded-lg border border-white/10 hover:border-white/20 transition-all duration-300">
+        {/* Icon du réseau social */}
+        <div className="shrink-0 relative flex items-center justify-center w-8 h-8 bg-white/10 rounded-lg">
+          {profile.icon}
         </div>
 
-        {/* Infos utilisateur */}
+        {/* Infos utilisateur avec lien */}
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-white truncate">
-            {profile.username}
-          </p>
-          {profile.instance && <p className="text-xs text-white/50">
-            {profile.instance}...
-          </p>}
-
+          <div className="flex flex-col sm:flex-row sm:items-center sm:gap-2">
+            {profileUrl ? (
+              <a
+                href={profileUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm font-medium text-white hover:text-blue-400 truncate transition-colors"
+              >
+                {profile.username}
+              </a>
+            ) : (
+              <p className="text-sm font-medium text-white truncate">
+                {profile.username}
+              </p>
+            )}
+            {profile.instance && (
+              <span className="text-xs text-white/50 truncate">
+                @{profile.instance}
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Bouton de déliaison */}
         <button
           onClick={handleUnlink}
           disabled={isUnlinking || isLastAccount}
-          className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 p-2 hover:bg-white/10 rounded-lg text-white/60 hover:text-white/90 disabled:opacity-50 disabled:cursor-not-allowed"
+          className={`shrink-0 flex items-center gap-2 px-3 py-1.5 text-white/60 hover:text-red-400 hover:bg-red-400/10 rounded-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-white/60 ${
+            showUnlink ? 'inline-flex' : 'hidden group-hover:inline-flex'
+          }`}
           title={isLastAccount ? t('errors.lastAccount') : t('unlinkButton', { provider: t(`providers.${type}`) })}
         >
-          <IoUnlinkOutline className="text-xl" />
+          <IoUnlinkOutline className="text-lg" />
+          <span className="text-sm whitespace-nowrap">
+            {t('unlinkButton', { provider: t(`providers.${type}`) })}
+          </span>
         </button>
       </div>
     </div>
