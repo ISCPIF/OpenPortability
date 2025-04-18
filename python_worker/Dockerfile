@@ -1,44 +1,47 @@
 # python_worker/Dockerfile
 FROM node:20-alpine
 
-# Installer Python et pip
-RUN apk add --no-cache python3 py3-pip
+RUN addgroup -g 1001 appgroup && \
+    adduser -u 1001 -G appgroup -s /bin/sh -D appuser
 
-# Créer un environnement virtuel Python
+# Install Python and pip
+RUN apk add --no-cache python3 py3-pip bash
+
+# Create Python virtual environment
 ENV VIRTUAL_ENV=/opt/venv
 RUN python3 -m venv $VIRTUAL_ENV
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
 WORKDIR /app
 
-# Copier le fichier requirements.txt et installer les dépendances Python
-COPY requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
+# First, copy only package files to leverage Docker cache
+COPY --chown=appuser:appgroup package*.json ./
+COPY --chown=appuser:appgroup tsconfig.json ./
 
-# Copier les scripts Python et s'assurer qu'ils sont exécutables
-COPY testDm_bluesky.py testDm_mastodon.py ./
-RUN chmod +x *.py
-
-# Copier les fichiers package.json et installer les dépendances Node
-COPY package.json ./
+# Install Node.js dependencies
 RUN npm install
 
-# Copier le reste des fichiers du worker
-COPY . .
+# Then copy the rest of the application
+COPY --chown=appuser:appgroup . .
 
-# Rendre le script de démarrage exécutable
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+RUN chown -R appuser:appgroup /app
+
+USER appuser
+
+# Build TypeScript
+RUN npm run build
+
+# Make Python scripts executable
+RUN chmod +x *.py
 RUN chmod +x start-py-workers.sh
 
-# Compiler le code TypeScript
-RUN npm run build # Ou la commande de build spécifique de votre projet
-
-# Exposer les variables d'environnement
+# Environment variables
 ENV PYTHON_WORKER_ID="python-worker-01"
 ENV PYTHON_WORKER_POLLING_INTERVAL=5000
 ENV PYTHON_WORKER_STALLED_TASK_TIMEOUT=300000
-
-# S'assurer que l'environnement virtuel est accessible au processus Node.js
 ENV NODE_ENV=production
 
-# Commande de démarrage du worker
-CMD ["./start-py-workers.sh"]
+CMD ["/bin/bash", "./start-py-workers.sh"]
