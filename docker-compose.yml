@@ -54,10 +54,10 @@ services:
     volumes:
       - ./python_worker:/app
       - /app/node_modules
-      - ./messages:/app/messages
+      - ./python_worker/messages:/app/messages
       - app_logs:/app/logs
     env_file:
-      - .env
+      - ./python_worker/.env
     environment:
       - NODE_ENV=development
     networks:
@@ -67,7 +67,7 @@ services:
       - "host.docker.internal:host-gateway"
     depends_on:
       - app
-    restart: unless-stopped
+    # restart: unless-stopped
 
   nginx:
     image: nginx:alpine

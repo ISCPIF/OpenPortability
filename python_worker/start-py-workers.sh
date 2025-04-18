@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Nombre de workers Python à lancer
-NUM_WORKERS=5 # Ajustez ce nombre selon vos besoins
+NUM_WORKERS=2 # Ajustez ce nombre selon vos besoins
 
 # Array pour stocker les PIDs
 declare -a PY_WORKER_PIDS=()
@@ -12,9 +12,8 @@ for i in $(seq 1 $NUM_WORKERS); do
   # Définir un ID unique pour chaque worker Python
   export PYTHON_WORKER_ID="pyworker_${i}"
 
-  # Lancer le worker compilé en arrière-plan
-  # Assurez-vous que le code est compilé dans 'dist' via 'npm run build'
-  node dist/index.js &
+  # Lancer le worker avec npx ts-node au lieu de node
+  npx ts-node src/index.ts &
 
   # Stocker le PID
   PY_WORKER_PIDS+=($!)
