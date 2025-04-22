@@ -1,10 +1,11 @@
 {
     "header": {
-        "logout": "Sair",
-        "returnToFirstStep": "Retornar para a primeira etapa",
-        "profile": {
-            "username": "@{username}"
-        }
+    "logout": "Sair",
+    "profile": {
+    "username": "@{username}"
+    },
+    "returnToDashboard": "Voltar",
+    "settings": "Configurações e notificações"
     },
     "connectedAccounts": {
         "connectedWith": "Você está conectada com {services} ",
@@ -13,7 +14,8 @@
             "twitter": "Twitter/X",
             "bluesky": "BlueSky",
             "mastodon": "Mastodon"
-        }
+        },
+        "yourAccounts": "Suas contas conectadas"
     },
     "footer": {
         "hosted": {
@@ -228,7 +230,12 @@
             "subscribing": "Inscrevendo-se...",
             "emailPlaceholder": "exemplo@email.com",
             "confirmSubscribe": "Confirmar assinatura",
-            "acceptOEP": "Gostaria de receber informações sobre outras iniciativas da [On est prêt] (https://www.onestpret.com), que apoia a OpenPortability"
+            "acceptOEP": "Gostaria de receber informações sobre outras iniciativas da [On est prêt] (https://www.onestpret.com), que apoia a OpenPortability",
+        "cancel": "Cancelar",
+"save": "Inscrever-me na newsletter",
+"errors": {
+"invalidEmail": "E-mail inválido"
+}
         },
         "tutorial": {
             "title": "Explicação do tutorial passo a passo",
@@ -513,25 +520,85 @@
         "close": "Fechar",
         "noUploadYet": "{count} contas aparentemente foram encontradas entre aquelas que você seguia no X"
     },
-    "settings": {
-        "logout": "Sair",
-        "deleteAccount": "Excluir minha conta",
-        "deleteConfirm": {
-            "title": "Excluir conta",
-            "message": "Tem certeza de que deseja excluir sua conta? Essa ação não pode ser desfeita e resultará na exclusão de:\n\n- Todos os seus dados importados\n- Todas as suas contas vinculadas (Twitter/X, BlueSky, Mastodon)\n- Seu perfil do OpenPortability",
-            "cancel": "Cancelar",
-            "confirm": "Sim, exclua minha conta"
-        },
-        "newsletter": "Newsletter do OpenPortability",
-        "research": "Programa de pesquisa do CNRS",
-        "oepNewsletter": "Seja informado sobre as iniciativas da On est prêt",
-        "preferencesUpdated": "Preferências atualizadas",
-        "notifications": {
-            "title": "Notificações",
-            "hqxNewsletter": "Receba atualizações do OpenPortability",
-            "oepNewsletter": "Seja informado sobre as iniciativas da On est prêt"
-        }
-    },
+"settings": {
+"logout": "Desconectar",
+"invalidEmail": "E-mail inválido",
+"updateSuccess": "Preferências atualizadas",
+"deleteAccount": "Excluir minha conta",
+"deleteConfirm": {
+"title": "Excluir conta",
+"message1": "Esta ação é irreversível e resultará na exclusão de:",
+"message2": "• Todos os seus dados importados",
+"message3": "• Todas as suas contas vinculadas (Twitter/X, BlueSky, Mastodon)",
+"message4": "• Seu perfil OpenPortability",
+"cancel": "Cancelar",
+"confirm": "Sim, excluir minha conta",
+"message": "Tem certeza de que deseja excluir sua conta OpenPortability?"
+},
+"newsletter": {
+"title": "Newsletter OpenPortability",
+"description": "Receber atualizações da OpenPortability"
+},
+"research": {
+"title": "Programa de pesquisa CNRS",
+"description": "Aceito que meus dados sejam utilizados para fins de pesquisa"
+},
+"oepNewsletter": {
+"title": "Newsletter On Est Prêts",
+"description": "Ser informado/a sobre as iniciativas da On Est Prêts"
+},
+"dmConsent": "Autorizar DMs no Bluesky",
+"mastodonConsent": "Autorizar DMs no Mastodon",
+"emailConsent": "Receber por e-mail",
+"dmDescription": "Receber notificações por mensagem direta",
+"emailDescription": "Receber notificações por e-mail",
+"preferencesUpdated": "Preferências atualizadas",
+"hqxNewsletter": {
+"title": "Newsletter OpenPortability",
+"description": "Receber atualizações da OpenPortability"
+},
+"notificationOptions": "Opções de notificação",
+"loading": "carregando",
+"accountSettings": "Configurações da conta",
+"testDmSection": "Testar mensagens diretas (DM)",
+"testDmDescription": "Você pode testar o recebimento de mensagens diretas no Bluesky para verificar se tudo está funcionando corretamente.",
+"notifications": {
+"title": "Notificações",
+"hqxNewsletter": {
+"title": "Newsletter OpenPortability",
+"description": "Ser informado/a sobre as últimas atualizações e novos recursos da plataforma OpenPortability"
+},
+"personalizedSupport": {
+"title": "Suporte personalizado",
+"description": "Desejo receber atualizações sobre novas conexões por mensagem privada nas redes sociais da OpenPortability"
+},
+"blueskyDm": {
+"title": "Mensagens Privadas Bluesky",
+"description": "Receber recomendações personalizadas via DM no Bluesky.",
+"connectRequired": "Conta Bluesky não conectada",
+"connectRequiredDescription": "Você deve primeiro conectar sua conta Bluesky para ativar este recurso. Acesse o painel de controle para se conectar.",
+"goToDashboard": "Ir para o painel de controle"
+},
+"mastodonDm": {
+"title": "Mensagens Privadas Mastodon",
+"description": "Receber recomendações personalizadas via DM no Mastodon.",
+"connectRequired": "Conta Mastodon não conectada",
+"connectRequiredDescription": "Você deve primeiro conectar sua conta Mastodon para ativar este recurso. Acesse o painel de controle para se conectar.",
+"goToDashboard": "Ir para o painel de controle"
+},
+"oepNewsletter": {
+"title": "Newsletter On Est Prêts",
+"description": "Ser informado/a sobre as iniciativas da On Est Prêts"
+},
+"research": {
+"title": "Programa de pesquisa CNRS",
+"description": "Desejo compartilhar com o CNRS meu gráfico de conexões para fins de pesquisa. Ele será processado de forma agregada. Nenhum dado pessoal será tornado público."
+}
+},
+"emailLabel": "Digite seu endereço de e-mail (obrigatório)",
+"emailPlaceholder": "Seu endereço de e-mail",
+"save": "Salvar"
+},
     "SuccessAutomaticReconnexion": {
         "stats": {
             "mastodonFollowing": "Seguidores encontrados no Mastodon",
