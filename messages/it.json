@@ -348,6 +348,7 @@
     },
 "settings": {
   "logout": "Disconnessione",
+  "invalidEmail": "Per favore, inserisci un indirizzo email valido",
   "updateSuccess": "Preferenze aggiornate",
   "deleteAccount": "Eliminare il mio account",
   "deleteConfirm": {

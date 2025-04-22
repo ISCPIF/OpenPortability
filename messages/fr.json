@@ -344,6 +344,7 @@
   },
 "settings": {
     "logout": "Déconnexion",
+    "invalidEmail": "Email invalide",
     "updateSuccess" : "Préférences mises à jour",
     "deleteAccount": "Supprimer mon compte",
     "deleteConfirm": {
