@@ -77,7 +77,7 @@ export default function UploadPage() {
   };
 
   const validateFiles = (files: FileList): string | null => {
-    console.log('🔍 Validating files...', {
+    // console.log('🔍 Validating files...', {
       numberOfFiles: files.length,
       fileNames: Array.from(files).map(f => f.name)
     });
@@ -88,7 +88,7 @@ export default function UploadPage() {
 
     // Check if it's a single ZIP file
     if (files.length === 1 && files[0].name.toLowerCase().endsWith('.zip')) {
-      console.log('📦 ZIP file detected');
+      // console.log('📦 ZIP file detected');
       return validateFile(files[0]);
     }
 
@@ -100,7 +100,7 @@ export default function UploadPage() {
       return 'All files must be .js files';
     }
 
-    console.log('📄 Analyzing JS files:', fileNames);
+    // console.log('📄 Analyzing JS files:', fileNames);
 
     // Case 1: Standard case (following.js + follower.js)
     const hasStandardFollowing = fileNames.includes('following.js');
@@ -112,12 +112,12 @@ export default function UploadPage() {
     const hasSplitFollower = followerParts.length > 0;
     const hasSplitFollowing = followingParts.length > 0;
 
-    console.log('📊 Files status:', {
-      hasStandardFollowing,
-      hasStandardFollower,
-      followerParts: followerParts.length > 0 ? followerParts.map(f => f.name) : 'none',
-      followingParts: followingParts.length > 0 ? followingParts.map(f => f.name) : 'none'
-    });
+    // console.log('📊 Files status:', {
+    //   hasStandardFollowing,
+    //   hasStandardFollower,
+    //   followerParts: followerParts.length > 0 ? followerParts.map(f => f.name) : 'none',
+    //   followingParts: followingParts.length > 0 ? followingParts.map(f => f.name) : 'none'
+    // });
 
     // Check file sizes in all cases
     for (const file of files) {
@@ -127,25 +127,25 @@ export default function UploadPage() {
 
     // Validate combinations
     if (hasStandardFollowing && hasStandardFollower && files.length === 2) {
-      console.log('✅ Standard case validated');
+      // console.log('✅ Standard case validated');
       return null;
     } else if (hasSplitFollower && hasSplitFollowing) {
-      console.log('✅ Split files case validated (both)');
+      // console.log('✅ Split files case validated (both)');
       return null;
     } else if (hasStandardFollowing && hasSplitFollower) {
-      console.log('✅ Split files case validated (follower only)');
+      // console.log('✅ Split files case validated (follower only)');
       return null;
     } else if (hasSplitFollowing && hasStandardFollower) {
-      console.log('✅ Split files case validated (following only)');
+      // console.log('✅ Split files case validated (following only)');
       return null;
     }
 
-    console.log('❌ Invalid file combination');
+    // console.log('❌ Invalid file combination');
     return t('errors.invalidCombination');
   };
 
   const validateFileType = (file: File): boolean => {
-    console.log("File Type =", file.type)
+    // console.log("File Type =", file.type)
     const validTypes = [
       'application/javascript',
       'text/javascript',
@@ -176,7 +176,7 @@ export default function UploadPage() {
   };
 
   const mergePartFiles = (files: ExtractedFile[], type: 'follower' | 'following'): { content: Uint8Array; count: number } => {
-    console.log(`🔄 Fusion des fichiers ${type}:`, files.map(f => f.name));
+    // console.log(`🔄 Fusion des fichiers ${type}:`, files.map(f => f.name));
 
     // Trier les fichiers par numéro de part
     const sortedFiles = files.sort((a, b) => {
@@ -185,7 +185,7 @@ export default function UploadPage() {
       return numA - numB;
     });
 
-    console.log('📋 Ordre de traitement:', sortedFiles.map(f => f.name));
+    // console.log('📋 Ordre de traitement:', sortedFiles.map(f => f.name));
 
     // Extraire et fusionner les données
     let mergedContent = '';
@@ -194,7 +194,7 @@ export default function UploadPage() {
     sortedFiles.forEach((file, index) => {
       const isLast = index === sortedFiles.length - 1;
       const text = new TextDecoder().decode(file.content);
-      console.log(`📖 Traitement de ${file.name}...`);
+      // console.log(`📖 Traitement de ${file.name}...`);
 
       // Trouver les indices de début et fin
       const startBracket = text.indexOf('[');
@@ -215,7 +215,7 @@ export default function UploadPage() {
 
       // Compter les objets dans ce fichier
       const objectCount = (content.match(/"follower"\s*:/g) || []).length;
-      console.log(`📊 ${file.name}: ${objectCount} objets trouvés`);
+      // console.log(`📊 ${file.name}: ${objectCount} objets trouvés`);
       totalCount += objectCount;
 
       // Ajouter une virgule entre les fichiers (sauf pour le premier morceau)
@@ -226,7 +226,7 @@ export default function UploadPage() {
       mergedContent += content;
     });
 
-    console.log(`📊 Total ${type}: ${totalCount} entrées`);
+    // console.log(`📊 Total ${type}: ${totalCount} entrées`);
 
     // Recréer le contenu avec le bon préfixe
     const finalContent = `window.YTD.${type}.part0 = [${mergedContent}`;
@@ -238,10 +238,10 @@ export default function UploadPage() {
 
   const processFiles = async (files: FileList) => {
     try {
-      console.log('🔄 Starting file processing', {
-        numberOfFiles: files.length,
-        files: Array.from(files).map(f => ({ name: f.name, size: f.size }))
-      });
+      // console.log('🔄 Starting file processing', {
+      //   numberOfFiles: files.length,
+      //   files: Array.from(files).map(f => ({ name: f.name, size: f.size }))
+      // });
 
       // Validation initiale...
       const validationError = validateFiles(files);
@@ -279,7 +279,7 @@ export default function UploadPage() {
 
       // Traiter les fichiers followers
       if (followerParts.length > 0) {
-        console.log('🔄 Fusion des fichiers follower...');
+        // console.log('🔄 Fusion des fichiers follower...');
         const { content, count } = mergePartFiles(followerParts, 'follower');
 
         // Valider le contenu fusionné
@@ -307,7 +307,7 @@ export default function UploadPage() {
 
       // Traiter les fichiers following (même logique)
       if (followingParts.length > 0) {
-        console.log('� Fusion des fichiers following...');
+        // console.log('� Fusion des fichiers following...');
         const { content, count } = mergePartFiles(followingParts, 'following');
 
         const textContent = new TextDecoder().decode(content);
@@ -332,10 +332,10 @@ export default function UploadPage() {
       }
 
       // Envoi au serveur...
-      console.log('📤 Envoi au serveur...', {
-        followerCount: fileCounts.follower,
-        followingCount: fileCounts.following
-      });
+      // console.log('📤 Envoi au serveur...', {
+      //   followerCount: fileCounts.follower,
+      //   followingCount: fileCounts.following
+      // });
 
       const response = await fetch('/api/upload/large-files', {
         method: 'POST',

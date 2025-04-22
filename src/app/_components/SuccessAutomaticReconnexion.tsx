@@ -87,8 +87,6 @@ export default function SuccessAutomaticReconnexion({
     setShowPreviewModal(true);
   };
                           
-
-  console.log("stats from SuccessAutomaticReconnexion", totalReconnected)
   useEffect(() => {
     // Appeler onSuccess une seule fois au montage du composant
     onSuccess();

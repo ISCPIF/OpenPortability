@@ -38,25 +38,7 @@ export default function AccountToMigrate({
 }: AccountToMigrateProps) {
   const t = useTranslations('AccountToMigrate');
 
-  // console.log("Props:", {
-  //   targetTwitterId,
-  //   blueskyHandle,
-  //   mastodonHandle,
-  //   isSelected,
-  //   onToggle,
-  //   hasFollowBluesky,
-  //   hasFollowMastodon
-  // });
-
-  // console.log("AccountToMigrate render for:", targetTwitterId, {
-  //   isSelected,
-  //   hasFollowBluesky,
-  //   hasFollowMastodon
-  // });
-
   const handleChange = () => {
-    console.log("Checkbox clicked for:", targetTwitterId);
-    console.log("Current isSelected state:", isSelected);
     onToggle();
   };
 

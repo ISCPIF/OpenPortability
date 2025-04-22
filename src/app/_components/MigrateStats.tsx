@@ -66,8 +66,6 @@ export default function MigrateStats({ stats, session, simpleView = false }: Sta
   const t = useTranslations('migrateSea');
   const isMobile = useIsMobile();
 
-  console.log("isMobile --->", isMobile)
-
   if (!stats) return null;
 
   const totalToFollow = 

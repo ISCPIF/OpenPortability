@@ -79,7 +79,6 @@ export default function SwitchSettingsSection({
     onConsentChange(`${platform}_dm` as ConsentType, true);
   };
 
-  console.log("CONSENTS FRONT SWITCH", consents)
   const renderSwitch = (
     type: ConsentType,
     title: string,

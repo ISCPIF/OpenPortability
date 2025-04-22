@@ -20,7 +20,6 @@ export function useStats() {
       }
       
       try {
-        console.log("Fetching stats...");
         setIsLoading(true);
         const [userStatsResponse, globalStatsResponse] = await Promise.all([
           fetch('/api/stats', { 

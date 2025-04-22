@@ -155,8 +155,6 @@ export default function NewsLetterFirstSeen({ userId, onSubscribe, onClose }: Ne
         value
       }))
 
-      // Envoyer tous les consentements d'un coup
-      console.log("consents to update ---->", consentsToUpdate)
       const response = await fetch('/api/newsletter/request', {
         method: 'POST',
         headers: {

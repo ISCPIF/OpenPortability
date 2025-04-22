@@ -18,8 +18,6 @@ interface StatsReconnexionProps {
 export default function StatsReconnexion({ globalStats }: StatsReconnexionProps) {
   const t = useTranslations('ReconnexionOptions');
 
-  console.log("GlobalStats from StatsReconnexion ", globalStats)
-
   // Calculate total connections safely
   const totalConnections = globalStats ? 
     (globalStats.connections?.followers || 0) + (globalStats.connections?.following || 0) : 0;

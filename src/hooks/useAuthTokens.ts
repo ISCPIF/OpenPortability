@@ -15,21 +15,17 @@ export function useAuthTokens() {
       if (tokensVerifiedRef.current || globalTokensVerified.current) {
         tokensVerifiedRef.current = true;
         globalTokensVerified.current = true;
-        console.log("useAuthTokens: Tokens already verified, skipping API call");
         return { isValid: true };
       }
 
       // If there's an active verification in progress, reuse that promise
       if (activeVerificationPromise) {
-        console.log("useAuthTokens: Verification already in progress, reusing existing promise");
         return activeVerificationPromise;
       }
 
       // Create a new verification promise
-      console.log("useAuthTokens: Starting new token verification");
       activeVerificationPromise = (async () => {
         try {
-          console.log("useAuthTokens: Sending API request to verify tokens...");
           const response = await fetch('/api/auth/refresh', {
             method: 'POST',
             headers: { 
