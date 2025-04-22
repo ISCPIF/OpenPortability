@@ -81,7 +81,6 @@ export default function Boat({
       if (idx === len - 1) return 1;
       return idx / len + (rndm(0, 2, 1) - 1) / (5 * len);
     });
-    // console.log(values);
     return values;
   };
 

@@ -59,8 +59,6 @@ export default function DashboardLoginButtons({
   const t = useTranslations('dashboardLoginButtons')
   const pathname = usePathname()
 
-  console.log("pathname -->", pathname)
-
   const identifierRef = useRef<HTMLInputElement>(null)
   const passwordRef = useRef<HTMLInputElement>(null)
 

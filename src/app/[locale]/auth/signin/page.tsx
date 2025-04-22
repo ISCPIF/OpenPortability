@@ -24,36 +24,9 @@ export default function SignIn() {
   const locale = params.locale as string;
   const [error, setError] = useState<string | null>(null)
 
-  // Log des paramètres d'URL pour débogage
-  useEffect(() => {
-    const error = searchParams.get('error')
-    const callbackUrl = searchParams.get('callbackUrl')
-    console.log('[SignIn] URL Parameters:', {
-      error,
-      callbackUrl,
-      otherParams: Object.fromEntries(searchParams.entries())
-    })
-  }, [searchParams])
-
-  // Log des changements de statut de session
-  useEffect(() => {
-    console.log('[SignIn] Session Status:', {
-      status,
-      session: session ? {
-        user: session.user,
-        expires: session.expires
-      } : null
-    })
-  }, [session, status])
-
-  // // Log des changements d'état de chargement
-  // useEffect(() => {
-  //   console.log('[SignIn] Loading State:', isLoading)
-  // }, [isLoading])
 
   useEffect(() => {
     if (session) {
-      console.log('[SignIn] Session detected, redirecting to dashboard')
       setIsLoading(true)
       const locale = params.locale as string || 'fr'
       router.push(`/${locale}/dashboard`)
@@ -61,7 +34,6 @@ export default function SignIn() {
   }, [session, router, params.locale])
 
   const handleLoadingChange = (loading: boolean) => {
-    console.log('[SignIn] Loading change:', loading)
     setIsLoading(loading)
   }
 

@@ -37,9 +37,6 @@ export default function LoginSea() {
     window.addEventListener('resize', checkIsMobile);
     return () => window.removeEventListener('resize', checkIsMobile);
   }, []);
-
-  console.log("Session -->", session)
-
   return (
     <div className={`relative w-full ${isSettingsPage ? 'h-[350px]' : 'h-[350px] sm:h-[350px] md:h-[400px] lg:h-[450px]'} ${isDashboardPage ? 'mb-0 sm:mb-8 md:mb-12 lg:mb-16' : ''}`}>
       {/* Container pour l'arrière-plan répété */}

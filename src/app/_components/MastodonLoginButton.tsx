@@ -116,7 +116,6 @@ export default function MastodonLoginButton({
         redirect: false,
         callbackUrl: callbackUrl
       }, { instance: instance.trim()})
-      console.log("SignIn result:", result)
 
       if (result?.error) {
         onError(result.error)

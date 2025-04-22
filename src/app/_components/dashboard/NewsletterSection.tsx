@@ -30,8 +30,6 @@ export default function NewsletterSection({
   const t = useTranslations('dashboard');
   const { hqxNewsletter: hasNewsletterConsent } = useNewsletter();
 
-  console.log('NewsletterSection', { hasNewsletterConsent, showModal });
-
   // Ne rien afficher si l'utilisateur a déjà consenti
   if (hasNewsletterConsent) {
     return null;

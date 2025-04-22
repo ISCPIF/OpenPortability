@@ -19,9 +19,7 @@ export default function OnboardingSection({
 }: OnboardingSectionProps) {
   const router = useRouter();
   const t = useTranslations('dashboard');
-
-  console.log("****************************************",session)
-  
+    
   return (
     <div className="w-full flex flex-col gap-6 mt-8 sm:mt-0 items-center justify-center">
       <div className="w-full bg-transparent p-4 sm:p-6 rounded-lg">

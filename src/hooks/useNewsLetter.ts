@@ -33,7 +33,6 @@ export function useNewsletter() {
       try {
         setIsLoading(true);
         const rawData: RawNewsletterResponse = await fetchNewsletterData();
-        console.log("NESLWTTER DATA FROM USENEWSLETTER --->", rawData);
         
         // Transformer les données brutes en NewsletterData
         const newsletterData: NewsletterData = {

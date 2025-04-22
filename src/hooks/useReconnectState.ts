@@ -20,9 +20,7 @@ export function useReconnectState() {
   const router = useRouter();
   const { stats, globalStats, isLoading: statsLoading, refreshStats } = useStats();
   const mastodonInstances = useMastodonInstances();
-  // Use useAuthTokens hook instead of making our own API call
   const { missingProviders: authMissingProviders, verifyTokens: authVerifyTokens } = useAuthTokens();
-  
   const [isLoading, setIsLoading] = useState(true);
   const [isMigrating, setIsMigrating] = useState(false);
   const [showOptions, setShowOptions] = useState(true);
@@ -63,25 +61,21 @@ export function useReconnectState() {
   }, [authMissingProviders]);
 
   const fetchMatches = useCallback(async () => {
+
     // Skip if already fetched (check both local and global state)
     if (matchesFetchedRef.current || globalMatchesFetched.current) {
+
       matchesFetchedRef.current = true;
       globalMatchesFetched.current = true;
-      console.log("Matches already fetched, skipping API call");
       return;
     }
     
     // If there's an active matching request in progress, reuse that promise
     if (activeMatchingPromise) {
-      console.log("Matching already in progress, reusing existing promise");
       return activeMatchingPromise;
     }
-    
-    // Create a new matching promise
-    console.log("Starting new matching fetch");
-    activeMatchingPromise = (async () => {
+      activeMatchingPromise = (async () => {
       try {
-        console.log("Fetching matches...");
         const matchesResponse = await fetch('/api/migrate/matching_found', {
           headers: {
             'Cache-Control': 'no-cache',
@@ -90,21 +84,20 @@ export function useReconnectState() {
         });
 
         const matchesData = await matchesResponse.json();
+
         setAccountsToProcess(matchesData.matches.following);
-        
         matchesFetchedRef.current = true;
         globalMatchesFetched.current = true;
 
         if (matchesData.error) {
-          console.error("Error fetching matches:", matchesData.error);
+          console.error('fetchMatches: Error in response:', matchesData.error);
         }
         
         return matchesData;
       } catch (error) {
-        console.error("Error in fetchMatches:", error);
+        console.error('fetchMatches: Error:', error);
         throw error;
       } finally {
-        // Clear the active promise reference when done
         activeMatchingPromise = null;
       }
     })();
@@ -115,9 +108,7 @@ export function useReconnectState() {
   // Reset global flags when user session changes
   useEffect(() => {
     if (session?.user?.id) {
-      // Keep the flags if the user is the same
     } else {
-      // Reset flags when session changes or is cleared
       globalMatchesFetched.current = false;
       matchesFetchedRef.current = false;
     }
@@ -125,40 +116,56 @@ export function useReconnectState() {
 
   // Vérifier les tokens et charger les données
   useEffect(() => {
+
+    // Skip if we're not in a state where we need to load data
+    if (status === "loading") {
+      return;
+    }
+
+    if (!session) {
+      setIsLoading(false);
+      return;
+    }
+
     if (status === "unauthenticated") {
       router.replace("/auth/signin");
       return;
     }
-    
-    if (!session?.user?.has_onboarded && !session?.user?.twitter_id) {
+
+    if (!session.user?.has_onboarded && !session.user?.twitter_id) {
       router.replace("/dashboard");
       return;
     }
 
-    const loadData = async () => {
-      // Use authVerifyTokens from useAuthTokens instead of our own verifyTokens function
-      await authVerifyTokens();
-      
-      if (session?.user?.has_onboarded || session?.user?.twitter_id) {
-        await fetchMatches();
-      }
-      
-      // Ne définir isLoading=false que si les stats sont disponibles
-      if (stats) {
+    let mounted = true;
+    const loadData = async () => {      
+      try {
+        await authVerifyTokens();
+        
+        if (!mounted) return;
+
+        if (session.user?.has_onboarded || session.user?.twitter_id) {
+          await fetchMatches();
+        }
+        
+        if (!mounted) return;
+
+        // Mettre à jour l'état de chargement même si stats n'est pas encore disponible
         setIsLoading(false);
+      } catch (error) {
+        console.error('loadData: Error:', error);
+        if (mounted) {
+          setIsLoading(false);
+        }
       }
     };
 
-    if (session) {
-      loadData();
-    } else if (status !== "loading" && !statsLoading) {
-      setIsLoading(false);
-    } else {
-      setIsLoading(true);
-    }
-    
-    // No need for cleanup function as we're using global variables
-  }, [session, status, router, statsLoading, stats, authVerifyTokens, fetchMatches]);
+    loadData();
+
+    return () => {
+      mounted = false;
+    };
+  }, [session?.user?.id, status]); // Uniquement se déclencher sur les changements d'ID utilisateur et de status
 
   // Fonction pour mettre à jour l'option de reconnexion automatique
   const updateAutomaticReconnect = async (value: boolean) => {
@@ -174,10 +181,10 @@ export function useReconnectState() {
       if (!response.ok) {
         throw new Error('Failed to update automatic reconnect setting');
       }
-      
+
       setIsAutomaticReconnect(value);
     } catch (error) {
-      console.error('Error updating automatic reconnect:', error);
+      console.error('updateAutomaticReconnect: Error:', error);
     }
   };
 
@@ -320,7 +327,7 @@ export function useReconnectState() {
           }
         });
       } catch (error) {
-        console.error('Error updating user stats:', error);
+        console.error('handleStartMigration: Error updating user stats:', error);
       }
 
       setIsReconnectionComplete(true);
@@ -328,7 +335,7 @@ export function useReconnectState() {
       refreshStats();
       
     } catch (error) {
-      console.error('Error during migration:', error);
+      console.error('handleStartMigration: Error:', error);
       setIsMigrating(false);
     }
   };

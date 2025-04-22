@@ -49,7 +49,9 @@ export default function ReconnectPage() {
     loadInitialData();
   }, [refreshStats]);
 
-  if (isLoading || !stats || !globalStats) {
+
+  // Ne bloquer que sur isLoading et stats, pas sur globalStats
+  if (isLoading || !stats) {
     return (
       <div className="min-h-screen bg-[#2a39a9] relative w-full max-w-[90rem] m-auto">
         <div className="container mx-auto py-12">
@@ -117,7 +119,11 @@ export default function ReconnectPage() {
           {/* Statistiques globales */}
           <div className="w-full flex justify-center my-8">
             <div className="w-full">
-              <StatsReconnexion globalStats={globalStats} />
+              {globalStats ? (
+                <StatsReconnexion globalStats={globalStats} />
+              ) : (
+                <div className="animate-pulse bg-blue-900/50 h-24" />
+              )}
             </div>
           </div>
          
