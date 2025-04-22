@@ -48,18 +48,6 @@ export enum ReconnectState {
     } = params;
   
     // Ajouter des logs pour déboguer
-    console.log("determineReconnectState params:", {
-      hasBluesky,
-      hasMastodon,
-      missingProviders,
-      blueskyNotFollowed,
-      mastodonNotFollowed,
-      isReconnectionComplete,
-      isAutomaticReconnect,
-      showOptions,
-      blueskyHasFollowed,
-      mastodonHasFollowed
-    });
   
     // État de chargement
     if (isLoading) {
