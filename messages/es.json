@@ -229,7 +229,12 @@
             "emailPlaceholder": "ejemplo@email.com",
             "confirmSubscribe": "Confirmar la suscripción",
             "description": "Recibe información sobre la última etapa y sobre nuevas funcionalidades.",
-            "acceptOEP": "Deseo también información sobre las próximas iniciativas de [On est prêt](https://www.onestpret.com), que acompaña OpenPortability"
+            "acceptOEP": "Deseo también información sobre las próximas iniciativas de [On est prêt](https://www.onestpret.com), que acompaña OpenPortability",
+            "cancel": "Cancelar",
+            "save": "Suscribirme al boletín",
+            "errors" :{
+              "invalidEmail": "Por favor, ingresa un correo electrónico válido"
+            }
         },
         "loading": "Cargando tus datos...",
         "addSocialNetwork": "Añadir una red social",
@@ -300,25 +305,6 @@
             "username": "@{username}"
         }
     },
-    "settings": {
-        "logout": "Cerrar sesión",
-        "notifications": {
-            "title": "Notificaciones",
-            "hqxNewsletter": "Recibir actualizaciones de OpenPortability",
-            "oepNewsletter": "Recibir información de las iniciativas de On est prêt"
-        },
-        "deleteConfirm": {
-            "cancel": "Cancelar",
-            "title": "Eliminar la cuenta",
-            "message": "¿Estás seguro/a de querer eliminar su cuenta? Esta acción es irreversible e implicará la supresión de:\n\n• Todos tus datos importados\n• Todas tus cuentas vinculadas (Twitter/X, BlueSky, Mastodon)\n• Tu perfil de OpenPortability",
-            "confirm": "Sí, eliminar mi cuenta"
-        },
-        "deleteAccount": "Eliminar mi cuenta",
-        "newsletter": "Newsletter de OpenPortability",
-        "research": "Programa de investigación del CNRS (Centro Nacional para la Investigación Científica, Francia)",
-        "oepNewsletter": "Recibe información sobre las iniciativas de On est prêt",
-        "preferencesUpdated": "Preferencias actualizadas"
-    },
     "dashboardSea": {
         "welcome": "¡Te damos la bienvenida a bordo de OpenPortability!",
         "logo": {
@@ -373,7 +359,8 @@
         "profile": {
             "username": "@{username}"
         },
-        "returnToFirstStep": "Volver al primer paso"
+        "returnToDashboard": "Volver a la reconexión",
+        "settings": "Configuración y notificaciones"
     },
     "connectedAccounts": {
         "connectedWith": "Te has conectado con {services} ",
@@ -382,7 +369,8 @@
             "twitter": "Twitter/X",
             "bluesky": "Bluesky",
             "mastodon": "Mastodon"
-        }
+        },
+        "yourAccounts": "Tus cuentas conectadas"
     },
     "support": {
         "modal": {
@@ -588,5 +576,105 @@
     "refreshToken": {
         "title": "Es necesario reconectar",
         "description": "Para continuar usando nuestros servicios, por favor vuelve a conectar tus cuentas"
-    }
+    },
+    "settings": {
+"logout": "Cerrar sesión",
+"updateSuccess": "Preferencias actualizadas",
+"deleteAccount": "Eliminar mi cuenta",
+"deleteConfirm": {
+"title": "Eliminar cuenta",
+"message1": "Esta acción es irreversible y resultará en la eliminación de:",
+"message2": "• Todos tus datos importados",
+"message3": "• Todas tus cuentas vinculadas (Twitter/X, BlueSky, Mastodon)",
+"message4": "• Tu perfil de OpenPortability",
+"cancel": "Cancelar",
+"confirm": "Sí, eliminar mi cuenta",
+"message": "¿Estás seguro/a de que quieres eliminar tu cuenta de OpenPortability?"
+},
+"newsletter": {
+"title": "Boletín de OpenPortability",
+"description": "Recibir actualizaciones de OpenPortability"
+},
+"research": {
+"title": "Programa de investigación CNRS",
+"description": "Acepto que mis datos sean utilizados con fines de investigación"
+},
+"oepNewsletter": {
+"title": "Boletín de On Est Prêts",
+"description": "Estar informado/a de las iniciativas de On Est Prêts"
+},
+"dmConsent": "Permitir mensajes directos en Bluesky",
+"mastodonConsent": "Permitir mensajes directos en Mastodon",
+"emailConsent": "Recibir por correo electrónico",
+"dmDescription": "Recibir notificaciones por mensaje directo",
+"emailDescription": "Recibir notificaciones por correo electrónico",
+"preferencesUpdated": "Preferencias actualizadas",
+"hqxNewsletter": {
+"title": "Boletín de OpenPortability",
+"description": "Recibir actualizaciones de OpenPortability"
+},
+"notificationOptions": "Opciones de notificación",
+"loading": "cargando",
+"accountSettings": "Configuración de la cuenta",
+"testDmSection": "Probar mensajes directos (DM)",
+"testDmDescription": "Puedes probar la recepción de mensajes directos en Bluesky para verificar que todo funciona correctamente.",
+"notifications": {
+"title": "Notificaciones",
+"hqxNewsletter": {
+"title": "Boletín de OpenPortability",
+"description": "Estar informado/a de las últimas actualizaciones y nuevas funcionalidades de la plataforma OpenPortability"
+},
+"personalizedSupport": {
+"title": "Apoyo personalizado",
+"description": "Deseo recibir actualizaciones sobre nuevas conexiones a través de mensajes privados en redes sociales de OpenPortability"
+},
+"blueskyDm": {
+"title": "Mensajes privados de Bluesky",
+"description": "Recibir recomendaciones personalizadas vía DM en Bluesky.",
+"connectRequired": "Cuenta de Bluesky no conectada",
+"connectRequiredDescription": "Primero debes conectar tu cuenta de Bluesky para habilitar esta función. Ve al panel de control para conectarte.",
+"goToDashboard": "Ir al panel de control"
+},
+"mastodonDm": {
+"title": "Mensajes privados de Mastodon",
+"description": "Recibir recomendaciones personalizadas vía DM en Mastodon.",
+"connectRequired": "Cuenta de Mastodon no conectada",
+"connectRequiredDescription": "Primero debes conectar tu cuenta de Mastodon para habilitar esta función. Ve al panel de control para conectarte.",
+"goToDashboard": "Ir al panel de control"
+},
+"oepNewsletter": {
+"title": "Boletín de On Est Prêts",
+"description": "Estar informado/a de las iniciativas de On Est Prêts"
+},
+"research": {
+"title": "Programa de investigación CNRS",
+"description": "Deseo compartir mi gráfico de conexiones con el CNRS con fines de investigación. Será procesado de manera agregada. No se harán públicos datos personales."
+}
+},
+"emailLabel": "Ingresa tu dirección de correo electrónico (obligatorio)",
+"emailPlaceholder": "Tu dirección de correo electrónico",
+"save": "Guardar"
+},
+"NewsletterConsent": {
+"title": "Boletín de HelloQuitteX",
+"description": "Para recibir nuestras notificaciones, podemos enviarte mensajes directos en BlueSky para informarte sobre nuevas funcionalidades y actualizaciones.",
+"testDM": "Probar mensajería directa",
+"testing": "Probando...",
+"followPlatform": "Seguir a HelloQuitteX",
+"followMessageError": "Para recibir nuestros mensajes, primero debes seguir nuestra cuenta HelloQuitteX en BlueSky.",
+"messagesDisabledError": "Has desactivado los mensajes entrantes en BlueSky. Puedes suscribirte por correo electrónico a continuación.",
+"subscribeByEmail": "Suscribirse por correo electrónico",
+"subscribeByEmailDescription": "Recibe nuestras actualizaciones directamente en tu bandeja de entrada.",
+"emailLabel": "Dirección de correo electrónico",
+"emailPlaceholder": "tu@email.com",
+"emailInvalid": "Por favor, introduce una dirección de correo electrónico válida",
+"newsLetterSwitch": "Me gustaría recibir el boletín de HelloQuitteX",
+"oepConsent": "Acepto recibir información sobre OpenPortability",
+"researchConsent": "Acepto que mis datos sean utilizados con fines de investigación",
+"subscribe": "Suscribirse",
+"submitting": "Procesando...",
+"subscriptionSuccess": "¡Gracias! Tu suscripción al boletín ha sido confirmada.",
+"dmSuccess": "¡Genial! Ahora puedes recibir nuestros mensajes directos en BlueSky.",
+"close": "Cerrar"
+}
 }

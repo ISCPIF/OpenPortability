@@ -24,7 +24,7 @@ const LOG_CONFIG = {
   logToFile: true, // Always log to file
   
   // Chemin du dossier de logs dans le container
-  logDir: process.env.LOG_DIR || '/Users/fanny/OpenPortability/logs',
+  logDir: process.env.LOG_DIR || '/app/logs',
   
   // Préfixe des fichiers de log
   filePrefix: process.env.LOG_FILE_PREFIX || 'app',

@@ -226,7 +226,13 @@
       "acceptHQX": "Je veux recevoir des updates de OpenPortability",
       "acceptOEP": "Je souhaite contribuer à la mobilisation autour d'OpenPortability avec {link_oep} et rester informé.e de leur futurs actions",
       "subscribing": "Inscription en cours...",
-      "confirmSubscribe": "Confirmer l'inscription"
+      "confirmSubscribe": "Confirmer l'inscription",
+      "cancel" : "Annuler",
+      "save" : "M'inscrire à la newsletter",
+      "errors" :
+      {
+        "invalidEmail": "Email invalide"
+      }
     },
     "tutorial": {
       "title": "Explication des étapes dans notre tutoriel",
@@ -347,7 +353,8 @@
       "message3": "• Tous vos comptes liés (Twitter/X, BlueSky, Mastodon)",
       "message4": "• Votre profil OpenPortability",
       "cancel": "Annuler",
-      "confirm": "Oui, supprimer mon compte"
+      "confirm": "Oui, supprimer mon compte",
+      "message" : "Êtes-vous sûr.e de vouloir supprimer votre compte OpenPortability ?"
     },
     "newsletter": {
       "title": "Newsletter OpenPortability",
