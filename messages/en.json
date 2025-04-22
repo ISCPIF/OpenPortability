@@ -348,6 +348,7 @@
   },
 "settings": {
 "logout": "Log out",
+"invalidEmail": "Please enter a valid email address",
 "updateSuccess": "Preferences updated",
 "deleteAccount": "Delete my account",
 "deleteConfirm": {

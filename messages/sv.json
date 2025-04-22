@@ -13,7 +13,8 @@
       "twitter": "Twitter/X",
       "bluesky": "BlueSky",
       "mastodon": "Mastodon"
-    }
+    },
+    "yourAccounts": "Dina anslutna konton"
   },
   "blueskyLogin": {
     "title": "Anslut till BlueSky",
@@ -229,7 +230,12 @@
       "acceptHQX": "Jag vill få uppdateringar från HelloQuitX",
       "acceptOEP": "Jag vill bli informerad om andra initiativ från [On est prêt](https://www.onestpret.com), som stödjer HelloQuitX",
       "subscribing": "Registrerar...",
-      "confirmSubscribe": "Bekräfta prenumeration"
+      "confirmSubscribe": "Bekräfta prenumeration",
+      "cancel": "Avbryt",
+"save": "Prenumerera på nyhetsbrevet",
+"errors": {
+"invalidEmail": "Ogiltig e-post"
+}
     },
     "tutorial": {
       "title": "Steg-för-steg handledning",
@@ -338,25 +344,85 @@
       "notLinked": "Inget {provider}-konto är länkat"
     }
   },
-  "settings": {
-    "logout": "Logga ut",
-    "deleteAccount": "Radera mitt konto",
-    "deleteConfirm": {
-      "title": "Radera konto",
-      "message": "Är du säker på att du vill radera ditt konto? Denna åtgärd kan inte ångras och kommer att resultera i borttagning av:\n\n• All din importerade data\n• Alla dina länkade konton (Twitter/X, BlueSky, Mastodon)\n• Din OpenPortability-profil",
-      "cancel": "Avbryt",
-      "confirm": "Ja, radera mitt konto"
-    },
-    "newsletter": "OpenPortability Nyhetsbrev",
-    "research": "CNRS forskningsprogram",
-    "oepNewsletter": "Bli informerad om On est prêt- initiativet",
-    "preferencesUpdated": "Inställningar uppdaterade",
-    "notifications": {
-      "title": "Meddelanden",
-      "hqxNewsletter": "Få uppdateringar från OpenPortability",
-      "oepNewsletter": "Bli informerad om On est prêt-initiativet"
-    }
-  },
+"settings": {
+"logout": "Logga ut",
+"invalidEmail": "Ogiltig e-post",
+"updateSuccess": "Inställningar uppdaterade",
+"deleteAccount": "Radera mitt konto",
+"deleteConfirm": {
+"title": "Radera konto",
+"message1": "Denna åtgärd är oåterkallelig och kommer att leda till borttagning av:",
+"message2": "• All din importerade data",
+"message3": "• Alla dina länkade konton (Twitter/X, BlueSky, Mastodon)",
+"message4": "• Din OpenPortability-profil",
+"cancel": "Avbryt",
+"confirm": "Ja, radera mitt konto",
+"message": "Är du säker på att du vill radera ditt OpenPortability-konto?"
+},
+"newsletter": {
+"title": "OpenPortability Nyhetsbrev",
+"description": "Ta emot uppdateringar från OpenPortability"
+},
+"research": {
+"title": "CNRS Forskningsprogram",
+"description": "Jag godkänner att min data används för forskningsändamål"
+},
+"oepNewsletter": {
+"title": "On Est Prêts Nyhetsbrev",
+"description": "Bli informerad om On Est Prêts initiativ"
+},
+"dmConsent": "Tillåt direktmeddelanden på Bluesky",
+"mastodonConsent": "Tillåt direktmeddelanden på Mastodon",
+"emailConsent": "Ta emot via e-post",
+"dmDescription": "Ta emot aviseringar via direktmeddelande",
+"emailDescription": "Ta emot aviseringar via e-post",
+"preferencesUpdated": "Inställningar uppdaterade",
+"hqxNewsletter": {
+"title": "OpenPortability Nyhetsbrev",
+"description": "Ta emot uppdateringar från OpenPortability"
+},
+"notificationOptions": "Aviseringsalternativ",
+"loading": "laddar",
+"accountSettings": "Kontoinställningar",
+"testDmSection": "Testa direktmeddelanden (DM)",
+"testDmDescription": "Du kan testa mottagandet av direktmeddelanden på Bluesky för att verifiera att allt fungerar korrekt.",
+"notifications": {
+"title": "Aviseringar",
+"hqxNewsletter": {
+"title": "OpenPortability Nyhetsbrev",
+"description": "Bli informerad om de senaste uppdateringarna och nya funktionerna på OpenPortability-plattformen"
+},
+"personalizedSupport": {
+"title": "Personligt stöd",
+"description": "Jag vill ta emot uppdateringar om nya anslutningar via privata meddelanden på sociala nätverk från OpenPortability"
+},
+"blueskyDm": {
+"title": "Bluesky Privata Meddelanden",
+"description": "Ta emot personliga rekommendationer via DM på Bluesky.",
+"connectRequired": "Bluesky-konto ej anslutet",
+"connectRequiredDescription": "Du måste först ansluta ditt Bluesky-konto för att aktivera denna funktion. Gå till kontrollpanelen för att ansluta.",
+"goToDashboard": "Gå till kontrollpanelen"
+},
+"mastodonDm": {
+"title": "Mastodon Privata Meddelanden",
+"description": "Ta emot personliga rekommendationer via DM på Mastodon.",
+"connectRequired": "Mastodon-konto ej anslutet",
+"connectRequiredDescription": "Du måste först ansluta ditt Mastodon-konto för att aktivera denna funktion. Gå till kontrollpanelen för att ansluta.",
+"goToDashboard": "Gå till kontrollpanelen"
+},
+"oepNewsletter": {
+"title": "On Est Prêts Nyhetsbrev",
+"description": "Bli informerad om On Est Prêts initiativ"
+},
+"research": {
+"title": "CNRS Forskningsprogram",
+"description": "Jag vill dela min anslutningsgraf med CNRS för forskningsändamål. Den kommer att behandlas på ett aggregerat sätt. Inga personuppgifter kommer att offentliggöras."
+}
+},
+"emailLabel": "Ange din e-postadress (obligatoriskt)",
+"emailPlaceholder": "Din e-postadress",
+"save": "Spara"
+},
   "support": {
     "modal": {
       "title": "Har du ett problem?",
