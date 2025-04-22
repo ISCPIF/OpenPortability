@@ -52,7 +52,8 @@
         "profile": {
             "username": "@{username}"
         },
-        "returnToFirstStep": "Zurück zum Anfang"
+        "returnToDashboard": "Zurück zum Dashboard",
+        "settings": "Einstellungen und Benachrichtigungen"
     },
     "connectedAccounts": {
         "services": {
@@ -61,7 +62,8 @@
             "mastodon": "Mastodon"
         },
         "and": "und",
-        "connectedWith": "Du bist mit {services} verbunden "
+        "connectedWith": "Du bist mit {services} verbunden ",
+        "yourAccounts" : "Deine Konten"
     },
     "dashboardLoginButtons": {
         "addSocialNetwork": "Ein weiteres soziales Netzwerk hinzufügen",
@@ -250,7 +252,6 @@
             "shareText": "Ich habe gerade meinen #eXit gemacht! Der X-Exodus ist massiv. Verliere keine deiner Follower. Dank #OpenPortability habe ich {count} neue Passagiere für eine Reise zu #BlueSky & #Mastodon registriert. Schließe dich uns auf https://openportability.org an und finde automatisch deine Communities #January20!"
         },
         "loading": "Lade deine Daten ...",
-        "migrationStep": {
             "completed": "Migration abgeschlossen",
             "daysLeft": "Noch {count} Tage",
             "nextSteps": "Schließe die folgenden Schritte ab, um zu neuen Ufern zu segeln!",
@@ -260,8 +261,7 @@
             "no_archive_description": "Finde einige deiner Wiederverbindungen unter den Konten, denen du offenbar auf Twitter/X gefolgt bist",
             "import_description": "Importiere dein Archiv, um die OpenPortability-Erfahrung voll zu genießen",
             "continue_to_reconnect": "Weiter zur Wiederverbindung",
-            "continue_to_reconnect_description": "Zugriff auf die Wiederverbindungsseite, um deine Kontakte auf BlueSky und Mastodon zu finden"
-        },
+            "continue_to_reconnect_description": "Zugriff auf die Wiederverbindungsseite, um deine Kontakte auf BlueSky und Mastodon zu finden",
         "importButton": "Importiere mein Twitter/X-Archiv",
         "newsletter": {
             "acceptHQX": "Ich möchte Updates von OpenPortability erhalten",
@@ -273,7 +273,12 @@
             "acceptOEP": "Ich möchte über weitere Initiativen von [On est prêt](https://www.onestpret.com) informiert werden, die OpenPortability unterstützen",
             "confirmSubscribe": "Abonnement bestätigen",
             "title": "Bleibe informiert",
-            "emailPlaceholder": "beispiel@email.de"
+            "emailPlaceholder": "beispiel@email.de",
+            "cancel" : "Abbrechen",
+            "save" : "Speichern",
+            "errors" : {
+              "invalidEmail": "Bitte geben Sie eine gültige E-Mail-Adresse ein"
+            }
         },
         "addSocialNetwork": "Soziales Netzwerk hinzufügen",
         "addSocialNetworkDescription": "Andere soziale Netzwerke verknüpfen für ein besseres Erlebnis",
@@ -366,24 +371,83 @@
         "welcome": "Willkommen"
     },
     "settings": {
-        "notifications": {
-            "oepNewsletter": "Erfahren Sie mehr über On est prêt initiatives",
-            "title": "Benachrichtigungen",
-            "hqxNewsletter": "Erhalte Updates von OpenPortability"
-        },
-        "deleteConfirm": {
-            "message": "Bist du sicher, dass du dein Konto löschen möchtest? Diese Aktion kann nicht rückgängig gemacht werden und führt zum Löschen von:\n\n• allen deinen importierten Daten\n• allen deinen verknüpften Konten (Twitter/X, BlueSky, Mastodon)\n• deinem OpenPortability-Profil",
-            "cancel": "Abbrechen",
-            "title": "Mein Konto löschen",
-            "confirm": "Ja, mein Konto löschen"
-        },
-        "deleteAccount": "Mein Konto löschen",
         "logout": "Abmelden",
-        "newsletter": "OpenPortability Newsletter",
-        "research": "CNRS Forschungsprogramm",
-        "oepNewsletter": "Bleibe informiert über Aktivitäten von \"On est prêt\"",
-        "preferencesUpdated": "Präferenzen aktualisiert"
-    },
+        "updateSuccess": "Einstellungen aktualisiert",
+        "deleteAccount": "Mein Konto löschen",
+        "deleteConfirm": {
+            "title": "Konto löschen",
+            "message1": "Diese Aktion ist unwiderruflich und führt zur Löschung von:",
+            "message2": "• All Ihren importierten Daten",
+            "message3": "• All Ihren verknüpften Konten (Twitter/X, BlueSky, Mastodon)",
+            "message4": "• Ihrem OpenPortability-Profil",
+            "cancel": "Abbrechen",
+        "message": "Sind Sie sicher, dass Sie Ihr OpenPortability-Konto löschen möchten?",
+        "confirm": "Ja, mein Konto löschen"
+        },
+        "newsletter": {
+            "title": "OpenPortability Newsletter",
+            "description": "Updates von OpenPortability erhalten"
+            },
+        "research": {
+        "title": "CNRS Forschungsprogramm",
+        "description": "Ich stimme zu, dass meine Daten für Forschungszwecke verwendet werden können"
+        },
+        "oepNewsletter": {
+        "title": "On Est Prêts Newsletter",
+        "description": "Über Initiativen von On Est Prêts informiert werden"
+        },
+        "dmConsent": "DMs auf Bluesky erlauben",
+        "mastodonConsent": "DMs auf Mastodon erlauben",
+        "emailConsent": "Per E-Mail erhalten",
+        "dmDescription": "Benachrichtigungen über Direktnachrichten erhalten",
+        "emailDescription": "Benachrichtigungen per E-Mail erhalten",
+        "preferencesUpdated": "Einstellungen aktualisiert",
+        "hqxNewsletter": {
+            "title": "OpenPortability Newsletter",
+            "description": "Updates von OpenPortability erhalten"
+        },
+        "notificationOptions": "Benachrichtigungsoptionen",
+        "loading": "Wird geladen",
+        "accountSettings": "Kontoeinstellungen",
+        "testDmSection": "Direktnachrichten (DM) testen",
+        "testDmDescription": "Sie können den Empfang von Direktnachrichten auf Bluesky testen, um sicherzustellen, dass alles richtig funktioniert.",
+        "notifications": {
+            "title": "Benachrichtigungen",
+            "hqxNewsletter": {
+                "title": "OpenPortability Newsletter",
+                "description": "Über die neuesten Updates und Funktionen der OpenPortability-Plattform informiert werden"
+            },
+            "personalizedSupport": {
+                "title": "Personalisierter Support",
+                "description": "Ich möchte Updates über neue Verbindungen über private Nachrichten in sozialen Netzwerken von OpenPortability erhalten"
+            },
+            "blueskyDm": {
+                "title": "Bluesky Privatnachrichten",
+                "description": "Personalisierte Empfehlungen per DM auf Bluesky erhalten.",
+                "connectRequired": "Bluesky-Konto nicht verbunden",
+                "connectRequiredDescription": "Sie müssen zuerst Ihr Bluesky-Konto verbinden, um diese Funktion zu aktivieren. Gehen Sie zum Dashboard, um sich zu verbinden.",
+                "goToDashboard": "Zum Dashboard"
+            },
+            "mastodonDm": {
+                "title": "Mastodon Privatnachrichten",
+                "description": "Personalisierte Empfehlungen per DM auf Mastodon erhalten.",
+                "connectRequired": "Mastodon-Konto nicht verbunden",
+                "connectRequiredDescription": "Sie müssen zuerst Ihr Mastodon-Konto verbinden, um diese Funktion zu aktivieren. Gehen Sie zum Dashboard, um sich zu verbinden.",
+                "goToDashboard": "Zum Dashboard"
+            },
+            "oepNewsletter": {
+                "title": "On Est Prêts Newsletter",
+                "description": "Über Initiativen von On Est Prêts informiert werden"
+            },
+            "research": {
+                "title": "CNRS Forschungsprogramm",
+                "description": "Ich möchte meinen Verbindungsgraphen mit CNRS für Forschungszwecke teilen. Er wird in aggregierter Form verarbeitet. Es werden keine persönlichen Daten veröffentlicht."
+            }
+        },
+        "emailLabel": "Geben Sie Ihre E-Mail-Adresse ein (erforderlich)",
+        "emailPlaceholder": "Ihre E-Mail-Adresse",
+        "save": "Speichern"
+        },
     "profile": {
         "unlinkConfirmation": "Sind Sie sicher, dass Sie die Verknüpfung Ihres {provider}-Kontos aufheben wollen?",
         "unlinkButton": "Verknüpfung des {provider}-Kontos aufheben",

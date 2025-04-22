@@ -4,7 +4,8 @@
         "profile": {
             "username": "@{username}"
         },
-        "returnToFirstStep": "Torna all'inizio"
+"returnToDashboard": "Vai alla riconnessione",
+"settings": "Impostazioni e notifiche"
     },
     "connectedAccounts": {
         "connectedWith": "Sei connesso con {services}",
@@ -13,7 +14,8 @@
             "twitter": "Twitter/X",
             "bluesky": "BlueSky",
             "mastodon": "Mastodon"
-        }
+        },
+        "yourAccounts": "I tuoi account collegati"
     },
     "blueskyLogin": {
         "title": "Connetti BlueSky",
@@ -228,7 +230,12 @@
             "acceptHQX": "Voglio ricevere aggiornamenti da OpenPortability",
             "acceptOEP": "Vorrei essere informato su altre iniziative di [On est prêt](https://www.onestpret.com), che supporta OpenPortability",
             "subscribing": "Iscrizione in corso...",
-            "confirmSubscribe": "Conferma iscrizione"
+            "confirmSubscribe": "Conferma iscrizione",
+            "cancel": "Annulla",
+            "save": "Iscriviti alla newsletter",
+            "errors" :{
+              "invalidEmail": "Per favore, inserisci un indirizzo email valido"
+            }
         },
         "tutorial": {
             "title": "Spiegazione del tutorial passo dopo passo",
@@ -339,25 +346,84 @@
             "notLinked": "Nessun account {provider} è connesso"
         }
     },
-    "settings": {
-        "logout": "Esci",
-        "deleteAccount": "Elimina il mio account",
-        "deleteConfirm": {
-            "title": "Elimina account",
-            "message": "Sei sicuro di voler eliminare il tuo account? Quest'azione è irreversibile e comporterà l'eliminazione di:\n\n• Tutti i tuoi dati importati\n• Tutti i tuoi account collegati (Twitter/X, BlueSky, Mastodon)\n• Il tuo profilo su OpenPortability",
-            "cancel": "Annulla",
-            "confirm": "Sì, elimina il mio account"
-        },
-        "newsletter": "Newsletter di OpenPortability",
-        "research": "Programma di ricerca del CNRS",
-        "oepNewsletter": "Ricevi informazioni sulle iniziative di On est prêt",
-        "preferencesUpdated": "Preferenze aggiornate",
-        "notifications": {
-            "title": "Notifiche",
-            "hqxNewsletter": "Ricevi aggiornamenti da OpenPortability",
-            "oepNewsletter": "Ricevi informazioni sulle iniziative di On est prêt"
-        }
+"settings": {
+  "logout": "Disconnessione",
+  "updateSuccess": "Preferenze aggiornate",
+  "deleteAccount": "Eliminare il mio account",
+  "deleteConfirm": {
+    "title": "Eliminare l'account",
+    "message1": "Questa azione è irreversibile e comporterà l'eliminazione di:",
+    "message2": "• Tutti i tuoi dati importati",
+    "message3": "• Tutti i tuoi account collegati (Twitter/X, BlueSky, Mastodon)",
+    "message4": "• Il tuo profilo OpenPortability",
+    "cancel": "Annulla",
+    "confirm": "Sì, elimina il mio account",
+    "message": "Sei sicuro/a di voler eliminare il tuo account OpenPortability?"
+  },
+  "newsletter": {
+    "title": "Newsletter OpenPortability",
+    "description": "Ricevere gli aggiornamenti di OpenPortability"
+  },
+  "research": {
+    "title": "Programma di ricerca CNRS",
+    "description": "Accetto che i miei dati vengano utilizzati a fini di ricerca"
+  },
+  "oepNewsletter": {
+    "title": "Newsletter On Est Prêts",
+    "description": "Essere informato/a sulle iniziative di On est prêt"
+  },
+  "dmConsent": "Autorizzare i DM su Bluesky",
+  "mastodonConsent": "Autorizzare i DM su Mastodon",
+  "emailConsent": "Ricevere via email",
+  "dmDescription": "Ricevere notifiche tramite messaggio diretto",
+  "emailDescription": "Ricevere notifiche via email",
+  "preferencesUpdated": "Preferenze aggiornate",
+  "hqxNewsletter": {
+    "title": "Newsletter OpenPortability",
+    "description": "Ricevere gli aggiornamenti di OpenPortability"
+  },
+  "notificationOptions": "Opzioni di notifica",
+  "loading": "caricamento",
+  "accountSettings": "Impostazioni account",
+  "testDmSection": "Testare i messaggi diretti (DM)",
+  "testDmDescription": "Puoi testare la ricezione di messaggi diretti su Bluesky per verificare che tutto funzioni correttamente.",
+  "notifications": {
+    "title": "Notifiche",
+    "hqxNewsletter": {
+      "title": "Newsletter OpenPortability",
+      "description": "Essere informato/a degli ultimi aggiornamenti e nuove funzionalità della piattaforma OpenPortability"
     },
+    "personalizedSupport": {
+      "title": "Supporto personalizzato",
+      "description": "Desidero ricevere un aggiornamento delle nuove connessioni tramite messaggi privati sui social network da OpenPortability"
+    },
+    "blueskyDm": {
+      "title": "Messaggi Privati Bluesky",
+      "description": "Ricevere raccomandazioni personalizzate via DM su Bluesky.",
+      "connectRequired": "Account Bluesky non collegato",
+      "connectRequiredDescription": "Devi prima collegare il tuo account Bluesky per attivare questa funzionalità. Vai alla dashboard per collegarti.",
+      "goToDashboard": "Vai alla dashboard"
+    },
+    "mastodonDm": {
+      "title": "Messaggi Privati Mastodon",
+      "description": "Ricevere raccomandazioni personalizzate via DM su Mastodon.",
+      "connectRequired": "Account Mastodon non collegato",
+      "connectRequiredDescription": "Devi prima collegare il tuo account Mastodon per attivare questa funzionalità. Vai alla dashboard per collegarti.",
+      "goToDashboard": "Vai alla dashboard"
+    },
+    "oepNewsletter": {
+      "title": "Newsletter On Est Prêts",
+      "description": "Essere informato/a delle iniziative di On est prêt"
+    },
+    "research": {
+      "title": "Programma di ricerca CNRS",
+      "description": "Desidero condividere con il CNRS il mio grafico di connessioni a fini di ricerca. Sarà trattato in modo aggregato. Nessun dato personale sarà reso pubblico."
+    }
+  },
+  "emailLabel": "Inserisci il tuo indirizzo email (obbligatorio)",
+  "emailPlaceholder": "Il tuo indirizzo email",
+  "save": "Salva"
+},
     "support": {
         "modal": {
             "title": "Hai un problema?",
