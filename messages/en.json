@@ -4,7 +4,8 @@
       "profile": {
         "username": "@{username}"
       },
-      "returnToFirstStep": "Return to first step"
+      "returnToDashboard": "Return",
+      "settings": "Settings and notifications"
     },
     "connectedAccounts": {
       "connectedWith": "You are connected with {services} ",
@@ -13,7 +14,8 @@
         "twitter": "Twitter/X",
         "bluesky": "BlueSky",
         "mastodon": "Mastodon"
-      }
+      },
+      "yourAccounts": "Your connected accounts"
     },
     "blueskyLogin": {
       "title": "Connect to BlueSky",
@@ -230,7 +232,12 @@
       "acceptHQX": "I want to receive updates from OpenPortability",
       "acceptOEP": "I would like to be informed about other initiatives from [On est prêt](https://www.onestpret.com), who supports OpenPortability",
       "subscribing": "Subscribing...",
-      "confirmSubscribe": "Confirm subscription"
+      "confirmSubscribe": "Confirm subscription",
+      "cancel": "Cancel",
+      "save" : "Save",
+      "errors": {
+        "invalidEmail": "Please enter a valid email address"
+      }
     },
     "tutorial": {
       "title": "Step by step tutorial explanation",
@@ -339,25 +346,106 @@
       "notLinked": "No {provider} account is linked"
     }
   },
-  "settings": {
-    "logout": "Sign out",
-    "deleteAccount": "Delete my account",
-    "deleteConfirm": {
-      "title": "Delete Account",
-      "message": "Are you sure you want to delete your account? This action cannot be undone and will result in the deletion of:\n\n• All your imported data\n• All your linked accounts (Twitter/X, BlueSky, Mastodon)\n• Your OpenPortability profile",
-      "cancel": "Cancel",
-      "confirm": "Yes, delete my account"
-    },
-    "newsletter": "OpenPortability Newsletter",
-    "research": "CNRS research program",
-    "oepNewsletter": "Be informed about On est prêt initiatives",
-    "preferencesUpdated": "Preferences updated",
-    "notifications": {
-      "title": "Notifications",
-      "hqxNewsletter": "Receive updates from OpenPortability",
-      "oepNewsletter": "Be informed about On est prêt initiatives"
-    }  
-  },
+"settings": {
+"logout": "Log out",
+"updateSuccess": "Preferences updated",
+"deleteAccount": "Delete my account",
+"deleteConfirm": {
+"title": "Delete account",
+"message1": "This action is irreversible and will result in the deletion of:",
+"message2": "• All your imported data",
+"message3": "• All your linked accounts (Twitter/X, BlueSky, Mastodon)",
+"message4": "• Your OpenPortability profile",
+"cancel": "Cancel",
+"message" : "Are you sure you want to delete your OpenPortability account?",
+"confirm": "Yes, delete my account"
+},
+"newsletter": {
+"title": "OpenPortability Newsletter",
+"description": "Receive updates from OpenPortability"
+},
+"research": {
+"title": "CNRS Research Program",
+"description": "I agree that my data can be used for research purposes"
+},
+"oepNewsletter": {
+"title": "On Est Prêts Newsletter",
+"description": "Be informed about On Est Prêts initiatives"
+},
+"dmConsent": "Allow DMs on Bluesky",
+"mastodonConsent": "Allow DMs on Mastodon",
+"emailConsent": "Receive by email",
+"dmDescription": "Receive notifications via direct message",
+"emailDescription": "Receive notifications via email",
+"preferencesUpdated": "Preferences updated",
+"hqxNewsletter": {
+"title": "OpenPortability Newsletter",
+"description": "Receive updates from OpenPortability"
+},
+"notificationOptions": "Notification options",
+"loading": "loading",
+"accountSettings": "Account settings",
+"testDmSection": "Test direct messages (DM)",
+"testDmDescription": "You can test receiving direct messages on Bluesky to verify that everything is working correctly.",
+"notifications": {
+"title": "Notifications",
+"hqxNewsletter": {
+"title": "OpenPortability Newsletter",
+"description": "Be informed about the latest updates and new features of the OpenPortability platform"
+},
+"personalizedSupport": {
+"title": "Personalized support",
+"description": "I would like to receive updates about new connections via private messages on social networks from OpenPortability"
+},
+"blueskyDm": {
+"title": "Bluesky Private Messages",
+"description": "Receive personalized recommendations via DM on Bluesky.",
+"connectRequired": "Bluesky account not connected",
+"connectRequiredDescription": "You must first connect your Bluesky account to enable this feature. Go to the dashboard to connect.",
+"goToDashboard": "Go to dashboard"
+},
+"mastodonDm": {
+"title": "Mastodon Private Messages",
+"description": "Receive personalized recommendations via DM on Mastodon.",
+"connectRequired": "Mastodon account not connected",
+"connectRequiredDescription": "You must first connect your Mastodon account to enable this feature. Go to the dashboard to connect.",
+"goToDashboard": "Go to dashboard"
+},
+"oepNewsletter": {
+"title": "On Est Prêts Newsletter",
+"description": "Be informed about On Est Prêts initiatives"
+},
+"research": {
+"title": "CNRS Research Program",
+"description": "I wish to share my connection graph with CNRS for research purposes. It will be processed in an aggregated manner. No personal data will be made public."
+}
+},
+"emailLabel": "Enter your email address (required)",
+"emailPlaceholder": "Your email address",
+"save": "Save"
+},
+"NewsletterConsent": {
+"title": "HelloQuitteX Newsletter",
+"description": "To receive our notifications, we can send you direct messages on BlueSky to inform you about new features and updates.",
+"testDM": "Test direct messaging",
+"testing": "Testing...",
+"followPlatform": "Follow HelloQuitteX",
+"followMessageError": "To receive our messages, you must first follow our HelloQuitteX account on BlueSky.",
+"messagesDisabledError": "You have disabled incoming messages on BlueSky. You can subscribe by email below.",
+"subscribeByEmail": "Subscribe by email",
+"subscribeByEmailDescription": "Receive our updates directly in your inbox.",
+"emailLabel": "Email address",
+"emailPlaceholder": "your@email.com",
+"emailInvalid": "Please enter a valid email address",
+"newsLetterSwitch": "I would like to receive the HelloQuitteX newsletter",
+"oepConsent": "I agree to receive information about OpenPortability",
+"researchConsent": "I agree that my data can be used for research purposes",
+"subscribe": "Subscribe",
+"submitting": "Processing...",
+"subscriptionSuccess": "Thank you! Your newsletter subscription has been confirmed.",
+"dmSuccess": "Great! You can now receive our direct messages on BlueSky.",
+"close": "Close"
+},
 "support": {
     "modal": {
       "title": "Having an issue?",
