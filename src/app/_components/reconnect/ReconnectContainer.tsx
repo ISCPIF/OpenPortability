@@ -80,11 +80,6 @@ function ReconnectContainer({
     showOptions
   ]);
 
-  // Remove debugging logs in production
-  // console.log("Current state:", currentState);
-  // console.log("isAutomaticReconnect:", isAutomaticReconnect);
-  // console.log("showOptions:", showOptions);
-
   // Utiliser AnimatePresence pour une seule condition au lieu de plusieurs
   return (
     <div className="mt-6 sm:mt-8">

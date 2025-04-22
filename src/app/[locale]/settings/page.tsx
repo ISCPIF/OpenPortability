@@ -90,8 +90,6 @@ export default function SettingsPage() {
     }
   };
 
-  console.log("consents from /settings ->", consents);
-
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[#2a39a9] relative w-full max-w-[90rem] m-auto">

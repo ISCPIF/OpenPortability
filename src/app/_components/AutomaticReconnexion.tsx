@@ -40,15 +40,7 @@ export default function AutomaticReconnexion({
   const showBlueskyBar = !!session.user.bluesky_username
   const showMastodonBar = !!session.user.mastodon_username
 
-  console.log("AutomaticReconnexion - Debug:", {
-    session,
-    results,
-    stats,
-    showBlueskyBar,
-    showMastodonBar,
-    blueskyProgress,
-    mastodonProgress
-  })
+
 
   return (
     <div className="flex flex-col space-y-8 w-full max-w-3xl mx-auto">

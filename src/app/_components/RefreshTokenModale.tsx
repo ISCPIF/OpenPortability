@@ -30,8 +30,6 @@ export default function RefreshTokenModale({ providers, mastodonInstances, onClo
   const [isLoading, setIsLoading] = useState(false)
   const t = useTranslations('refreshToken')
 
-  console.log('Providers:', providers)
-  console.log('Mastodon instances:', mastodonInstances)
   // Convert providers array to connectedServices object
   // Si un provider est dans le tableau providers, il n'est PAS connecté
   const connectedServices = {

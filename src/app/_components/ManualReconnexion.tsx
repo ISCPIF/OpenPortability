@@ -41,9 +41,6 @@ export default function ManualReconnexion({
   const [showOnlyNotFollowed, setShowOnlyNotFollowed] = useState(true);
   const itemsPerPage = 50;
 
-  console.log("matches from component", matches)
-  console.log("session user data -->", session.user)  // Add this line
-
 
   // Filter matches based on user's connected accounts
   const filteredMatches = matches.filter(match => {
@@ -68,9 +65,6 @@ export default function ManualReconnexion({
       return hasFollowBluesky || hasFollowMastodon;
     }
   });
-
-  console.log("Filtered_matches -->", filteredMatches)
-
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const currentMatches = filteredMatches.slice(startIndex, endIndex);
@@ -80,21 +74,13 @@ export default function ManualReconnexion({
       console.error('Attempted to toggle account with undefined target_twitter_id');
       return;
     }
-    
-    console.log('Before toggle - Selected accounts:', Array.from(selectedAccounts));
-    console.log('Toggling account:', targetTwitterId);
-    
     const newSet = new Set(selectedAccounts);
     if (newSet.has(targetTwitterId)) {
-      console.log('Removing account from selection');
       newSet.delete(targetTwitterId);
     } else {
-      console.log('Adding account to selection');
       newSet.add(targetTwitterId);
     }
-    
-    console.log('After toggle - Selected accounts:', Array.from(newSet));
-    setSelectedAccounts(newSet);
+      setSelectedAccounts(newSet);
   };
 
   const handleSelectAll = () => {
@@ -121,17 +107,6 @@ export default function ManualReconnexion({
     setSelectedAccounts(new Set()); // Reset selection when switching
   };
 
-  console.log("currentMatches FULL DATA -->", currentMatches);
-  console.log("currentMatches detailed -->", currentMatches.map(m => ({
-    id: isMatchingTarget(m) ? m.target_twitter_id : m.source_twitter_id,
-    bluesky: m.bluesky_handle,
-    mastodon: isMatchingTarget(m) ? m.mastodon_handle : m.mastodon_username,
-    mastodon_id: m.mastodon_id,
-    mastodon_instance: m.mastodon_instance,
-    type: isMatchingTarget(m) ? 'MatchingTarget' : 'MatchedFollower',
-    has_follow_bluesky: isMatchingTarget(m) ? m.has_follow_bluesky : m.has_been_followed_on_bluesky,
-    has_follow_mastodon: isMatchingTarget(m) ? m.has_follow_mastodon : m.has_been_followed_on_mastodon
-  })));
 
   return (
     <div className="w-full max-w-4xl mx-auto bg-[#1A237E] rounded-lg p-3 sm:p-6 mt-4 sm:mt-12">
