@@ -4,7 +4,7 @@ import { Inter, Space_Grotesk } from 'next/font/google'
 import "../globals.css";
 import { Providers } from "../providers";
 import { auth } from "@/app/auth";
-import { MotionConfig } from "framer-motion";
+import { MotionWrapper } from "../_components/MotionWrapper";
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
 import { Toaster } from 'sonner';
@@ -52,9 +52,9 @@ export default async function RootLayout({ children, params }: Props) {
         <NextIntlClientProvider messages={messages} locale={locale}>
           <Providers session={session}>
             <main className="min-h-screen">
-              <MotionConfig reducedMotion="user">
-                {children}
-              </MotionConfig>
+            <MotionWrapper>
+            {children}
+            </MotionWrapper>
             </main>
             <Toaster />
           </Providers>

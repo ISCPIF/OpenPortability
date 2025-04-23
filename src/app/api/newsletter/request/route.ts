@@ -13,10 +13,10 @@ type UpdateRequest = {
  * Gestionnaire GET pour récupérer les préférences newsletter et les consentements actifs d'un utilisateur
  */
 async function newsletterConsentsHandler(request: NextRequest) {
-  console.log('🚀 GET /api/newsletter/request - Start');
+  // console.log('🚀 GET /api/newsletter/request - Start');
   try {
     const session = await auth();
-    console.log('📝 Session:', session?.user?.id ? 'Authenticated' : 'Not authenticated');
+    // console.log('📝 Session:', session?.user?.id ? 'Authenticated' : 'Not authenticated');
     
     if (!session?.user?.id) {
       logger.logWarning('API', 'GET /api/newsletter/request', 'Unauthorized attempt to get consent data', 'anonymous');
@@ -27,7 +27,7 @@ async function newsletterConsentsHandler(request: NextRequest) {
     }
 
     const userService = new UserService();
-    console.log('🔍 Fetching data for user:', session.user.id);
+    // console.log('🔍 Fetching data for user:', session.user.id);
     
     // Ne récupérer que les consentements actifs et l'email
     const [consents] = await Promise.all([
@@ -35,7 +35,7 @@ async function newsletterConsentsHandler(request: NextRequest) {
       userService.getUserActiveConsents(session.user.id)
     ]);
     
-    console.log('📊 Raw data:', { consents });
+    // console.log('📊 Raw data:', { consents });
     
     // Retourner uniquement les consentements et l'email
     const response = {
@@ -43,7 +43,7 @@ async function newsletterConsentsHandler(request: NextRequest) {
       ...consents
     };
     
-    console.log('✅ GET /api/newsletter/request - Success:', response);
+    // console.log('✅ GET /api/newsletter/request - Success:', response);
     return NextResponse.json(response);
   } catch (error) {
     console.error('❌ GET /api/newsletter/request - Error:', error);
@@ -59,10 +59,10 @@ async function newsletterConsentsHandler(request: NextRequest) {
  * Gestionnaire POST pour mettre à jour les consentements
  */
 async function updateConsentHandler(request: NextRequest) {
-  console.log('🚀 POST /api/newsletter/request - Start');
+  // console.log('🚀 POST /api/newsletter/request - Start');
   try {
     const session = await auth();
-    console.log('📝 Session:', session?.user?.id ? 'Authenticated' : 'Not authenticated');
+    // console.log('📝 Session:', session?.user?.id ? 'Authenticated' : 'Not authenticated');
     
     if (!session?.user?.id) {
       logger.logWarning('API', 'POST /api/newsletter/request', 'Unauthorized attempt to update consent', 'anonymous');
@@ -73,7 +73,7 @@ async function updateConsentHandler(request: NextRequest) {
     }
 
     const body = await request.json();
-    console.log('📦 Request body:', body);
+    // console.log('📦 Request body:', body);
     
     const userService = new UserService();
     
@@ -89,7 +89,7 @@ async function updateConsentHandler(request: NextRequest) {
     
     // Mettre à jour l'email dans next-auth.users si fourni
     if (body.email) {
-      console.log('🔄 Updating email:', body.email, session.user.id);
+      // console.log('🔄 Updating email:', body.email, session.user.id);
       await userService.updateEmail(session.user.id, body.email);
     }
 
@@ -99,7 +99,7 @@ async function updateConsentHandler(request: NextRequest) {
     
     // Gérer plusieurs consentements en une fois
     if (Array.isArray(body.consents)) {
-      console.log('🔄 Updating multiple consents:', body.consents);
+      // console.log('🔄 Updating multiple consents:', body.consents);
       await Promise.all(
         body.consents.map(async (consent: { type: string; value: boolean }) => {
           await userService.updateConsent(session.user.id, consent.type, consent.value, metadata);
@@ -115,7 +115,7 @@ async function updateConsentHandler(request: NextRequest) {
       );
     }
     
-    console.log('✅ POST /api/newsletter/request - Success');
+    // console.log('✅ POST /api/newsletter/request - Success');
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error('❌ POST /api/newsletter/request - Error:', error);

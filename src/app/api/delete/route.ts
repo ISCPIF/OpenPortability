@@ -28,7 +28,7 @@ async function deleteHandler() {
       logger.logError('API', 'DELETE /api/delete', new Error(newsletterConsentError.message), userId, { context: 'Deleting newsletter_consent' })
       throw new Error(newsletterConsentError.message)
     }
-    console.log('API', 'DELETE /api/delete', 'Successfully deleted newsletter_consent entries', userId)
+    logger.logInfo('API', 'DELETE /api/delete', 'Successfully deleted newsletter_consent entries', userId)
 
     // Supprimer les python_tasks
     const { error: pythonTasksError } = await supabase
@@ -40,11 +40,11 @@ async function deleteHandler() {
       logger.logError('API', 'DELETE /api/delete', new Error(pythonTasksError.message), userId, { context: 'Deleting python_tasks' })
       throw new Error(pythonTasksError.message)
     }
-    console.log('API', 'DELETE /api/delete', 'Successfully deleted python_tasks entries', userId)
+    logger.logInfo('API', 'DELETE /api/delete', 'Successfully deleted python_tasks entries', userId)
 
     // 1. Si l'utilisateur a has_onboarded = true
     if (session.user.has_onboarded) {
-        console.log('API', 'DELETE /api/delete', 'User has onboarded, cleaning up public schema data', userId)
+        logger.logInfo('API', 'DELETE /api/delete', 'User has onboarded, cleaning up public schema data', userId)
 
         // Supprimer l'import_job dans le schema public
         const { error: importJobError } = await supabase
@@ -56,7 +56,7 @@ async function deleteHandler() {
           logger.logError('API', 'DELETE /api/delete', new Error(importJobError.message), userId, { context: 'Deleting import_job' })
           throw new Error(importJobError.message)
         }
-        console.log('API', 'DELETE /api/delete', 'Successfully deleted import_job', userId)
+        logger.logInfo('API', 'DELETE /api/delete', 'Successfully deleted import_job', userId)
 
         const { error: userStatsError } = await supabase
         .from('user_stats_cache')
@@ -67,7 +67,7 @@ async function deleteHandler() {
         logger.logError('API', 'DELETE /api/delete', new Error(userStatsError.message), userId, { context: 'Deleting user_stats_cache' })
         throw new Error(userStatsError.message)
       }
-      console.log('API', 'DELETE /api/delete', 'Successfully deleted userStatsCache', userId)
+      logger.logInfo('API', 'DELETE /api/delete', 'Successfully deleted userStatsCache', userId)
 
         const { error: sourceError } = await supabase
         .from('sources')
@@ -78,7 +78,7 @@ async function deleteHandler() {
         logger.logError('API', 'DELETE /api/delete', new Error(sourceError.message), userId, { context: 'Deleting source' })
         throw new Error(sourceError.message)
       }
-      console.log('API', 'DELETE /api/delete', 'Successfully deleted source', userId)
+      logger.logInfo('API', 'DELETE /api/delete', 'Successfully deleted source', userId)
 
       // Mettre à jour has_onboarded à false dans next-auth
       const { error: hasBoardError } = await authClient
@@ -90,7 +90,7 @@ async function deleteHandler() {
         logger.logError('API', 'DELETE /api/delete', new Error(hasBoardError.message), userId, { context: 'Updating has_onboarded' })
         throw new Error(hasBoardError.message)
       }
-      console.log('API', 'DELETE /api/delete', 'Successfully updated has_onboarded to false', userId)
+      logger.logInfo('API', 'DELETE /api/delete', 'Successfully updated has_onboarded to false', userId)
     }
 
     // Supprimer les entrées d'audit_log
@@ -103,7 +103,7 @@ async function deleteHandler() {
       logger.logError('API', 'DELETE /api/delete', new Error(auditLogError.message), userId, { context: 'Deleting audit_log entries' })
       throw new Error(auditLogError.message)
     }
-    console.log('API', 'DELETE /api/delete', 'Successfully deleted audit_log entries', userId)
+    logger.logInfo('API', 'DELETE /api/delete', 'Successfully deleted audit_log entries', userId)
 
     const { error: deleteError } = await authClient
     .from('users')
@@ -114,7 +114,7 @@ async function deleteHandler() {
       logger.logError('API', 'DELETE /api/delete', new Error(deleteError.message), userId, { context: 'Deleting user' })
       throw new Error(deleteError.message)
     }
-    console.log('API', 'DELETE /api/delete', 'Successfully deleted user', userId)
+    logger.logInfo('API', 'DELETE /api/delete', 'Successfully deleted user', userId)
     
     return NextResponse.json(
       { message: 'Account deleted successfully' },
