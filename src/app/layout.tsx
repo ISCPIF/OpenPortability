@@ -3,12 +3,9 @@ export default function RootLayout({
   }: {
     children: React.ReactNode
   }) {
-    console.log("📄 [RootLayout] Rendering layout...");
-    // console.log("🔄 [RootLayout] URL:", typeof window !== 'undefined' ? window.location.pathname : 'server-side');
+    // Remove console.log as it can also contribute to hydration issues
+    // by executing differently on server vs client
     
-    return (
-      <html>
-        <body>{children}</body>
-      </html>
-    );
+    // Don't wrap with HTML or body tags - these are already in the locale layout
+    return children;
   }

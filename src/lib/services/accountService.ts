@@ -14,7 +14,7 @@ export class AccountService {
 
 
   async verifyAndRefreshBlueskyToken(userId: string): Promise<RefreshResult> {
-    console.log(' [AccountService.verifyAndRefreshBlueskyToken] Starting token verification for user:', userId);
+    // console.log(' [AccountService.verifyAndRefreshBlueskyToken] Starting token verification for user:', userId);
     const account = await this.repository.getProviderAccount(userId, 'bluesky');
     if (!account) {
       console.warn(' [AccountService.verifyAndRefreshBlueskyToken] No Bluesky account found for user:', userId);
@@ -26,7 +26,7 @@ export class AccountService {
       return { success: false, error: 'Missing tokens', requiresReauth: true };
     }
 
-    console.log(' [AccountService.verifyAndRefreshBlueskyToken] Account found:', account);
+    // console.log(' [AccountService.verifyAndRefreshBlueskyToken] Account found:', account);
     const agent = new BskyAgent({ service: 'https://bsky.social' });
     try {
       // Déchiffrer les tokens avant de les utiliser
@@ -48,7 +48,7 @@ export class AccountService {
           refresh_token: agent.session.refreshJwt,
         });
       } else {
-        console.log(' [AccountService.verifyAndRefreshBlueskyToken] Token is still valid, no refresh needed');
+        // console.log(' [AccountService.verifyAndRefreshBlueskyToken] Token is still valid, no refresh needed');
       }
 
       return { success: true };
