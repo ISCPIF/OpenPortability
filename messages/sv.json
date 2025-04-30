@@ -4,7 +4,8 @@
     "profile": {
       "username": "@{username}"
     },
-    "returnToFirstStep": "Tillbaka till första steget"
+    "returnToDashboard": "Återgå",
+    "settings": "Inställningar och aviseringar"
   },
   "connectedAccounts": {
     "connectedWith": "Du är ansluten med {services} ",
@@ -421,7 +422,16 @@
 },
 "emailLabel": "Ange din e-postadress (obligatoriskt)",
 "emailPlaceholder": "Din e-postadress",
-"save": "Spara"
+"save": "Spara",
+"consentUpdate": {
+  "title": "Uppdatering av dina inställningar",
+  "description": "Din OpenPortability-applikation utvecklas och erbjuder nu personligt stöd: vänligen acceptera eller avböj och granska dina tidigare samtycken.",
+  "currentConsents": "Dina nuvarande samtycken",
+  "newConsents": "Nya samtycken",
+  "dmLinkWarning": "För att ta emot direktmeddelanden behöver du länka ditt Bluesky- eller Mastodon-konto efter att ha bekräftat dina inställningar.",
+  "validateAnyway": "Du måste ändå bekräfta dina nuvarande inställningar.",
+  "confirmButton": "Bekräfta mina inställningar"
+}
 },
   "support": {
     "modal": {
