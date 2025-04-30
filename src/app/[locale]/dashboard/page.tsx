@@ -15,6 +15,7 @@ import { useDashboardState } from '@/hooks/useDashboardState';
 import NewsletterSection from '@/app/_components/dashboard/NewsletterSection';
 import OnboardingSection from '@/app/_components/dashboard/OnboardingSection';
 import TutorialSection from '@/app/_components/dashboard/TutorialSection';
+import NewsLetterConsentsUpdate from '@/app/_components/NewsLetterConsentsUpdate'
 
 export default function DashboardPage() {
   const {
@@ -34,6 +35,8 @@ export default function DashboardPage() {
     hasOnboarded,
     connectedServicesCount
   } = useDashboardState();
+
+  console.log(session)
 
   const [isNewsletterFirstSeenOpen, setIsNewsletterFirstSeenOpen] = useState(false);
   
@@ -121,6 +124,9 @@ export default function DashboardPage() {
               <TutorialSection />
             </div>
           </div>
+          {session?.user?.have_seen_newsletter && (
+            <NewsLetterConsentsUpdate userId={session.user.id} />
+          )}
         </div>
         
         <Footer />

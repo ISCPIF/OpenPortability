@@ -9,6 +9,7 @@ import Footer from '@/app/_components/Footer'
 import StatsReconnexion from '@/app/_components/StatsReconnexion'
 import { useReconnectState } from '@/hooks/useReconnectState'
 import MigrateSea from '@/app/_components/MigrateSea'
+import NewsLetterConsentsUpdate from '@/app/_components/NewsLetterConsentsUpdate'
 
 // Nouveau composant conteneur pour gérer la logique conditionnelle
 import ReconnectContainer from '@/app/_components/reconnect/ReconnectContainer'
@@ -128,6 +129,9 @@ export default function ReconnectPage() {
           </div>
          
         </div>
+        {session?.user?.have_seen_newsletter && (
+          <NewsLetterConsentsUpdate userId={session.user.id} />
+        )}
         <Footer />
       </div>
     </div>

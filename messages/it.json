@@ -423,7 +423,16 @@
   },
   "emailLabel": "Inserisci il tuo indirizzo email (obbligatorio)",
   "emailPlaceholder": "Il tuo indirizzo email",
-  "save": "Salva"
+  "save": "Salva",
+  "consentUpdate": {
+      "title": "Aggiornamento delle preferenze",
+      "description": "La tua applicazione OpenPortability si evolve e ora offre supporto personalizzato: accetta o rifiuta e considera i tuoi consensi precedenti.",
+      "currentConsents": "I tuoi consensi attuali",
+      "newConsents": "Nuovi consensi",
+      "dmLinkWarning": "Per ricevere messaggi diretti, dovrai collegare il tuo account Bluesky o Mastodon dopo aver convalidato le tue preferenze.",
+      "validateAnyway": "Devi comunque convalidare le tue preferenze attuali.",
+      "confirmButton": "Conferma le mie preferenze"
+    }
 },
     "support": {
         "modal": {

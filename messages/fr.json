@@ -384,6 +384,15 @@
     "accountSettings": "Paramètres du compte",
     "testDmSection": "Tester les messages directs (DM)",
     "testDmDescription": "Vous pouvez tester la réception de messages directs sur Bluesky pour vérifier que tout fonctionne correctement.",
+    "consentUpdate": {
+      "title": "Mise à jour de vos préférences",
+      "description": "Votre application OpenPortability évolue et vous propose désormais le support personnalisé : veuillez accepter ou refuser et considérer vos précédents consentements.",
+      "currentConsents": "Vos consentements actuels",
+      "newConsents": "Nouveaux consentements",
+      "dmLinkWarning": "Pour recevoir des messages directs, vous devrez lier votre compte Bluesky ou Mastodon après avoir validé vos préférences.",
+      "validateAnyway": "Vous devez tout de même valider vos préférences actuelles.",
+      "confirmButton": "Confirmer mes préférences"
+    },
     "notifications": {
       "title": "Notifications",
       "hqxNewsletter": {

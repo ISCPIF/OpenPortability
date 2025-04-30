@@ -654,7 +654,16 @@
 },
 "emailLabel": "Ingresa tu dirección de correo electrónico (obligatorio)",
 "emailPlaceholder": "Tu dirección de correo electrónico",
-"save": "Guardar"
+"save": "Guardar",
+"consentUpdate": {
+    "title": "Actualización de tus preferencias",
+    "description": "Tu aplicación OpenPortability evoluciona y ahora ofrece soporte personalizado: acepta o rechaza y considera tus consentimientos anteriores.",
+    "currentConsents": "Tus consentimientos actuales",
+    "newConsents": "Nuevos consentimientos",
+    "dmLinkWarning": "Para recibir mensajes directos, deberás vincular tu cuenta de Bluesky o Mastodon después de validar tus preferencias.",
+    "validateAnyway": "Aún así debes validar tus preferencias actuales.",
+    "confirmButton": "Confirmar mis preferencias"
+  }
 },
 "NewsletterConsent": {
 "title": "Boletín de HelloQuitteX",

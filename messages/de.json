@@ -446,7 +446,16 @@
         },
         "emailLabel": "Geben Sie Ihre E-Mail-Adresse ein (erforderlich)",
         "emailPlaceholder": "Ihre E-Mail-Adresse",
-        "save": "Speichern"
+        "save": "Speichern",
+        "consentUpdate": {
+            "title": "Aktualisierung Ihrer Einstellungen",
+            "description": "Ihre OpenPortability-Anwendung entwickelt sich weiter und bietet jetzt personalisierten Support: Bitte akzeptieren oder lehnen Sie ab und überprüfen Sie Ihre bisherigen Einwilligungen.",
+            "currentConsents": "Ihre aktuellen Einwilligungen",
+            "newConsents": "Neue Einwilligungen",
+            "dmLinkWarning": "Um Direktnachrichten zu erhalten, müssen Sie Ihr Bluesky- oder Mastodon-Konto nach der Bestätigung Ihrer Einstellungen verknüpfen.",
+            "validateAnyway": "Sie müssen dennoch Ihre aktuellen Einstellungen bestätigen.",
+            "confirmButton": "Meine Einstellungen bestätigen"
+          }
         },
     "profile": {
         "unlinkConfirmation": "Sind Sie sicher, dass Sie die Verknüpfung Ihres {provider}-Kontos aufheben wollen?",
