@@ -597,7 +597,16 @@
 },
 "emailLabel": "Digite seu endereço de e-mail (obrigatório)",
 "emailPlaceholder": "Seu endereço de e-mail",
-"save": "Salvar"
+"save": "Salvar",
+"consentUpdate": {
+    "title": "Atualização das suas preferências",
+    "description": "A sua aplicação OpenPortability está evoluindo e agora oferece suporte personalizado: por favor aceite ou recuse e considere os seus consentimentos anteriores.",
+    "currentConsents": "Seus consentimentos atuais",
+    "newConsents": "Novos consentimentos",
+    "dmLinkWarning": "Para receber mensagens diretas, você precisará vincular sua conta Bluesky ou Mastodon após validar suas preferências.",
+    "validateAnyway": "Você ainda precisa validar suas preferências atuais.",
+    "confirmButton": "Confirmar minhas preferências"
+  }
 },
     "SuccessAutomaticReconnexion": {
         "stats": {
