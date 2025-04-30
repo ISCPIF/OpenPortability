@@ -36,12 +36,12 @@ export class MatchingRepository {
       ? {
           has_follow_bluesky: success,
           followed_at_bluesky: success ? now : null,
-          follow_error_bluesky: error
+          // follow_error_bluesky: error
         }
       : {
           has_follow_mastodon: success,
           followed_at_mastodon: success ? now : null,
-          follow_error_mastodon: error
+          // follow_error_mastodon: error
         };
 
     const { error: updateError } = await this.supabase
@@ -135,12 +135,12 @@ export class MatchingRepository {
       ? {
           has_been_followed_on_bluesky: success,
           followed_at_bluesky: success ? now : null,
-          follow_error_bluesky: error
+          // follow_error_bluesky: error
         }
       : {
           has_been_followed_on_mastodon: success,
           followed_at_mastodon: success ? now : null,
-          follow_error_mastodon: error
+          // follow_error_mastodon: error
         };
 
     const { error: updateError } = await this.supabase
