@@ -116,7 +116,8 @@ def test_dm(recipient_handle, custom_message=None):
     try:
         print(f"🚀 Démarrage du test DM pour {recipient_handle}")
         print(f"🔑 Connexion avec l'utilisateur {MASTODON_BOT_USERNAME}")
-        
+        print(f"Received custom_message: {custom_message!r}")
+
         # Initialiser le client Mastodon
         mastodon = Mastodon(
             access_token=MASTODON_ACCESS_TOKEN,
