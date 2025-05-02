@@ -307,21 +307,24 @@
         "migrationComplete": "Reconexão concluída!"
     },
     "firstSeen": {
+        "title": "Bem-vindo!",
+        "description": "Você está prestes a exercer seu direito à portabilidade de dados do X para o BlueSky e/ou Mastodon enquanto participa de um projeto de pesquisa sobre redes sociais. Isso levará 5 minutos.\n\nO OpenPortability referenciará suas identidades digitais e o ajudará a recriar progressivamente sua comunidade no BlueSky e/ou Mastodon, sem impacto na sua conta do X.\n\nÀ medida que mais usuários se registrarem no OpenPortability, os links referenciados no X serão recriados no BlueSky ou Mastodon com o consentimento deles. Não hesite em incentivar seus seguidores a fazer o mesmo!\n\nEsta \"cópia\" da sua rede social pode levar vários dias.\n\nAo usar o OpenPortability, você concorda que seus dados sejam processados de acordo com {lien} e consente com a possível transferência de seus dados para fora da União Europeia (por exemplo, servidores BlueSky).",
+        "privacyPolicyLink": "a nota informativa sobre proteção de dados",
         "newsletter": {
-            "emailPlaceholder": "usuario@dominio.com",
-            "researchConsent": "Concordo em compartilhar meu gráfico de conexão com o CNRS para fins de pesquisa. Ele será processado de forma agregada. Nenhum dado pessoal será tornado público.",
-            "consent": "Quero me manter informado sobre as próximas operações da On Est prêt, que acompanha o OpenPortability",
-            "subtitle": "Eu gostaria de ser acompanhado pelo OpenPortability",
-            "emailLabel": "Digite seu e-mail para se manter informado (opcional):",
-            "errors": {
-                "missingEmail": "Faltando e-mail"
-            }
+        "subtitle": "Gostaria de ser acompanhado(a) e informado(a) pelo OpenPortability por e-mail.",
+        "emailLabel": "Insira seu e-mail para se manter informado(a) (obrigatório):",
+        "emailPlaceholder": "usuario@nomedodominio.com",
+        "consent": "Desejo contribuir para a mobilização em torno do OpenPortability com {link_oep} e me manter informado(a) sobre suas futuras ações",
+        "researchConsent": "Desejo compartilhar meu grafo de conexões com o CNRS para fins de pesquisa. Ele será processado de forma agregada. Nenhum dado pessoal será tornado público.",
+        "errors": {
+            "missingEmail": "E-mail ausente"
         },
-        "dismiss": "Ao clicar em \"enviar\", certifico que li as condições acima e concordo com elas. Você deve aceitar os termos de uso para continuar na plataforma OpenPortability",
-        "privacyPolicyLink": "nossa política de privacidade",
-        "title": "Seja bem-vinda!",
+        "blueskyDM": "Desejo receber minhas novas conexões por mensagem privada no Bluesky",
+        "mastodonDM": "Desejo receber minhas novas conexões por mensagem privada no Mastodon",
+        "personalizedSupport": "Desejo receber suporte personalizado via redes sociais pelo OpenPortability"
+        },
         "cta": "ENVIAR",
-        "description": "Você está prestes a exercer seu direito à portabilidade de dados de X para o Mastodon e/ou Bluesky enquanto participa de um projeto de pesquisa sobre redes sociais. Isso levará 5 minutos.\n\nO OpenPortability fará referência às suas identidades digitais e o ajudará a recriar gradualmente sua comunidade no Mastodon e/ou no Bluesky, sem afetar sua conta X.\n\nÀ medida que outros usuários se registrarem no OpenPortability, os links referenciados no X serão recriados no Mastodon ou no Bluesky com a concordância deles. Incentive seus assinantes a fazer o mesmo!\n\nEssa \"cópia\" de sua rede social pode levar vários dias.\n\nAo usar o OpenPortability, você concorda que seus dados sejam processados de acordo com o {lien} e consente com a possível transferência de seus dados para fora da União Europeia (por exemplo, servidores do BlueSky)."
+        "dismiss": "Ao clicar em 'enviar', atesto que li as condições acima e concordo com elas. Você deve aceitar os termos de uso para continuar na plataforma OpenPortability"
     },
     "profile": {
         "providers": {

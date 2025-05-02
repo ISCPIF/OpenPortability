@@ -392,23 +392,26 @@
             "success": "¡Mensaje enviado!"
         }
     },
-    "firstSeen": {
-        "title": "¡Bienvenido/a!",
-        "newsletter": {
-            "subtitle": "Deseo ser acompañado/a por OpenPortability",
-            "emailLabel": "Ingrese su email para seguir informado/a (opcional):",
-            "emailPlaceholder": "nombeDeUsuario@direccion.com",
-            "consent": "Deseo también estar informado/a de las próximas iniciativas On Est prêt, quienes acompañan OpenPortability",
-            "researchConsent": "Deseo compartir con el CNRS mi grafo de conexiones para propósitos de investigación. Será tratado de forma agregada. Ningún dato personal será publicado.",
-            "errors": {
-                "missingEmail": "Falta el email"
-            }
-        },
-        "cta": "ENVIAR",
-        "dismiss": "Al hacer clic en \"enviar\", certificas que has leído las condiciones anteriores y estás de acuerdo con ellas. Debes aceptar los términos de uso para continuar en la plataforma OpenPortability.",
-        "description": "Estás a punto de ejercitar tu derecho a la portabilidad de datos desde X hacia Bluesky y/o Mastodon. A la vez, participarás en un proyecto de investigación sobre redes sociales. Solo te llevará 5 minutos. \nOpenPortability examinará tu identidad digital y te ayudará a recrear poco a poco tu comunidad en Bluesky y/o Mastodon, sin modificar tu actual cuenta de X.\nConforme más personas vayan registrándose en OpenPortability, las conexiones que tengas con ellas se reproducirán en Bluesky y/o Mastodon (siempre con su consentimiento). Por tanto, funcionará mejor si animas a las personas que te siguen en X a registrarse.\n\nEsta \"copia\" de tu comunidad puede tardar varios días.\n\nSi usas OpenPortability, das tu permiso para que tus datos sean procesados según {lien} y para que tus datos sea, quizá, trasladados fuera de la Unión Europea (por ejemplo, a los servidores de Bluesky).",
-        "privacyPolicyLink": "nuestra política de privacidad"
+"firstSeen": {
+    "title": "¡Bienvenido!",
+    "description": "Estás a punto de ejercer tu derecho a la portabilidad de datos desde X hacia BlueSky y/o Mastodon mientras participas en un proyecto de investigación sobre redes sociales. Esto te tomará 5 minutos.\n\nOpenPortability referenciará tus identidades digitales y te ayudará a recrear progresivamente tu comunidad en BlueSky y/o Mastodon, sin impactar tu cuenta de X.\n\nA medida que más usuarios se registren en OpenPortability, los enlaces referenciados en X se recrearán en BlueSky o Mastodon con su consentimiento. ¡No dudes en animar a tus seguidores a hacer lo mismo!\n\nEsta \"copia\" de tu red social puede tardar varios días.\n\nAl utilizar OpenPortability, aceptas que tus datos sean procesados de acuerdo con {lien} y consientes a la posible transferencia de tus datos fuera de la Unión Europea (por ejemplo, servidores de BlueSky).",
+    "privacyPolicyLink": "la nota informativa sobre protección de datos",
+    "newsletter": {
+      "subtitle": "Me gustaría ser acompañado/a e informado/a por OpenPortability por correo electrónico.",
+      "emailLabel": "Ingresa tu correo electrónico para mantenerte informado/a (obligatorio):",
+      "emailPlaceholder": "usuario@nombrededominio.com",
+      "consent": "Deseo contribuir a la movilización en torno a OpenPortability con {link_oep} y mantenerme informado/a de sus futuras acciones",
+      "researchConsent": "Deseo compartir mi gráfico de conexiones con el CNRS con fines de investigación. Será procesado de manera agregada. No se hará pública ninguna información personal.",
+      "errors": {
+        "missingEmail": "Falta el correo electrónico"
+      },
+      "blueskyDM": "Deseo recibir mis nuevas conexiones por mensaje privado en Bluesky",
+      "mastodonDM": "Deseo recibir mis nuevas conexiones por mensaje privado en Mastodon",
+      "personalizedSupport": "Deseo recibir apoyo personalizado a través de redes sociales por parte de OpenPortability"
     },
+    "cta": "ENVIAR",
+    "dismiss": "Al hacer clic en 'enviar', certifico que he leído las condiciones anteriores y doy mi consentimiento. Debes aceptar los términos de uso para continuar en la plataforma OpenPortability"
+  },
     "ReconnexionOptions": {
         "not_onboarded_title": "¿No has completado todos los objetivos de tu migración de Twitter/X?",
         "not_onboarded_description": "No hay problema, hemos encontrado conexiones para ti basadas en tus asociaciones de cuenta. Para más cuentas que asociar y una mejor orientación, te recomendamos importar tu archivo de datos de Twitter/X",

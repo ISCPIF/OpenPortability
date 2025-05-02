@@ -479,22 +479,25 @@
       "linux": "Linux"
     }
   },
-  "firstSeen": {
+"firstSeen": {
     "title": "Välkommen!",
-    "description": "Du är på väg att utnyttja din rätt till dataportabilitet från X till BlueSky och/eller Mastodon samtidigt som du deltar i ett forskningsprojekt om sociala nätverk. Det kommer att ta dig 5 minuter.\n\nOpenPortability kommer att referera dina digitala identiteter och hjälpa dig att gradvis återskapa ditt community på BlueSky och/eller Mastodon, utan att påverka ditt X-konto.\n\nNär andra användare registrerar sig på OpenPortability, kommer de länkar som refererats på X att återskapas på BlueSky eller Mastodon med deras medgivande. Uppmuntra dina följare att göra detsamma!\n\nDenna \"kopia\" av ditt sociala nätverk kan ta flera dagar.\n\nGenom att använda OpenPortability godkänner du att dina data behandlas i enlighet med {lien} och samtycker till möjligt överförande av dina data utanför Europeiska unionen (t.ex. BlueSky-servrar).",
-    "privacyPolicyLink": "vår integritetspolicy",
+    "description": "Du är på väg att utöva din rätt till dataportabilitet från X till BlueSky och/eller Mastodon samtidigt som du deltar i ett forskningsprojekt om sociala nätverk. Detta tar 5 minuter.\n\nOpenPortability kommer att referera till dina digitala identiteter och hjälpa dig att successivt återskapa din gemenskap på BlueSky och/eller Mastodon, utan påverkan på ditt X-konto.\n\nAllt eftersom fler användare registrerar sig på OpenPortability kommer länkarna som refereras på X att återskapas på BlueSky eller Mastodon med deras samtycke. Tveka inte att uppmuntra dina följare att göra detsamma!\n\nDenna \"kopia\" av ditt sociala nätverk kan ta flera dagar.\n\nGenom att använda OpenPortability godkänner du att dina data behandlas i enlighet med {lien} och samtycker till eventuell överföring av dina data utanför Europeiska unionen (t.ex. BlueSky-servrar).",
+    "privacyPolicyLink": "dataskyddsinformationen",
     "newsletter": {
-      "subtitle": "Jag vill bli följd av OpenPortability",
-      "emailLabel": "Ange din e-post för att hålla dig informerad (valfritt):",
-      "emailPlaceholder": "exempel@epost.com",
-      "consent": "Jag vill hålla mig informerad om kommande operationer från On Est prêt, som följer OpenPortability",
-      "researchConsent": "Jag godkänner att dela min anslutningsgraf med CNRS för forskningsändamål. Den kommer att behandlas i aggregerad form. Inga personuppgifter kommer att offentliggöras.",
+      "subtitle": "Jag vill bli ledsagad och informerad av OpenPortability via e-post.",
+      "emailLabel": "Ange din e-post för att hålla dig informerad (obligatoriskt):",
+      "emailPlaceholder": "användarnamn@domännamn.com",
+      "consent": "Jag vill bidra till mobiliseringen kring OpenPortability med {link_oep} och hålla mig informerad om deras framtida åtgärder",
+      "researchConsent": "Jag vill dela min anslutningsgraf med CNRS för forskningsändamål. Den kommer att behandlas på ett aggregerat sätt. Inga personuppgifter kommer att göras offentliga.",
       "errors": {
-        "missingEmail": "Saknad e-post"
-      }
+        "missingEmail": "E-post saknas"
+      },
+      "blueskyDM": "Jag vill ta emot mina nya anslutningar via privat meddelande på Bluesky",
+      "mastodonDM": "Jag vill ta emot mina nya anslutningar via privat meddelande på Mastodon",
+      "personalizedSupport": "Jag vill få personligt stöd via sociala nätverk från OpenPortability"
     },
-    "cta": "SKICKA IN",
-    "dismiss": "Genom att klicka på 'Skicka in' intygar jag att jag har läst ovanstående villkor och godkänner dem. Du måste acceptera användarvillkoren för att kunna fortsätta på OpenPortability-plattformen"
+    "cta": "SKICKA",
+    "dismiss": "Genom att klicka på 'skicka' intygar jag att jag har läst ovanstående villkor och samtycker till dem. Du måste acceptera användarvillkoren för att fortsätta på OpenPortability-plattformen"
   },
   "migrate": {
     "title": "Migrera dina prenumerationer",

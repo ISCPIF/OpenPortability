@@ -171,9 +171,16 @@ async function executeDm(task: PythonTask, workerId: string, customMessage?: str
       args.push(customMessage);
     }
     
+    
     // Exécuter le script Python avec les arguments en utilisant l'environnement virtuel
     const pythonExecutable = process.env.VIRTUAL_ENV ? `${process.env.VIRTUAL_ENV}/bin/python` : 'python3';
-    const { stdout, stderr } = await execPromise(`${pythonExecutable} ${scriptPath} ${args.map(arg => `'${arg}'`).join(' ')}`);
+    console.log(`Sending custom message: ${customMessage}`);
+    
+    // Utiliser des guillemets doubles pour entourer les arguments et échapper les caractères spéciaux
+    const escapedArgs = args.map(arg => `"${arg.replace(/"/g, '\\"')}"`);
+    console.log(`Command: ${pythonExecutable} ${scriptPath} ${escapedArgs.join(' ')}`);
+    
+    const { stdout, stderr } = await execPromise(`${pythonExecutable} ${scriptPath} ${escapedArgs.join(' ')}`);
     
     console.log(`🐍 [Python Worker ${workerId}] DM script output:`, stdout);
     

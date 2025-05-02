@@ -480,23 +480,26 @@
             "linux": "Linux"
         }
     },
-    "firstSeen": {
-        "title": "Benvenuto!",
-        "description": "Stai per esercitare il tuo diritto alla portabilità dei dati da X a BlueSky e/o Mastodon partecipando a un progetto di ricerca sui social network. Ci vorranno 5 minuti.\n\nOpenPortability farà riferimento alle tue identità digitali e ti aiuterà a ricreare gradualmente la tua comunità su BlueSky e/o Mastodon, senza impattare sul tuo account X.\n\nMan mano che altri utenti si registrano su OpenPortability, i collegamenti riferiti su X verranno ricreati su BlueSky o Mastodon con il loro consenso. Incoraggia i tuoi iscritti a fare lo stesso!\n\nQuesta \"copia\" del tuo social network potrebbe richiedere diversi giorni.\n\nUtilizzando OpenPortability, accetti che i tuoi dati vengano trattati in conformità con il {lien} e acconsenti al possibile trasferimento dei tuoi dati al di fuori dell'Unione Europea (es. server BlueSky).",
-        "privacyPolicyLink": "la nostra politica sulla privacy",
-        "newsletter": {
-            "subtitle": "Vorrei essere accompagnato da OpenPortability",
-            "emailLabel": "Inserisci la tua email per rimanere informato (facoltativo):",
-            "emailPlaceholder": "Username@domain.com",
-            "consent": "Voglio rimanere informato sulle prossime operazioni di On Est prêt, che accompagna OpenPortability",
-            "researchConsent": "Acconsento a condividere il mio grafo di connessioni con il CNRS per scopi di ricerca. Sarà trattato in modo aggregato. Nessun dato personale sarà reso pubblico.",
-            "errors": {
-                "missingEmail": "Email mancante"
-            }
-        },
-        "cta": "INVIA",
-        "dismiss": "Cliccando su 'invia', certifico di aver letto le condizioni sopra menzionate e di accettarle. Devi accettare i termini di uso per continuare sulla piattaforma OpenPortability"
+"firstSeen": {
+    "title": "Benvenuto!",
+    "description": "Stai per esercitare il tuo diritto alla portabilità dei dati da X verso BlueSky e/o Mastodon mentre partecipi a un progetto di ricerca sui social network. Questo richiederà 5 minuti.\n\nOpenPortability farà riferimento alle tue identità digitali e ti aiuterà a ricreare progressivamente la tua comunità su BlueSky e/o Mastodon, senza alcun impatto sul tuo account X.\n\nMan mano che altri utenti si registreranno su OpenPortability, i collegamenti referenziati su X saranno ricreati su BlueSky o Mastodon con il loro consenso. Non esitare a incoraggiare i tuoi follower a fare lo stesso!\n\nQuesta \"copia\" della tua rete sociale potrebbe richiedere diversi giorni.\n\nUtilizzando OpenPortability, accetti che i tuoi dati siano trattati in conformità con {lien} e acconsenti al possibile trasferimento dei tuoi dati al di fuori dell'Unione Europea (ad es. server BlueSky).",
+    "privacyPolicyLink": "l'informativa sulla protezione dei dati",
+    "newsletter": {
+      "subtitle": "Desidero essere accompagnato/a e informato/a da OpenPortability via email.",
+      "emailLabel": "Inserisci la tua email per rimanere informato/a (obbligatorio):",
+      "emailPlaceholder": "utente@nomedominio.com",
+      "consent": "Desidero contribuire alla mobilitazione intorno a OpenPortability con {link_oep} e rimanere informato/a sulle loro future azioni",
+      "researchConsent": "Desidero condividere il mio grafico delle connessioni con il CNRS a fini di ricerca. Sarà trattato in modo aggregato. Nessun dato personale sarà reso pubblico.",
+      "errors": {
+        "missingEmail": "Email mancante"
+      },
+      "blueskyDM": "Desidero ricevere le mie nuove connessioni tramite messaggio privato su Bluesky",
+      "mastodonDM": "Desidero ricevere le mie nuove connessioni tramite messaggio privato su Mastodon",
+      "personalizedSupport": "Desidero ricevere supporto personalizzato tramite social network da OpenPortability"
     },
+    "cta": "INVIA",
+    "dismiss": "Cliccando su 'invia', attesto di aver letto le condizioni sopra indicate e vi acconsento. È necessario accettare i termini di utilizzo per continuare sulla piattaforma OpenPortability"
+  },
     "migrate": {
         "title": "Migra i tuoi abbonamenti",
         "matches_found": "corrispondenze trovate",

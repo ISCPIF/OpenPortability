@@ -78,9 +78,9 @@ export default function UploadPage() {
 
   const validateFiles = (files: FileList): string | null => {
     // console.log('🔍 Validating files...', {
-      numberOfFiles: files.length,
-      fileNames: Array.from(files).map(f => f.name)
-    });
+    //   numberOfFiles: files.length,
+    //   fileNames: Array.from(files).map(f => f.name)
+    // });
 
     if (files.length === 0) {
       return t('errors.noFiles');
