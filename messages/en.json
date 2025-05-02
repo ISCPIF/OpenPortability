@@ -502,23 +502,25 @@
       "linux": "Linux"
     }
   },
-  "firstSeen": {
+"firstSeen": {
     "title": "Welcome!",
-    "description": "You are about to exercise your right to data portability from X to BlueSky and/or Mastodon while participating in a research project on social networks. It will take you 5min.\n\nOpenPortability will reference your digital identities and help you gradually recreate your community on BlueSky and/or Mastodon, without impacting your X account.\n\nAs other users register on OpenPortability, the links referenced on X will be recreated on BlueSky or Mastodon with their agreement. Encourage your subscribers to do the same!\n\nThis \"copy\" of your social network may take several days.\n\nBy using OpenPortability, you agree to your data being processed in accordance with the {lien} and consent to the possible transfer of your data outside the European Union (e.g. BlueSky servers).",
-    "privacyPolicyLink": "our privacy policy",
+    "description": "You are about to exercise your right to data portability from X to BlueSky and/or Mastodon while participating in a social networks research project. This will take 5 minutes.\n\nOpenPortability will reference your digital identities and help you progressively recreate your community on BlueSky and/or Mastodon, without impacting your X account.\n\nAs more users register on OpenPortability, the links referenced on X will be recreated on BlueSky or Mastodon with their consent. Feel free to encourage your followers to do the same!\n\nThis \"copy\" of your social network may take several days.\n\nBy using OpenPortability, you agree that your data will be processed in accordance with {lien} and consent to the potential transfer of your data outside the European Union (e.g., BlueSky servers).",
+    "privacyPolicyLink": "the data protection information notice",
     "newsletter": {
-      "subtitle": "I would like to be accompagnied by OpenPortability",
-      "emailLabel": "Enter your email to stay informed (optional):",
-      "emailPlaceholder": "Username@domain.com",
-      "consent": "I want to stay informed about upcoming operations from On Est prêt, who accompanies OpenPortability",
-      "researchConsent": "I agree to share my connection graph with CNRS for research purposes. It will be processed in an aggregated manner. No personal data will be made public.",
+      "subtitle": "I would like to be accompanied and informed by OpenPortability via email.",
+      "emailLabel": "Enter your email to stay informed (required):",
+      "emailPlaceholder": "username@domainname.com",
+      "consent": "I wish to contribute to the mobilization around OpenPortability with {link_oep} and stay informed of their future actions",
+      "researchConsent": "I wish to share my connection graph with CNRS for research purposes. It will be processed in an aggregated manner. No personal data will be made public.",
       "errors": {
-        "missingEmail": "Missing Email"
-      }
+        "missingEmail": "Missing email"
+      },
+      "blueskyDM": "I wish to receive my new connections by private message on Bluesky",
+      "mastodonDM": "I wish to receive my new connections by private message on Mastodon",
+      "personalizedSupport": "I wish to receive personalized support via social networks from OpenPortability"
     },
     "cta": "SUBMIT",
-    "dismiss": "By clicking on 'submit', I certify that I have read the above conditions and agree to them. You must accept the terms of use to continue on the OpenPortability platform"
-
+    "dismiss": "By clicking 'submit', I certify that I have read the above conditions and I consent to them. You must accept the terms of use to continue on the OpenPortability platform"
   },
 "migrate": {
     "title": "Migrate your subscriptions",

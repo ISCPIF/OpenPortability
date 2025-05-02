@@ -568,23 +568,26 @@
         "migrationCompleteStats": "{count} Accounts erfolgreich wiederhergestellt",
         "close": "Schließen"
     },
-    "firstSeen": {
-        "dismiss": "Indem ich auf „Absenden“ klicke, bestätige ich, dass ich die oben genannten Bedingungen gelesen habe und ihnen zustimme. Du musst die Nutzungsbedingungen akzeptieren, um auf der OpenPortability-Plattform fortzufahren",
-        "newsletter": {
-            "emailLabel": "Gib deine E-Mail-Adresse ein, um informiert zu bleiben (optional):",
-            "subtitle": "Ich möchte gerne von OpenPortability begleitet werden",
-            "emailPlaceholder": "Username@domain.com",
-            "researchConsent": "Ich bin damit einverstanden, dass mein Verbindungsdiagramm zu Forschungszwecken an das CNRS weitergegeben wird. Die Daten werden in einer aggregierten Form verarbeitet. Es werden keine persönlichen Daten veröffentlicht.",
-            "errors": {
-                "missingEmail": "Fehlende E-Mail-Adresse"
-            },
-            "consent": "Ich möchte über die nächsten Aktionen von \"On Est prêt\", dem Partner von OpenPortability, informiert werden"
-        },
-        "description": "Du bist dabei, dein Recht auf Datenübertragbarkeit von X zu BlueSky und/oder Mastodon auszuüben, während du an einem Forschungsprojekt über soziale Netzwerke teilnimmst. Es wird nur 5 Minuten dauern.\n\nOpenPortability wird auf deine digitalen Identitäten verweisen und dir dabei helfen, deine Community auf BlueSky und/oder Mastodon schrittweise wiederherzustellen, ohne dein X-Konto zu beeinträchtigen.\n\nWenn sich andere Benutzer auf OpenPortability registrieren, werden die Links, auf die auf X verwiesen wird, mit deren Zustimmung auf BlueSky oder Mastodon wiederhergestellt. Regen deine Abonnent:innen dazu an, das Gleiche zu tun!\n\nDiese „Kopie“ deines sozialen Netzwerks kann einige Tage in Anspruch nehmen.\n\nDurch die Nutzung von OpenPortability erklärst du dich damit einverstanden, dass deine Daten in Übereinstimmung mit dem {lien} verarbeitet werden und stimmst der möglichen Übertragung deiner Daten außerhalb der Europäischen Union (z.B. BlueSky-Server) zu.",
-        "title": "Willkommen!",
-        "cta": "ABSENDEN",
-        "privacyPolicyLink": "Unsere Datenschutzbestimmungen"
+"firstSeen": {
+    "title": "Willkommen!",
+    "description": "Sie sind dabei, Ihr Recht auf Datenübertragbarkeit von X zu BlueSky und/oder Mastodon auszuüben und gleichzeitig an einem Forschungsprojekt zu sozialen Netzwerken teilzunehmen. Dies wird 5 Minuten dauern.\n\nOpenPortability wird Ihre digitalen Identitäten referenzieren und Ihnen helfen, Ihre Community auf BlueSky und/oder Mastodon schrittweise neu aufzubauen, ohne Auswirkungen auf Ihr X-Konto.\n\nWenn sich weitere Benutzer bei OpenPortability anmelden, werden die auf X referenzierten Verbindungen mit deren Zustimmung auf BlueSky oder Mastodon neu erstellt. Zögern Sie nicht, Ihre Follower zu ermutigen, dasselbe zu tun!\n\nDiese \"Kopie\" Ihres sozialen Netzwerks kann mehrere Tage dauern.\n\nDurch die Nutzung von OpenPortability stimmen Sie zu, dass Ihre Daten gemäß {lien} verarbeitet werden und willigen in die mögliche Übertragung Ihrer Daten außerhalb der Europäischen Union ein (z.B. BlueSky-Server).",
+    "privacyPolicyLink": "dem Datenschutzhinweis",
+    "newsletter": {
+      "subtitle": "Ich möchte von OpenPortability per E-Mail begleitet und informiert werden.",
+      "emailLabel": "Geben Sie Ihre E-Mail-Adresse ein, um informiert zu bleiben (erforderlich):",
+      "emailPlaceholder": "benutzername@domainname.com",
+      "consent": "Ich möchte zur Mobilisierung rund um OpenPortability mit {link_oep} beitragen und über deren zukünftige Aktionen informiert bleiben",
+      "researchConsent": "Ich möchte meinen Verbindungsgraphen zu Forschungszwecken mit dem CNRS teilen. Er wird in aggregierter Form verarbeitet. Es werden keine persönlichen Daten öffentlich gemacht.",
+      "errors": {
+        "missingEmail": "E-Mail fehlt"
+      },
+      "blueskyDM": "Ich möchte meine neuen Verbindungen per privater Nachricht auf Bluesky erhalten",
+      "mastodonDM": "Ich möchte meine neuen Verbindungen per privater Nachricht auf Mastodon erhalten",
+      "personalizedSupport": "Ich möchte personalisierte Unterstützung über soziale Netzwerke von OpenPortability erhalten"
     },
+    "cta": "ABSENDEN",
+    "dismiss": "Durch Klicken auf 'Absenden' bestätige ich, dass ich die oben genannten Bedingungen gelesen habe und damit einverstanden bin. Sie müssen die Nutzungsbedingungen akzeptieren, um auf der OpenPortability-Plattform fortzufahren"
+  },
     "support": {
         "modal": {
             "form": {

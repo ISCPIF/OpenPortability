@@ -61,7 +61,7 @@ export default function OnboardingSection({
           )}
           
           {/* Import option - pour les utilisateurs qui n'ont pas de twitter_id et n'ont pas onboardé */}
-          {(!session?.twitter_id && !session?.has_onboarded) && (
+          {(!session?.has_onboarded) && (
             <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-8">
               <motion.button
                 whileHover={{ scale: 1.02 }}
