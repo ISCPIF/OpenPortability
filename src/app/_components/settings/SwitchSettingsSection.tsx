@@ -121,10 +121,10 @@ export default function SwitchSettingsSection({
           t('notifications.hqxNewsletter.description'),
           consents?.email_newsletter ?? false,
           (value) => {
-            onConsentChange('email_newsletter', value);
-            if (value) {
+            if (value && !consents?.email_newsletter) {
               setShowEmailForm(true);
-            } else {
+            } else if (!value) {
+              onConsentChange('email_newsletter', false);
               setShowEmailForm(false);
             }
           }
@@ -154,7 +154,19 @@ export default function SwitchSettingsSection({
               )}
             </div>
             <button
-              onClick={handleEmailSubmit}
+              onClick={async () => {
+                if (!email.trim()) {
+                  setEmailError(t('emailRequired'));
+                  return;
+                }
+                
+                try {
+                  await onConsentChange('email_newsletter', true);
+                  await handleEmailSubmit();
+                } catch (error) {
+                  console.error('Error updating email newsletter consent:', error);
+                }
+              }}
               disabled={isSubmittingEmail}
               className={`${plex.className} w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-3 bg-[#d6356f] text-white rounded-full disabled:opacity-50 hover:bg-[#e6457f] transition-colors font-medium`}
             >
