@@ -4,6 +4,7 @@ import * as dotenv from 'dotenv';
 import { processPythonTask } from './PythonProcessor';
 import fs from 'fs'; // Import fs
 import path from 'path'; // Import path
+import logger from './log_utils';
 
 // Charger les variables d'environnement au tout début
 dotenv.config();
@@ -142,6 +143,8 @@ class StalledTaskError extends WorkerError {
 // Récupérer les tâches bloquées
 async function recoverStalledTasks() {
   try {
+    const endTimer = logger.startPerformanceTimer('PythonWorker', 'recoverStalledTasks', undefined, undefined, undefined, undefined, WORKER_CONFIG.id);
+
     // Récupérer les tâches au statut 'processing' bloquées depuis trop longtemps
     const { data, error } = await supabase
       .from('python_tasks')
@@ -151,21 +154,28 @@ async function recoverStalledTasks() {
       .select();
     
     if (error) {
-      console.error(`❌ [Python Worker ${WORKER_CONFIG.id}] Error recovering stalled tasks:`, error);
-      return;
+      logger.logError('PythonWorker', 'recoverStalledTasks', `Failed to recover stalled tasks`, undefined, { error }, undefined, undefined, WORKER_CONFIG.id);
+      throw new StalledTaskError(`Failed to recover stalled tasks: ${error.message}`, '');
     }
     
     if (data && data.length > 0) {
-      console.log(`🔄 [Python Worker ${WORKER_CONFIG.id}] Recovered ${data.length} stalled tasks.`);
+      logger.logWarning('PythonWorker', 'recoverStalledTasks', `Recovered ${data.length} stalled tasks`, undefined, { 
+        taskIds: data.map((task: any) => task.id).join(', '),
+        count: data.length
+      }, undefined, undefined, WORKER_CONFIG.id);
     }
+    
+    endTimer();
   } catch (error) {
-    console.error(`❌ [Python Worker ${WORKER_CONFIG.id}] Error in recoverStalledTasks:`, error);
+    logger.logError('PythonWorker', 'recoverStalledTasks', error instanceof Error ? error : String(error), undefined, undefined, undefined, undefined, WORKER_CONFIG.id);
   }
 }
 
 // Fonction pour trouver et traiter une tâche
 async function findAndProcessTask(workerId: string, allMessages: AllMessages): Promise<void> {
   try {
+    const endTimer = logger.startPerformanceTimer('PythonWorker', 'findAndProcessTask', undefined, undefined, undefined, undefined, workerId);
+    
     // Utiliser la fonction claim_next_pending_task pour récupérer et verrouiller la prochaine tâche
     const { data: tasks, error } = await supabase
       .rpc('claim_next_pending_task', { 
@@ -173,13 +183,13 @@ async function findAndProcessTask(workerId: string, allMessages: AllMessages): P
       });
 
     if (error) {
-      console.error(`❌ [Python Worker ${workerId}] Error claiming next task:`, error);
+      logger.logError('PythonWorker', 'findAndProcessTask', `Error claiming next task`, undefined, { error }, undefined, undefined, workerId);
+      endTimer();
       return;
     }
 
-    console.log("task -->", tasks)
-
     if (!tasks || tasks.length === 0) {
+      endTimer();
       return;
     }
 
@@ -194,9 +204,10 @@ async function findAndProcessTask(workerId: string, allMessages: AllMessages): P
 
     // Traiter la tâche en passant les messages chargés
     await processPythonTask(task, workerId, allMessages);
+    endTimer();
 
   } catch (error) {
-    console.error(`❌ [Python Worker ${workerId}] Error in findAndProcessTask:`, error);
+    logger.logError('PythonWorker', 'findAndProcessTask', error instanceof Error ? error : String(error), undefined, undefined, undefined, undefined, workerId);
   }
 }
 
@@ -205,7 +216,7 @@ async function safeSupabaseCall<T>(callback: () => Promise<T>): Promise<T> {
   try {
     return await callback();
   } catch (error) {
-    console.error(`❌ [Python Worker ${WORKER_CONFIG.id}] Supabase error:`, error);
+    logger.logError('PythonWorker', 'safeSupabaseCall', `Supabase operation failed`, undefined, { error }, undefined, undefined, WORKER_CONFIG.id);
     throw new SupabaseError('Supabase operation failed', error);
   }
 }
@@ -245,11 +256,12 @@ async function startWorker() {
       
     } catch (error) {
       consecutiveErrors++;
-      console.error(`❌ [Python Worker ${WORKER_CONFIG.id}] Error in worker loop (${consecutiveErrors}/${MAX_CONSECUTIVE_ERRORS}):`, error);
+      logger.logError('PythonWorker', 'startWorker', `Error in worker loop (${consecutiveErrors}/${MAX_CONSECUTIVE_ERRORS})`, undefined, { error }, undefined, undefined, WORKER_CONFIG.id);
       
       // Circuit breaker pattern
       if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
-        console.error(`🔥 [Python Worker ${WORKER_CONFIG.id}] Circuit breaker triggered - too many consecutive errors!`);
+        logger.logError('PythonWorker', 'startWorker', `Circuit breaker triggered - too many consecutive errors!`, undefined, undefined, undefined, undefined, WORKER_CONFIG.id);
+        logger.cleanup()
         process.exit(1);
       }
       
@@ -265,11 +277,13 @@ async function startWorker() {
 // Gestion des signaux d'arrêt
 process.on('SIGTERM', () => {
   console.log(`👋 [Python Worker ${WORKER_CONFIG.id}] Received SIGTERM, shutting down gracefully...`);
+  logger.cleanup()
   process.exit(0);
 });
 
 process.on('SIGINT', () => {
   console.log(`👋 [Python Worker ${WORKER_CONFIG.id}] Received SIGINT, shutting down gracefully...`);
+  logger.cleanup()
   process.exit(0);
 });
 
@@ -279,11 +293,13 @@ process.on('unhandledRejection', (reason, promise) => {
 
 process.on('uncaughtException', (error) => {
   console.error(`🔥 [Python Worker ${WORKER_CONFIG.id}] Uncaught Exception:`, error);
+  logger.cleanup()
   process.exit(1);
 });
 
 // Démarrer le worker
 startWorker().catch(error => {
   console.error(`💥 [Python Worker ${WORKER_CONFIG.id}] Failed to start worker:`, error);
+  logger.cleanup()
   process.exit(1);
 });
