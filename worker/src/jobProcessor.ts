@@ -5,6 +5,7 @@ import { readFile, unlink, rm } from 'fs/promises';
 import { join, dirname } from 'path';
 import { createWriteStream, existsSync, promises as fs } from 'fs';
 import { sleep } from './utils';
+import logger from './log_utils';
 
 // Charger les variables d'environnement
 dotenv.config();
@@ -148,47 +149,20 @@ async function updateJobProgress(
   }
 }
 
-async function processBatch<T>(
-  items: T[],
-  startIndex: number,
-  batchSize: number,
-  processFn: (items: T[]) => Promise<void>,
-  workerId: string,
-  jobId: string,
-  totalItems: { followers: number; following: number },
-  type: 'followers' | 'following'
-): Promise<void> {
-  let retries = 0;
-  const maxRetries = 3;
-
-  while (retries < maxRetries) {
-    try {
-      const batch = items.slice(startIndex, startIndex + batchSize);
-      if (batch.length === 0) return;
-
-      await processFn(batch);
-      
-      // Update progress after successful batch
-      const processedItems = {
-        followers: type === 'followers' ? startIndex + batch.length : 0,
-        following: type === 'following' ? startIndex + batch.length : 0
-      };
-      
-      await updateJobProgress(jobId, processedItems, totalItems, workerId);
-      
-      return;
-    } catch (error) {
-      retries++;
-      console.error(`Error ⚠️ [Worker ${workerId}] Batch processing failed (attempt ${retries}/${maxRetries}):`, error);
-      
-      if (retries === maxRetries) {
-        throw new Error(`Error Failed to process batch after ${maxRetries} attempts`);
-      }
-      
-      await sleep(Math.pow(2, retries) * 1000);
-    }
-  }
+// Performance tracking interfaces
+interface JobMetrics {
+  startTime: number;
+  endTime?: number;
+  totalItems: number;
+  processedItemsFollowers: number;
+  processedItemsFollowing: number;
+  batchesProcessed: number;
+  successfulBatches: number;
+  failedBatches: number;
+  retries: number;
 }
+
+const jobMetrics: Map<string, JobMetrics> = new Map();
 
 const supabase = createClient(supabaseUrl, supabaseKey, {
   auth: {
@@ -332,6 +306,27 @@ interface ImportJob {
 
 export async function processJob(job: ImportJob, workerId: string) {
   try {
+    // Initialize metrics
+    const metrics: JobMetrics = {
+      startTime: Date.now(),
+      totalItems: 0,
+      processedItemsFollowers: 0,
+      processedItemsFollowing: 0,
+      batchesProcessed: 0,
+      successfulBatches: 0,
+      failedBatches: 0,
+      retries: 0
+    };
+    jobMetrics.set(job.id, metrics);
+  
+    logger.logProcessing(
+      'JobProcessor',
+      'processJob',
+      `Starting job processing`,
+      workerId,
+      { jobId: job.id, jobType: job.job_type }
+    );
+  
     console.log(`🚀 [Worker ${workerId}] Starting job processing:`, job);
 
     // Acquire lock for this job
@@ -372,15 +367,26 @@ export async function processJob(job: ImportJob, workerId: string) {
       }
     }
 
+    // Initialize metrics
+    metrics.totalItems = followersData.length + followingData.length;
+
     // Ensure source exists
     await ensureSourceExists(job.user_id, workerId);
 
     // Process followers
     if (followersData.length > 0) {
-      // console.log(`📊 [Worker ${workerId}] Processing ${followersData.length} followers`);
       for (let i = 0; i < followersData.length; i += BATCH_SIZE) {
         const batch = followersData.slice(i, i + BATCH_SIZE);
-        await processFollowers(batch, job.user_id, workerId);
+        metrics.batchesProcessed++;
+        try {
+          await processFollowers(batch, job.user_id, workerId);
+          metrics.successfulBatches++;
+          metrics.processedItemsFollowers += batch.length;
+        } catch (error) {
+          metrics.failedBatches++;
+          metrics.retries++;
+          throw error;
+        }
         
         // Mettre à jour la progression des followers
         currentProgress.followers = i + batch.length;
@@ -398,10 +404,18 @@ export async function processJob(job: ImportJob, workerId: string) {
 
     // Process following
     if (followingData.length > 0) {
-      // console.log(`📊 [Worker ${workerId}] Processing ${followingData.length} following`);
       for (let i = 0; i < followingData.length; i += BATCH_SIZE) {
         const batch = followingData.slice(i, i + BATCH_SIZE);
-        await processFollowing(batch, job.user_id, workerId);
+        metrics.batchesProcessed++;
+        try {
+          await processFollowing(batch, job.user_id, workerId);
+          metrics.successfulBatches++;
+          metrics.processedItemsFollowing += batch.length;
+        } catch (error) {
+          metrics.failedBatches++;
+          metrics.retries++;
+          throw error;
+        }
         
         // Mettre à jour la progression des following
         currentProgress.following = i + batch.length;
@@ -447,6 +461,38 @@ export async function processJob(job: ImportJob, workerId: string) {
     if (job.file_paths) {
       await cleanupTempFiles(job.file_paths, workerId);
     }
+
+    // Finalize metrics and cleanup
+    metrics.endTime = Date.now();
+    const duration = metrics.endTime - metrics.startTime;
+    const successRate = metrics.batchesProcessed > 0 
+      ? (metrics.successfulBatches / metrics.batchesProcessed) * 100 
+      : 0;
+
+    // Log final metrics
+    logger.logPerformance(
+      'JobProcessor',
+      'processJob',
+      `Completed job processing`,
+      workerId,
+      {
+        duration,
+        itemsProcessed: metrics.processedItemsFollowers + metrics.processedItemsFollowing,
+        successRate
+      },
+      { 
+        jobId: job.id,
+        totalBatchesProcessed: metrics.batchesProcessed,
+        failedBatches: metrics.failedBatches,
+        retries: metrics.retries,
+        processedFollowers: metrics.processedItemsFollowers,
+        processedFollowing: metrics.processedItemsFollowing
+      }
+    );
+
+    // Cleanup
+    jobMetrics.delete(job.id);
+
   } catch (error) {
     console.error(`❌ [Worker ${workerId}] Job processing failed:`, error);
     console.log(error);
@@ -464,6 +510,16 @@ export async function processJob(job: ImportJob, workerId: string) {
 
     // Release lock
     await releaseLock(job.id, workerId);
+    logger.logError(
+      'JobProcessor',
+      'processJob',
+      'Job processing failed',
+      workerId,
+      { jobId: job.id },
+      error as Error
+    );
+    throw error;
+    
   }
 }
 
@@ -501,19 +557,34 @@ async function batch_insert_targets(
 }
 
 async function processFollowers(followers: any[], userId: string, workerId: string) {
-  console.log(` [Worker ${workerId}] Processing ${followers.length} follower relations`);
-
   try {
     // Validation checks
     if (!followers || !Array.isArray(followers)) {
-      throw new Error('Followers data must be an array');
+      const error = new Error('Followers data must be an array');
+      logger.logError(
+        'JobProcessor',
+        'processFollowers',
+        'Invalid followers data',
+        workerId,
+        { userId },
+        error
+      );
+      throw error;
     }
 
     if (followers.length > 0) {
       const firstItem = followers[0];
       if (!firstItem?.follower?.accountId) {
-        console.error('Invalid follower data structure:', firstItem);
-        throw new Error('Invalid follower data structure: missing accountId');
+        const error = new Error('Invalid follower data structure: missing accountId');
+        logger.logError(
+          'JobProcessor',
+          'processFollowers',
+          'Invalid follower data structure',
+          workerId,
+          { userId, sample: firstItem },
+          error
+        );
+        throw error;
       }
     }
 
@@ -557,13 +628,24 @@ async function processFollowers(followers: any[], userId: string, workerId: stri
 
         } catch (error) {
           retryCount++;
+          logger.logError(
+            'JobProcessor',
+            'processFollowers',
+            `Batch processing failed (attempt ${retryCount}/${MAX_RETRIES})`,
+            workerId,
+            { 
+              userId,
+              batchSize: chunk.length,
+              batchIndex: i,
+              retryCount
+            },
+            error as Error
+          );
+
           if (retryCount === MAX_RETRIES) {
-            throw new Error(`Failed after ${MAX_RETRIES} retries: ${error instanceof Error ? error.message : String(error)}`);
+            throw error;
           }
-          // Exponential backoff
-          const delay = Math.pow(2, retryCount) * BASE_DELAY;
-          console.log(` [Worker ${workerId}] Retry ${retryCount}/${MAX_RETRIES} after ${delay}ms`);
-          await new Promise(resolve => setTimeout(resolve, delay));
+          await new Promise(resolve => setTimeout(resolve, Math.pow(2, retryCount) * BASE_DELAY));
         }
       }
 
@@ -573,25 +655,47 @@ async function processFollowers(followers: any[], userId: string, workerId: stri
 
     console.log(` [Worker ${workerId}] Successfully created ${followers.length} follower relations`);
   } catch (error) {
-    console.error(` [Worker ${workerId}] Error in processFollowers:`, error);
+    logger.logError(
+      'JobProcessor',
+      'processFollowers',
+      'Failed to process followers',
+      workerId,
+      { userId, totalFollowers: followers.length },
+      error as Error
+    );
     throw error;
   }
 }
 
 async function processFollowing(following: any[], userId: string, workerId: string) {
-  console.log(` [Worker ${workerId}] Processing ${following.length} following relations`);
-
   try {
     // Validation checks
     if (!following || !Array.isArray(following)) {
-      throw new Error('Following data must be an array');
+      const error = new Error('Following data must be an array');
+      logger.logError(
+        'JobProcessor',
+        'processFollowing',
+        'Invalid following data',
+        workerId,
+        { userId },
+        error
+      );
+      throw error;
     }
 
     if (following.length > 0) {
       const firstItem = following[0];
       if (!firstItem?.following?.accountId) {
-        console.error('Invalid following data structure:', firstItem);
-        throw new Error('Invalid following data structure: missing accountId');
+        const error = new Error('Invalid following data structure: missing accountId');
+        logger.logError(
+          'JobProcessor',
+          'processFollowing',
+          'Invalid following data structure',
+          workerId,
+          { userId, sample: firstItem },
+          error
+        );
+        throw error;
       }
     }
 
@@ -635,13 +739,24 @@ async function processFollowing(following: any[], userId: string, workerId: stri
 
         } catch (error) {
           retryCount++;
+          logger.logError(
+            'JobProcessor',
+            'processFollowing',
+            `Batch processing failed (attempt ${retryCount}/${MAX_RETRIES})`,
+            workerId,
+            { 
+              userId,
+              batchSize: batch.length,
+              batchIndex: i,
+              retryCount
+            },
+            error as Error
+          );
+
           if (retryCount === MAX_RETRIES) {
-            throw new Error(`Failed after ${MAX_RETRIES} retries: ${error instanceof Error ? error.message : String(error)}`);
+            throw error;
           }
-          // Exponential backoff
-          const delay = Math.pow(2, retryCount) * BASE_DELAY;
-          console.log(` [Worker ${workerId}] Retry ${retryCount}/${MAX_RETRIES} after ${delay}ms`);
-          await new Promise(resolve => setTimeout(resolve, delay));
+          await new Promise(resolve => setTimeout(resolve, Math.pow(2, retryCount) * BASE_DELAY));
         }
       }
 
@@ -651,7 +766,14 @@ async function processFollowing(following: any[], userId: string, workerId: stri
 
     console.log(` [Worker ${workerId}] Successfully processed all ${following.length} following relations`);
   } catch (error) {
-    console.error(` [Worker ${workerId}] Error in processFollowing:`, error);
+    logger.logError(
+      'JobProcessor',
+      'processFollowing',
+      'Failed to process following',
+      workerId,
+      { userId, totalFollowing: following.length },
+      error as Error
+    );
     throw error;
   }
 }
