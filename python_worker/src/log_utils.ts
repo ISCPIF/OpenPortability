@@ -99,7 +99,7 @@ function getLogFileStream(level: LogLevel): fs.WriteStream | null {
     
     return stream;
   } catch (error) {
-    console.error(`Erreur lors de la création du dossier de logs ou du stream: ${error.message}`);
+    console.error(`Erreur lors de la création du dossier de logs ou du stream: ${(error as Error).message}`);
     return null;
   }
 }
@@ -125,7 +125,7 @@ function getErrorWarningStream(): fs.WriteStream | null {
     
     return stream;
   } catch (error) {
-    console.error(`Erreur lors de la création du stream pour erreurs et warnings: ${error.message}`);
+    console.error(`Erreur lors de la création du stream pour erreurs et warnings: ${(error as Error).message}`);
     return null;
   }
 }
@@ -170,11 +170,11 @@ function checkLogRotation() {
           console.log(`📄 [Log] Rotated log file: ${file} -> ${path.basename(newPath)}`);
         }
       } catch (fileError) {
-        console.error(`❌ [Log] Error processing file during rotation: ${file}`, fileError);
+        console.error(`❌ [Log] Error processing file during rotation: ${file}`, (fileError as Error).message);
       }
     }
   } catch (error) {
-    console.error(`❌ [Log] Error during log rotation:`, error);
+    console.error(`❌ [Log] Error during log rotation:`, (error as Error).message);
   }
 }
 
@@ -214,7 +214,7 @@ try {
   // Vérifier au démarrage avec une gestion des erreurs
   setTimeout(checkLogRotation, 1000);
 } catch (error) {
-  console.error('Error setting up log rotation:', error);
+  console.error('Error setting up log rotation:', (error as Error).message);
 }
 
 // Fonctions publiques
@@ -415,7 +415,7 @@ export function cleanup() {
       try {
         fileStreams[filePath].close();
       } catch (error) {
-        console.error(`Error closing stream for ${filePath}:`, error);
+        console.error(`Error closing stream for ${filePath}:`, (error as Error).message);
       }
     }
   }
