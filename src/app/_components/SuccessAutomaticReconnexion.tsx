@@ -207,28 +207,32 @@ export default function SuccessAutomaticReconnexion({
             {t('firstObjective')}
           </p> */}
           
-          <button 
-            onClick={() => {
-              // Compter le nombre de services connectés
-              const connectedServicesCount = [
-                !!session.user.twitter_username,
-                !!session.user.bluesky_username,
-                !!session.user.mastodon_username
-              ].filter(Boolean).length;
-              
-              // Rediriger vers /dashboard si:
-              // - L'utilisateur n'a pas fait son onboarding OU
-              // - L'utilisateur est connecté à moins de 3 services
-              if (!session.user.has_onboarded || connectedServicesCount < 3) {
-                window.location.href = '/dashboard';
-              } else {
-                window.location.reload();
-              }
-            }}
-            className="inline-block w-fit py-3 px-4 sm:p-4 bg-[#d6356f] text-[#ebece7] text-sm sm:text-base rounded-full hover:bg-[#c02d61] transition-colors"
-          >
-            {t('goToDashboard')}
-          </button>
+          {/* Only show button if there are notFollowed matches on any connected platform */}
+          {((session.user.bluesky_username && stats.matches.bluesky.notFollowed > 0) || 
+            (session.user.mastodon_username && stats.matches.mastodon.notFollowed > 0)) && (
+            <button 
+              onClick={() => {
+                // Compter le nombre de services connectés
+                const connectedServicesCount = [
+                  !!session.user.twitter_username,
+                  !!session.user.bluesky_username,
+                  !!session.user.mastodon_username
+                ].filter(Boolean).length;
+                
+                // Rediriger vers /dashboard si:
+                // - L'utilisateur n'a pas fait son onboarding OU
+                // - L'utilisateur est connecté à moins de 3 services
+                if (!session.user.has_onboarded || connectedServicesCount < 3) {
+                  window.location.href = '/dashboard';
+                } else {
+                  window.location.reload();
+                }
+              }}
+              className="inline-block w-fit py-3 px-4 sm:p-4 bg-[#d6356f] text-[#ebece7] text-sm sm:text-base rounded-full hover:bg-[#c02d61] transition-colors"
+            >
+              {t('goToDashboard')}
+            </button>
+          )}
         {/* </div> */}
       </div>
     </motion.div>
