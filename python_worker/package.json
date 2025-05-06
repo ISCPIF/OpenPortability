@@ -10,7 +10,9 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.0.0",
-    "dotenv": "^16.0.0"
+    "dotenv": "^16.0.0",
+    "date-fns": "^2.30.0"
+
   },
   "devDependencies": {
     "@types/node": "^18.19.68",
