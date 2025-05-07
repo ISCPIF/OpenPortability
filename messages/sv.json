@@ -430,7 +430,9 @@
   "newConsents": "Nya samtycken",
   "dmLinkWarning": "För att ta emot direktmeddelanden behöver du länka ditt Bluesky- eller Mastodon-konto efter att ha bekräftat dina inställningar.",
   "validateAnyway": "Du måste ändå bekräfta dina nuvarande inställningar.",
-  "confirmButton": "Bekräfta mina inställningar"
+  "confirmButton": "Bekräfta mina inställningar",
+  "blueskyDmWarning": "För att ta emot våra meddelanden, se till att du har godkänt direktmeddelanden i dina Bluesky-inställningar och/eller att du följer kontot",
+  "mastodonDmWarning": "För att ta emot våra meddelanden, se till att du har godkänt direktmeddelanden i dina Mastodon-inställningar och/eller att du följer kontot"
 }
 },
   "support": {

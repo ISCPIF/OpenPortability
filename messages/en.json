@@ -431,7 +431,9 @@
   "newConsents": "New consents",
   "dmLinkWarning": "To receive direct messages, you will need to link your Bluesky or Mastodon account after validating your preferences.",
   "validateAnyway": "You must still validate your current preferences.",
-  "confirmButton": "Confirm my preferences"
+  "confirmButton": "Confirm my preferences",
+  "blueskyDmWarning": "To receive our messages, make sure you have authorized DMs in your Bluesky settings and/or that you follow the account",
+  "mastodonDmWarning": "To receive our messages, make sure you have authorized DMs in your Mastodon settings and/or that you follow the account"
 }
 },
 "NewsletterConsent": {
