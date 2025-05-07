@@ -11,7 +11,7 @@ import Image from 'next/image'
 import Badge from '../../../public/v2/HQX-badge.svg'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
-import { Info } from 'lucide-react'
+import { Info, AlertTriangle } from 'lucide-react'
 
 interface NewsLetterConsentsUpdateProps {
   userId: string
@@ -248,20 +248,74 @@ export default function NewsLetterConsentsUpdate({ userId, onSubmit }: NewsLette
                 ) : (
                   <>
                     {/* Afficher les options seulement si l'utilisateur a des comptes liés */}
-                    {hasBlueskyAccount && renderSwitch(
-                      'bluesky_dm',
-                      t('notifications.blueskyDm.title'),
-                      t('notifications.blueskyDm.description'),
-                      localConsents.bluesky_dm,
-                      (value) => handleConsentChange('bluesky_dm', value)
+                    {hasBlueskyAccount && (
+                      <>
+                        {renderSwitch(
+                          'bluesky_dm',
+                          t('notifications.blueskyDm.title'),
+                          t('notifications.blueskyDm.description'),
+                          localConsents.bluesky_dm,
+                          (value) => handleConsentChange('bluesky_dm', value)
+                        )}
+                        {localConsents.bluesky_dm && (
+                          <div className="ml-6 mt-1 mb-3 bg-red-50 border-l-4 border-red-400 p-3">
+                            <div className="flex">
+                              <div className="flex-shrink-0">
+                                <AlertTriangle className="h-5 w-5 text-red-400" />
+                              </div>
+                              <div className="ml-3">
+                                <p className="text-sm text-red-700">
+                                  {t('consentUpdate.blueskyDmWarning')}
+                                  {" "}
+                                  <a 
+                                    href="https://bsky.app/profile/openportability.bsky.social" 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="font-medium underline text-red-700 hover:text-red-800"
+                                  >
+                                    @openportability.bsky.social
+                                  </a>
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </>
                     )}
                     
-                    {hasMastodonAccount && renderSwitch(
-                      'mastodon_dm',
-                      t('notifications.mastodonDm.title'),
-                      t('notifications.mastodonDm.description'),
-                      localConsents.mastodon_dm,
-                      (value) => handleConsentChange('mastodon_dm', value)
+                    {hasMastodonAccount && (
+                      <>
+                        {renderSwitch(
+                          'mastodon_dm',
+                          t('notifications.mastodonDm.title'),
+                          t('notifications.mastodonDm.description'),
+                          localConsents.mastodon_dm,
+                          (value) => handleConsentChange('mastodon_dm', value)
+                        )}
+                        {localConsents.mastodon_dm && (
+                          <div className="ml-6 mt-1 mb-3 bg-red-50 border-l-4 border-red-400 p-3">
+                            <div className="flex">
+                              <div className="flex-shrink-0">
+                                <AlertTriangle className="h-5 w-5 text-red-400" />
+                              </div>
+                              <div className="ml-3">
+                                <p className="text-sm text-red-700">
+                                  {t('consentUpdate.mastodonDmWarning')}
+                                  {" "}
+                                  <a 
+                                    href="https://mastodon.social/@openportability" 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="font-medium underline text-red-700 hover:text-red-800"
+                                  >
+                                    @OpenPortability@mastodon.social
+                                  </a>
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </>
                     )}
                   </>
                 )}

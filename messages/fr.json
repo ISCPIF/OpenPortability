@@ -391,7 +391,9 @@
       "newConsents": "Nouveaux consentements",
       "dmLinkWarning": "Pour recevoir des messages directs, vous devrez lier votre compte Bluesky ou Mastodon après avoir validé vos préférences.",
       "validateAnyway": "Vous devez tout de même valider vos préférences actuelles.",
-      "confirmButton": "Confirmer mes préférences"
+      "confirmButton": "Confirmer mes préférences",
+      "blueskyDmWarning": "Pour recevoir nos messages, vérifiez que vous avez autorisé les DMs dans vos paramètres Bluesky et/ou que vous suivez le compte",
+      "mastodonDmWarning": "Pour recevoir nos messages, vérifiez que vous avez autorisé les DMs dans vos paramètres Mastodon et/ou que vous suivez le compte"
     },
     "notifications": {
       "title": "Notifications",

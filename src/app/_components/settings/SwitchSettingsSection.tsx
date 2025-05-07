@@ -2,7 +2,7 @@
 
 import { Switch } from '@headlessui/react';
 import { useTranslations } from 'next-intl';
-import { CheckCircle2 } from 'lucide-react';
+import { CheckCircle2, AlertTriangle } from 'lucide-react';
 import { plex } from '@/app/fonts/plex';
 import { ConsentType } from '@/hooks/useNewsLetter';
 import { useSession } from 'next-auth/react';
@@ -34,6 +34,28 @@ const CustomToast = ({ platform, message, buttonText }: { platform: string; mess
     >
       {buttonText}
     </button>
+  </div>
+);
+
+const WarningToast = ({ platform, message }: { platform: 'bluesky' | 'mastodon'; message: string }) => (
+  <div className={`${plex.className} flex flex-col space-y-3 p-4 bg-red-600 text-white rounded-lg`}>
+    <div className="flex items-center space-x-2">
+      <AlertTriangle className="w-5 h-5 text-white" />
+      <span className="font-medium text-white/90">{platform === 'bluesky' ? 'Bluesky' : 'Mastodon'} DM</span>
+    </div>
+    <p className="text-sm text-white/90">{message}</p>
+    <div className="flex items-center space-x-2">
+      <a
+        href={platform === 'bluesky' 
+          ? "https://bsky.app/profile/openportability.bsky.social" 
+          : "https://mastodon.social/@openportability"}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="px-4 py-2 bg-white text-red-600 rounded-md text-sm font-medium hover:bg-white/90 transition-colors"
+      >
+        {platform === 'bluesky' ? '@openportability.bsky.social' : '@OpenPortability@mastodon.social'}
+      </a>
+    </div>
   </div>
 );
 
@@ -75,6 +97,16 @@ export default function SwitchSettingsSection({
       });
       return;
     }
+
+    toast.custom(() => (
+      <WarningToast 
+        platform={platform}
+        message={t(`consentUpdate.${platform}DmWarning`)}
+      />
+    ), {
+      position: 'top-right',
+      duration: 8000,
+    });
 
     onConsentChange(`${platform}_dm` as ConsentType, true);
   };
