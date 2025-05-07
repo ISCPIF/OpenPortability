@@ -608,7 +608,9 @@
     "newConsents": "Novos consentimentos",
     "dmLinkWarning": "Para receber mensagens diretas, você precisará vincular sua conta Bluesky ou Mastodon após validar suas preferências.",
     "validateAnyway": "Você ainda precisa validar suas preferências atuais.",
-    "confirmButton": "Confirmar minhas preferências"
+    "confirmButton": "Confirmar minhas preferências",
+    "blueskyDmWarning": "Para receber nossas mensagens, verifique se você autorizou DMs nas suas configurações do Bluesky e/ou se você segue a conta",
+    "mastodonDmWarning": "Para receber nossas mensagens, verifique se você autorizou DMs nas suas configurações do Mastodon e/ou se você segue a conta"  
   }
 },
     "SuccessAutomaticReconnexion": {

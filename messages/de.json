@@ -454,7 +454,11 @@
             "newConsents": "Neue Einwilligungen",
             "dmLinkWarning": "Um Direktnachrichten zu erhalten, müssen Sie Ihr Bluesky- oder Mastodon-Konto nach der Bestätigung Ihrer Einstellungen verknüpfen.",
             "validateAnyway": "Sie müssen dennoch Ihre aktuellen Einstellungen bestätigen.",
-            "confirmButton": "Meine Einstellungen bestätigen"
+            "confirmButton": "Meine Einstellungen bestätigen",
+            "blueskyDmWarning": "Um unsere Nachrichten zu erhalten, stellen Sie sicher, dass Sie DMs in Ihren Bluesky-Einstellungen autorisiert haben und/oder dem Konto folgen",
+            "mastodonDmWarning": "Um unsere Nachrichten zu erhalten, stellen Sie sicher, dass Sie DMs in Ihren Mastodon-Einstellungen autorisiert haben und/oder dem Konto folgen"
+          
+
           }
         },
     "profile": {
