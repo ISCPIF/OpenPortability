@@ -152,14 +152,30 @@ export class UserRepository {
     }
   ): Promise<void> {
     try {
+      // Process IP addresses
+      let firstIpAddress = null;
+      let fullIpAddressChain = null;
+      
+      if (metadata?.ip_address) {
+        // Store the full IP chain for forensic purposes
+        fullIpAddressChain = metadata.ip_address;
+        
+        // Extract just the first IP for the inet column
+        const ips = metadata.ip_address.split(',').map(ip => ip.trim()).filter(Boolean);
+        if (ips.length > 0) {
+          firstIpAddress = ips[0];
+        }
+      }
+
       const { error } = await supabase.rpc('update_user_consent', {
         p_user_id: userId,
         p_consent_type: type,
         p_consent_value: value,
-        p_ip_address: metadata?.ip_address || null,
-        p_user_agent: metadata?.user_agent || null
+        p_ip_address: firstIpAddress,
+        p_user_agent: metadata?.user_agent || null,
+        p_ip_address_full: fullIpAddressChain
       });
-  
+
       if (error) {
         logError('Repository', 'UserRepository.updateConsent', error, userId);
         throw error;
