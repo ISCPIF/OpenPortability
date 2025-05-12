@@ -305,7 +305,7 @@ async function startWorker() {
     console.log(`    Processing errors: ${workerMetrics.errors.processingErrors}`);
     console.log(`    Stalled job errors: ${workerMetrics.errors.stalledJobErrors}`);
     console.log(`    Circuit breaker trips: ${workerMetrics.errors.circuitBreakerTrips}`);
-  }, 60000); // Log metrics every minute
+  }, 6000000); // Log metrics every 10 minutes
 
   process.on('SIGTERM', () => {
     clearInterval(stalledJobsInterval);

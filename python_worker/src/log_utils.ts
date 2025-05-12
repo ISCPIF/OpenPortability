@@ -132,50 +132,51 @@ function getErrorWarningStream(): fs.WriteStream | null {
 
 // Rotation des logs si nécessaire
 function checkLogRotation() {
-  if (!LOG_CONFIG.logToFile) return;
+  return;
+  // if (!LOG_CONFIG.logToFile) return;
   
-  try {
-    // Vérifier si le dossier existe
-    if (!fs.existsSync(LOG_CONFIG.logDir)) {
-      fs.mkdirSync(LOG_CONFIG.logDir, { recursive: true });
-      return; // Dossier vide, pas besoin de rotation
-    }
+  // try {
+  //   // Vérifier si le dossier existe
+  //   if (!fs.existsSync(LOG_CONFIG.logDir)) {
+  //     fs.mkdirSync(LOG_CONFIG.logDir, { recursive: true });
+  //     return; // Dossier vide, pas besoin de rotation
+  //   }
     
-    // Liste tous les fichiers dans le dossier de logs
-    const files = fs.readdirSync(LOG_CONFIG.logDir);
+  //   // Liste tous les fichiers dans le dossier de logs
+  //   const files = fs.readdirSync(LOG_CONFIG.logDir);
     
-    for (const file of files) {
-      try {
-        const filePath = path.join(LOG_CONFIG.logDir, file);
+  //   for (const file of files) {
+  //     try {
+  //       const filePath = path.join(LOG_CONFIG.logDir, file);
         
-        // Vérifier que c'est un fichier
-        if (!fs.statSync(filePath).isFile()) continue;
+  //       // Vérifier que c'est un fichier
+  //       if (!fs.statSync(filePath).isFile()) continue;
         
-        // Vérifier la taille du fichier
-        const stats = fs.statSync(filePath);
+  //       // Vérifier la taille du fichier
+  //       const stats = fs.statSync(filePath);
         
-        if (stats.size > LOG_CONFIG.maxFileSize) {
-          // Fermer le stream si ouvert
-          if (fileStreams[filePath]) {
-            fileStreams[filePath].close();
-            delete fileStreams[filePath];
-          }
+  //       if (stats.size > LOG_CONFIG.maxFileSize) {
+  //         // Fermer le stream si ouvert
+  //         if (fileStreams[filePath]) {
+  //           fileStreams[filePath].close();
+  //           delete fileStreams[filePath];
+  //         }
           
-          // Renommer le fichier avec un timestamp
-          const timestamp = formatDate(new Date(), 'yyyyMMddHHmmss');
-          const [name, ext] = file.split('.');
-          const newPath = path.join(LOG_CONFIG.logDir, `${name}_${timestamp}.${ext}`);
+  //         // Renommer le fichier avec un timestamp
+  //         const timestamp = formatDate(new Date(), 'yyyyMMddHHmmss');
+  //         const [name, ext] = file.split('.');
+  //         const newPath = path.join(LOG_CONFIG.logDir, `${name}_${timestamp}.${ext}`);
           
-          fs.renameSync(filePath, newPath);
-          console.log(`📄 [Log] Rotated log file: ${file} -> ${path.basename(newPath)}`);
-        }
-      } catch (fileError) {
-        console.error(`❌ [Log] Error processing file during rotation: ${file}`, (fileError as Error).message);
-      }
-    }
-  } catch (error) {
-    console.error(`❌ [Log] Error during log rotation:`, (error as Error).message);
-  }
+  //         fs.renameSync(filePath, newPath);
+  //         console.log(`📄 [Log] Rotated log file: ${file} -> ${path.basename(newPath)}`);
+  //       }
+  //     } catch (fileError) {
+  //       console.error(`❌ [Log] Error processing file during rotation: ${file}`, (fileError as Error).message);
+  //     }
+  //   }
+  // } catch (error) {
+  //   console.error(`❌ [Log] Error during log rotation:`, (error as Error).message);
+  // }
 }
 
 // Écrire un log
