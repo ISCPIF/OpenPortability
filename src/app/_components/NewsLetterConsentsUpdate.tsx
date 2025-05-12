@@ -137,23 +137,23 @@ export default function NewsLetterConsentsUpdate({ userId, onSubmit }: NewsLette
     checked: boolean,
     onChange: (value: boolean) => void
   ) => (
-    <div className="flex items-center space-x-3 py-3">
+    <div className="flex items-center space-x-3 py-1 sm:py-3 switch-item">
       <Switch
         checked={checked}
         onChange={(value) => onChange(value)}
         className={`${
           checked ? 'bg-blue-600' : 'bg-gray-200'
-        } relative inline-flex h-[24px] w-[44px] shrink-0 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2`}
+        } relative inline-flex h-5 w-10 sm:h-[24px] sm:w-[44px] shrink-0 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2`}
       >
         <span
           className={`${
-            checked ? 'translate-x-[22px]' : 'translate-x-[2px]'
-          } inline-block h-[20px] w-[20px] transform rounded-full bg-white transition-transform`}
+            checked ? 'translate-x-5 sm:translate-x-[22px]' : 'translate-x-[2px]'
+          } inline-block h-4 w-4 sm:h-[20px] sm:w-[20px] transform rounded-full bg-white transition-transform`}
         />
       </Switch>
-      <div className="flex flex-col">
-        <span className="text-sm font-medium text-gray-700">{title}</span>
-        <span className="text-xs text-gray-500 mt-1">{description}</span>
+      <div className="flex flex-col space-y-0.5">
+        <span className="text-[9px] sm:text-xs font-medium text-gray-700">{title}</span>
+        <span className="text-xs sm:text-sm  text-gray-500 mt-0.5 sm:mt-1 switch-description">{description}</span>
       </div>
     </div>
   )
@@ -168,23 +168,56 @@ export default function NewsLetterConsentsUpdate({ userId, onSubmit }: NewsLette
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="bg-white rounded-xl shadow-xl max-w-lg w-full mx-4 overflow-hidden"
+        className="bg-white rounded-xl shadow-xl max-w-lg w-full mx-2 sm:mx-4 flex flex-col max-h-[95vh]"
       >
-        <div className="p-6">
-          <div className="flex items-center mb-4">
-            <Image src={Badge} alt="HelloQuitteX" width={40} height={40} />
-            <h2 className={`${plex.className} text-xl font-bold ml-4 text-gray-800`}>
+        <style jsx global>{`
+          @media (max-height: 700px) {
+            .consent-modal-content {
+              padding-top: 8px;
+              padding-bottom: 8px;
+            }
+            .consent-heading {
+              margin-bottom: 4px;
+            }
+            .consent-description {
+              margin-bottom: 8px;
+            }
+            .consent-section {
+              margin-top: 8px;
+            }
+            .switch-item {
+              padding-top: 2px;
+              padding-bottom: 2px;
+            }
+            .switch-description {
+              line-height: 1.1;
+            }
+            .warning-box {
+              padding: 6px !important;
+              margin-top: 4px !important;
+              margin-bottom: 4px !important;
+            }
+            .warning-box p {
+              font-size: 10px !important;
+            }
+          }
+        `}</style>
+        
+        <div className="p-4 sm:p-6 overflow-y-auto consent-modal-content" style={{ scrollbarWidth: 'thin' }}>
+          <div className="flex items-center mb-2 sm:mb-4 consent-heading">
+            <Image src={Badge} alt="HelloQuitteX" width={24} height={24} className="sm:w-10 sm:h-10" />
+            <h2 className={`${plex.className} text-sm sm:text-xl font-bold ml-2 sm:ml-4 text-gray-800`}>
               {t('consentUpdate.title')}
             </h2>
           </div>
           
-          <p className="text-gray-600 mb-6">
+          <p className="text-xs sm:text-base text-gray-600 mb-2 sm:mb-6 consent-description">
             {t('consentUpdate.description')}
           </p>
           
-          <div className="space-y-2 mb-6">
+          <div className="space-y-0 sm:space-y-2">
             {/* Consentements existants */}
-            <h3 className={`${plex.className} text-sm font-medium text-gray-700 mb-3`}>
+            <h3 className={`${plex.className} text-xs sm:text-sm font-medium text-gray-700 mb-1 sm:mb-3`}>
               {t('consentUpdate.currentConsents')}
             </h3>
             
@@ -213,7 +246,7 @@ export default function NewsLetterConsentsUpdate({ userId, onSubmit }: NewsLette
             )}
             
             {/* Nouveaux consentements */}
-            <h3 className={`${plex.className} text-sm font-medium text-gray-700 mt-6 mb-3`}>
+            <h3 className={`${plex.className} text-xs sm:text-sm font-medium text-gray-700 mt-2 sm:mt-6 mb-1 sm:mb-3 consent-section`}>
               {t('consentUpdate.newConsents')}
             </h3>
             
@@ -227,19 +260,19 @@ export default function NewsLetterConsentsUpdate({ userId, onSubmit }: NewsLette
             
             {/* Options de support personnalisé conditionnelles */}
             {localConsents.personalized_support && (
-              <div className="ml-6 space-y-3 border-l-2 border-gray-200 pl-4 mt-2">
+              <div className="ml-4 sm:ml-6 space-y-1 sm:space-y-3 border-l-2 border-gray-200 pl-2 sm:pl-4 mt-1 sm:mt-2">
                 {/* Message d'avertissement si aucun compte social n'est lié */}
                 {hasNoSocialAccounts ? (
-                  <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">
+                  <div className="bg-yellow-50 border-l-4 border-yellow-400 p-2 sm:p-4 warning-box">
                     <div className="flex">
                       <div className="flex-shrink-0">
-                        <Info className="h-5 w-5 text-yellow-400" />
+                        <Info className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-400" />
                       </div>
-                      <div className="ml-3">
-                        <p className="text-sm text-yellow-700">
+                      <div className="ml-2 sm:ml-3">
+                        <p className="text-[10px] sm:text-sm text-yellow-700">
                           {t('consentUpdate.dmLinkWarning')}
                         </p>
-                        <p className="text-sm text-yellow-700 mt-2">
+                        <p className="text-[10px] sm:text-sm text-yellow-700 mt-1 sm:mt-2">
                           {t('consentUpdate.validateAnyway')}
                         </p>
                       </div>
@@ -258,13 +291,13 @@ export default function NewsLetterConsentsUpdate({ userId, onSubmit }: NewsLette
                           (value) => handleConsentChange('bluesky_dm', value)
                         )}
                         {localConsents.bluesky_dm && (
-                          <div className="ml-6 mt-1 mb-3 bg-red-50 border-l-4 border-red-400 p-3">
+                          <div className="ml-4 sm:ml-6 mt-1 mb-2 sm:mb-3 bg-red-50 border-l-4 border-red-400 p-2 sm:p-3 warning-box">
                             <div className="flex">
                               <div className="flex-shrink-0">
-                                <AlertTriangle className="h-5 w-5 text-red-400" />
+                                <AlertTriangle className="h-3 w-3 sm:h-5 sm:w-5 text-red-400" />
                               </div>
-                              <div className="ml-3">
-                                <p className="text-sm text-red-700">
+                              <div className="ml-2 sm:ml-3">
+                                <p className="text-[10px] sm:text-sm text-red-700">
                                   {t('consentUpdate.blueskyDmWarning')}
                                   {" "}
                                   <a 
@@ -293,13 +326,13 @@ export default function NewsLetterConsentsUpdate({ userId, onSubmit }: NewsLette
                           (value) => handleConsentChange('mastodon_dm', value)
                         )}
                         {localConsents.mastodon_dm && (
-                          <div className="ml-6 mt-1 mb-3 bg-red-50 border-l-4 border-red-400 p-3">
+                          <div className="ml-4 sm:ml-6 mt-1 mb-2 sm:mb-3 bg-red-50 border-l-4 border-red-400 p-2 sm:p-3 warning-box">
                             <div className="flex">
                               <div className="flex-shrink-0">
-                                <AlertTriangle className="h-5 w-5 text-red-400" />
+                                <AlertTriangle className="h-3 w-3 sm:h-5 sm:w-5 text-red-400" />
                               </div>
-                              <div className="ml-3">
-                                <p className="text-sm text-red-700">
+                              <div className="ml-2 sm:ml-3">
+                                <p className="text-[10px] sm:text-sm text-red-700">
                                   {t('consentUpdate.mastodonDmWarning')}
                                   {" "}
                                   <a 
@@ -322,20 +355,21 @@ export default function NewsLetterConsentsUpdate({ userId, onSubmit }: NewsLette
               </div>
             )}
           </div>
-          
+        </div>
+        
+        <div className="p-3 sm:p-6 bg-white border-t border-gray-100">
           {error && (
-            <p className="text-red-500 text-sm mb-4">{error}</p>
+            <p className="text-red-500 text-xs sm:text-sm mb-2 sm:mb-4">{error}</p>
           )}
           
           <button
             onClick={handleSubmit}
             disabled={isLoading}
-            className="w-full px-6 py-3 bg-[#46489B] text-white rounded-lg font-semibold hover:bg-opacity-90 
-                      transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full px-3 sm:px-6 py-2 sm:py-3 bg-[#46489B] text-white text-xs sm:text-base rounded-lg font-semibold hover:bg-opacity-90 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isLoading ? (
               <span className="flex items-center justify-center gap-2">
-                <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></span>
+                <span className="animate-spin rounded-full h-3 w-3 sm:h-4 sm:w-4 border-b-2 border-white"></span>
                 {t('loading')}
               </span>
             ) : (
