@@ -151,22 +151,24 @@ export class UserRepository {
       user_agent?: string;
     }
   ): Promise<void> {
-    const { error } = await supabase
-      .from('newsletter_consents')
-      .insert({
-        user_id: userId,
-        consent_type: type,
-        consent_value: value,
-        ip_address: metadata?.ip_address,
-        user_agent: metadata?.user_agent
+    try {
+      const { error } = await supabase.rpc('update_user_consent', {
+        p_user_id: userId,
+        p_consent_type: type,
+        p_consent_value: value,
+        p_ip_address: metadata?.ip_address || null,
+        p_user_agent: metadata?.user_agent || null
       });
-
-    if (error) {
-      logError('Repository', 'UserRepository.updateConsent', error, userId);
+  
+      if (error) {
+        logError('Repository', 'UserRepository.updateConsent', error, userId);
+        throw error;
+      }
+    } catch (error) {
+      logError('Repository', 'UserRepository.updateConsent', error as Error, userId);
       throw error;
     }
   }
-
   /**
    * Insère un nouveau consentement et désactive les précédents consentements du même type
    * 
@@ -247,16 +249,16 @@ export class UserRepository {
   }
 
   async getUserLanguagePreference(userId: string) {
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from('language_pref')
       .select('*')
       .eq('user_id', userId)
       .single();
     
-    if (error) {
-      logError('Repository', 'UserRepository.getUserLanguagePreference', error, userId);
-      throw error;
-    }
+    // if (error) {
+    //   logError('Repository', 'UserRepository.getUserLanguagePreference', error, userId);
+    //   throw error;
+    // }
     
     return data;
   }
