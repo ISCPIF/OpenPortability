@@ -143,7 +143,7 @@ class StalledTaskError extends WorkerError {
 // Récupérer les tâches bloquées
 async function recoverStalledTasks() {
   try {
-    const endTimer = logger.startPerformanceTimer('PythonWorker', 'recoverStalledTasks', undefined, undefined, undefined, undefined, WORKER_CONFIG.id);
+    // const endTimer = logger.startPerformanceTimer('PythonWorker', 'recoverStalledTasks', undefined, undefined, undefined, undefined, WORKER_CONFIG.id);
 
     // Récupérer les tâches au statut 'processing' bloquées depuis trop longtemps
     const { data, error } = await supabase
@@ -165,7 +165,7 @@ async function recoverStalledTasks() {
       }, undefined, undefined, WORKER_CONFIG.id);
     }
     
-    endTimer();
+    // endTimer();
   } catch (error) {
     logger.logError('PythonWorker', 'recoverStalledTasks', error instanceof Error ? error : String(error), undefined, undefined, undefined, undefined, WORKER_CONFIG.id);
   }
@@ -174,7 +174,7 @@ async function recoverStalledTasks() {
 // Fonction pour trouver et traiter une tâche
 async function findAndProcessTask(workerId: string, allMessages: AllMessages): Promise<void> {
   try {
-    const endTimer = logger.startPerformanceTimer('PythonWorker', 'findAndProcessTask', undefined, undefined, undefined, undefined, workerId);
+    // const endTimer = logger.startPerformanceTimer('PythonWorker', 'findAndProcessTask', undefined, undefined, undefined, undefined, workerId);
     
     // Utiliser la fonction claim_next_pending_task pour récupérer et verrouiller la prochaine tâche
     const { data: tasks, error } = await supabase
@@ -184,12 +184,12 @@ async function findAndProcessTask(workerId: string, allMessages: AllMessages): P
 
     if (error) {
       logger.logError('PythonWorker', 'findAndProcessTask', `Error claiming next task`, undefined, { error }, undefined, undefined, workerId);
-      endTimer();
+      // endTimer();
       return;
     }
 
     if (!tasks || tasks.length === 0) {
-      endTimer();
+      // endTimer();
       return;
     }
 
@@ -204,7 +204,7 @@ async function findAndProcessTask(workerId: string, allMessages: AllMessages): P
 
     // Traiter la tâche en passant les messages chargés
     await processPythonTask(task, workerId, allMessages);
-    endTimer();
+    // endTimer();
 
   } catch (error) {
     logger.logError('PythonWorker', 'findAndProcessTask', error instanceof Error ? error : String(error), undefined, undefined, undefined, undefined, workerId);
