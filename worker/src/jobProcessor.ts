@@ -591,7 +591,7 @@ async function processFollowers(followers: any[], userId: string, workerId: stri
     // Create source if it doesn't exist
     await ensureSourceExists(userId, workerId);
 
-    const CHUNK_SIZE = 150;
+    const CHUNK_SIZE = 250;
     const MAX_RETRIES = 3;
     const BASE_DELAY = 500;
 
