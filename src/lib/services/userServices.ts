@@ -201,43 +201,6 @@ export class UserService {
     return !!consents[consentType];
   }
 
-  /**
-   * Enregistre un consentement utilisateur
-   * 
-   * @param userId Identifiant de l'utilisateur
-   * @param consentType Type de consentement (email_newsletter, bluesky_dm, etc.)
-   * @param consentValue Valeur du consentement (true/false)
-   * @param metadata Métadonnées additionnelles à stocker (user-agent, etc.)
-   * @returns Le consentement créé
-   */
-  async recordConsent(
-    userId: string,
-    consentType: string,
-    consentValue: boolean,
-    metadata: Record<string, any> = {}
-  ): Promise<any> {
-    if (!userId) {
-      throw new Error('User ID is required to record consent');
-    }
-    
-    if (!consentType) {
-      throw new Error('Consent type is required');
-    }
-    
-    // Vérifier que consentType est une valeur valide
-    const validConsentTypes = [
-      'email_newsletter',
-      'bluesky_dm',
-      'research_participation',
-      'oep_newsletter'
-    ];
-    
-    if (!validConsentTypes.includes(consentType)) {
-      throw new Error(`Invalid consent type: ${consentType}`);
-    }
-    
-    return this.repository.insertNewsletterConsent(userId, consentType, consentValue, metadata);
-  }
 
   async updateNewsletterConsent(
     userId: string,
