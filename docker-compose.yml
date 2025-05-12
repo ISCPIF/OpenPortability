@@ -18,11 +18,11 @@ services:
       ports:
         - "3000:3000"
       volumes:
-        - ./:/app:delegated
-        - /app/node_modules
-        - /app/.next
+        # - ./:/app:delegated
+        # - /app/node_modules
+        # - /app/.next
         - shared-tmp:/app/tmp
-        - ./public:/app/public
+        # - ./public:/app/public
         - app_logs:/app/logs
 
 
@@ -47,13 +47,49 @@ services:
     depends_on:
       - app
 
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/certs:/etc/nginx/certs:ro
+      # - ./nginx/auth:/etc/nginx/auth:ro
+    depends_on:
+      - app
+    networks:
+      - app_network
+    command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
+
+  watcher:
+    build:
+      context: ./watcher
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ENV=production
+    env_file:
+      - ./watcher/.env
+    restart: unless-stopped
+    networks:
+      - app_network
+      - supabase_network_goodbyex
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "host.docker.internal:54321"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
   python_worker:
     build:
       context: ./python_worker
       dockerfile: Dockerfile
     volumes:
-      - ./python_worker:/app
-      - /app/node_modules
+      # - ./python_worker:/app
+      # - /app/node_modules
       - ./python_worker/messages:/app/messages
       - app_logs:/app/logs
     env_file:
@@ -67,41 +103,6 @@ services:
       - "host.docker.internal:host-gateway"
     depends_on:
       - app
-    # restart: unless-stopped
-
-  nginx:
-    image: nginx:alpine
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/certs:/etc/nginx/certs:ro
-      - ./nginx/auth:/etc/nginx/auth:ro
-    depends_on:
-      - app
-    networks:
-      - app_network
-    command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
-
-  # bluesky-dm-bot:
-  #   build:
-  #     context: ./messengers/bluesky
-  #     dockerfile: Dockerfile
-  #   restart: unless-stopped
-  #   env_file:
-  #     - ./messengers/bluesky/.env
-  #   volumes:
-  #     - ./messengers/bluesky/logs:/app/logs
-  #     # - ./messengers/bluesky:/app
-  #     # - /app/node_modules
-  #     # - app_log:/app/logs
-  #   networks:
-  #     - app_network
-  #     - supabase_network_goodbyex
-  #   extra_hosts:
-  #     - "host.docker.internal:host-gateway"
-    
 
 networks:
   app_network:
