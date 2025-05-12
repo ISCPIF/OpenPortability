@@ -27,11 +27,6 @@ const LOG_CONFIG = {
   // Log file prefixes
   filePrefix: 'worker',
   
-  // Specific log files
-  errorLogFile: 'worker_errors_warnings.log',
-  performanceLogFile: 'worker_performance.log',
-  processingLogFile: 'worker_processing.log',
-  
   // Log rotation
   maxFileSize: parseInt(process.env.LOG_MAX_FILE_SIZE || '10485760', 10), // 10 MB default
   
@@ -83,7 +78,7 @@ function getLogLevelValue(level: LogLevel): number {
   return levels[level] || 0;
 }
 
-// Get appropriate log file path
+// Get appropriate log file path based on level and date
 function getLogFilePath(level: LogLevel, workerId: string): string {
   const date = formatDate(new Date(), 'yyyy-MM-dd');
   const baseDir = LOG_CONFIG.logDir;
@@ -93,24 +88,23 @@ function getLogFilePath(level: LogLevel, workerId: string): string {
     fs.mkdirSync(baseDir, { recursive: true });
   }
 
-  // Special case files
-  if (level === LogLevel.ERROR || level === LogLevel.WARNING) {
-    return path.join(baseDir, LOG_CONFIG.errorLogFile);
+  // Create a file per day per log type
+  switch(level) {
+    case LogLevel.ERROR:
+      return path.join(baseDir, `error_${date}.log`);
+    case LogLevel.WARNING:
+      return path.join(baseDir, `warning_${date}.log`);
+    case LogLevel.PERFORMANCE:
+      return path.join(baseDir, `performance_${date}.log`);
+    case LogLevel.PROCESSING:
+      return path.join(baseDir, `processing_${date}.log`);
+    default:
+      // For DEBUG and INFO, use a general log file per day
+      if (LOG_CONFIG.workerSpecificLogs) {
+        return path.join(baseDir, `general_${workerId}_${date}.log`);
+      }
+      return path.join(baseDir, `general_${date}.log`);
   }
-  if (level === LogLevel.PERFORMANCE) {
-    return path.join(baseDir, LOG_CONFIG.performanceLogFile);
-  }
-  if (level === LogLevel.PROCESSING) {
-    return path.join(baseDir, LOG_CONFIG.processingLogFile);
-  }
-
-  // Worker-specific logs
-  if (LOG_CONFIG.workerSpecificLogs) {
-    return path.join(baseDir, `${LOG_CONFIG.filePrefix}_${workerId}_${date}.log`);
-  }
-
-  // Default log file
-  return path.join(baseDir, `${LOG_CONFIG.filePrefix}_${date}.log`);
 }
 
 // Get or create file stream
@@ -119,6 +113,29 @@ function getFileStream(filePath: string): fs.WriteStream {
     fileStreams[filePath] = fs.createWriteStream(filePath, { flags: 'a' });
   }
   return fileStreams[filePath];
+}
+
+// Check if log rotation is needed
+function checkLogRotation(filePath: string): void {
+  try {
+    if (fs.existsSync(filePath)) {
+      const stats = fs.statSync(filePath);
+      if (stats.size > LOG_CONFIG.maxFileSize) {
+        // Close existing stream
+        if (fileStreams[filePath]) {
+          fileStreams[filePath].end();
+          delete fileStreams[filePath];
+        }
+        
+        // Create backup file with timestamp
+        const timestamp = formatDate(new Date(), 'yyyyMMdd_HHmmss');
+        const backupPath = `${filePath}.${timestamp}`;
+        fs.renameSync(filePath, backupPath);
+      }
+    }
+  } catch (err) {
+    console.error(`Error checking log rotation: ${err}`);
+  }
 }
 
 // Main logging function
@@ -169,6 +186,11 @@ function log(
   // File logging
   if (LOG_CONFIG.logToFile) {
     const filePath = getLogFilePath(level, workerId);
+    
+    // Check if log rotation is needed
+    checkLogRotation(filePath);
+    
+    // Write to log file
     const stream = getFileStream(filePath);
     stream.write(formatLogEntry(entry));
   }
