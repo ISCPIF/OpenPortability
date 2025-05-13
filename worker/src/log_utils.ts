@@ -91,19 +91,19 @@ function getLogFilePath(level: LogLevel, workerId: string): string {
   // Create a file per day per log type
   switch(level) {
     case LogLevel.ERROR:
-      return path.join(baseDir, `error_${date}.log`);
+      return path.join(baseDir, `worker_error_${date}.log`);
     case LogLevel.WARNING:
-      return path.join(baseDir, `warning_${date}.log`);
+      return path.join(baseDir, `worker_warning_${date}.log`);
     case LogLevel.PERFORMANCE:
-      return path.join(baseDir, `performance_${date}.log`);
+      return path.join(baseDir, `worker_performance_${date}.log`);
     case LogLevel.PROCESSING:
-      return path.join(baseDir, `processing_${date}.log`);
+      return path.join(baseDir, `worker_processing_${date}.log`);
     default:
       // For DEBUG and INFO, use a general log file per day
       if (LOG_CONFIG.workerSpecificLogs) {
-        return path.join(baseDir, `general_${workerId}_${date}.log`);
+        return path.join(baseDir, `worker_general_${workerId}_${date}.log`);
       }
-      return path.join(baseDir, `general_${date}.log`);
+      return path.join(baseDir, `worker_general_${date}.log`);
   }
 }
 
