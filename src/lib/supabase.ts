@@ -34,6 +34,14 @@ export const authClient = createClient(
     },
     db: {
       schema: "next-auth"
+    },
+    global: {
+      fetch: (url: string, options: RequestInit) => {
+        return fetch(url, {
+          ...options,
+          signal: AbortSignal.timeout(15000), // 15 second timeout
+        });
+      },
     }
   }
 )
