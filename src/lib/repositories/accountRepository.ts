@@ -26,8 +26,17 @@ export class AccountRepository {
       .eq('provider', provider)
       .eq('type', 'oauth')
       .maybeSingle();
-  
+
     if (error) {
+      // Handle timeout errors specifically
+      if (error.code === '57014') {
+        logError('Repository', 'AccountRepository.getProviderAccount', error, userId, { 
+          provider,
+          errorType: 'timeout'
+        });
+        return null; // Return null on timeout as a fallback
+      }
+      
       // Check for specific error messages and log accordingly
       if (error.details?.includes('Results contain 2 rows')) {
         // Multiple accounts found - this is a critical error

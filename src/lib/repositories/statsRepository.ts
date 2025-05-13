@@ -57,10 +57,12 @@ export class StatsRepository {
       if (!has_onboard) {
         ({ data, error } = await supabase
           .rpc('get_user_complete_stats_from_sources', { p_user_id: userId })
+          .abortSignal(AbortSignal.timeout(30000))  // Apply timeout before single()
           .single());
       } else {
         ({ data, error } = await supabase
           .rpc('get_user_complete_stats', { p_user_id: userId })
+          .abortSignal(AbortSignal.timeout(30000))  // Apply timeout before single()
           .single());
       }
 
