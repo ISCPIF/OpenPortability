@@ -104,7 +104,17 @@ export async function createUser(
 
     if (error)
     {
-      logger.logError('Auth', 'createUser', 'Error checking for existing user', undefined, { error })
+      if (error.details?.includes('The result contains 0 rows')) {
+        // Log as warning for expected "no rows" case
+        logger.logWarning('Auth', 'createUser', 
+          `No existing user found with Mastodon ID: ${mastodonProfile.id} and instance: ${instance}`, 
+          undefined, 
+          { mastodonProfile, instance }
+        );
+      } else {
+        // Log as error for unexpected errors
+        logger.logError('Auth', 'createUser', 'Error checking for existing user', undefined, { error });
+      }
     }
 
     if (existingUser) {
@@ -162,7 +172,21 @@ const providerIdField = `${provider}_id` as keyof CustomAdapterUser
     }
     else if (existingUserError)
     {
-      logger.logError('Auth', 'createUser', 'Error checking for existing user', undefined, { provider, providerId, error: existingUserError })
+      if (existingUserError.details?.includes('The result contains 0 rows')) {
+        // Log as warning for expected "no rows" case
+        logger.logWarning('Auth', 'createUser', 
+          `No existing user found with ${provider} ID: ${providerId}`, 
+          undefined, 
+          { provider, providerId }
+        );
+      } else {
+        // Log as error for unexpected errors
+        logger.logError('Auth', 'createUser', 
+          'Error checking for existing user', 
+          undefined, 
+          { provider, providerId, error: existingUserError }
+        );
+      }
     }
 
  // Créer les données utilisateur selon le provider

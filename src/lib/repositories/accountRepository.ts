@@ -26,10 +26,28 @@ export class AccountRepository {
       .eq('provider', provider)
       .eq('type', 'oauth')
       .maybeSingle();
-    
+  
     if (error) {
-      logError('Repository', 'AccountRepository.getProviderAccount', error, userId, { provider });
-      throw error;
+      // Check for specific error messages and log accordingly
+      if (error.details?.includes('Results contain 2 rows')) {
+        // Multiple accounts found - this is a critical error
+        logError('Repository', 'AccountRepository.getProviderAccount', error, userId, { 
+          provider,
+          message: 'Multiple accounts found for the same provider',
+        });
+        throw error;
+      } else if (error.details?.includes('The result contains 0 rows')) {
+        // No account found - this is just a warning
+        logWarning('Repository', 'AccountRepository.getProviderAccount', 
+          `No account found for user ${userId} with provider ${provider}`, 
+          userId
+        );
+        return null;
+      } else {
+        // Other errors - log as error
+        logError('Repository', 'AccountRepository.getProviderAccount', error, userId, { provider });
+        throw error;
+      }
     }
 
     if (data) {
