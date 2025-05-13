@@ -31,9 +31,6 @@ const LOG_CONFIG = {
   
   // Fichier spécial pour les erreurs et warnings
   errorLogFile: 'all_errors_warnings.log',
-  
-  // Rotation des logs
-  maxFileSize: parseInt(process.env.LOG_MAX_FILE_SIZE || '10485760', 10), // 10 MB par défaut
 };
 
 // Structure d'un log
@@ -130,7 +127,7 @@ function getErrorWarningStream(): fs.WriteStream | null {
   }
 }
 
-// Rotation des logs si nécessaire
+// Gestion des fichiers de logs
 function checkLogRotation() {
   if (!LOG_CONFIG.logToFile) return;
   
@@ -141,36 +138,22 @@ function checkLogRotation() {
       return; // Dossier vide, pas besoin de rotation
     }
     
-    // Liste tous les fichiers dans le dossier de logs
-    const files = fs.readdirSync(LOG_CONFIG.logDir)
-      .filter(file => file.startsWith(LOG_CONFIG.filePrefix))
-      .map(file => ({
-        name: file,
-        path: path.join(LOG_CONFIG.logDir, file),
-        size: fs.statSync(path.join(LOG_CONFIG.logDir, file)).size,
-        mtime: fs.statSync(path.join(LOG_CONFIG.logDir, file)).mtime
-      }))
-      .sort((a, b) => b.mtime.getTime() - a.mtime.getTime()); // Plus récent d'abord
+    // Fermer et recréer les streams pour la nouvelle journée
+    const today = formatDate(new Date(), 'yyyy-MM-dd');
     
-    // Vérifier la taille de chaque fichier
-    for (const file of files) {
-      if (file.size > LOG_CONFIG.maxFileSize) {
-        // Fermer le stream si existant
-        if (fileStreams[file.path]) {
-          fileStreams[file.path].end();
-          delete fileStreams[file.path];
-        }
-        
-        // Archiver le fichier
-        const archivePath = `${file.path}.${formatDate(new Date(), 'yyyyMMdd_HHmmss')}.archived`;
-        fs.renameSync(file.path, archivePath);
-      }
-    }
+    // Fermer tous les streams existants et les recréer pour la nouvelle journée
+    Object.keys(fileStreams).forEach(filePath => {
+      fileStreams[filePath].end();
+      delete fileStreams[filePath];
+    });
+    
+    // Les nouveaux streams seront créés à la demande par getLogFileStream
+    console.log(`Log streams reset for new day: ${today}`);
     
     // Ne supprime plus les fichiers excédentaires
     // La suppression des anciens fichiers est désactivée car ils sont stockés dans un volume Docker
   } catch (error) {
-    console.error('Error during log rotation:', error);
+    console.error('Error during log file management:', error);
   }
 }
 
@@ -198,7 +181,24 @@ function writeLog(entry: LogEntry) {
 
 // Vérifier la rotation des logs périodiquement
 try {
-  setInterval(checkLogRotation, 60 * 60 * 1000); // Toutes les heures
+  // Calculer le temps jusqu'à minuit pour le premier déclenchement
+  const calculateMsUntilMidnight = () => {
+    const now = new Date();
+    const midnight = new Date(now);
+    midnight.setHours(24, 0, 0, 0);
+    return midnight.getTime() - now.getTime();
+  };
+  
+  // Configurer le premier déclenchement à minuit
+  const msUntilMidnight = calculateMsUntilMidnight();
+  setTimeout(() => {
+    // Exécuter la rotation à minuit
+    checkLogRotation();
+    
+    // Puis configurer un intervalle quotidien
+    setInterval(checkLogRotation, 24 * 60 * 60 * 1000); // Une fois par jour
+  }, msUntilMidnight);
+  
   // Vérifier au démarrage avec une gestion des erreurs
   setTimeout(checkLogRotation, 1000);
 } catch (error) {
