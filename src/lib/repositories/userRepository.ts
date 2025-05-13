@@ -177,12 +177,29 @@ export class UserRepository {
       });
 
       if (error) {
+        // Check if this is a unique constraint violation (race condition)
+        if (error.code === '23505' && error.message?.includes('unique_active_consent')) {
+          // This is likely a race condition where another request already created the consent
+          // Log as warning instead of error since the consent was still recorded
+          logWarning(
+            'Repository', 
+            'UserRepository.updateConsent', 
+            `Ignoring duplicate consent update: ${error.message}`, 
+            userId
+          );
+          return; // Return success since the consent is already recorded
+        }
+        
+        // For other errors, log and throw as usual
         logError('Repository', 'UserRepository.updateConsent', error, userId);
         throw error;
       }
     } catch (error) {
-      logError('Repository', 'UserRepository.updateConsent', error as Error, userId);
-      throw error;
+      // Only re-throw if it's not already handled above
+      if (!((error as any)?.code === '23505')) {
+        logError('Repository', 'UserRepository.updateConsent', error as Error, userId);
+        throw error;
+      }
     }
   }
   /**
