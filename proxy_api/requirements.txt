@@ -11,6 +11,6 @@ prometheus-client==0.17.1
 python-multipart==0.0.6
 aiofiles==23.2.1
 databases[postgresql]==0.8.0
-sqlalchemy==2.0.23
+sqlalchemy>=1.4.42,<1.5
 starlette==0.27.0
 loguru==0.7.2
