@@ -176,7 +176,6 @@ async function executeDm(task: PythonTask, workerId: string, customMessage?: str
       taskId: task.id
     }, undefined, undefined, workerId);    
     
-    
     // Exécuter le script Python avec les arguments en utilisant l'environnement virtuel
     const pythonExecutable = process.env.VIRTUAL_ENV ? `${process.env.VIRTUAL_ENV}/bin/python` : 'python3';
     // console.log(`Sending custom message: ${customMessage}`);
@@ -416,6 +415,25 @@ export async function processPythonTask(
         // Récupérer les stats des utilisateurs non suivis
         const stats = await getUnfollowedStats(task.user_id);
         const platformStats = task.platform === 'bluesky' ? stats.bluesky : stats.mastodon;
+        
+        // Ne pas envoyer de message s'il n'y a pas de targets à suivre
+        if (platformStats === 0) {
+          logger.logInfo('PythonProcessor', 'processPythonTask', 'Skipping newsletter task - no targets to follow', task.user_id, {
+            platform: task.platform,
+            platformStats,
+            workerId
+          });
+          
+          // Marquer la tâche comme complétée sans envoyer de message
+          result = { 
+            success: true, 
+            info: 'Skipped - no targets to follow'
+          };
+          
+          // Programmer la prochaine newsletter même si on n'a pas envoyé celle-ci
+          await scheduleNextNewsletter(task);
+          break;
+        }
         
         // Créer le message personnalisé basé sur la langue et les stats
         const platformName = task.platform === 'bluesky' ? 'Bluesky' : 'Mastodon';

@@ -27,7 +27,8 @@ COPY --chown=appuser:appgroup . .
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-RUN chown -R appuser:appgroup /app
+# Removed redundant chown command that was slowing down the build
+# RUN chown -R appuser:appgroup /app
 
 USER appuser
 

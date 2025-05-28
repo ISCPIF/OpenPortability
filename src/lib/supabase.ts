@@ -20,6 +20,14 @@ export const supabase = createClient(
       autoRefreshToken: true,
       persistSession: true,
       detectSessionInUrl: true
+    },
+    global: {
+      fetch: (url: string, options: RequestInit) => {
+        return fetch(url, {
+          ...options,
+          signal: AbortSignal.timeout(30000), // 30 second timeout
+        });
+      },
     }
   }
 )

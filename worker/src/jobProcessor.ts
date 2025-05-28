@@ -164,12 +164,22 @@ interface JobMetrics {
 
 const jobMetrics: Map<string, JobMetrics> = new Map();
 
-const supabase = createClient(supabaseUrl, supabaseKey, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false
-  }
-});
+
+const supabase = createClient(supabaseUrl, supabaseKey, 
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    },
+    global: {
+      fetch: (input: RequestInfo | URL, init?: RequestInit) => {
+        return fetch(input, {
+          ...init,
+          signal: AbortSignal.timeout(30000), // 30 second timeout
+        });
+      },
+    }
+  });
 
 const supabaseAuth = createClient(supabaseUrl, supabaseKey, {
   auth: {
@@ -591,7 +601,7 @@ async function processFollowers(followers: any[], userId: string, workerId: stri
     // Create source if it doesn't exist
     await ensureSourceExists(userId, workerId);
 
-    const CHUNK_SIZE = 250;
+    const CHUNK_SIZE = 150;
     const MAX_RETRIES = 3;
     const BASE_DELAY = 500;
 
