@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
 import { auth } from '@/app/auth';
 import logger, { withLogging } from '@/lib/log_utils';
-import { secureSupportContent, type SupportFormData } from '@/lib/security-utils';
+import { secureSupportContentExtended, type SupportFormData } from '@/lib/security-utils';
 
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
@@ -46,19 +46,51 @@ async function supportHandler(request: Request) {
     };
 
     // SÉCURISATION MULTI-COUCHES
-    const securityResult = secureSupportContent(formData, session?.user?.id);
+    const securityResult = secureSupportContentExtended(formData, session?.user?.id);
     
     // Rejeter les contenus dangereux
     if (!securityResult.isSecure) {
       console.log("!!!!!!!!")
-      console.log('Security', 'Dangerous content blocked', new Error('XSS attempt blocked'), session?.user?.id || 'anonymous', {
-        context: 'Support form - dangerous content detected',
-        securityReport: securityResult.securityReport,
-        clientIP: request.headers.get('x-forwarded-for') || 'unknown'
-      });
+      
+      // Déterminer le message d'erreur selon le type de violation
+      let errorMessage = 'Content validation failed. Please check your message.';
+      
+      if (securityResult.securityReport.sqlInjectionDetected) {
+        errorMessage = 'Potential SQL injection detected. Please review your message.';
+        console.log('Security', 'SQL injection attempt blocked', new Error('SQL injection attempt blocked'), session?.user?.id || 'anonymous', {
+          context: 'Support form - SQL injection detected',
+          securityReport: securityResult.securityReport,
+          clientIP: request.headers.get('x-forwarded-for') || 'unknown',
+          userAgent: request.headers.get('user-agent') || 'unknown'
+        });
+      } else if (securityResult.securityReport.tamperingDetected) {
+        errorMessage = 'Invalid request format detected.';
+        console.log('Security', 'Tampering attempt blocked', new Error('Tampering attempt blocked'), session?.user?.id || 'anonymous', {
+          context: 'Support form - tampering detected',
+          securityReport: securityResult.securityReport,
+          clientIP: request.headers.get('x-forwarded-for') || 'unknown'
+        });
+      } else if (securityResult.securityReport.rateLimitExceeded) {
+        errorMessage = 'Too many requests. Please try again later.';
+        console.log('Security', 'Rate limit exceeded', new Error('Rate limit exceeded'), session?.user?.id || 'anonymous', {
+          context: 'Support form - rate limit exceeded',
+          clientIP: request.headers.get('x-forwarded-for') || 'unknown'
+        });
+        return NextResponse.json(
+          { error: errorMessage },
+          { status: 429 }  // 429 Too Many Requests
+        );
+      } else {
+        // XSS ou autre violation
+        console.log('Security', 'Dangerous content blocked', new Error('XSS attempt blocked'), session?.user?.id || 'anonymous', {
+          context: 'Support form - dangerous content detected',
+          securityReport: securityResult.securityReport,
+          clientIP: request.headers.get('x-forwarded-for') || 'unknown'
+        });
+      }
       
       return NextResponse.json(
-        { error: 'Content validation failed. Please check your message.' },
+        { error: errorMessage },
         { status: 400 }
       );
     }
