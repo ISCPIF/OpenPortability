@@ -24,6 +24,7 @@
     "clsx": "^2.1.1",
     "crypto-js": "^4.2.0",
     "date-fns": "^4.1.0",
+    "escape-html": "^1.0.3",
     "fflate": "^0.8.2",
     "framer-motion": "^12.4.7",
     "jszip": "^3.10.1",
@@ -35,14 +36,19 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-icons": "^5.5.0",
+    "sanitize-html": "^2.13.1",
     "sonner": "^2.0.3",
-    "tailwind-merge": "^3.0.1"
+    "tailwind-merge": "^3.0.1",
+    "validator": "^13.12.0"
   },
   "devDependencies": {
     "@types/crypto-js": "^4.2.2",
+    "@types/escape-html": "^1.0.4",
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/sanitize-html": "^2.13.0",
+    "@types/validator": "^13.12.2",
     "eslint": "^9.20.1",
     "eslint-config-next": "15.3.0",
     "postcss": "^8.5.1",
