@@ -176,9 +176,47 @@ export function validateSupportForm(data: SupportFormData): SecurityValidationRe
 }
 
 /**
+ * Échappe les caractères HTML pour prévenir les attaques XSS
+ * Fonction d'utilitaire autonome sans dépendance externe
+ */
+export function escapeHtml(input: string): string {
+  if (typeof input !== 'string') return '';
+  
+  return input
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+/**
+ * Vérifie si le contenu contient des patterns dangereux (XSS)
+ * @param content Le contenu à vérifier
+ * @returns true si des patterns dangereux sont détectés
+ */
+export function detectDangerousContent(content: string): boolean {
+  if (typeof content !== 'string') return true;
+  
+  // Décoder pour éviter les contournements par encodage
+  const decodedContent = safeUrlDecode(content);
+  
+  // Vérifier chaque pattern dangereux
+  for (const pattern of DANGEROUS_PATTERNS) {
+    if (pattern.test(decodedContent)) {
+      return true;
+    }
+  }
+  
+  return false;
+}
+
+/**
  * Couche 2: Échappement HTML systématique
  */
 export function escapeHtmlContent(content: string): string {
+  if (typeof content !== 'string') return '';
+  // Utiliser la fonction escapeHtml définie ci-dessus
   return escapeHtml(content);
 }
 
@@ -193,7 +231,7 @@ export function sanitizeHtmlContent(content: string): string {
       context: 'Failed to sanitize HTML content'
     });
     // Fallback: échappement complet
-    return escapeHtml(content);
+    return escapeHtmlContent(content);
   }
 }
 
@@ -202,7 +240,7 @@ export function sanitizeHtmlContent(content: string): string {
  */
 export function secureNewlineToHtml(content: string): string {
   // D'abord échapper tout le HTML
-  const escaped = escapeHtml(content);
+  const escaped = escapeHtmlContent(content);
   // Puis convertir les \n en <br> de manière sécurisée
   return escaped.replace(/\n/g, '<br>');
 }
@@ -245,7 +283,7 @@ export function secureSupportContent(data: SupportFormData, userId?: string): {
   // Couche 2 & 3: Échappement + Sanitisation
   let sanitizedMessage = '';
   try {
-    const secureSubject = escapeHtml(data.subject);
+    const secureSubject = escapeHtmlContent(data.subject);
     const secureMessage = secureNewlineToHtml(data.message);
     sanitizedMessage = sanitizeHtmlContent(secureMessage);
   } catch (error) {
@@ -612,4 +650,48 @@ export function secureSupportContentExtended(
     htmlContent: isFullySecure ? baseResult.htmlContent : undefined,
     securityReport: extendedReport
   };
+}
+
+// Liste des types de consentement autorisés
+export const VALID_CONSENT_TYPES = ['hqx_newsletter', 'oep_accepted', 'research_accepted', 'automatic_reconnect'];
+
+// Fonction de validation du type de consentement
+export function isValidConsentType(type: string): boolean {
+  return VALID_CONSENT_TYPES.includes(type);
+}
+
+/**
+ * Valider l'email pour prévenir les injections
+ */
+export function validateEmail(email: any): { isValid: boolean; error?: string } {
+  // Vérifier le type
+  if (typeof email !== 'string') {
+    return { isValid: false, error: 'Email must be a string' };
+  }
+  
+  // Décoder toute URL-encoding pour éviter les contournements
+  const decodedEmail = safeUrlDecode(email);
+  
+  // Valider le format d'email
+  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  if (!emailRegex.test(decodedEmail)) {
+    return { isValid: false, error: 'Invalid email format' };
+  }
+  
+  // Vérifier les tentatives d'injection SQL
+  if (detectSqlInjectionPatterns(decodedEmail)) {
+    console.log('Security', 'SQL Injection attempt', 'Blocked SQL injection in email field', 'anonymous', {
+      context: 'Newsletter subscription',
+      email: email.substring(0, 10) + '...' // Ne pas logger l'email complet
+    });
+    return { isValid: false, error: 'Invalid email content' };
+  }
+  
+  // Vérifier les caractères suspects
+  if (/<[^>]*>|javascript:|on\w+=/i.test(decodedEmail)) {
+    console.log('Security', 'XSS attempt', 'Blocked XSS attempt in email field', 'anonymous');
+    return { isValid: false, error: 'Invalid email content' };
+  }
+  
+  return { isValid: true };
 }
