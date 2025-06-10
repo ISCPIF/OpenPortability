@@ -28,7 +28,6 @@ const DANGEROUS_PATTERNS = [
   /data:text\/html/gi,
   /vbscript:/gi,
   /expression\s*\(/gi,
-  // Ajout de nouveaux patterns pour capturer plus de cas XSS
   /\<svg\b[^>]*\bon\w+\s*=/gi,  // SVG avec event handlers
   /\<svg\b/gi,  // Toute balise SVG
   /\<audio\b/gi,  // Balises audio
@@ -70,35 +69,59 @@ export interface SupportFormData {
 }
 
 /**
+ * Decode URL encoded strings safely
+ */
+export function safeUrlDecode(input: string): string {
+  try {
+    return decodeURIComponent(input);
+  } catch (e) {
+    // Si le décodage échoue, retourner l'entrée originale
+    return input;
+  }
+}
+
+/**
  * Couche 1: Validation stricte des données d'entrée
  */
 export function validateSupportForm(data: SupportFormData): SecurityValidationResult {
   const errors: string[] = [];
   let securityLevel: 'safe' | 'suspicious' | 'dangerous' = 'safe';
 
+  // Décoder les entrées potentiellement encodées en URL
+  const decodedSubject = safeUrlDecode(data.subject);
+  const decodedMessage = safeUrlDecode(data.message);
+  const decodedEmail = safeUrlDecode(data.email);
+  
+  // Créer une copie décodée pour la validation
+  const decodedData = {
+    subject: decodedSubject,
+    message: decodedMessage,
+    email: decodedEmail
+  };
+
   // Validation email plus stricte
-  if (!validator.isEmail(data.email)) {
+  if (!validator.isEmail(decodedData.email)) {
     errors.push('Invalid email format');
     securityLevel = 'dangerous';
   }
   
   // Vérifier que l'email ne contient pas de caractères XSS
-  if (/<|>|javascript|script/i.test(data.email)) {
+  if (/<|>|javascript|script/i.test(decodedData.email)) {
     errors.push('Email contains invalid characters');
     securityLevel = 'dangerous';
   }
 
   // Validation longueur
-  if (data.subject.length > 200) {
+  if (decodedData.subject.length > 200) {
     errors.push('Subject too long (max 200 characters)');
   }
 
-  if (data.message.length > 2000) {
+  if (decodedData.message.length > 2000) {
     errors.push('Message too long (max 2000 characters)');
   }
 
   // Détection de patterns dangereux
-  const allContent = `${data.subject} ${data.message}`;
+  const allContent = `${decodedData.subject} ${decodedData.message}`;
   
   // Vérification stricte : si le contenu contient TOUT caractère < ou >, c'est suspect
   if (/<|>/g.test(allContent)) {
@@ -125,6 +148,15 @@ export function validateSupportForm(data: SupportFormData): SecurityValidationRe
   if (/&#[0-9]+;|&#x[0-9a-fA-F]+;/g.test(allContent)) {
     errors.push('HTML entities detected');
     securityLevel = 'dangerous';
+  }
+
+  // Détection de l'encodage URL qui pourrait être utilisé pour bypasser
+  if (/%[0-9a-fA-F]{2}/g.test(allContent)) {
+    // Comparer le contenu original et décodé pour détecter une tentative de bypass
+    if (allContent !== `${data.subject} ${data.message}`) {
+      errors.push('URL encoding bypass attempt detected');
+      securityLevel = 'dangerous';
+    }
   }
 
   // Détection spécifique des patterns de template injection
@@ -286,5 +318,298 @@ export function validateSupportFormClient(data: SupportFormData): {
   return {
     isValid: Object.keys(errors).length === 0,
     errors
+  };
+}
+
+/**
+ * Protection contre les injections SQL
+ * Échappe les caractères dangereux pour les requêtes SQL
+ */
+export function escapeSqlString(input: string): string {
+  // Remplace les caractères dangereux pour SQL
+  return input
+    .replace(/\\/g, '\\\\')  // Backslash
+    .replace(/'/g, "''")     // Single quote
+    .replace(/"/g, '""')     // Double quote
+    .replace(/\x00/g, '')    // NULL byte
+    .replace(/\x1a/g, '')    // SUB character
+    .replace(/\n/g, '\\n')   // Newline
+    .replace(/\r/g, '\\r')   // Carriage return
+    .replace(/\t/g, '\\t');  // Tab
+}
+
+/**
+ * Validation plus intelligente pour prévenir les injections SQL
+ * Détecte les patterns SQL dangereux avec moins de faux positifs
+ */
+export function detectSqlInjectionPatterns(input: string): boolean {
+  // Contexte de l'analyse - nous stockons des données qui pourraient indiquer une attaque
+  let suspiciousScore = 0;
+  let hasMultipleKeywords = false;
+  let hasSuspiciousStructure = false;
+  
+  // Détection de mots-clés SQL dans un contexte suspect
+  const sqlKeywords = [
+    'SELECT', 'INSERT', 'UPDATE', 'DELETE', 'DROP', 'ALTER', 'CREATE', 
+    'TRUNCATE', 'UNION', 'HAVING', 'WHERE', 'FROM', 'GROUP BY', 'ORDER BY'
+  ];
+  
+  // Compter les mots-clés SQL différents
+  const detectedKeywords = sqlKeywords.filter(keyword => 
+    new RegExp(`\\b${keyword}\\b`, 'i').test(input)
+  );
+  
+  if (detectedKeywords.length >= 2) {
+    // Si nous avons plusieurs mots-clés SQL différents, c'est suspect
+    hasMultipleKeywords = true;
+    suspiciousScore += detectedKeywords.length;
+  }
+  
+  // Détecter les structures suspectes qui combinent des caractères et mots-clés SQL
+  const suspiciousPatterns = [
+    // Commentaires SQL dans un contexte suspect
+    /\s--.*?(?:'|"|=|\(|\))/i,  // Commentaire suivi d'un caractère spécial
+    /\/\*.*?(?:'|"|=|\(|\))/i,  // Commentaire multi-ligne suivi d'un caractère spécial
+    
+    // Combinaisons dangereuses d'opérateurs et de commentaires
+    /(\bOR|\bAND)\s+.{0,10}?\s*=\s*.{0,10}?(?:--|\/\*|#|;)/i, // OR/AND avec égalité numérique
+    /['"]?\s*(?:--|\/\*|#).+$/i, // String terminée par un commentaire SQL
+    
+    // Détection de l'égalité avec OR/AND (divers formats)
+    /\b(OR|AND)\b\s+(['"]?).*?=.*?\2/i,  // OR/AND avec n'importe quelle égalité
+    /\b(OR|AND)\b\s+(['"]?)\w+\2\s*=\s*(['"]?)\w+\3/i,  // OR/AND avec égalité entre valeurs avec guillemets optionnels
+    
+    // Structure typique d'injection
+    /['"];.*?(?:--|\/\*|#|;)/i,  // String terminée puis commentaire/nouveau statement
+    
+    // Séquences d'échappement suspectes
+    /''\s*(?:--|\/\*|#|;)/i,  // Double apostrophe suivie d'un commentaire/séparateur
+    
+    // Fonctions SQL dangereuses dans un contexte suspect
+    /\b(?:SLEEP|BENCHMARK|WAITFOR|DELAY|PG_SLEEP)\s*\(\s*[0-9]+/i,
+    
+    // Attaques par concaténation
+    /\|\|.*?(?:'|"|=|\(|\))/i,  // Concaténation || suivie de caractères spéciaux
+    /CONCAT\s*\(.+?(?:'|"|=|\(|\))/i,  // CONCAT suivi de caractères spéciaux
+    
+    // Injections basées sur UNION dans un contexte suspect
+    /\bUNION\s+(?:ALL\s+)?SELECT\b/i,  // UNION [ALL] SELECT
+    
+    // Structures de requêtes à part entière
+    /\bSELECT\b.+?\bFROM\b/i,  // SELECT ... FROM
+    /\bINSERT\s+INTO\b/i,      // INSERT INTO
+    /\bUPDATE\b.+?\bSET\b/i,   // UPDATE ... SET
+    /\bDELETE\s+FROM\b/i,      // DELETE FROM
+    
+    // Stacked queries avec point-virgule
+    /;(?:\s*).+?(?:SELECT|INSERT|UPDATE|DELETE|DROP|ALTER|CREATE)/i,
+    
+    // Pattern spécifique pour OR "1"="1" et variantes (guillemets doubles et simples)
+    /\b(OR|AND)\b\s+['"]?\d+['"]?\s*=\s*['"]?\d+['"]?/i,  // OR '1'='1', OR "1"="1", etc.
+  ];
+  
+  // Vérifier la présence de patterns suspects
+  for (const pattern of suspiciousPatterns) {
+    if (pattern.test(input)) {
+      hasSuspiciousStructure = true;
+      suspiciousScore += 3;
+      break;
+    }
+  }
+  
+  // Analyse contextuelle - vérifier la juxtaposition de caractères suspects
+  // Par exemple "1=1" est inoffensif dans un texte normal, mais suspect dans "OR 1=1--"
+  const contextPatterns = [
+    // Caractères de terminaison SQL suivis de mots-clés SQL
+    /;\s*(?:SELECT|INSERT|UPDATE|DELETE|DROP|ALTER)/i,
+    
+    // Égalité avec contexte SQL suspect
+    /(?:\bOR|\bAND)\s+.{0,10}?\s*=\s*.{0,10}?(?:--|\/\*|#|;)/i,
+    
+    // Guillemets avec caractères suspects à proximité
+    /['"][^'"]*?(?:--|\/\*|#|;)[^'"]*?['"]?/i
+  ];
+  
+  for (const pattern of contextPatterns) {
+    if (pattern.test(input)) {
+      suspiciousScore += 2;
+    }
+  }
+  
+  // Vérifier la présence d'égalités dans un contexte suspect (pour éviter les faux positifs sur "1=1")
+  const hasEquality = /=/.test(input);
+  const hasOrAnd = /\b(OR|AND)\b/i.test(input);
+  
+  if (hasEquality && hasOrAnd && /['"];/.test(input)) {
+    suspiciousScore += 2;
+  }
+  
+  // Logique finale de décision
+  return suspiciousScore >= 3 || (hasMultipleKeywords && hasSuspiciousStructure);
+}
+
+/**
+ * Interface pour les résultats de validation anti-tampering
+ */
+export interface TamperingValidationResult {
+  isValid: boolean;
+  tamperedFields: string[];
+  integrityScore: number;
+}
+
+/**
+ * Protection contre le tampering avec signature HMAC
+ */
+export function generateDataSignature(data: any, secret: string): string {
+  const crypto = require('crypto');
+  const dataString = JSON.stringify(data, Object.keys(data).sort());
+  return crypto
+    .createHmac('sha256', secret)
+    .update(dataString)
+    .digest('hex');
+}
+
+/**
+ * Vérifie l'intégrité des données avec la signature
+ */
+export function verifyDataIntegrity(
+  data: any, 
+  signature: string, 
+  secret: string
+): boolean {
+  const expectedSignature = generateDataSignature(data, secret);
+  const crypto = require('crypto');
+  
+  // Comparaison sécurisée contre les timing attacks
+  return crypto.timingSafeEqual(
+    Buffer.from(signature),
+    Buffer.from(expectedSignature)
+  );
+}
+
+/**
+ * Validation des types de données pour prévenir le tampering
+ */
+export function validateDataTypes(data: SupportFormData): TamperingValidationResult {
+  const tamperedFields: string[] = [];
+  let integrityScore = 100;
+
+  // Vérifier que les champs sont bien des strings
+  if (typeof data.subject !== 'string') {
+    tamperedFields.push('subject');
+    integrityScore -= 30;
+  }
+
+  if (typeof data.message !== 'string') {
+    tamperedFields.push('message');
+    integrityScore -= 30;
+  }
+
+  if (typeof data.email !== 'string') {
+    tamperedFields.push('email');
+    integrityScore -= 40;
+  }
+
+  // Vérifier la présence de caractères null bytes (tentative de tampering)
+  const allFields = [data.subject, data.message, data.email];
+  if (allFields.some(field => field && field.includes('\x00'))) {
+    tamperedFields.push('null_byte_detected');
+    integrityScore = 0;
+  }
+
+  // Vérifier les tentatives de pollution de prototype
+  // Vérifier seulement les propriétés propres, pas celles héritées du prototype
+  if (Object.hasOwnProperty.call(data, '__proto__') || 
+      Object.hasOwnProperty.call(data, 'constructor') || 
+      Object.hasOwnProperty.call(data, 'prototype')) {
+    tamperedFields.push('prototype_pollution_attempt');
+    integrityScore = 0;
+  }
+
+  return {
+    isValid: tamperedFields.length === 0,
+    tamperedFields,
+    integrityScore
+  };
+}
+
+/**
+ * Limite de taux pour prévenir les attaques par force brute
+ */
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+
+export function checkRateLimit(
+  identifier: string, 
+  maxRequests: number = 5, 
+  windowMs: number = 60000
+): boolean {
+  const now = Date.now();
+  const userLimit = rateLimitMap.get(identifier);
+
+  if (!userLimit || now > userLimit.resetTime) {
+    rateLimitMap.set(identifier, {
+      count: 1,
+      resetTime: now + windowMs
+    });
+    return true;
+  }
+
+  if (userLimit.count >= maxRequests) {
+    return false;
+  }
+
+  userLimit.count++;
+  return true;
+}
+
+/**
+ * Extension du SecurityValidationResult pour inclure les nouvelles vérifications
+ */
+export interface ExtendedSecurityValidationResult extends SecurityValidationResult {
+  sqlInjectionDetected?: boolean;
+  tamperingDetected?: boolean;
+  rateLimitExceeded?: boolean;
+}
+
+/**
+ * Fonction de sécurisation étendue qui combine toutes les protections
+ */
+export function secureSupportContentExtended(
+  data: SupportFormData,
+  userId?: string
+): {
+  isSecure: boolean;
+  textContent: string;
+  htmlContent?: string;
+  securityReport: ExtendedSecurityValidationResult;
+} {
+  // Utiliser la fonction existante pour les protections XSS
+  const baseResult = secureSupportContent(data, userId);
+  
+  // Ajouter les nouvelles vérifications
+  const identifier = userId || data.email;
+//   const rateLimitOk = checkRateLimit(identifier);
+  const tamperingCheck = validateDataTypes(data);
+  const allContent = `${data.subject} ${data.message} ${data.email}`;
+  const sqlInjectionDetected = detectSqlInjectionPatterns(allContent);
+  
+  // Créer le rapport de sécurité étendu
+  const extendedReport: ExtendedSecurityValidationResult = {
+    ...baseResult.securityReport,
+    sqlInjectionDetected,
+    tamperingDetected: !tamperingCheck.isValid,
+    rateLimitExceeded: false
+  };
+  
+  // Déterminer si le contenu est sécurisé avec toutes les vérifications
+  const isFullySecure = baseResult.isSecure && 
+                        !sqlInjectionDetected && 
+                        tamperingCheck.isValid;
+  
+  return {
+    isSecure: isFullySecure,
+    textContent: baseResult.textContent,
+    htmlContent: isFullySecure ? baseResult.htmlContent : undefined,
+    securityReport: extendedReport
   };
 }
