@@ -1,37 +1,59 @@
-import { NextResponse } from "next/server"
-import { supabase } from '@/lib/supabase'
-import logger, { withLogging } from '@/lib/log_utils'
+import { NextRequest, NextResponse } from 'next/server';
+import { supabase } from '@/lib/supabase';
+import { withLogging } from '@/lib/log_utils';
+import { withPublicValidation } from '@/lib/validation/middleware';
+import { z } from 'zod';
 
-async function mastodonHandler() {
-  try {    
-    const { data, error } = await supabase
-      .from('mastodon_instances')
-      .select('instance')
-      .order('instance')
+// Schema vide pour GET (pas de body)
+const emptySchema = z.object({});
 
-    if (error) {
-      logger.logError('API', 'GET /api/auth/mastodon', error, undefined, { message: 'Failed to fetch Mastodon instances' })
+/**
+ * GET handler - Récupérer la liste des instances Mastodon disponibles
+ * Utilise le nouveau middleware de validation (public, pas d'auth requise)
+ */
+const mastodonHandler = withPublicValidation(
+  emptySchema,
+  async (request: NextRequest) => {
+    console.log('[Mastodon Handler] Fetching instances from Supabase');
+    
+    try {
+      const { data, error } = await supabase
+        .from('mastodon_instances')
+        .select('instance')
+        .order('instance');
+
+      if (error) {
+        console.log('[Mastodon Handler] Database error:', error);
+        return NextResponse.json(
+          { error: 'Failed to fetch instances' },
+          { status: 500 }
+        );
+      }
+
+      const instances = data?.map(row => row.instance) || [];
+      console.log(`[Mastodon Handler] Found ${instances.length} instances`);
+
       return NextResponse.json(
-        { success: false, error: 'Failed to fetch Mastodon instances' },
+        { instances },
+        {
+          status: 200,
+          headers: {
+            'Cache-Control': 'public, max-age=300' // Cache 5 minutes
+          }
+        }
+      );
+    } catch (error) {
+      console.log('[Mastodon Handler] Unexpected error:', error);
+      return NextResponse.json(
+        { error: 'Internal server error' },
         { status: 500 }
-      )
+      );
     }
-
-    // Transformation des données pour n'avoir que la liste des instances
-    const instances = data.map(item => item.instance)
-    return NextResponse.json({
-      success: true,
-      instances: instances
-    })
-
-  } catch (error) {
-    logger.logError('API', 'GET /api/auth/mastodon', error, undefined, { message: 'An unexpected error occurred' })
-    return NextResponse.json(
-      { success: false, error: 'An unexpected error occurred' },
-      { status: 500 }
-    )
+  },
+  {
+    applySecurityChecks: false, // Pas nécessaire pour un GET sans params
+    skipRateLimit: true // Pour l'instant, pas de rate limit sur cet endpoint
   }
-}
+);
 
-// Exporter la fonction GET enveloppée par le middleware de logging
-export const GET = withLogging(mastodonHandler)
+export const GET = withLogging(mastodonHandler);
