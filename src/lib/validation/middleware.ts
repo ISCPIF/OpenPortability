@@ -155,14 +155,20 @@ export function withValidation<T>(
     try {
       // 1. Authentification
       let session = null;
+      
       if (requireAuth) {
-        console.log('Validation', `${method} ${endpoint}`, 'Checking authentication', 'system');
+        console.log('Validation', `${method} ${endpoint}`, 'Checking authentication', 'anonymous');
         session = await auth();
+        
         if (!session?.user?.id) {
-          console.log('API', `${method} ${endpoint}`, 'Unauthorized access attempt');
-          return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+          console.log('Validation', `${method} ${endpoint}`, 'Authentication required but not provided', 'anonymous');
+          return NextResponse.json(
+            { error: 'Unauthorized' },
+            { status: 401 }
+          );
         }
-        console.log('Validation', `${method} ${endpoint}`, 'User authenticated', session.user.id);
+        
+        console.log('Validation', `${method} ${endpoint}`, 'Authentication successful', session.user.id);
       }
       
       // 2. Rate limiting
@@ -196,14 +202,43 @@ export function withValidation<T>(
       try {
         // Ne parser le body que pour les méthodes qui en ont un
         if (['POST', 'PUT', 'PATCH'].includes(method)) {
-          console.log('Validation', `${method} ${endpoint}`, 'Parsing request body', session?.user?.id || 'anonymous');
-          const rawData = await request.json();
+          console.log('Validation', `${method} ${endpoint}`, 'Checking content type', session?.user?.id || 'anonymous');
           
-          console.log('Validation', `${method} ${endpoint}`, 'Validating with Zod schema', session?.user?.id || 'anonymous', {
-            rawDataKeys: Object.keys(rawData)
-          });
+          // Vérifier si c'est une requête multipart/form-data
+          const contentType = request.headers.get('content-type') || '';
+          const isFormData = contentType.startsWith('multipart/form-data');
           
-          data = schema.parse(rawData);
+          if (isFormData) {
+            console.log('Validation', `${method} ${endpoint}`, 'FormData detected, skipping JSON parsing', session?.user?.id || 'anonymous');
+            // Pour les requêtes FormData, on utilise un objet vide pour la validation Zod
+            // La validation des fichiers sera faite dans le handler
+            data = schema.parse({});
+          } else if (contentType.includes('application/json')) {
+            // Pour les requêtes JSON standard
+            console.log('Validation', `${method} ${endpoint}`, 'Parsing JSON request body', session?.user?.id || 'anonymous');
+            try {
+              const rawData = await request.json();
+              
+              console.log('Validation', `${method} ${endpoint}`, 'Validating with Zod schema', session?.user?.id || 'anonymous', {
+                rawDataKeys: Object.keys(rawData)
+              });
+              
+              data = schema.parse(rawData);
+            } catch (jsonError) {
+              console.log('Validation', `${method} ${endpoint}`, 'JSON parsing failed', session?.user?.id || 'anonymous', {
+                error: jsonError.message
+              });
+              throw new Error(`Invalid JSON format: ${jsonError.message}`);
+            }
+          } else {
+            // Cas où il n'y a ni JSON ni FormData valide
+            console.log('Validation', `${method} ${endpoint}`, 'No valid JSON or FormData detected', session?.user?.id || 'anonymous', {
+              contentType
+            });
+            // On utilise un objet vide pour la validation Zod
+            // Le handler devra vérifier si les données nécessaires sont présentes
+            data = schema.parse({});
+          }
         } else {
           // Pour GET/DELETE, utiliser un objet vide ou les query params
           console.log('Validation', `${method} ${endpoint}`, 'No body to parse for GET/DELETE', session?.user?.id || 'anonymous');
@@ -263,7 +298,7 @@ export function withValidation<T>(
       return response;
       
     } catch (error) {
-      console.log('API', `${method} ${endpoint}`, error, session?.user?.id || 'unknown', {
+      console.log('API', `${method} ${endpoint}`, error, 'unknown', {
         context: 'Validation middleware error'
       });
       

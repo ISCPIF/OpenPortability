@@ -1,7 +1,7 @@
 // src/app/api/tasks/[taskId]/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/app/auth';
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from '@/lib/supabase';
 
 export async function GET(
   request: NextRequest,
@@ -26,11 +26,6 @@ export async function GET(
         { status: 400 }
       );
     }
-
-    // Créer une connexion à Supabase
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
     
     // Récupérer la tâche par son ID
     const { data, error } = await supabase
