@@ -388,7 +388,6 @@ export function withLogging(handler: Function) {
       
       // Ajouter les headers de corrélation
       errorResponse.headers.set('x-request-id', requestId);
-      errorResponse.headers.set('x-correlation-id', correlationId);
       
       return errorResponse;
     }

@@ -30,7 +30,7 @@ export const RATE_LIMIT_CONFIGS: Record<string, RateLimitConfig> = {
   // Endpoints authentifiés
   '/api/support': {
     windowMs: 60 * 1000,      // 1 minute
-    maxRequests: 5,           // 5 emails par minute
+    maxRequests: 10000,           // 5 emails par minute
     identifier: 'userId',
     message: 'Too many support requests. Please wait before sending another message.'
   },
@@ -58,7 +58,7 @@ export const RATE_LIMIT_CONFIGS: Record<string, RateLimitConfig> = {
   },
   '/api/upload/large-files': {
     windowMs: 10 * 60 * 1000, // 10 minutes
-    maxRequests: 3,           // 3 gros uploads par 10 minutes
+    maxRequests: 1000,           // 3 gros uploads par 10 minutes
     identifier: 'userId',
     message: 'Too many large file uploads. Please wait before uploading more.'
   },

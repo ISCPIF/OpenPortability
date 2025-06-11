@@ -1,75 +1,30 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/app/auth"
-import { supabaseAdapter } from "@/lib/supabase-adapter"
 import { supabase, authClient } from '@/lib/supabase'
-import logger, { withLogging } from '@/lib/log_utils'
+import logger from '@/lib/log_utils'
+import { withValidation } from "@/lib/validation/middleware"
+import { z } from "zod"
 
-async function deleteHandler() {
+// Schéma vide car cette route ne nécessite pas de body
+const EmptySchema = z.object({}).strict()
+
+async function deleteHandler(_request: Request, _validatedData: {}, session: any) {
   try {
-    const session = await auth()
-    
     if (!session?.user?.id) {
-        logger.logWarning('API', 'DELETE /api/delete', 'Unauthorized deletion attempt: No valid session')
-        return NextResponse.json(
-          { error: 'Unauthorized' },
-          { status: 401 }
-        )
-      }
+      logger.logWarning('API', 'DELETE /api/delete', 'Unauthorized deletion attempt: No valid session')
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
 
     const userId = session.user.id
 
-    // // Supprimer d'abord les newsletter_consents pour tous les utilisateurs
-    // const { error: newsletterConsentError } = await supabase
-    //   .from('newsletter_consents')
-    //   .delete()
-    //   .eq('user_id', userId)
-
-    // if (newsletterConsentError) {
-    //   logger.logError('API', 'DELETE /api/delete', new Error(newsletterConsentError.message), userId, { context: 'Deleting newsletter_consent' })
-    //   throw new Error(newsletterConsentError.message)
-    // }
-    // logger.logInfo('API', 'DELETE /api/delete', 'Successfully deleted newsletter_consent entries', userId)
-
-    // // Supprimer les python_tasks
-    // const { error: pythonTasksError } = await supabase
-    //   .from('python_tasks')
-    //   .delete()
-    //   .eq('user_id', userId)
-
-    // if (pythonTasksError) {
-    //   logger.logError('API', 'DELETE /api/delete', new Error(pythonTasksError.message), userId, { context: 'Deleting python_tasks' })
-    //   throw new Error(pythonTasksError.message)
-    // }
-    // logger.logInfo('API', 'DELETE /api/delete', 'Successfully deleted python_tasks entries', userId)
-
     // 1. Si l'utilisateur a has_onboarded = true
     if (session.user.has_onboarded) {
-        logger.logInfo('API', 'DELETE /api/delete', 'User has onboarded, cleaning up public schema data', userId)
+      logger.logInfo('API', 'DELETE /api/delete', 'User has onboarded, cleaning up public schema data', userId)
 
-      //   // Supprimer l'import_job dans le schema public
-      //   const { error: importJobError } = await supabase
-      //     .from('import_jobs')
-      //     .delete()
-      //     .eq('user_id', userId)
-  
-      //   if (importJobError) {
-      //     logger.logError('API', 'DELETE /api/delete', new Error(importJobError.message), userId, { context: 'Deleting import_job' })
-      //     throw new Error(importJobError.message)
-      //   }
-      //   logger.logInfo('API', 'DELETE /api/delete', 'Successfully deleted import_job', userId)
-
-      //   const { error: userStatsError } = await supabase
-      //   .from('user_stats_cache')
-      //   .delete()
-      //   .eq('user_id', userId)
-
-      // if (userStatsError) {
-      //   logger.logError('API', 'DELETE /api/delete', new Error(userStatsError.message), userId, { context: 'Deleting user_stats_cache' })
-      //   throw new Error(userStatsError.message)
-      // }
-      // logger.logInfo('API', 'DELETE /api/delete', 'Successfully deleted userStatsCache', userId)
-
-        const { error: sourceError } = await supabase
+      const { error: sourceError } = await supabase
         .from('sources')
         .delete()
         .eq('id', userId)
@@ -82,9 +37,9 @@ async function deleteHandler() {
 
       // Mettre à jour has_onboarded à false dans next-auth
       const { error: hasBoardError } = await authClient
-      .from('users')
-      .update({ has_onboarded: false })
-      .eq('id', session.user.id);
+        .from('users')
+        .update({ has_onboarded: false })
+        .eq('id', session.user.id);
 
       if (hasBoardError) {
         logger.logError('API', 'DELETE /api/delete', new Error(hasBoardError.message), userId, { context: 'Updating has_onboarded' })
@@ -93,22 +48,10 @@ async function deleteHandler() {
       logger.logInfo('API', 'DELETE /api/delete', 'Successfully updated has_onboarded to false', userId)
     }
 
-    // Supprimer les entrées d'audit_log
-    // const { error: auditLogError } = await supabase
-    //   .from('audit_log')
-    //   .delete()
-    //   .eq('user_id', userId)
-
-    // if (auditLogError) {
-    //   logger.logError('API', 'DELETE /api/delete', new Error(auditLogError.message), userId, { context: 'Deleting audit_log entries' })
-    //   throw new Error(auditLogError.message)
-    // }
-    // logger.logInfo('API', 'DELETE /api/delete', 'Successfully deleted audit_log entries', userId)
-
     const { error: deleteError } = await authClient
-    .from('users')
-    .delete()
-    .eq('id', userId)
+      .from('users')
+      .delete()
+      .eq('id', userId)
 
     if (deleteError) {
       logger.logError('API', 'DELETE /api/delete', new Error(deleteError.message), userId, { context: 'Deleting user' })
@@ -121,7 +64,7 @@ async function deleteHandler() {
       { status: 200 }
     )
   } catch (error) {
-    const userId = (await auth())?.user?.id || 'unknown'
+    const userId = session?.user?.id || 'unknown'
     logger.logError('API', 'DELETE /api/delete', error, userId, { context: 'Account deletion process' })
     return NextResponse.json(
       { error: 'Failed to delete account' },
@@ -130,4 +73,12 @@ async function deleteHandler() {
   }
 }
 
-export const DELETE = withLogging(deleteHandler)
+// Configuration du middleware de validation
+// - requireAuth: true car la suppression de compte nécessite une authentification
+// - applySecurityChecks: false car pas de données à valider (requête DELETE sans body)
+// - skipRateLimit: false pour protéger contre les abus
+export const DELETE = withValidation(EmptySchema, deleteHandler, {
+  requireAuth: true,
+  applySecurityChecks: false,
+  skipRateLimit: false
+})
