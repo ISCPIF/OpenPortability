@@ -1,14 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase'
-import { auth } from "@/app/auth";
-import logger, { withLogging } from '@/lib/log_utils';
+import logger from '@/lib/log_utils';
+import { withValidation } from "@/lib/validation/middleware"
+import { z } from "zod"
 
-async function getImportStatus(request: NextRequest) {
+// Schéma vide car les paramètres sont dans l'URL, pas dans le body
+const EmptySchema = z.object({}).strict()
+
+async function getImportStatus(request: NextRequest, _data: z.infer<typeof EmptySchema>, session: any) {
   try {
-    // Récupérer et attendre les paramètres
+    // Récupérer le jobId depuis l'URL
     const jobId = request.nextUrl.pathname.split('/').pop();
-
-    const session = await auth();
     
     if (!session?.user?.id) {
       logger.logWarning('API', 'GET /api/import-status/[jobId]', 'Unauthorized access attempt');
@@ -70,7 +72,7 @@ async function getImportStatus(request: NextRequest) {
     });
 
   } catch (error) {
-    const userId = (await auth())?.user?.id || 'unknown';
+    const userId = session?.user?.id || 'unknown';
     logger.logError('API', 'GET /api/import-status/[jobId]', error, userId, { 
       context: 'Unexpected error in import status check'
     });
@@ -81,4 +83,13 @@ async function getImportStatus(request: NextRequest) {
   }
 }
 
-export const GET = withLogging(getImportStatus);
+// Configuration du middleware de validation
+export const GET = withValidation(
+  EmptySchema,
+  getImportStatus,
+  {
+    requireAuth: true,
+    applySecurityChecks: false, // Pas de données à valider dans le body
+    skipRateLimit: false
+  }
+)

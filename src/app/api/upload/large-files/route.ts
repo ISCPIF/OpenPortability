@@ -6,6 +6,7 @@ import { join } from 'path';
 import logger from '@/lib/log_utils';
 import { withValidation } from '@/lib/validation/middleware';
 import { z } from 'zod';
+import { secureFileContentExtended, type FileContentData } from '@/lib/security-utils';
 
 const TEMP_UPLOAD_DIR = join(process.cwd(), 'tmp', 'uploads');
 
@@ -59,7 +60,7 @@ async function largeFilesUploadHandler(request: Request, _validatedData: z.infer
     const formData = await request.formData();
     if (!formData)
     {
-      console.log('API', 'POST /api/upload/large-files', 'No form data provided in request', user.id);
+      logger.logWarning('API', 'POST /api/upload/large-files', 'No form data provided in request', user.id);
       return NextResponse.json(
         { error: 'No form data provided' },
         { status: 400 }
@@ -68,39 +69,77 @@ async function largeFilesUploadHandler(request: Request, _validatedData: z.infer
     const files = formData.getAll('files');
 
     if (!files.length) {
-      console.log('API', 'POST /api/upload/large-files', 'No files provided in request', user.id);
+      logger.logWarning('API', 'POST /api/upload/large-files', 'No files provided in request', user.id);
       return NextResponse.json(
         { error: 'No files provided' },
         { status: 400 }
       );
     }
 
-    // Vérifier le type et la taille des fichiers
-    for (const file of files) {
-      if (!(file instanceof File)) {
-        console.log('API', 'POST /api/upload/large-files', 'Invalid file object', user.id);
+    // Vérifier la sécurité des fichiers avec la fonction centralisée
+    for (const fileEntry of files) {
+      // Vérifier que l'entrée est bien un objet File
+      if (!(fileEntry instanceof File)) {
+        logger.logWarning('API', 'POST /api/upload/large-files', 'Invalid file object', user.id);
         return NextResponse.json(
           { error: 'Invalid file format' },
           { status: 400 }
         );
       }
-
-      // Vérification de la taille du fichier (max 100MB)
-      if (file.size > 100 * 1024 * 1024) {
-        console.log('API', 'POST /api/upload/large-files', `File too large: ${file.size} bytes`, user.id);
+      
+      // Maintenant que nous savons que c'est un File, nous pouvons l'utiliser en toute sécurité
+      const file = fileEntry;
+      
+      try {
+        const fileContent = await file.text();
+        
+        // Utiliser la fonction secureFileContentExtended pour toutes les vérifications
+        const fileData: FileContentData = {
+          content: fileContent,
+          fileName: file.name,
+          fileType: file.type,
+          fileSize: file.size,
+          fileObject: file
+        };
+        
+        const securityResult = secureFileContentExtended(fileData, user.id);
+        
+        if (!securityResult.isSecure) {
+          // Construire un message d'erreur approprié selon le type de problème détecté
+          let errorMessage = 'Potentially malicious content detected in file';
+          
+          if (securityResult.securityReport.invalidFileType) {
+            errorMessage = `Invalid file type: ${file.type}. Only JS and JSON files are allowed.`;
+          } else if (securityResult.securityReport.fileTooLarge) {
+            errorMessage = 'File too large (max 100MB)';
+          } else if (securityResult.securityReport.sqlInjectionDetected) {
+            errorMessage = 'SQL injection pattern detected in file';
+          } else if (securityResult.securityReport.dangerousJsPatterns) {
+            errorMessage = 'Dangerous JavaScript patterns detected in file';
+          } else if (securityResult.securityReport.tamperingDetected) {
+            errorMessage = 'File tampering detected';
+          }
+          
+          return NextResponse.json(
+            { 
+              error: errorMessage, 
+              securityReport: {
+                securityLevel: securityResult.securityReport.securityLevel,
+                suspiciousPatterns: securityResult.securityReport.suspiciousPatterns
+              }
+            },
+            { status: 400 }
+          );
+        }
+      } catch (securityError) {
+        logger.logError('Security', 'Error analyzing file content', securityError as string, user.id, {
+          context: 'File upload security check',
+          fileName: file.name
+        });
+        
         return NextResponse.json(
-          { error: 'File too large (max 100MB)' },
-          { status: 400 }
-        );
-      }
-
-      // Vérification du type MIME
-      const validMimeTypes = ['application/javascript', 'text/javascript', 'application/json', 'text/plain'];
-      if (!validMimeTypes.includes(file.type)) {
-        console.log('API', 'POST /api/upload/large-files', `Invalid file type: ${file.type}`, user.id);
-        return NextResponse.json(
-          { error: 'Invalid file type. Only JS and JSON files are allowed.' },
-          { status: 400 }
+          { error: 'Failed to analyze file content for security threats' },
+          { status: 500 }
         );
       }
     }
@@ -177,6 +216,7 @@ export const POST = withValidation(
   {
     requireAuth: true,
     applySecurityChecks: true,
+    expectedContentType: 'multipart/form-data',
     customRateLimit: {
       windowMs: 5 * 60 * 1000, // 5 minutes
       maxRequests: 10,

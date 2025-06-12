@@ -1,12 +1,15 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/app/auth"
 import { AccountService } from "@/lib/services/accountService"
-import { unlinkAccount } from "@/lib/supabase-adapter"
-import logger, { withLogging } from '@/lib/log_utils'
+import logger from '@/lib/log_utils'
+import { withValidation } from "@/lib/validation/middleware"
+import { z } from "zod"
 
-async function refreshHandler(request: Request) {
+// Schéma vide car cet endpoint n'a pas besoin de données d'entrée
+const EmptySchema = z.object({}).strict()
+
+async function refreshHandler(_request: Request, _data: z.infer<typeof EmptySchema>, session: any) {
   try {
-    const session = await auth()
     if (!session?.user?.id) {
       logger.logWarning('API', 'POST /api/auth/refresh', 'Unauthorized access attempt')
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -47,24 +50,37 @@ async function refreshHandler(request: Request) {
         { 
           success: false,
           error: 'Token refresh failed',
-          providers: invalidProviders,
-          // ...results
-        }, 
-        // { status: 401 }
+          requiresReauth: true,
+          providers: invalidProviders
+        },
+        { status: 401 }
       )
     }
 
+    // Tout s'est bien passé
+    logger.logInfo('API', 'POST /api/auth/refresh', 'Tokens refreshed successfully', session.user.id)
     return NextResponse.json({ 
       success: true,
-      ...results 
+      results
     })
   } catch (error) {
-    logger.logError('API', 'POST /api/auth/refresh', error)
+    const userId = session?.user?.id || 'unknown'
+    logger.logError('API', 'POST /api/auth/refresh', error, userId)
+    
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Failed to refresh tokens' },
       { status: 500 }
     )
   }
 }
 
-export const POST = withLogging(refreshHandler)
+// Configuration du middleware de validation
+export const POST = withValidation(
+  EmptySchema,
+  refreshHandler,
+  {
+    requireAuth: true,
+    applySecurityChecks: false, // Pas de données à valider
+    skipRateLimit: false
+  }
+)
