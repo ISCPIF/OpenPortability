@@ -22,6 +22,7 @@ export interface ValidationOptions {
   applySecurityChecks?: boolean;
   customRateLimit?: Partial<RateLimitConfig>;
   skipRateLimit?: boolean;
+  expectedContentType?: string;
 }
 
 /**
@@ -140,7 +141,8 @@ export function withValidation<T>(
       requireAuth = true,
       applySecurityChecks = true,
       customRateLimit,
-      skipRateLimit = false
+      skipRateLimit = false,
+      expectedContentType
     } = options;
     
     const endpoint = new URL(request.url).pathname;
@@ -208,6 +210,30 @@ export function withValidation<T>(
           const contentType = request.headers.get('content-type') || '';
           const isFormData = contentType.startsWith('multipart/form-data');
           
+          console.log('Validation', `${method} ${endpoint}`, 'Checking content type', session?.user?.id || 'anonymous', {
+            contentType,
+            isFormData,
+            expectedContentType: expectedContentType || 'any'
+          });
+          
+          // Vérifier si le Content-Type correspond à celui attendu
+          if (expectedContentType) {
+            const isValidContentType = 
+              expectedContentType === 'multipart/form-data' ? isFormData : 
+              contentType.includes(expectedContentType);
+            
+            if (!isValidContentType) {
+              console.log('Validation', `${method} ${endpoint}`, 'Invalid content type', session?.user?.id || 'anonymous', {
+                expected: expectedContentType,
+                received: contentType
+              });
+              return NextResponse.json(
+                { error: `Invalid content type. Expected: ${expectedContentType}` },
+                { status: 400 }
+              );
+            }
+          }
+          
           if (isFormData) {
             console.log('Validation', `${method} ${endpoint}`, 'FormData detected, skipping JSON parsing', session?.user?.id || 'anonymous');
             // Pour les requêtes FormData, on utilise un objet vide pour la validation Zod
@@ -228,7 +254,18 @@ export function withValidation<T>(
               console.log('Validation', `${method} ${endpoint}`, 'JSON parsing failed', session?.user?.id || 'anonymous', {
                 error: jsonError.message
               });
-              throw new Error(`Invalid JSON format: ${jsonError.message}`);
+              return NextResponse.json(
+                {
+                  error: 'Validation failed',
+                  details: jsonError instanceof ZodError 
+                    ? jsonError.errors.map(e => ({
+                        path: e.path.join('.'),
+                        message: e.message
+                      }))
+                    : [{ path: '', message: `Invalid JSON format: ${jsonError.message}` }]
+                },
+                { status: 400 }
+              );
             }
           } else {
             // Cas où il n'y a ni JSON ni FormData valide
