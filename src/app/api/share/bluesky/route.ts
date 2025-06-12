@@ -1,20 +1,29 @@
 import { NextResponse } from "next/server";
 import { BskyAgent } from '@atproto/api';
-import { auth } from "@/app/auth";
 import { BlueskyService } from "@/lib/services/blueskyServices";
 import { BlueskyRepository } from "@/lib/repositories/blueskyRepository";
 import { AccountService } from "@/lib/services/accountService"
 import { decrypt } from '@/lib/encryption';
-import logger, { withLogging } from '@/lib/log_utils';
+import logger from '@/lib/log_utils';
+import { withValidation } from "@/lib/validation/middleware"
+import { z } from "zod"
 
 const blueskyRepository = new BlueskyRepository();
 const blueskyService = new BlueskyService(blueskyRepository);
 const accountService = new AccountService()
 
-async function blueskyShareHandler(req: Request) {
+// Schéma de validation pour le partage sur Bluesky
+const BlueskyShareSchema = z.object({
+  text: z.string().min(1, "Le texte ne peut pas être vide").max(300, "Le texte ne peut pas dépasser 300 caractères")
+}).strict();
+
+// Type pour les données validées
+type BlueskyShareRequest = z.infer<typeof BlueskyShareSchema>;
+
+async function blueskyShareHandler(req: Request, data: BlueskyShareRequest, session: any) {
   try {
-    const { text } = await req.json();    
-    const session = await auth();    
+    const { text } = data;
+    
     if (!session?.user?.id) {
       logger.logWarning('API', 'POST /api/share/bluesky', 'User not authenticated');
       return NextResponse.json(
@@ -53,10 +62,16 @@ async function blueskyShareHandler(req: Request) {
             { status: 500 }
           );
         }
+        
         const result = await agent.post({
             text: text,
             createdAt: new Date().toISOString()
-          });        
+        });
+        
+        logger.logInfo('API', 'POST /api/share/bluesky', 'Post shared successfully on Bluesky', session.user.id, {
+          uri: result.uri
+        });
+        
         return NextResponse.json({
           success: true,
           uri: result.uri,
@@ -70,10 +85,10 @@ async function blueskyShareHandler(req: Request) {
         return NextResponse.json(
             { success: false, error: error.message || 'Internal server error' },
             { status: 500 }
-          );
-      }
+        );
+    }
   } catch (error) {
-    const userId = (await auth())?.user?.id || 'unknown';
+    const userId = session?.user?.id || 'unknown';
     logger.logError('API', 'POST /api/share/bluesky', error, userId, {
       context: 'Unexpected error in BlueSky share process'
     });
@@ -84,4 +99,13 @@ async function blueskyShareHandler(req: Request) {
   }
 }
 
-export const POST = withLogging(blueskyShareHandler);
+// Configuration du middleware de validation
+export const POST = withValidation(
+  BlueskyShareSchema,
+  blueskyShareHandler,
+  {
+    requireAuth: true,
+    applySecurityChecks: true, // Vérifications de sécurité pour le texte du post
+    skipRateLimit: false
+  }
+)
