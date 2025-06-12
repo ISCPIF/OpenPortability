@@ -4,7 +4,6 @@ import { auth } from '@/app/auth';
 import logger from '@/lib/log_utils';
 import { 
   secureSupportContentExtended, 
-  detectSqlInjectionPatterns,
   validateDataTypes,
   safeUrlDecode,
   detectDangerousContent,
@@ -16,6 +15,8 @@ import {
   RATE_LIMIT_CONFIGS,
   type RateLimitConfig 
 } from './rate-limit';
+import { detectXssPayload } from '@/lib/security/xss-detection';
+import { detectSqlInjectionPayload } from '@/lib/security/sql-detection';
 
 export interface ValidationOptions {
   requireAuth?: boolean;
@@ -79,17 +80,23 @@ async function performSecurityValidation(
       
       if (typeof value === 'string') {
         // Check SQL injection
-        if (detectSqlInjectionPatterns(value)) {
-          errors.push(`SQL injection detected in field: ${currentPath}`);
+        const sqlResult = detectSqlInjectionPayload(value);
+        if (sqlResult.isVulnerable) {
+          errors.push(`SQL injection detected in field: ${currentPath} (Risk: ${sqlResult.riskLevel})`);
           console.log('Security', 'SQL injection detected', `Field: ${currentPath}`, userId || 'anonymous', {
+            patterns: sqlResult.detectedPatterns.slice(0, 3),
+            riskLevel: sqlResult.riskLevel,
             value: value.substring(0, 100) // Log only first 100 chars
           });
         }
         
-        // Check XSS using existing function from security-utils
-        if (detectDangerousContent(value)) {
-          errors.push(`XSS detected in field: ${currentPath}`);
+        // Check XSS using new function from xss-detection
+        const xssResult = detectXssPayload(value);
+        if (xssResult.isVulnerable) {
+          errors.push(`XSS detected in field: ${currentPath} (Risk: ${xssResult.riskLevel})`);
           console.log('Security', 'XSS detected', `Field: ${currentPath}`, userId || 'anonymous', {
+            patterns: xssResult.detectedPatterns.slice(0, 3),
+            riskLevel: xssResult.riskLevel,
             value: value.substring(0, 100)
           });
         }
@@ -202,11 +209,14 @@ function validateQueryParameters(
     }
     
     // Vérifier les injections SQL standards
-    if (detectSqlInjectionPatterns(value)) {
-      errors.push(`SQL injection detected in query parameter: ${key}`);
+    const sqlResult = detectSqlInjectionPayload(value);
+    if (sqlResult.isVulnerable) {
+      errors.push(`SQL injection detected in query parameter: ${key} (Risk: ${sqlResult.riskLevel})`);
       console.log('Security', `SQL injection attempt in URL params for ${endpoint}`, userId || 'anonymous', {
         parameter: key,
-        value: value.substring(0, 100)
+        value: value.substring(0, 100),
+        patterns: sqlResult.detectedPatterns.slice(0, 3),
+        riskLevel: sqlResult.riskLevel
       });
       continue;
     }
