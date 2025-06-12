@@ -465,7 +465,7 @@ export function detectSqlInjectionPatterns(input: string): boolean {
     /(?:\bOR|\bAND)\s+.{0,10}?\s*=\s*.{0,10}?(?:--|\/\*|#|;)/i,
     
     // Guillemets avec caractères suspects à proximité
-    /['"][^'"]*?(?:--|\/\*|#|;)[^'"]*?['"]?/i
+    /['"]?\s*(?:--|\/\*|#).+$/i
   ];
   
   for (const pattern of contextPatterns) {
@@ -694,4 +694,223 @@ export function validateEmail(email: any): { isValid: boolean; error?: string } 
   }
   
   return { isValid: true };
+}
+
+/**
+ * Interface pour les données de fichier à analyser
+ */
+export interface FileContentData {
+  content: string;
+  fileName: string;
+  fileType: string;
+  fileSize?: number;
+  fileObject?: File;
+}
+
+/**
+ * Interface pour le rapport de sécurité des fichiers
+ */
+export interface FileSecurityValidationResult extends ExtendedSecurityValidationResult {
+  dangerousJsPatterns?: boolean;
+  suspiciousPatterns: string[];
+  invalidFileType?: boolean;
+  fileTooLarge?: boolean;
+}
+
+/**
+ * Vérifie si le contenu du fichier contient des patterns JavaScript dangereux
+ * @param content Le contenu à vérifier
+ * @returns true si des patterns dangereux sont détectés, avec la liste des patterns
+ */
+export function detectDangerousJsPatterns(content: string): { detected: boolean; patterns: string[] } {
+  if (typeof content !== 'string') return { detected: true, patterns: ['invalid_content_type'] };
+  
+  // Décoder pour éviter les contournements par encodage
+  const decodedContent = safeUrlDecode(content);
+  const detectedPatterns: string[] = [];
+  
+  // Réutiliser les patterns dangereux existants qui sont pertinents pour JavaScript
+  const jsRelevantPatterns = [
+    { pattern: /javascript:/gi, name: 'javascript_protocol' },
+    { pattern: /data:text\/html/gi, name: 'data_html_uri' },
+    { pattern: /vbscript:/gi, name: 'vbscript_protocol' },
+    { pattern: /expression\s*\(/gi, name: 'css_expression' },
+    { pattern: /setTimeout\s*\(/gi, name: 'settimeout' },
+    { pattern: /setInterval\s*\(/gi, name: 'setinterval' },
+    { pattern: /eval\s*\(/gi, name: 'eval_function' },
+    { pattern: /atob\s*\(/gi, name: 'base64_decode' },
+    { pattern: /btoa\s*\(/gi, name: 'base64_encode' },
+    { pattern: /Function\s*\(/gi, name: 'function_constructor' },
+    { pattern: /\$\{.*?\}/gi, name: 'template_injection' },
+    { pattern: /\{\{.*?\}\}/gi, name: 'handlebars_injection' },
+    { pattern: /<%.*?%>/gi, name: 'ejs_injection' }
+  ];
+  
+  // Vérifier les patterns existants pertinents pour JS
+  for (const { pattern, name } of jsRelevantPatterns) {
+    if (pattern.test(decodedContent)) {
+      detectedPatterns.push(name);
+    }
+  }
+  
+  // Patterns spécifiques aux fichiers JavaScript qui ne sont pas dans DANGEROUS_PATTERNS
+  const jsSpecificPatterns = [
+    // Accès au système de fichiers ou réseau
+    { pattern: /require\s*\(\s*['"`]fs['"`]\s*\)/i, name: 'fs_module' },
+    { pattern: /require\s*\(\s*['"`]http['"`]\s*\)/i, name: 'http_module' },
+    { pattern: /require\s*\(\s*['"`]child_process['"`]\s*\)/i, name: 'child_process_module' },
+    { pattern: /process\.env/i, name: 'process_env_access' },
+    // Accès au DOM qui pourrait être malveillant
+    { pattern: /document\.cookie/i, name: 'document_cookie' },
+    { pattern: /localStorage\./i, name: 'localstorage_access' },
+    { pattern: /sessionStorage\./i, name: 'sessionstorage_access' },
+    // Requêtes réseau potentiellement malveillantes
+    { pattern: /fetch\s*\(/i, name: 'fetch_api' },
+    { pattern: /XMLHttpRequest/i, name: 'xmlhttprequest' },
+    { pattern: /\.ajax\s*\(/i, name: 'jquery_ajax' },
+    // Exfiltration de données
+    { pattern: /navigator\.sendBeacon/i, name: 'sendbeacon_api' },
+    // Patterns de scripts obfusqués
+    { pattern: /\\x[0-9a-f]{2}/i, name: 'hex_escape' },
+    { pattern: /\\u[0-9a-f]{4}/i, name: 'unicode_escape' },
+    // Patterns d'exploitation de prototype
+    { pattern: /__proto__/i, name: 'proto_access' },
+    { pattern: /constructor\.prototype/i, name: 'constructor_prototype' },
+    { pattern: /Object\.prototype/i, name: 'object_prototype' }
+  ];
+  
+  // Vérifier chaque pattern spécifique aux fichiers JS
+  for (const { pattern, name } of jsSpecificPatterns) {
+    if (pattern.test(decodedContent)) {
+      detectedPatterns.push(name);
+    }
+  }
+  
+  return { 
+    detected: detectedPatterns.length > 0,
+    patterns: detectedPatterns
+  };
+}
+
+/**
+ * Fonction de sécurisation étendue pour les fichiers téléchargés
+ * Similaire à secureSupportContentExtended mais adaptée pour les fichiers
+ */
+export function secureFileContentExtended(
+  fileData: FileContentData,
+  userId?: string
+): {
+  isSecure: boolean;
+  securityReport: FileSecurityValidationResult;
+} {
+  // Initialiser le rapport de sécurité
+  const securityReport: FileSecurityValidationResult = {
+    isValid: true,
+    errors: [],
+    securityLevel: 'safe',
+    sqlInjectionDetected: false,
+    tamperingDetected: false,
+    rateLimitExceeded: false,
+    dangerousJsPatterns: false,
+    suspiciousPatterns: [],
+    invalidFileType: false,
+    fileTooLarge: false
+  };
+  
+  // 1. Vérification de l'objet File (si fourni)
+  if (fileData.fileObject && !(fileData.fileObject instanceof File)) {
+    securityReport.isValid = false;
+    securityReport.errors.push('Invalid file object');
+    securityReport.securityLevel = 'dangerous';
+    return { isSecure: false, securityReport };
+  }
+  
+  // 2. Vérification de la taille du fichier (max 100MB)
+  const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
+  if (fileData.fileSize && fileData.fileSize > MAX_FILE_SIZE) {
+    securityReport.isValid = false;
+    securityReport.errors.push(`File too large: ${fileData.fileSize} bytes (max 100MB)`);
+    securityReport.fileTooLarge = true;
+    securityReport.securityLevel = 'suspicious';
+    return { isSecure: false, securityReport };
+  }
+  
+  // 3. Vérification du type MIME
+  const validMimeTypes = ['application/javascript', 'text/javascript', 'application/json', 'text/plain'];
+  if (fileData.fileType && !validMimeTypes.includes(fileData.fileType)) {
+    securityReport.isValid = false;
+    securityReport.errors.push(`Invalid file type: ${fileData.fileType}`);
+    securityReport.invalidFileType = true;
+    securityReport.securityLevel = 'suspicious';
+    return { isSecure: false, securityReport };
+  }
+  
+  // 4. Vérifier le type de données du contenu
+  if (typeof fileData.content !== 'string') {
+    securityReport.isValid = false;
+    securityReport.errors.push('Invalid file content type');
+    securityReport.securityLevel = 'dangerous';
+    return { isSecure: false, securityReport };
+  }
+  
+  // Décoder le contenu pour éviter les contournements par encodage
+  const decodedContent = safeUrlDecode(fileData.content);
+  
+  // 5. Vérifier les patterns dangereux (XSS)
+  if (detectDangerousContent(decodedContent)) {
+    securityReport.isValid = false;
+    securityReport.errors.push('Dangerous content detected');
+    securityReport.securityLevel = 'dangerous';
+  }
+  
+  // 6. Vérifier les injections SQL
+  if (detectSqlInjectionPatterns(decodedContent)) {
+    securityReport.sqlInjectionDetected = true;
+    securityReport.isValid = false;
+    securityReport.errors.push('SQL injection pattern detected');
+    securityReport.securityLevel = 'dangerous';
+  }
+  
+  // 7. Vérifier les patterns JavaScript dangereux
+  const jsPatterns = detectDangerousJsPatterns(decodedContent);
+  if (jsPatterns.detected) {
+    securityReport.dangerousJsPatterns = true;
+    securityReport.suspiciousPatterns = jsPatterns.patterns;
+    securityReport.isValid = false;
+    securityReport.errors.push('Dangerous JavaScript patterns detected');
+    securityReport.securityLevel = 'dangerous';
+  }
+  
+  // 8. Vérifier les tentatives de tampering (null bytes, etc.)
+  if (decodedContent.includes('\x00')) {
+    securityReport.tamperingDetected = true;
+    securityReport.isValid = false;
+    securityReport.errors.push('Null byte detected');
+    securityReport.securityLevel = 'dangerous';
+  }
+  
+  // Journaliser les tentatives suspectes
+  if (securityReport.securityLevel !== 'safe') {
+    console.log('Security', 'Suspicious file content', userId || 'anonymous', {
+      context: 'File security validation',
+      fileName: fileData.fileName,
+      fileType: fileData.fileType,
+      securityLevel: securityReport.securityLevel,
+      suspiciousPatterns: securityReport.suspiciousPatterns.slice(0, 5), // Limiter pour éviter un log trop volumineux
+      errors: securityReport.errors
+    });
+  }
+  
+  // Déterminer si le fichier est sécurisé
+  const isSecure = securityReport.isValid && 
+                  !securityReport.sqlInjectionDetected && 
+                  !securityReport.dangerousJsPatterns &&
+                  !securityReport.tamperingDetected &&
+                  !securityReport.invalidFileType &&
+                  !securityReport.fileTooLarge;
+  
+  return {
+    isSecure,
+    securityReport
+  };
 }
