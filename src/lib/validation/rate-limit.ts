@@ -41,7 +41,7 @@ export const RATE_LIMIT_CONFIGS: Record<string, RateLimitConfig> = {
   },
   '/api/share': {
     windowMs: 60 * 1000,
-    maxRequests: 20,          // Permet plusieurs partages rapides
+    maxRequests: 10000,          // Permet plusieurs partages rapides
     identifier: 'userId'
   },
   '/api/migrate/send_follow': {
@@ -165,4 +165,21 @@ export function rateLimitResponse(
       }
     }
   );
+}
+
+/**
+ * Réinitialise le compteur de rate limit pour un endpoint et un identifiant spécifiques
+ * Utile pour les cas où une opération échoue pour des raisons techniques (timeout, etc.)
+ * et où l'on souhaite permettre à l'utilisateur de réessayer immédiatement
+ */
+export function resetRateLimit(
+  endpoint: string,
+  identifierValue: string
+): void {
+  const key = `${endpoint}:${identifierValue}`;
+  
+  // Supprimer l'entrée du store pour réinitialiser le compteur
+  if (rateLimitStore.has(key)) {
+    rateLimitStore.delete(key);
+  }
 }
