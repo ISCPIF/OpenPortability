@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z, ZodError } from 'zod';
-import { auth } from '@/app/auth'; // Ajout de l'import manquant
+import { auth } from '@/app/auth'; 
 import logger from '@/lib/log_utils';
 import { 
   secureSupportContentExtended, 
@@ -23,6 +23,8 @@ export interface ValidationOptions {
   customRateLimit?: Partial<RateLimitConfig>;
   skipRateLimit?: boolean;
   expectedContentType?: string;
+  validateQueryParams?: boolean; 
+  queryParamsSchema?: z.ZodSchema<any>; 
 }
 
 /**
@@ -129,6 +131,137 @@ async function performSecurityValidation(
 }
 
 /**
+ * Détecte les tentatives de pollution de prototype dans une chaîne JSON
+ */
+function detectPrototypePollution(jsonString: string): boolean {
+  // Recherche des motifs suspects dans la chaîne JSON
+  const dangerousPatterns = [
+    /"__proto__"\s*:/i,
+    /"constructor"\s*:/i,
+    /"prototype"\s*:/i,
+    /\[\s*"__proto__"\s*\]/i,
+    /\[\s*"constructor"\s*\]/i,
+    /\[\s*"prototype"\s*\]/i
+  ];
+  
+  return dangerousPatterns.some(pattern => pattern.test(jsonString));
+}
+
+/**
+ * Valide les paramètres d'URL pour détecter les tentatives d'attaque
+ */
+function validateQueryParameters(
+  url: URL,
+  endpoint: string,
+  userId?: string
+): { isValid: boolean; errors: string[] } {
+  const errors: string[] = [];
+  const searchParams = url.searchParams;
+  
+  // Vérifier chaque paramètre d'URL
+  for (const [key, value] of searchParams.entries()) {
+    // Vérifier les tentatives de pollution de prototype dans les clés
+    const protoRegex = /(__proto__|constructor|prototype)/i;
+    if (protoRegex.test(key)) {
+      errors.push(`Potential prototype pollution detected in query parameter key: ${key}`);
+      console.log('Security', `Prototype pollution attempt in URL params for ${endpoint}`, userId || 'anonymous', {
+        parameter: key,
+        value: value.substring(0, 100) // Log only first 100 chars
+      });
+      continue;
+    }
+    
+    // Vérifier les tentatives de pollution de prototype dans les valeurs
+    if (protoRegex.test(value)) {
+      errors.push(`Potential prototype pollution detected in query parameter value: ${key}=${value}`);
+      console.log('Security', `Prototype pollution attempt in URL params for ${endpoint}`, userId || 'anonymous', {
+        parameter: key,
+        value: value.substring(0, 100)
+      });
+      continue;
+    }
+    
+    // Vérifier les attaques JSONP
+    if (key === 'callback' || key === 'jsonp') {
+      errors.push(`JSONP callback parameter detected: ${key}`);
+      console.log('Security', `JSONP callback attempt in URL params for ${endpoint}`, userId || 'anonymous', {
+        parameter: key,
+        value: value.substring(0, 100)
+      });
+      continue;
+    }
+    
+    // Vérifier les injections SQL avec point-virgule (;)
+    if (value.includes(';')) {
+      errors.push(`SQL injection detected in query parameter: ${key}`);
+      console.log('Security', `SQL injection attempt in URL params for ${endpoint}`, userId || 'anonymous', {
+        parameter: key,
+        value: value.substring(0, 100)
+      });
+      continue;
+    }
+    
+    // Vérifier les injections SQL standards
+    if (detectSqlInjectionPatterns(value)) {
+      errors.push(`SQL injection detected in query parameter: ${key}`);
+      console.log('Security', `SQL injection attempt in URL params for ${endpoint}`, userId || 'anonymous', {
+        parameter: key,
+        value: value.substring(0, 100)
+      });
+      continue;
+    }
+    
+    // Détection directe des balises script et autres patterns dangereux
+    const dangerousPatterns = [
+      /<script/i,
+      /<\/script>/i,
+      /javascript:/i,
+      /on\w+=/i,
+      /<iframe/i,
+      /<svg/i,
+      /alert\s*\(/i,
+      /eval\s*\(/i,
+      /setTimeout\s*\(/i,
+      /setInterval\s*\(/i
+    ];
+    
+    // Vérifier chaque pattern dangereux directement
+    let hasDangerousPattern = false;
+    for (const pattern of dangerousPatterns) {
+      if (pattern.test(value)) {
+        errors.push(`XSS detected in query parameter: ${key}`);
+        console.log('Security', `XSS attempt in URL params for ${endpoint}`, userId || 'anonymous', {
+          parameter: key,
+          value: value.substring(0, 100),
+          pattern: pattern.toString()
+        });
+        hasDangerousPattern = true;
+        break;
+      }
+    }
+    
+    if (hasDangerousPattern) {
+      continue;
+    }
+    
+    // Utiliser aussi la fonction existante detectDangerousContent comme filet de sécurité
+    if (detectDangerousContent(value)) {
+      errors.push(`XSS detected in query parameter: ${key}`);
+      console.log('Security', `XSS attempt in URL params for ${endpoint}`, userId || 'anonymous', {
+        parameter: key,
+        value: value.substring(0, 100)
+      });
+      continue;
+    }
+  }
+  
+  return {
+    isValid: errors.length === 0,
+    errors
+  };
+}
+
+/**
  * Wrapper de validation principal
  */
 export function withValidation<T>(
@@ -142,21 +275,27 @@ export function withValidation<T>(
       applySecurityChecks = true,
       customRateLimit,
       skipRateLimit = false,
-      expectedContentType
+      expectedContentType,
+      validateQueryParams = true, 
+      queryParamsSchema = z.object({}).passthrough() 
     } = options;
     
-    const endpoint = new URL(request.url).pathname;
+    const url = new URL(request.url);
+    const endpoint = url.pathname;
     const method = request.method;
     
     console.log('Validation', `${method} ${endpoint}`, 'Validation middleware started', 'system', {
       requireAuth,
       applySecurityChecks,
-      skipRateLimit
+      skipRateLimit,
+      validateQueryParams
     });
     
     try {
       // 1. Authentification
       let session = null;
+
+      console.log('Validation', `${method} ${endpoint}`, 'Checking authentication', 'anonymous');
       
       if (requireAuth) {
         console.log('Validation', `${method} ${endpoint}`, 'Checking authentication', 'anonymous');
@@ -173,7 +312,56 @@ export function withValidation<T>(
         console.log('Validation', `${method} ${endpoint}`, 'Authentication successful', session.user.id);
       }
       
-      // 2. Rate limiting
+      // 2. Validation des paramètres d'URL
+      if (validateQueryParams) {
+        console.log('Validation', `${method} ${endpoint}`, 'Validating URL parameters', session?.user?.id || 'anonymous');
+        
+        // Vérification de sécurité des paramètres d'URL
+        const queryParamsValidation = validateQueryParameters(url, endpoint, session?.user?.id);
+        
+        if (!queryParamsValidation.isValid) {
+          console.log('Security', `${method} ${endpoint}`, 'URL parameters validation failed', session?.user?.id || 'anonymous', {
+            errors: queryParamsValidation.errors,
+            clientIP: request.headers.get('x-forwarded-for') || 'unknown',
+            userAgent: request.headers.get('user-agent') || 'unknown'
+          });
+          
+          return NextResponse.json(
+            {
+              error: 'URL parameters validation failed',
+              details: queryParamsValidation.errors
+            },
+            { status: 400 }
+          );
+        }
+        
+        // Validation du schéma Zod pour les paramètres d'URL si fourni
+        try {
+          const queryParams = Object.fromEntries(url.searchParams);
+          queryParamsSchema.parse(queryParams);
+        } catch (error) {
+          if (error instanceof ZodError) {
+            console.log('Validation', `${method} ${endpoint}`, 'URL parameters schema validation failed', session?.user?.id || 'anonymous', {
+              errors: error.errors
+            });
+            
+            return NextResponse.json(
+              {
+                error: 'URL parameters validation failed',
+                details: error.errors.map(e => ({
+                  path: e.path.join('.'),
+                  message: e.message
+                }))
+              },
+              { status: 400 }
+            );
+          }
+        }
+        
+        console.log('Validation', `${method} ${endpoint}`, 'URL parameters validation passed', session?.user?.id || 'anonymous');
+      }
+      
+      // 3. Rate limiting
       if (!skipRateLimit) {
         const rateLimitConfig = customRateLimit 
           ? { ...(RATE_LIMIT_CONFIGS[endpoint] || RATE_LIMIT_CONFIGS.default), ...customRateLimit }
@@ -199,7 +387,7 @@ export function withValidation<T>(
         });
       }
       
-      // 3. Parsing et validation Zod
+      // 4. Parsing et validation Zod
       let data: T;
       try {
         // Ne parser le body que pour les méthodes qui en ont un
@@ -243,13 +431,43 @@ export function withValidation<T>(
             // Pour les requêtes JSON standard
             console.log('Validation', `${method} ${endpoint}`, 'Parsing JSON request body', session?.user?.id || 'anonymous');
             try {
-              const rawData = await request.json();
+              const bodyText = await request.text();
               
-              console.log('Validation', `${method} ${endpoint}`, 'Validating with Zod schema', session?.user?.id || 'anonymous', {
-                rawDataKeys: Object.keys(rawData)
-              });
+              // Vérifier les tentatives de pollution de prototype avant le parsing
+              if (detectPrototypePollution(bodyText)) {
+                console.log('Security', `${method} ${endpoint}`, 'Prototype pollution attempt detected', session?.user?.id || 'anonymous', {
+                  clientIP: request.headers.get('x-forwarded-for') || 'unknown'
+                });
+                
+                return NextResponse.json(
+                  {
+                    error: 'Validation failed',
+                    details: [{ path: '', message: 'Potential prototype pollution detected' }]
+                  },
+                  { status: 400 }
+                );
+              }
               
-              data = schema.parse(rawData);
+              try {
+                data = JSON.parse(bodyText);
+                data = schema.parse(data);
+              } catch (jsonError) {
+                console.log('Validation', `${method} ${endpoint}`, 'JSON parsing failed', session?.user?.id || 'anonymous', {
+                  error: jsonError.message
+                });
+                return NextResponse.json(
+                  {
+                    error: 'Validation failed',
+                    details: jsonError instanceof ZodError 
+                      ? jsonError.errors.map(e => ({
+                          path: e.path.join('.'),
+                          message: e.message
+                        }))
+                      : [{ path: '', message: `Invalid JSON format: ${jsonError.message}` }]
+                  },
+                  { status: 400 }
+                );
+              }
             } catch (jsonError) {
               console.log('Validation', `${method} ${endpoint}`, 'JSON parsing failed', session?.user?.id || 'anonymous', {
                 error: jsonError.message
@@ -257,12 +475,7 @@ export function withValidation<T>(
               return NextResponse.json(
                 {
                   error: 'Validation failed',
-                  details: jsonError instanceof ZodError 
-                    ? jsonError.errors.map(e => ({
-                        path: e.path.join('.'),
-                        message: e.message
-                      }))
-                    : [{ path: '', message: `Invalid JSON format: ${jsonError.message}` }]
+                  details: [{ path: '', message: `Invalid JSON format: ${jsonError.message}` }]
                 },
                 { status: 400 }
               );
