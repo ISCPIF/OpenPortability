@@ -4,6 +4,7 @@ import { StatsRepository } from '@/lib/repositories/statsRepository';
 import logger from '@/lib/log_utils';
 import { withValidation } from '@/lib/validation/middleware';
 import { z } from 'zod';
+import { StatsQueryParamsSchema } from '@/lib/validation/schemas';
 
 // Endpoint GET refactorisé avec le middleware de validation
 export const GET = withValidation(
@@ -37,6 +38,7 @@ export const GET = withValidation(
     requireAuth: true,
     applySecurityChecks: false, // Pas de données à valider pour GET
     skipRateLimit: false,
-    validateQueryParams: true // Activer explicitement la validation des paramètres d'URL
+    validateQueryParams: true, // Activer explicitement la validation des paramètres d'URL
+    queryParamsSchema: StatsQueryParamsSchema 
   }
 );

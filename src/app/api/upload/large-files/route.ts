@@ -1,12 +1,12 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase'
-import { auth } from "@/app/auth";
 import { writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
 import logger from '@/lib/log_utils';
 import { withValidation } from '@/lib/validation/middleware';
 import { z } from 'zod';
 import { secureFileContentExtended, type FileContentData } from '@/lib/security-utils';
+// import { detectXssPatterns } from '@/lib/security/utils';
 
 const TEMP_UPLOAD_DIR = join(process.cwd(), 'tmp', 'uploads');
 
@@ -23,13 +23,16 @@ async function ensureUserTempDir(userId: string) {
 
 async function largeFilesUploadHandler(request: Request, _validatedData: z.infer<typeof LargeFilesUploadSchema>, session: any) {
   try {
-    // Vérifier la session manuellement pour s'assurer qu'elle est valide
-    // Le middleware a déjà vérifié l'authentification, mais nous voulons des vérifications supplémentaires
-    const session = await auth();
+    // Le middleware withValidation a déjà vérifié l'authentification
     const user = session.user;
-    if (!session || !user || user.has_onboarded) {
-      console.log('API', 'POST /api/upload/large-files', 'Unauthorized access attempt', user?.id || 'unknown');
+    if (!user) {
+      console.log('API', 'POST /api/upload/large-files', 'Unauthorized access attempt', 'unknown');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    if (user.has_onboarded) {
+      console.log('API', 'POST /api/upload/large-files', 'User already onboarded', user.id);
+      return NextResponse.json({ error: 'Operation not allowed for onboarded users' }, { status: 403 });
     }
 
     // 2. Vérifier si l'utilisateur a déjà un job en cours
@@ -40,7 +43,7 @@ async function largeFilesUploadHandler(request: Request, _validatedData: z.infer
       .in('status', ['pending', 'processing']);
 
     if (jobCheckError) {
-      console.log('API', 'POST /api/upload/large-files', jobCheckError, user.id, {
+      console.log('API', 'POST /api/upload/large-files', jobCheckError as string, user.id, {
         context: 'Checking existing jobs'
       });
       return NextResponse.json(
@@ -60,7 +63,7 @@ async function largeFilesUploadHandler(request: Request, _validatedData: z.infer
     const formData = await request.formData();
     if (!formData)
     {
-      logger.logWarning('API', 'POST /api/upload/large-files', 'No form data provided in request', user.id);
+      console.log('API', 'POST /api/upload/large-files', 'No form data provided in request', user.id);
       return NextResponse.json(
         { error: 'No form data provided' },
         { status: 400 }
@@ -69,7 +72,7 @@ async function largeFilesUploadHandler(request: Request, _validatedData: z.infer
     const files = formData.getAll('files');
 
     if (!files.length) {
-      logger.logWarning('API', 'POST /api/upload/large-files', 'No files provided in request', user.id);
+      console.log('API', 'POST /api/upload/large-files', 'No files provided in request', user.id);
       return NextResponse.json(
         { error: 'No files provided' },
         { status: 400 }
@@ -80,7 +83,7 @@ async function largeFilesUploadHandler(request: Request, _validatedData: z.infer
     for (const fileEntry of files) {
       // Vérifier que l'entrée est bien un objet File
       if (!(fileEntry instanceof File)) {
-        logger.logWarning('API', 'POST /api/upload/large-files', 'Invalid file object', user.id);
+        console.log('API', 'POST /api/upload/large-files', 'Invalid file object', user.id);
         return NextResponse.json(
           { error: 'Invalid file format' },
           { status: 400 }
@@ -92,6 +95,26 @@ async function largeFilesUploadHandler(request: Request, _validatedData: z.infer
       
       try {
         const fileContent = await file.text();
+        
+        // Vérification supplémentaire pour les patterns XSS dans les noms de fichiers
+        // const fileNameXssResult = detectXssPatterns(file.name);
+        // if (fileNameXssResult.detected) {
+        //   console.log('Security', 'XSS pattern detected in filename', user.id, {
+        //     fileName: file.name,
+        //     patterns: fileNameXssResult.patterns
+        //   });
+          
+        //   return NextResponse.json(
+        //     { 
+        //       error: 'Potentially malicious content detected in filename',
+        //       securityReport: {
+        //         securityLevel: 'high',
+        //         suspiciousPatterns: fileNameXssResult.patterns
+        //       }
+        //     },
+        //     { status: 400 }
+        //   );
+        // }
         
         // Utiliser la fonction secureFileContentExtended pour toutes les vérifications
         const fileData: FileContentData = {
@@ -120,6 +143,13 @@ async function largeFilesUploadHandler(request: Request, _validatedData: z.infer
             errorMessage = 'File tampering detected';
           }
           
+          console.log('Security', errorMessage, user.id, {
+            fileName: file.name,
+            fileType: file.type,
+            fileSize: file.size,
+            securityLevel: securityResult.securityReport.securityLevel
+          });
+          
           return NextResponse.json(
             { 
               error: errorMessage, 
@@ -132,7 +162,7 @@ async function largeFilesUploadHandler(request: Request, _validatedData: z.infer
           );
         }
       } catch (securityError) {
-        logger.logError('Security', 'Error analyzing file content', securityError as string, user.id, {
+        console.log('Security', 'Error analyzing file content', securityError as string, user.id, {
           context: 'File upload security check',
           fileName: file.name
         });
@@ -148,8 +178,10 @@ async function largeFilesUploadHandler(request: Request, _validatedData: z.infer
     const userDir = await ensureUserTempDir(user.id);
 
     // Sauvegarder les fichiers
-    for (const file of files) {
+    const savedFilePaths = [];
+    for (const fileEntry of files) {
       try {
+        const file = fileEntry as File;
         const fileName = file.name.toLowerCase().includes('following') ? 'following.js' : 'follower.js';
         const filePath = join(userDir, fileName);
         
@@ -161,11 +193,31 @@ async function largeFilesUploadHandler(request: Request, _validatedData: z.infer
 
         const buffer = Buffer.from(await file.arrayBuffer());
         await writeFile(filePath, buffer);
-      } catch (error) {
-        console.log('API', 'POST /api/upload/large-files', error, user.id, {
-          context: `Saving file ${file.name}`
+        savedFilePaths.push(filePath);
+        
+        console.log('API', 'POST /api/upload/large-files', `File saved: ${fileName}`, user.id, {
+          filePath,
+          fileSize: file.size
         });
+      } catch (error) {
+        console.log('API', 'POST /api/upload/large-files', error as string, user.id, {
+          context: `Saving file ${(fileEntry as File).name}`
+        });
+        
+        return NextResponse.json(
+          { error: 'Failed to save uploaded file' },
+          { status: 500 }
+        );
       }
+    }
+
+    // Vérifier que nous avons bien sauvegardé des fichiers
+    if (savedFilePaths.length === 0) {
+      console.log('API', 'POST /api/upload/large-files', 'No files were successfully saved', user.id);
+      return NextResponse.json(
+        { error: 'Failed to save any uploaded files' },
+        { status: 500 }
+      );
     }
 
     // Créer le job pour le traitement asynchrone
@@ -177,20 +229,25 @@ async function largeFilesUploadHandler(request: Request, _validatedData: z.infer
         total_items: 0,
         created_at: new Date().toISOString(),
         job_type: 'large_file_import',
-        file_paths: [
-          join(userDir, 'following.js'),
-          join(userDir, 'follower.js')
-        ]
+        file_paths: savedFilePaths
       })
       .select()
       .single();
 
     if (jobError) {
-      console.log('API', 'POST /api/upload/large-files', jobError, user.id, {
+      console.log('API', 'POST /api/upload/large-files', jobError as string, user.id, {
         context: 'Creating import job'
       });
-      throw jobError;
+      return NextResponse.json(
+        { error: 'Failed to create processing job' },
+        { status: 500 }
+      );
     }
+
+    console.log('API', 'POST /api/upload/large-files', 'Files uploaded successfully', user.id, {
+      jobId: job.id,
+      fileCount: savedFilePaths.length
+    });
 
     return NextResponse.json({ 
       jobId: job.id,
@@ -200,7 +257,7 @@ async function largeFilesUploadHandler(request: Request, _validatedData: z.infer
   } catch (error) {
     // En cas d'erreur, essayer de récupérer l'ID utilisateur si possible
     const userId = session?.user?.id || 'unknown';
-    console.log('API', 'POST /api/upload/large-files', error, userId, {
+    console.log('API', 'POST /api/upload/large-files', error as string, userId, {
       context: 'Processing upload'
     });
     return NextResponse.json(
@@ -219,7 +276,7 @@ export const POST = withValidation(
     expectedContentType: 'multipart/form-data',
     customRateLimit: {
       windowMs: 5 * 60 * 1000, // 5 minutes
-      maxRequests: 10,
+      maxRequests: 1000000,
       identifier: 'userId'
     }
   }

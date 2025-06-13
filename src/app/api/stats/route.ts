@@ -4,6 +4,7 @@ import { StatsRepository } from '@/lib/repositories/statsRepository';
 import logger from '@/lib/log_utils';
 import { withValidation } from '@/lib/validation/middleware';
 import { z } from 'zod';
+import { StatsQueryParamsSchema } from '@/lib/validation/schemas';
 
 // Endpoint GET refactorisé avec le middleware de validation
 export const GET = withValidation(
@@ -30,18 +31,23 @@ export const GET = withValidation(
         }
       }
 
+      // Récupérer les paramètres d'URL validés
+      const url = new URL(request.url);
+      const limit = url.searchParams.get('limit') ? Number(url.searchParams.get('limit')) : undefined;
+      
       const repository = new StatsRepository();
       const statsService = new StatsService(repository);
       
-      const stats = await statsService.getUserStats(session.user.id, session.user.has_onboarded);
+      const stats = await statsService.getUserStats(session.user.id, session.user.has_onboarded, limit);
       
-      logger.logInfo('API', 'GET /api/stats', `Retrieved stats for user ${session.user.id}`, session.user.id, {
-        context: 'User stats retrieved'
+      console.log('API', 'GET /api/stats', `Retrieved stats for user ${session.user.id}`, session.user.id, {
+        context: 'User stats retrieved',
+        limit
       });
       
       return NextResponse.json(stats);
     } catch (error) {
-      logger.logError('API', 'GET /api/stats', error, session?.user?.id || 'anonymous', {
+      console.log('API', 'GET /api/stats', error, session?.user?.id || 'anonymous', {
         context: 'Failed to retrieve user stats'
       });
       
@@ -52,6 +58,7 @@ export const GET = withValidation(
     requireAuth: true,
     applySecurityChecks: false, // Pas de données à valider pour GET
     skipRateLimit: false,
-    validateQueryParams: true // Activer explicitement la validation des paramètres d'URL
+    validateQueryParams: true, // Activer explicitement la validation des paramètres d'URL
+    queryParamsSchema: StatsQueryParamsSchema // Utiliser le schéma de validation pour les paramètres d'URL
   }
 );
