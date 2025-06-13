@@ -32,7 +32,7 @@ const blueskyPostHandler = withPublicValidation(
       const authResult = await blueskyService.login(identifier, password);
       
       if (!authResult.success || !authResult.data) {
-        logger.logWarning('API', 'POST /api/auth/bluesky', 'Bluesky authentication failed', userId, { error: authResult.error });
+        console.log('API', 'POST /api/auth/bluesky', 'Bluesky authentication failed', userId, { error: authResult.error });
         return NextResponse.json(
           { success: false, error: authResult.error },
           { status: 401 }
@@ -49,7 +49,7 @@ const blueskyPostHandler = withPublicValidation(
       if (existingUser) {
         // Si le compte Bluesky est déjà lié à un autre utilisateur
         if (userId !== "anonymous" && existingUser.id !== userId) {
-          logger.logWarning('API', 'POST /api/auth/bluesky', 'Bluesky account already linked to another user', undefined, { 
+          console.log('API', 'POST /api/auth/bluesky', 'Bluesky account already linked to another user', undefined, { 
             blueskyId: authResult.data.did, 
             userId, 
             existingUserId: existingUser.id 
@@ -63,21 +63,21 @@ const blueskyPostHandler = withPublicValidation(
         // L'utilisateur existe, mise à jour du profil
         userId = existingUser.id;
         console.log('[Bluesky POST] Updating existing user profile');
-        logger.logInfo('API', 'POST /api/auth/bluesky', 'Updating existing Bluesky profile', userId);
+        console.log('API', 'POST /api/auth/bluesky', 'Updating existing Bluesky profile', userId);
         await blueskyRepository.updateBlueskyProfile(userId, profile);
         await blueskyRepository.linkBlueskyAccount(userId, authResult.data);
         
       } else if (userId && userId !== "anonymous") {
         // L'utilisateur est connecté mais pas lié à ce compte Bluesky
         console.log('[Bluesky POST] Linking Bluesky account to existing user');
-        logger.logInfo('API', 'POST /api/auth/bluesky', 'Linking Bluesky account to existing user', userId);
+        console.log('API', 'POST /api/auth/bluesky', 'Linking Bluesky account to existing user', userId);
         await blueskyRepository.updateBlueskyProfile(userId, profile);
         await blueskyRepository.linkBlueskyAccount(userId, authResult.data);
         
       } else {
         // Création d'un nouvel utilisateur
         console.log('[Bluesky POST] Creating new user from Bluesky account');
-        logger.logInfo('API', 'POST /api/auth/bluesky', 'Creating new user from Bluesky account', undefined, { 
+        console.log('API', 'POST /api/auth/bluesky', 'Creating new user from Bluesky account', undefined, { 
           handle: authResult.data.handle 
         });
         
@@ -106,7 +106,7 @@ const blueskyPostHandler = withPublicValidation(
       });
       
     } catch (error: any) {
-      logger.logError('API', 'POST /api/auth/bluesky', error, undefined, { 
+      console.log('API', 'POST /api/auth/bluesky', error, undefined, { 
         message: 'Error in Bluesky auth route' 
       });
       
@@ -142,7 +142,7 @@ const blueskyDeleteHandler = withValidation(
     try {
       if (!supabaseAdapter.deleteSession) {
         const error = new Error('Required adapter methods are not implemented');
-        logger.logError('API', 'DELETE /api/auth/bluesky', error);
+        console.log('API', 'DELETE /api/auth/bluesky', error);
         throw error;
       }
       
@@ -152,7 +152,7 @@ const blueskyDeleteHandler = withValidation(
       // Get CSRF token from request headers
       const csrfToken = request.headers.get('x-csrf-token');
       if (!csrfToken) {
-        logger.logWarning('API', 'DELETE /api/auth/bluesky', 'Logout attempt without CSRF token', userId);
+        console.log('API', 'DELETE /api/auth/bluesky', 'Logout attempt without CSRF token', userId);
         return NextResponse.json(
           { error: 'CSRF token missing' },
           { status: 403 }
@@ -184,7 +184,7 @@ const blueskyDeleteHandler = withValidation(
         }
       );
     } catch (error) {
-      logger.logError('API', 'DELETE /api/auth/bluesky', error, session?.user?.id || 'unknown', { 
+      console.log('API', 'DELETE /api/auth/bluesky', error, session?.user?.id || 'unknown', { 
         message: 'Logout failed' 
       });
       return NextResponse.json(

