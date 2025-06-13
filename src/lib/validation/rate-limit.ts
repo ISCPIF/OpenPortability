@@ -36,7 +36,7 @@ export const RATE_LIMIT_CONFIGS: Record<string, RateLimitConfig> = {
   },
   '/api/newsletter/request': {
     windowMs: 60 * 1000,
-    maxRequests: 10,          // Plus permissif pour les updates de consentements
+    maxRequests: 1000,          // Plus permissif pour les updates de consentements
     identifier: 'userId'
   },
   '/api/share': {
@@ -52,13 +52,13 @@ export const RATE_LIMIT_CONFIGS: Record<string, RateLimitConfig> = {
   },
   '/api/upload': {
     windowMs: 5 * 60 * 1000,  // 5 minutes
-    maxRequests: 5,           // 5 uploads par 5 minutes
+    maxRequests: 1000,           // 5 uploads par 5 minutes
     identifier: 'userId',
     message: 'Too many uploads. Please wait before uploading more files.'
   },
   '/api/upload/large-files': {
     windowMs: 10 * 60 * 1000, // 10 minutes
-    maxRequests: 1000,           // 3 gros uploads par 10 minutes
+    maxRequests: 1000000,           // 3 gros uploads par 10 minutes
     identifier: 'userId',
     message: 'Too many large file uploads. Please wait before uploading more.'
   },
@@ -66,7 +66,7 @@ export const RATE_LIMIT_CONFIGS: Record<string, RateLimitConfig> = {
   // Configuration par défaut
   'default': {
     windowMs: 60 * 1000,
-    maxRequests: 30,          // Limite généreuse par défaut
+    maxRequests: 3000,          // Limite généreuse par défaut
     identifier: 'userId'
   }
 };

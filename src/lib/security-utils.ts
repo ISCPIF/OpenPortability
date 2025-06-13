@@ -836,7 +836,7 @@ export function secureFileContentExtended(
   }
   
   // 3. Vérification du type MIME
-  const validMimeTypes = ['application/javascript', 'text/javascript', 'application/json', 'text/plain'];
+  const validMimeTypes = ['application/javascript', 'text/javascript', 'application/json'];
   if (fileData.fileType && !validMimeTypes.includes(fileData.fileType)) {
     securityReport.isValid = false;
     securityReport.errors.push(`Invalid file type: ${fileData.fileType}`);

@@ -8,11 +8,13 @@ export const EmailSchema = z.string()
 
 export const ConsentTypeSchema = z.enum([
   'hqx_newsletter',
-  'oep_accepted',
-  'research_accepted',
+  'oep_newsletter',
+  'research_participation',
   'automatic_reconnect',
   'email_newsletter',
-  'dm_consent'
+  'dm_consent',
+  'bluesky_dm',
+  'mastodon_dm'
 ]);
 
 // Schémas pour /api/support
@@ -34,12 +36,21 @@ export const ConsentUpdateSchema = z.object({
   value: z.boolean()
 });
 
-export const NewsletterRequestSchema = z.object({
-  consents: z.array(ConsentUpdateSchema)
-    .min(1, 'At least one consent is required')
-    .max(10, 'Too many consents'),
-  email: EmailSchema.optional()
-});
+export const NewsletterRequestSchema = z.union([
+  // Format 1: Consentement unique directement dans l'objet racine
+  z.object({
+    type: ConsentTypeSchema,
+    value: z.boolean(),
+    email: EmailSchema.optional()
+  }),
+  // Format 2: Tableau de consentements
+  z.object({
+    consents: z.array(ConsentUpdateSchema)
+      .min(1, 'At least one consent is required')
+      .max(10, 'Too many consents'),
+    email: EmailSchema.optional()
+  })
+]);
 
 // Schémas pour /api/share
 export const ShareEventSchema = z.object({
@@ -113,6 +124,13 @@ export const UploadMetadataSchema = z.object({
   mimeType: z.string()
     .regex(/^[a-zA-Z0-9][a-zA-Z0-9\/\-+.]+$/, 'Invalid MIME type')
 });
+
+// Schémas pour /api/stats
+/**
+ * Schéma pour les paramètres de requête de l'endpoint /api/stats
+ * Aucun paramètre d'URL n'est autorisé
+ */
+export const StatsQueryParamsSchema = z.object({}).strict();
 
 // Type exports pour TypeScript
 export type SupportRequest = z.infer<typeof SupportRequestSchema>;

