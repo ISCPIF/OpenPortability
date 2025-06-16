@@ -178,7 +178,7 @@ async function recoverStalledJobs() {
     await sleep(WORKER_CONFIG.retryDelay);
   } finally {
     const duration = Date.now() - startTime;
-    console.log(`📊 [Worker ${WORKER_CONFIG.id}] Stalled jobs check completed in ${duration}ms`);
+    // console.log(`📊 [Worker ${WORKER_CONFIG.id}] Stalled jobs check completed in ${duration}ms`);
   }
 }
 
@@ -238,7 +238,7 @@ async function checkForPendingJobs() {
     await sleep(WORKER_CONFIG.retryDelay);
   } finally {
     const duration = Date.now() - startTime;
-    console.log(`📊 [Worker ${WORKER_CONFIG.id}] Pending jobs check completed in ${duration}ms`);
+    // console.log(`📊 [Worker ${WORKER_CONFIG.id}] Pending jobs check completed in ${duration}ms`);
   }
 }
 
