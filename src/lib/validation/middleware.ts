@@ -348,6 +348,10 @@ export function withValidation<T>(
         // Validation du schéma Zod pour les paramètres d'URL si fourni
         try {
           const queryParams = Object.fromEntries(url.searchParams);
+          logger.logInfo('Validation', `${method} ${endpoint}`, 'Validating URL parameters with schema', session?.user?.id || 'anonymous', {
+            params: queryParams
+          });
+          
           queryParamsSchema.parse(queryParams);
         } catch (error) {
           if (error instanceof ZodError) {
@@ -366,6 +370,7 @@ export function withValidation<T>(
               { status: 400 }
             );
           }
+          throw error;
         }
         
         console.log('Validation', `${method} ${endpoint}`, 'URL parameters validation passed', session?.user?.id || 'anonymous');
