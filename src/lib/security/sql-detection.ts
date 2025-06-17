@@ -78,9 +78,7 @@ const SQL_PATTERNS = {
   
   COMMENT_PATTERNS: [
     /\/\*.*?\*\//gi,
-    /--.*?$/gm,
-    /#.*?$/gm,
-  ],
+    /--.*?$/gm,  ],
   
   TIME_BASED_PATTERNS: [
     /SLEEP\s*\(\s*\d+\s*\)/gi,
