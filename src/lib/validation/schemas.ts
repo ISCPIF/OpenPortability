@@ -12,6 +12,7 @@ export const ConsentTypeSchema = z.enum([
   'research_participation',
   'automatic_reconnect',
   'email_newsletter',
+  'personalized_support',
   'dm_consent',
   'bluesky_dm',
   'mastodon_dm'

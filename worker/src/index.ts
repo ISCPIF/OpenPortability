@@ -279,13 +279,13 @@ async function startWorker() {
   // Reset metrics on worker start
   workerMetrics.startTime = Date.now();
   
-  const stalledJobsInterval = setInterval(async () => {
-    try {
-      await recoverStalledJobs();
-    } catch (error) {
-      console.error(`❌ [Worker ${WORKER_CONFIG.id}] Error checking stalled jobs:`, error);
-    }
-  }, WORKER_CONFIG.stalledJobTimeout);
+  // const stalledJobsInterval = setInterval(async () => {
+  //   try {
+  //     await recoverStalledJobs();
+  //   } catch (error) {
+  //     console.error(`❌ [Worker ${WORKER_CONFIG.id}] Error checking stalled jobs:`, error);
+  //   }
+  // }, WORKER_CONFIG.stalledJobTimeout);
 
   // Log worker metrics periodically
   const metricsInterval = setInterval(() => {
@@ -307,14 +307,14 @@ async function startWorker() {
     console.log(`    Circuit breaker trips: ${workerMetrics.errors.circuitBreakerTrips}`);
   }, 6000000); // Log metrics every 10 minutes
 
-  process.on('SIGTERM', () => {
-    clearInterval(stalledJobsInterval);
-    clearInterval(metricsInterval);
-  });
-  process.on('SIGINT', () => {
-    clearInterval(stalledJobsInterval);
-    clearInterval(metricsInterval);
-  });
+  // process.on('SIGTERM', () => {
+  //   clearInterval(stalledJobsInterval);
+  //   clearInterval(metricsInterval);
+  // });
+  // process.on('SIGINT', () => {
+  //   clearInterval(stalledJobsInterval);
+  //   clearInterval(metricsInterval);
+  // });
 
   try {
     while (true) {
@@ -339,8 +339,8 @@ async function startWorker() {
     }
   } catch (error) {
     console.error(`💥 [Worker ${WORKER_CONFIG.id}] Fatal error:`, error);
-    clearInterval(stalledJobsInterval);
-    clearInterval(metricsInterval);
+    // clearInterval(stalledJobsInterval);
+    // clearInterval(metricsInterval);
     process.exit(1);
   }
 }

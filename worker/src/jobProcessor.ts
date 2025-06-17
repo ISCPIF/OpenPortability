@@ -18,7 +18,7 @@ const MAX_RETRIES = 3;
 const RETRY_DELAY = 3000;
 const LOCK_DIR = '/app/tmp/locks';
 const UPLOADS_DIR = '/app/tmp/uploads';
-const LOCK_TIMEOUT = 5 * 60 * 1000;
+const LOCK_TIMEOUT = 10 * 60 * 1000;
 
 // S'assurer que les dossiers existent
 if (!existsSync(LOCK_DIR)) {
@@ -181,13 +181,13 @@ async function releaseFileLock(directory: string, workerId: string): Promise<boo
       
       // Supprimer le fichier de verrou
       await fs.unlink(lockFile);
-      console.log(
-        'JobProcessor',
-        'releaseFileLock',
-        `Released lock for directory`,
-        workerId,
-        { directory }
-      );
+      // console.log(
+      //   'JobProcessor',
+      //   'releaseFileLock',
+      //   `Released lock for directory`,
+      //   workerId,
+      //   { directory }
+      // );
       return true;
     } catch (err) {
       // Si le fichier de verrou est corrompu, on le supprime quand même
@@ -235,18 +235,18 @@ async function cleanupTempFiles(filePaths: string[], workerId: string) {
   const userDir = dirname(filePaths[0]);
   
   // Essayer d'acquérir un verrou sur le répertoire
-  const lockAcquired = await acquireFileLock(userDir, workerId);
+  // const lockAcquired = await acquireFileLock(userDir, workerId);
   
-  if (!lockAcquired) {
-    console.log(
-      'JobProcessor',
-      'cleanupTempFiles',
-      `Skipping cleanup, could not acquire directory lock`,
-      workerId,
-      { userDir, fileCount: filePaths.length }
-    );
-    return;
-  }
+  // if (!lockAcquired) {
+  //   console.log(
+  //     'JobProcessor',
+  //     'cleanupTempFiles',
+  //     `Skipping cleanup, could not acquire directory lock`,
+  //     workerId,
+  //     { userDir, fileCount: filePaths.length }
+  //   );
+  //   return;
+  // }
   
   try {
     // Supprimer chaque fichier individuellement
@@ -272,17 +272,17 @@ async function cleanupTempFiles(filePaths: string[], workerId: string) {
         }
       }
     }
-    
+  
     // Essayer de supprimer le répertoire
     try {
       await fs.rmdir(userDir);
-      console.log(
-        'JobProcessor',
-        'cleanupTempFiles',
-        `Successfully removed directory`,
-        workerId,
-        { userDir }
-      );
+      // console.log(
+      //   'JobProcessor',
+      //   'cleanupTempFiles',
+      //   `Successfully removed directory`,
+      //   workerId,
+      //   { userDir }
+      // );
     } catch (error) {
       // Journaliser l'erreur mais ne pas la propager
       const err = error as NodeJS.ErrnoException;
@@ -297,7 +297,7 @@ async function cleanupTempFiles(filePaths: string[], workerId: string) {
     }
   } finally {
     // Toujours libérer le verrou à la fin
-    await releaseFileLock(userDir, workerId);
+    // await releaseFileLock(userDir, workerId);
   }
 }
 
@@ -316,7 +316,7 @@ async function acquireLock(jobId: string, workerId: string): Promise<boolean> {
       
       if (lockAge > LOCK_TIMEOUT) {
         // Lock is stale, we can take it
-        console.log(`🔓 [Worker ${workerId}] Taking over stale lock for job ${jobId}`);
+        // console.log(`🔓 [Worker ${workerId}] Taking over stale lock for job ${jobId}`);
         await fs.writeFile(lockFile, JSON.stringify(lockData));
         return true;
       }
@@ -337,7 +337,7 @@ async function releaseLock(jobId: string, workerId: string) {
     const lockData = JSON.parse(await fs.readFile(lockFile, 'utf-8'));
     if (lockData.workerId === workerId) {
       await fs.unlink(lockFile);
-      console.log(`🔓 [Worker ${workerId}] Released lock for job ${jobId}`);
+      // console.log(`🔓 [Worker ${workerId}] Released lock for job ${jobId}`);
     }
   } catch (err) {
     // Ignore errors if file doesn't exist
@@ -498,7 +498,7 @@ function validateTwitterData(content: string, type: 'following' | 'follower'): s
 
 async function processTwitterFile(filePath: string, workerId: string): Promise<any[]> {
   try {
-    console.log(`📖 [Worker ${workerId}] Reading file: ${filePath}`);
+    // console.log(`📖 [Worker ${workerId}] Reading file: ${filePath}`);
     const content = await readFile(filePath, 'utf-8');
     const type = filePath.toLowerCase().includes('following') ? 'following' : 'follower';
     
@@ -512,7 +512,7 @@ async function processTwitterFile(filePath: string, workerId: string): Promise<a
     const prefix = `window.YTD.${type}.part0 = `;
     const jsonStr = content.substring(prefix.length);
     const data = JSON.parse(jsonStr);
-    console.log(`✅ [Worker ${workerId}] Successfully parsed ${data.length} items from ${filePath}`);
+    // console.log(`✅ [Worker ${workerId}] Successfully parsed ${data.length} items from ${filePath}`);
     return data;
   } catch (error) {
     console.log(`❌ [Worker ${workerId}] Error processing file ${filePath}:`, error);
@@ -554,6 +554,7 @@ interface ImportJob {
 }
 
 export async function processJob(job: ImportJob, workerId: string) {
+  const startTime = Date.now();
   const metrics = {
     batchesProcessed: 0,
     successfulBatches: 0,
@@ -568,23 +569,14 @@ export async function processJob(job: ImportJob, workerId: string) {
 
   try {
     if (!await acquireLock(job.id, workerId)) {
-      console.log(
-        'JobProcessor',
-        'processJob',
-        'Job already locked',
-        workerId,
-        { jobId: job.id }
-      );
+      console.log(`[Worker ${workerId}] Job ${job.id} already locked`);
       return;
     }
 
-    console.log(
-      'JobProcessor',
-      'processJob',
-      'Starting job processing',
-      workerId,
-      { jobId: job.id, userId: job.user_id }
-    );
+    await updateJobProgress(job.id, {followers: 0, following: 0}, {followers: 0, following: 0}, workerId, 'processing');
+
+    await ensureSourceExists(job.user_id, workerId);
+    console.log(`[Worker ${workerId}] Starting job ${job.id} for user ${job.user_id}`);
 
     // Validate files exist
     for (const filePath of job.file_paths) {
@@ -592,6 +584,7 @@ export async function processJob(job: ImportJob, workerId: string) {
         throw new Error(`File not found: ${filePath}`);
       }
     }
+    
     let followersFilePath = '';
     let followingFilePath = '';
     
@@ -606,36 +599,17 @@ export async function processJob(job: ImportJob, workerId: string) {
     try {
       if (followersFilePath) {
         followersData = await processTwitterFile(followersFilePath, workerId);
-        console.log(`✅ [Worker ${workerId}] Processed ${followersData.length} followers`);
+        console.log(`[Worker ${workerId}] Parsed ${followersData.length} followers`);
       }
       
       if (followingFilePath) {
         followingData = await processTwitterFile(followingFilePath, workerId);
-        console.log(`✅ [Worker ${workerId}] Processed ${followingData.length} following`);
+        console.log(`[Worker ${workerId}] Parsed ${followingData.length} following`);
       }
     } catch (error) {
-      console.log(
-        'JobProcessor',
-        'processJob',
-        'Failed to parse Twitter file',
-        workerId,
-        { followersFilePath, followingFilePath },
-        error
-      );
+      console.log(`[Worker ${workerId}] Failed to parse Twitter files: ${error}`);
       throw new Error(`Error processing Twitter files: ${error}`);
     }
-
-    console.log(
-      'JobProcessor',
-      'processJob',
-      'Files parsed successfully',
-      workerId,
-      {
-        jobId: job.id,
-        followersCount: followersData.length,
-        followingCount: followingData.length,
-      }
-    );
 
     // Calculate total items for progress tracking
     const totalItems = {
@@ -648,256 +622,204 @@ export async function processJob(job: ImportJob, workerId: string) {
     };
 
     // Update job status to processing
-    await updateJobProgress(
-      job.id,
-      currentProgress,
-      totalItems,
-      workerId,
-      'processing'
-    );
+    // await updateJobProgress(job.id, currentProgress, totalItems, workerId, 'processing');
 
     // Process followers
     if (followersData.length > 0) {
-      await processFollowers(followersData, job.user_id, workerId);
-      currentProgress.followers = followersData.length;
-      
-      // Update progress after followers are processed
-      await updateJobProgress(
-        job.id,
-        currentProgress,
-        totalItems,
+      const processedFollowers = await processBatchData(
+        followersData,
+        job.user_id,
         workerId,
-        'processing'
+        'followers',
+        batch_insert_followers,
+        metrics
       );
+      
+      currentProgress.followers = processedFollowers;
+      metrics.processedItemsFollowers = processedFollowers;
+      
+      // await updateJobProgress(job.id, currentProgress, totalItems, workerId, 'processing');
     }
 
     // Process following
     if (followingData.length > 0) {
-      // Réduire la taille initiale des chunks pour éviter les timeouts
-      let CHUNK_SIZE = 75; // Réduit de 150 à 75 (plus petit que pour followers)
-      const MIN_CHUNK_SIZE = 20; // Taille minimale de chunk
-      const MAX_RETRIES = 3;
-      const BASE_DELAY = 500;
-      
-      // Tableau pour suivre les erreurs de timeout
-      const timeoutErrors: any[] = [];
-
-      for (let i = 0; i < followingData.length;) {
-        const batch = followingData.slice(i, i + CHUNK_SIZE);
-        metrics.batchesProcessed++;
-        let retryCount = 0;
-        let successfulProcessing = false;
-
-        while (retryCount < MAX_RETRIES && !successfulProcessing) {
-          try {
-            // Prepare data for batch insertion
-            const targetsToInsert = batch.map((item: any) => ({
-              twitter_id: item.following.accountId,
-            }));
-
-            const relationsToInsert = batch.map((item: any) => ({
-              source_id: job.user_id,
-              target_twitter_id: item.following.accountId,
-            }));
-
-            // Mesurer le temps d'exécution de la requête
-            const startTime = Date.now();
-            
-            // Try batch insert
-            const { error: batchError } = await batch_insert_targets(
-              supabase,
-              targetsToInsert,
-              relationsToInsert
-            );
-            
-            const executionTime = Date.now() - startTime;
-
-            if (batchError) {
-              throw batchError;
-            }
-
-            // Log success
-            console.log(
-              'JobProcessor',
-              'processJob',
-              `Processed following chunk ${Math.floor(i/CHUNK_SIZE) + 1}/${Math.ceil(followingData.length/CHUNK_SIZE)}`,
-              workerId,
-              { 
-                userId: job.user_id, 
-                chunkSize: batch.length, 
-                executionTime: `${executionTime}ms`,
-                remainingChunks: Math.ceil((followingData.length - (i + batch.length)) / CHUNK_SIZE)
-              }
-            );
-            
-            successfulProcessing = true;
-            
-            // Avancer au prochain batch seulement en cas de succès
-            i += CHUNK_SIZE;
-            metrics.successfulBatches++;
-            metrics.processedItemsFollowing += batch.length;
-            
-            // Ajuster dynamiquement la taille du chunk en fonction du temps d'exécution
-            if (executionTime < 10000 && CHUNK_SIZE < 150) { // Moins de 10 secondes
-              CHUNK_SIZE = Math.min(150, Math.floor(CHUNK_SIZE * 1.2));
-              console.log(
-                'JobProcessor',
-                'processJob',
-                `Fast execution detected, increasing chunk size to ${CHUNK_SIZE}`,
-                workerId,
-                { userId: job.user_id, executionTime: `${executionTime}ms`, newSize: CHUNK_SIZE }
-              );
-            }
-            
-          } catch (error) {
-            retryCount++;
-            metrics.retries++;
-            
-            const errorMsg = String(error);
-            const isTimeoutError = errorMsg.includes('canceling statement due to statement timeout') || 
-                                  errorMsg.includes('57014') ||
-                                  errorMsg.includes('timeout');
-            
-            if (isTimeoutError) {
-              timeoutErrors.push({ chunkSize: batch.length, error: errorMsg });
-              
-              // Réduire la taille du batch en cas de timeout
-              CHUNK_SIZE = Math.max(MIN_CHUNK_SIZE, Math.floor(CHUNK_SIZE / 2));
-              
-              console.log(
-                'JobProcessor',
-                'processJob',
-                `SQL timeout detected, reducing batch size to ${CHUNK_SIZE}`,
-                workerId,
-                { userId: job.user_id, originalSize: batch.length, newSize: CHUNK_SIZE }
-              );
-              
-              // Si on a réduit la taille, on réessaie avec un batch plus petit
-              if (CHUNK_SIZE < batch.length) {
-                break; // Sortir de la boucle de retry pour réessayer avec un batch plus petit
-              }
-            }
-            
-            console.log(
-              'JobProcessor',
-              'processJob',
-              `Batch processing failed (attempt ${retryCount}/${MAX_RETRIES})`,
-              workerId,
-              { 
-                userId: job.user_id,
-                batchSize: batch.length,
-                batchIndex: i,
-                retryCount,
-                isTimeout: isTimeoutError,
-                errorMessage: errorMsg.substring(0, 200) // Limiter la taille du message d'erreur
-              },
-              error as Error
-            );
-
-            if (retryCount === MAX_RETRIES) {
-              metrics.failedBatches++;
-              throw error;
-            }
-            await new Promise(resolve => setTimeout(resolve, Math.pow(2, retryCount) * BASE_DELAY));
-          }
-        }
-        
-        // Mettre à jour la progression des following
-        currentProgress.following = Math.min(followingData.length, currentProgress.following + batch.length);
-        
-        // Envoyer la mise à jour avec les deux progressions
-        await updateJobProgress(
-          job.id,
-          currentProgress,
-          totalItems,
-          workerId,
-          'processing'
-        );
-        
-        // Add delay between batches
-        await new Promise(resolve => setTimeout(resolve, BASE_DELAY));
-      }
-
-      if (timeoutErrors.length > 0) {
-        console.log(
-          'JobProcessor',
-          'processJob',
-          `Completed following with ${timeoutErrors.length} timeout adjustments`,
-          workerId,
-          { 
-            userId: job.user_id,
-            timeoutErrors: timeoutErrors.slice(0, 3),
-            finalChunkSize: CHUNK_SIZE
-          }
-        );
-      }
-
-      console.log(
-        'JobProcessor',
-        'processJob',
-        `Successfully processed all ${followingData.length} following relations`,
+      const processedFollowing = await processBatchData(
+        followingData,
+        job.user_id,
         workerId,
-        { userId: job.user_id, totalFollowing: followingData.length }
+        'following',
+        batch_insert_targets,
+        metrics
       );
+      
+      currentProgress.following = processedFollowing;
+      metrics.processedItemsFollowing = processedFollowing;
+      
+      // await updateJobProgress(job.id, currentProgress, totalItems, workerId, 'processing');
     }
 
-    // Mark job as completed with final progress
+    // Mark job as completed
     await updateJobProgress(
       job.id,
-      {
-        followers: followersData.length,
-        following: followingData.length,
-      },
+      { followers: followersData.length, following: followingData.length },
       totalItems,
       workerId,
       'completed'
     );
 
-    console.log(
-      'JobProcessor',
-      'processJob',
-      'Job completed successfully',
-      workerId,
-      {
-        jobId: job.id,
-        metrics,
-      }
-    );
+    const totalTime = Date.now() - startTime;
+    console.log(`[Worker ${workerId}] Job ${job.id} completed | Total time: ${totalTime}ms | Followers: ${metrics.processedItemsFollowers} | Following: ${metrics.processedItemsFollowing} | Failed batches: ${metrics.failedBatches} | Retries: ${metrics.retries}`);
+    
   } catch (error) {
-    console.log(
-      'JobProcessor',
-      'processJob',
-      'Job processing failed',
-      workerId,
-      {
-        jobId: job.id,
-        metrics,
-      },
-      error as Error
-    );
+    console.log(`[Worker ${workerId}] Job ${job.id} failed: ${error}`);
 
-    // Mark job as failed
     await updateJobProgress(
       job.id,
-      {
-        followers: metrics.processedItemsFollowers,
-        following: metrics.processedItemsFollowing,
-      },
-      {
-        followers: followersData?.length || 0,
-        following: followingData?.length || 0
-      },
+      { followers: metrics.processedItemsFollowers, following: metrics.processedItemsFollowing },
+      { followers: followersData?.length || 0, following: followingData?.length || 0 },
       workerId,
       'failed',
       String(error)
     );
   } finally {
-    await releaseLock(job.id, workerId);
     await cleanupTempFiles(job.file_paths, workerId);
+    const { error: hasBoardError } = await supabaseAuth
+    .from('users')
+    .update({ has_onboarded: true })
+    .eq('id', job.user_id);
+    if (hasBoardError) {
+      console.log(`❌ [Worker ${workerId}] Error updating has_onboarded:`, hasBoardError);
+    }
+    await releaseLock(job.id, workerId);
+
   }
 }
 
-// Batch processing functions
+// Generic batch processing function
+async function processBatchData(
+  data: any[],
+  userId: string,
+  workerId: string,
+  dataType: 'followers' | 'following',
+  batchInsertFn: Function,
+  metrics: any
+): Promise<number> {
+  const isFollowers = dataType === 'followers';
+  const itemKey = isFollowers ? 'follower' : 'following';
+  
+  // Validation
+  if (!data || !Array.isArray(data)) {
+    throw new Error(`${dataType} data must be an array`);
+  }
+
+  if (data.length > 0 && !data[0]?.[itemKey]?.accountId) {
+    throw new Error(`Invalid ${dataType} data structure: missing accountId`);
+  }
+
+  // Create source if it doesn't exist
+  // await ensureSourceExists(userId, workerId);
+
+  // Configuration adaptée selon le type
+  let CHUNK_SIZE = isFollowers ? 500 : 500;
+  const MIN_CHUNK_SIZE = 20;
+  const MAX_RETRIES = 3;
+  const BASE_DELAY = 500;
+  
+  let processedItems = 0;
+  const timeoutErrors: any[] = [];
+  const totalChunks = Math.ceil(data.length / CHUNK_SIZE);
+
+  for (let i = 0; i < data.length;) {
+    const batch = data.slice(i, i + CHUNK_SIZE);
+    let retryCount = 0;
+    let successfulProcessing = false;
+
+    while (retryCount < MAX_RETRIES && !successfulProcessing) {
+      try {
+        // Prepare data based on type
+        const dataToInsert = batch.map((item: any) => ({
+          twitter_id: item[itemKey].accountId,
+        }));
+
+        const relationsToInsert = batch.map((item: any) => ({
+          source_id: userId,
+          ...(isFollowers 
+            ? { follower_id: item[itemKey].accountId }
+            : { target_twitter_id: item[itemKey].accountId }
+          ),
+        }));
+
+        const startTime = Date.now();
+        const currentChunk = Math.floor(i / CHUNK_SIZE) + 1;
+        
+        // Execute batch insert
+        const { error: batchError } = await batchInsertFn(
+          supabase,
+          dataToInsert,
+          relationsToInsert
+        );
+        
+        const executionTime = Date.now() - startTime;
+
+        if (batchError) {
+          console.log(`[Worker ${workerId}] ${dataType} batch failed | Chunk: ${currentChunk}/${totalChunks} | Size: ${batch.length} | Error: ${batchError.message} | Code: ${batchError.code}`);
+          throw batchError;
+        }
+
+        // Success
+        successfulProcessing = true;
+        i += CHUNK_SIZE;
+        processedItems += batch.length;
+        metrics.batchesProcessed++;
+        metrics.successfulBatches++;
+        
+        // Dynamic chunk size adjustment (silent)
+        // if (executionTime < 10000 && CHUNK_SIZE < 150) {
+        //   CHUNK_SIZE = Math.min(150, Math.floor(CHUNK_SIZE * 1.2));
+        // }
+        
+      } catch (error) {
+        retryCount++;
+        metrics.retries++;
+        
+        const errorMsg = String(error);
+        const isTimeoutError = errorMsg.includes('canceling statement due to statement timeout') || 
+                              errorMsg.includes('57014') ||
+                              errorMsg.includes('timeout');
+        
+        if (isTimeoutError) {
+          timeoutErrors.push({ chunkSize: batch.length, error: errorMsg });
+          CHUNK_SIZE = Math.max(MIN_CHUNK_SIZE, Math.floor(CHUNK_SIZE / 2));
+          console.log(`[Worker ${workerId}] ${dataType} timeout | Chunk: ${Math.floor(i / CHUNK_SIZE) + 1}/${totalChunks} | Reducing size to ${CHUNK_SIZE}`);
+          
+          if (CHUNK_SIZE < batch.length) {
+            break; // Retry with smaller chunk
+          }
+        }
+        
+        if (retryCount === MAX_RETRIES) {
+          console.log(`[Worker ${workerId}] ${dataType} batch failed after ${MAX_RETRIES} retries | Chunk size: ${batch.length} | Error: ${errorMsg.substring(0, 100)}`);
+          metrics.failedBatches++;
+          throw error;
+        }
+        
+        await new Promise(resolve => setTimeout(resolve, Math.pow(2, retryCount) * BASE_DELAY));
+      }
+    }
+    
+    // Delay between batches
+    await new Promise(resolve => setTimeout(resolve, BASE_DELAY));
+  }
+
+  if (timeoutErrors.length > 0) {
+    console.log(`[Worker ${workerId}] ${dataType} completed with ${timeoutErrors.length} timeout adjustments | Final chunk size: ${CHUNK_SIZE}`);
+  }
+
+  // console.log(`[Worker ${workerId}] Successfully processed ${processedItems} ${dataType}`);
+  return processedItems;
+}
+
+// Keep the original batch insert functions as they are
 async function batch_insert_followers(
   supabase: any,
   followersData: any[],
@@ -906,8 +828,9 @@ async function batch_insert_followers(
   try {
     const { error } = await supabase.rpc('batch_insert_followers', {
       followers_data: followersData,
-      relations_data: relationsData
-      // batch_size: BATCH_SIZE,
+      relations_data: relationsData,
+      batch_size: 500,  // Taille de lot plus petite
+      statement_timeout_ms: 30000  // Timeout plus long (30 secondes)
     });
     return { error };
   } catch (error) {
@@ -923,314 +846,12 @@ async function batch_insert_targets(
   try {
     const { error } = await supabase.rpc('batch_insert_targets', {
       targets_data: targetsData,
-      relations_data: relationsData
+      relations_data: relationsData,
+      batch_size: 500,
+      statement_timeout_ms: 30000
     });
     return { error };
   } catch (error) {
     return { error };
-  }
-}
-
-async function processFollowers(followers: any[], userId: string, workerId: string) {
-  try {
-    // Validation checks
-    if (!followers || !Array.isArray(followers)) {
-      const error = new Error('Followers data must be an array');
-      console.log(
-        'JobProcessor',
-        'processFollowers',
-        'Invalid followers data',
-        workerId,
-        { userId },
-        error
-      );
-      throw error;
-    }
-
-    if (followers.length > 0) {
-      const firstItem = followers[0];
-      if (!firstItem?.follower?.accountId) {
-        const error = new Error('Invalid follower data structure: missing accountId');
-        console.log(
-          'JobProcessor',
-          'processFollowers',
-          'Invalid follower data structure',
-          workerId,
-          { userId, sample: firstItem },
-          error
-        );
-        throw error;
-      }
-    }
-
-    // Create source if it doesn't exist
-    await ensureSourceExists(userId, workerId);
-
-    // Réduire la taille initiale des chunks pour éviter les timeouts
-    let CHUNK_SIZE = 100; // Réduit de 150 à 100
-    const MIN_CHUNK_SIZE = 20; // Taille minimale de chunk
-    const MAX_RETRIES = 3;
-    const BASE_DELAY = 500;
-    
-    // Tableau pour suivre les erreurs de timeout
-    const timeoutErrors: any[] = [];
-
-    for (let i = 0; i < followers.length;) {
-      const chunk = followers.slice(i, i + CHUNK_SIZE);
-      let retryCount = 0;
-      let successfulProcessing = false;
-
-      while (retryCount < MAX_RETRIES && !successfulProcessing) {
-        try {
-          // Prepare data for batch insertion
-          const followersToInsert = chunk.map((item: any) => ({
-            twitter_id: item.follower.accountId,
-          }));
-
-          const relationsToInsert = chunk.map((item: any) => ({
-            source_id: userId,
-            follower_id: item.follower.accountId,
-          }));
-
-          // Try batch insert
-          const { error: batchError } = await batch_insert_followers(
-            supabase,
-            followersToInsert,
-            relationsToInsert
-          );
-
-          if (batchError) {
-            throw batchError;
-          }
-
-          // Log success
-          console.log(` [Worker ${workerId}] Processed chunk ${Math.floor(i/CHUNK_SIZE) + 1}/${Math.ceil(followers.length/CHUNK_SIZE)} (size: ${chunk.length})`);
-          successfulProcessing = true;
-          
-          // Avancer au prochain chunk seulement en cas de succès
-          i += CHUNK_SIZE;
-          
-        } catch (error) {
-          retryCount++;
-          const errorMsg = String(error);
-          const isTimeoutError = errorMsg.includes('canceling statement due to statement timeout') || 
-                                errorMsg.includes('57014');
-          
-          if (isTimeoutError) {
-            timeoutErrors.push({ chunkSize: chunk.length, error: errorMsg });
-            
-            // Réduire la taille du chunk en cas de timeout
-            CHUNK_SIZE = Math.max(MIN_CHUNK_SIZE, Math.floor(CHUNK_SIZE / 2));
-            
-            console.log(
-              'JobProcessor',
-              'processFollowers',
-              `SQL timeout detected, reducing chunk size to ${CHUNK_SIZE}`,
-              workerId,
-              { userId, originalSize: chunk.length, newSize: CHUNK_SIZE }
-            );
-            
-            // Si on a réduit la taille, on réessaie avec un chunk plus petit
-            if (CHUNK_SIZE < chunk.length) {
-              break; // Sortir de la boucle de retry pour réessayer avec un chunk plus petit
-            }
-          }
-          
-          console.log(
-            'JobProcessor',
-            'processFollowers',
-            `Batch processing failed (attempt ${retryCount}/${MAX_RETRIES})`,
-            workerId,
-            { 
-              userId,
-              batchSize: chunk.length,
-              batchIndex: i,
-              retryCount,
-              isTimeout: isTimeoutError
-            },
-            error as Error
-          );
-
-          if (retryCount === MAX_RETRIES) {
-            throw error;
-          }
-          
-          await new Promise(resolve => setTimeout(resolve, Math.pow(2, retryCount) * BASE_DELAY));
-        }
-      }
-
-      // Si on a réduit la taille du chunk mais qu'on n'a pas avancé (car on a fait un break),
-      // on ne fait pas avancer i car on va réessayer avec un chunk plus petit
-      
-      // Add delay between chunks
-      await new Promise(resolve => setTimeout(resolve, BASE_DELAY * 2));
-    }
-
-    if (timeoutErrors.length > 0) {
-      console.log(` [Worker ${workerId}] Completed with ${timeoutErrors.length} timeout adjustments`, 
-        { timeoutErrors: timeoutErrors.slice(0, 3) }); // Log only first 3 for brevity
-    }
-
-    console.log(` [Worker ${workerId}] Successfully created ${followers.length} follower relations`);
-  } catch (error) {
-    console.log(
-      'JobProcessor',
-      'processFollowers',
-      'Failed to process followers',
-      workerId,
-      { userId, totalFollowers: followers.length },
-      error as Error
-    );
-    throw error;
-  }
-}
-
-async function processFollowing(following: any[], userId: string, workerId: string) {
-  try {
-    // Validation checks
-    if (!following || !Array.isArray(following)) {
-      const error = new Error('Following data must be an array');
-      console.log(
-        'JobProcessor',
-        'processFollowing',
-        'Invalid following data',
-        workerId,
-        { userId },
-        error
-      );
-      throw error;
-    }
-
-    if (following.length > 0) {
-      const firstItem = following[0];
-      if (!firstItem?.following?.accountId) {
-        const error = new Error('Invalid following data structure: missing accountId');
-        console.log(
-          'JobProcessor',
-          'processFollowing',
-          'Invalid following data structure',
-          workerId,
-          { userId, sample: firstItem },
-          error
-        );
-        throw error;
-      }
-    }
-
-    // Create source if it doesn't exist
-    await ensureSourceExists(userId, workerId);
-
-    // Réduire la taille initiale des chunks pour éviter les timeouts
-    let CHUNK_SIZE = 75; // Réduit de 150 à 75 (plus petit que pour followers)
-    const MIN_CHUNK_SIZE = 20; // Taille minimale de chunk
-    const MAX_RETRIES = 3;
-    const BASE_DELAY = 500;
-    
-    // Tableau pour suivre les erreurs de timeout
-    const timeoutErrors: any[] = [];
-
-    for (let i = 0; i < following.length;) {
-      const batch = following.slice(i, i + CHUNK_SIZE);
-      let retryCount = 0;
-      let successfulProcessing = false;
-
-      while (retryCount < MAX_RETRIES && !successfulProcessing) {
-        try {
-          // Prepare data for batch insertion
-          const targetsToInsert = batch.map((item: any) => ({
-            twitter_id: item.following.accountId,
-          }));
-
-          const relationsToInsert = batch.map((item: any) => ({
-            source_id: userId,
-            target_twitter_id: item.following.accountId,
-          }));
-
-          // Try batch insert
-          const { error: batchError } = await batch_insert_targets(
-            supabase,
-            targetsToInsert,
-            relationsToInsert
-          );
-
-          if (batchError) {
-            throw batchError;
-          }
-
-          // Log success
-          console.log(` [Worker ${workerId}] Created ${batch.length} target relations for batch ${Math.floor(i/CHUNK_SIZE) + 1}/${Math.ceil(following.length/CHUNK_SIZE)} (size: ${batch.length})`);
-          successfulProcessing = true;
-          
-          // Avancer au prochain batch seulement en cas de succès
-          i += CHUNK_SIZE;
-          
-        } catch (error) {
-          retryCount++;
-          const errorMsg = String(error);
-          const isTimeoutError = errorMsg.includes('canceling statement due to statement timeout') || 
-                                errorMsg.includes('57014');
-          
-          if (isTimeoutError) {
-            timeoutErrors.push({ chunkSize: batch.length, error: errorMsg });
-            
-            // Réduire la taille du batch en cas de timeout
-            CHUNK_SIZE = Math.max(MIN_CHUNK_SIZE, Math.floor(CHUNK_SIZE / 2));
-            
-            console.log(
-              'JobProcessor',
-              'processFollowing',
-              `SQL timeout detected, reducing batch size to ${CHUNK_SIZE}`,
-              workerId,
-              { userId, originalSize: batch.length, newSize: CHUNK_SIZE }
-            );
-            
-            // Si on a réduit la taille, on réessaie avec un batch plus petit
-            if (CHUNK_SIZE < batch.length) {
-              break; // Sortir de la boucle de retry pour réessayer avec un batch plus petit
-            }
-          }
-          
-          console.log(
-            'JobProcessor',
-            'processFollowing',
-            `Batch processing failed (attempt ${retryCount}/${MAX_RETRIES})`,
-            workerId,
-            { 
-              userId,
-              batchSize: batch.length,
-              batchIndex: i,
-              retryCount,
-              isTimeout: isTimeoutError
-            },
-            error as Error
-          );
-
-          if (retryCount === MAX_RETRIES) {
-            throw error;
-          }
-          await new Promise(resolve => setTimeout(resolve, Math.pow(2, retryCount) * BASE_DELAY));
-        }
-      }
-      
-      // Add delay between batches
-      await new Promise(resolve => setTimeout(resolve, BASE_DELAY * 2));
-    }
-
-    if (timeoutErrors.length > 0) {
-      console.log(` [Worker ${workerId}] Completed with ${timeoutErrors.length} timeout adjustments`, 
-        { timeoutErrors: timeoutErrors.slice(0, 3) }); // Log only first 3 for brevity
-    }
-
-    console.log(` [Worker ${workerId}] Successfully processed all ${following.length} following relations`);
-  } catch (error) {
-    console.log(
-      'JobProcessor',
-      'processFollowing',
-      'Failed to process following',
-      workerId,
-      { userId, totalFollowing: following.length },
-      error as Error
-    );
-    throw error;
   }
 }
