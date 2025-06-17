@@ -20,12 +20,14 @@ const transporter = nodemailer.createTransport({
 export const POST = withValidation(
   SupportRequestSchema,
   async (request: NextRequest, data: SupportInput) => {
+
+
+    console.log('API', 'POST /api/support', data);
     try {
       const session = await auth();
       
       // Construire le formData pour la fonction de sécurité existante
       const formData: SupportFormData = {
-        subject: data.subject,
         message: data.message,
         email: data.email
       };
@@ -55,16 +57,11 @@ export const POST = withValidation(
         ? `[Auth - ID: ${session.user.id}]` 
         : '[Non Auth]';
       
-      // Utiliser le contenu sécurisé pour l'email
-      const secureSubject = securityResult.securityReport.sanitizedContent 
-        ? securityResult.securityReport.sanitizedContent.substring(0, 200)
-        : data.subject;
-
       try {
         const mailOptions = {
           from: process.env.EMAIL_USER,
           to: process.env.EMAIL_USER,
-          subject: `Support ${authStatus}: ${secureSubject}`,
+          subject: `Support ${authStatus}: Message from ${data.email}`,
           replyTo: data.email,
           // Toujours inclure la version text pour la sécurité
           text: `
@@ -72,7 +69,6 @@ Nouveau message de support
 
 ${session?.user ? `Utilisateur ID: ${session.user.id}` : 'Utilisateur: Non authentifié'}
 Email: ${data.email}
-Sujet: ${data.subject}
 
 Message:
 ${securityResult.textContent}
@@ -85,7 +81,6 @@ Niveau de sécurité: ${securityResult.securityReport.securityLevel}
             <h2>Nouveau message de support</h2>
             ${session?.user ? `<p><strong>Utilisateur ID:</strong> ${session.user.id}</p>` : '<p><strong>Utilisateur:</strong> Non authentifié</p>'}
             <p><strong>Email:</strong> ${data.email}</p>
-            <p><strong>Sujet:</strong> ${secureSubject}</p>
             <p><strong>Message:</strong></p>
             <div style="border-left: 3px solid #ccc; padding-left: 15px; margin: 10px 0;">
               ${securityResult.htmlContent}
