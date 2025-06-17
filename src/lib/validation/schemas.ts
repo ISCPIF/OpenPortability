@@ -20,10 +20,6 @@ export const ConsentTypeSchema = z.enum([
 
 // Schémas pour /api/support
 export const SupportRequestSchema = z.object({
-  subject: z.string()
-    .min(1, 'Subject is required')
-    .max(200, 'Subject too long (max 200 characters)')
-    .trim(),
   message: z.string()
     .min(1, 'Message is required')
     .max(2000, 'Message too long (max 2000 characters)')

@@ -63,7 +63,6 @@ export interface SecurityValidationResult {
 }
 
 export interface SupportFormData {
-  subject: string;
   message: string;
   email: string;
 }
@@ -88,13 +87,11 @@ export function validateSupportForm(data: SupportFormData): SecurityValidationRe
   let securityLevel: 'safe' | 'suspicious' | 'dangerous' = 'safe';
 
   // Décoder les entrées potentiellement encodées en URL
-  const decodedSubject = safeUrlDecode(data.subject);
   const decodedMessage = safeUrlDecode(data.message);
   const decodedEmail = safeUrlDecode(data.email);
   
   // Créer une copie décodée pour la validation
   const decodedData = {
-    subject: decodedSubject,
     message: decodedMessage,
     email: decodedEmail
   };
@@ -112,16 +109,12 @@ export function validateSupportForm(data: SupportFormData): SecurityValidationRe
   }
 
   // Validation longueur
-  if (decodedData.subject.length > 200) {
-    errors.push('Subject too long (max 200 characters)');
-  }
-
   if (decodedData.message.length > 2000) {
     errors.push('Message too long (max 2000 characters)');
   }
 
   // Détection de patterns dangereux
-  const allContent = `${decodedData.subject} ${decodedData.message}`;
+  const allContent = `${decodedData.message}`;
   
   // Vérification stricte : si le contenu contient TOUT caractère < ou >, c'est suspect
   if (/<|>/g.test(allContent)) {
@@ -153,7 +146,7 @@ export function validateSupportForm(data: SupportFormData): SecurityValidationRe
   // Détection de l'encodage URL qui pourrait être utilisé pour bypasser
   if (/%[0-9a-fA-F]{2}/g.test(allContent)) {
     // Comparer le contenu original et décodé pour détecter une tentative de bypass
-    if (allContent !== `${data.subject} ${data.message}`) {
+    if (allContent !== `${data.message}`) {
       errors.push('URL encoding bypass attempt detected');
       securityLevel = 'dangerous';
     }
@@ -264,7 +257,6 @@ export function secureSupportContent(data: SupportFormData, userId?: string): {
       securityLevel: validation.securityLevel,
       errors: validation.errors,
       formData: {
-        subjectLength: data.subject.length,
         messageLength: data.message.length,
         email: data.email
       }
@@ -283,7 +275,6 @@ export function secureSupportContent(data: SupportFormData, userId?: string): {
   // Couche 2 & 3: Échappement + Sanitisation
   let sanitizedMessage = '';
   try {
-    const secureSubject = escapeHtmlContent(data.subject);
     const secureMessage = secureNewlineToHtml(data.message);
     sanitizedMessage = sanitizeHtmlContent(secureMessage);
   } catch (error) {
@@ -332,14 +323,6 @@ export function validateSupportFormClient(data: SupportFormData): {
     errors.email = 'Please enter a valid email address';
   }
 
-  if (!data.subject || data.subject.trim().length < 3) {
-    errors.subject = 'Subject must be at least 3 characters';
-  }
-
-  if (data.subject.length > 200) {
-    errors.subject = 'Subject must be less than 200 characters';
-  }
-
   if (!data.message || data.message.trim().length < 10) {
     errors.message = 'Message must be at least 10 characters';
   }
@@ -349,7 +332,7 @@ export function validateSupportFormClient(data: SupportFormData): {
   }
 
   // Détection basique de contenu suspect (UX friendly)
-  if (/<script|javascript:|on\w+=/i.test(data.message + data.subject)) {
+  if (/<script|javascript:|on\w+=/i.test(data.message)) {
     errors.message = 'Message contains potentially unsafe content';
   }
 
@@ -533,11 +516,6 @@ export function validateDataTypes(data: SupportFormData): TamperingValidationRes
   let integrityScore = 100;
 
   // Vérifier que les champs sont bien des strings
-  if (typeof data.subject !== 'string') {
-    tamperedFields.push('subject');
-    integrityScore -= 30;
-  }
-
   if (typeof data.message !== 'string') {
     tamperedFields.push('message');
     integrityScore -= 30;
@@ -549,7 +527,7 @@ export function validateDataTypes(data: SupportFormData): TamperingValidationRes
   }
 
   // Vérifier la présence de caractères null bytes (tentative de tampering)
-  const allFields = [data.subject, data.message, data.email];
+  const allFields = [data.message, data.email];
   if (allFields.some(field => field && field.includes('\x00'))) {
     tamperedFields.push('null_byte_detected');
     integrityScore = 0;
@@ -628,7 +606,7 @@ export function secureSupportContentExtended(
   const identifier = userId || data.email;
 //   const rateLimitOk = checkRateLimit(identifier);
   const tamperingCheck = validateDataTypes(data);
-  const allContent = `${data.subject} ${data.message} ${data.email}`;
+  const allContent = `${data.message} ${data.email}`;
   const sqlInjectionDetected = detectSqlInjectionPatterns(allContent);
   
   // Créer le rapport de sécurité étendu
