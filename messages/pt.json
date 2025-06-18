@@ -490,24 +490,25 @@
         "title": "Reconexão necessária",
         "description": "Sua sessão expirou para {provider}. Reconecte-se para continuar."
     },
-    "support": {
-        "modal": {
-            "form": {
-                "submit": "Enviar mensagem",
-                "email": {
-                    "label": "Seu e-mail",
-                    "placeholder": "exemplo@email.com"
-                },
-                "message": {
-                    "label": "Sua mensagem",
-                    "placeholder": "Descreva seu problema..."
-                }
-            },
-            "success": "Mensagem enviada com sucesso!",
-            "title": "Está tendo algum problema?",
-            "description": "Envie-nos uma mensagem e entraremos em contato com você o mais rápido possível.",
-            "error": "Ocorreu um erro ao enviar sua mensagem."
-        }
+"support": {
+      "modal": {
+        "title": "Tem algum problema?",
+        "description": "Envie-nos uma mensagem e entraremos em contato o mais breve possível.",
+        "form": {
+          "email": {
+            "label": "Seu email",
+            "placeholder": "exemplo@email.com"
+          },
+          "message": {
+            "label": "Sua mensagem",
+            "placeholder": "Descreva seu problema..."
+          },
+          "submit": "Enviar mensagem"
+        },
+        "success": "Mensagem enviada com sucesso!",
+        "success2": "Entraremos em contato em breve para ajudá-lo em sua jornada.",
+        "error": "Ocorreu um erro ao enviar sua mensagem."
+      }
     },
     "migrate": {
         "title": "Migrar suas assinaturas",

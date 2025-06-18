@@ -436,24 +436,25 @@
       "mastodonDmWarning": "Per ricevere i nostri messaggi, assicurati di aver autorizzato i DM nelle tue impostazioni Mastodon e/o di seguire l'account"    
     }
 },
-    "support": {
-        "modal": {
-            "title": "Hai un problema?",
-            "description": "Invia un messaggio e ti risponderemo il prima possibile.",
-            "form": {
-                "email": {
-                    "label": "La tua email",
-                    "placeholder": "indieizzo@email.it"
-                },
-                "message": {
-                    "label": "Il tuo messaggio",
-                    "placeholder": "Descrivi il tuo problema..."
-                },
-                "submit": "Invia messaggio"
-            },
-            "success": "Messaggio inviato con successo!",
-            "error": "Si è verificato un errore durante l'invio del tuo messaggio."
-        }
+"support": {
+      "modal": {
+        "title": "Hai un problema?",
+        "description": "Inviaci un messaggio e ti risponderemo il prima possibile.",
+        "form": {
+          "email": {
+            "label": "La tua email",
+            "placeholder": "esempio@email.com"
+          },
+          "message": {
+            "label": "Il tuo messaggio",
+            "placeholder": "Descrivi il tuo problema..."
+          },
+          "submit": "Invia messaggio"
+        },
+        "success": "Messaggio inviato con successo!",
+        "success2": "Ti risponderemo presto per aiutarti nel tuo percorso.",
+        "error": "Si è verificato un errore durante l'invio del messaggio."
+      }
     },
     "errorModal": {
         "title": "Errore",

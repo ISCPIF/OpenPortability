@@ -373,24 +373,24 @@
         "yourAccounts": "Tus cuentas conectadas"
     },
     "support": {
-        "modal": {
-            "title": "¿Ha ocurrido algún problema?",
-            "description": "Envíanos un mensaje y te contestaremos en breve.",
-            "error": "Ha ocurrido un error mientras se enviaba el mensaje.",
-            "form": {
-                "email": {
-                    "label": "Tu dirección de email",
-                    "placeholder": "ejemplo@email.com"
-                },
-                "submit": "Enviar",
-                "submitting": "Enviando...",
-                "message": {
-                    "label": "Tu mensaje",
-                    "placeholder": "Describe el problema..."
-                }
-            },
-            "success": "¡Mensaje enviado!"
-        }
+      "modal": {
+        "title": "¿Tienes algún problema?",
+        "description": "Envíanos un mensaje y te responderemos lo antes posible.",
+        "form": {
+          "email": {
+            "label": "Tu email",
+            "placeholder": "ejemplo@email.com"
+          },
+          "message": {
+            "label": "Tu mensaje",
+            "placeholder": "Describe tu problema..."
+          },
+          "submit": "Enviar mensaje"
+        },
+        "success": "¡Mensaje enviado con éxito!",
+        "success2": "Te responderemos pronto para ayudarte en tu proceso.",
+        "error": "Se produjo un error al enviar tu mensaje."
+      }
     },
 "firstSeen": {
     "title": "¡Bienvenido!",

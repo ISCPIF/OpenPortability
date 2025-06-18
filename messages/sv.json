@@ -435,25 +435,26 @@
   "mastodonDmWarning": "För att ta emot våra meddelanden, se till att du har godkänt direktmeddelanden i dina Mastodon-inställningar och/eller att du följer kontot"
 }
 },
-  "support": {
-    "modal": {
-      "title": "Har du ett problem?",
-      "description": "Skicka oss ett meddelande så återkommer vi så snart som möjligt.",
-      "form": {
-        "email": {
-          "label": "Din e-postadress",
-          "placeholder": "exempel@epost.com"
-        },
-        "message": {
-          "label": "Ditt meddelande",
-          "placeholder": "Beskriv ditt problem..."
-        },
-        "submit": "Skicka meddelande"
+"support": {
+  "modal": {
+    "title": "Har du ett problem?",
+    "description": "Skicka oss ett meddelande så hör vi av oss så snart som möjligt.",
+    "form": {
+      "email": {
+        "label": "Din e-post",
+        "placeholder": "exempel@email.com"
       },
-      "success": "Meddelandet skickades framgångsrikt!",
-      "error": "Ett fel uppstod vid skickandet av ditt meddelande."
-    }
-  },
+      "message": {
+        "label": "Ditt meddelande",
+        "placeholder": "Beskriv ditt problem..."
+      },
+      "submit": "Skicka meddelande"
+    },
+    "success": "Meddelandet skickades framgångsrikt!",
+    "success2": "Vi hör av oss snart för att hjälpa dig på din resa.",
+    "error": "Ett fel uppstod när meddelandet skickades."
+  }
+},
   "errorModal": {
     "title": "Fel",
     "close": "Stäng",

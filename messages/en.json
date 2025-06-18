@@ -474,6 +474,7 @@
         "submit": "Send message"
       },
       "success": "Message sent successfully!",
+      "success2" : "We'll get back to you soon to help with your journey.",
       "error": "An error occurred while sending your message."
     }
   },
