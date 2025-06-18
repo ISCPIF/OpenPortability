@@ -5,6 +5,7 @@ import ManualReconnexion from '@/app/_components/ManualReconnexion';
 type ManualReconnectionStateProps = {
   session: any;
   accountsToProcess: any[];
+  setAccountsToProcess: (accounts: any[]) => void;
   handleStartMigration: (accounts: string[]) => void;
   handleAutomaticReconnection: () => void;
 };
@@ -12,6 +13,7 @@ type ManualReconnectionStateProps = {
 export default function ManualReconnectionState({
   session,
   accountsToProcess,
+  setAccountsToProcess,
   handleStartMigration,
   handleAutomaticReconnection,
 }: ManualReconnectionStateProps) {
@@ -24,6 +26,7 @@ export default function ManualReconnectionState({
     >
       <ManualReconnexion
         matches={accountsToProcess}
+        setMatches={setAccountsToProcess}
         onStartMigration={handleStartMigration}
         onToggleAutomaticReconnect={handleAutomaticReconnection}
         session={{

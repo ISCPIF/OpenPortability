@@ -25,6 +25,7 @@ type ReconnectContainerProps = {
   isReconnectionComplete: boolean;
   missingProviders: string[];
   accountsToProcess: any[];
+  setAccountsToProcess: (accounts: any[]) => void;
   migrationResults: any;
   handleAutomaticReconnection: () => void;
   handleManualReconnection: () => void;
@@ -44,6 +45,7 @@ function ReconnectContainer({
   isReconnectionComplete,
   missingProviders,
   accountsToProcess,
+  setAccountsToProcess,
   migrationResults,
   handleAutomaticReconnection,
   handleManualReconnection,
@@ -140,6 +142,7 @@ function ReconnectContainer({
           <ManualReconnectionState
             session={session}
             accountsToProcess={accountsToProcess}
+            setAccountsToProcess={setAccountsToProcess}
             handleStartMigration={handleStartMigration}
             handleAutomaticReconnection={handleAutomaticReconnection}
           />

@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import { plex } from '@/app/fonts/plex';
 import AccountToMigrate from './AccountToMigrate';
 import { MatchingTarget, MatchedFollower } from '@/lib/types/matching';
+// import { toast } from 'react-toastify';
 
 type Match = MatchingTarget | MatchedFollower;
 
@@ -19,6 +20,7 @@ function isMatchedFollower(match: Match): match is MatchedFollower {
 
 interface ManualReconnexionProps {
   matches: Match[];
+  setMatches?: (matches: Match[]) => void;
   onStartMigration: (selectedAccounts: string[]) => void;
   onToggleAutomaticReconnect: () => void;
   session: {
@@ -31,6 +33,7 @@ interface ManualReconnexionProps {
 
 export default function ManualReconnexion({ 
   matches, 
+  setMatches,
   onStartMigration,
   onToggleAutomaticReconnect,
   session
@@ -39,31 +42,39 @@ export default function ManualReconnexion({
   const [selectedAccounts, setSelectedAccounts] = useState<Set<string>>(new Set());
   const [currentPage, setCurrentPage] = useState(1);
   const [showOnlyNotFollowed, setShowOnlyNotFollowed] = useState(true);
+  const [activeView, setActiveView] = useState<'notFollowed' | 'followed' | 'ignored'>('notFollowed');
+  // const [isLoading, setIsLoading] = useState(false);
   const itemsPerPage = 50;
+  console.log(matches)
 
-
-  // Filter matches based on user's connected accounts
+  // Filter matches based on user's connected accounts and active view
   const filteredMatches = matches.filter(match => {
     const blueskyHandle = isMatchingTarget(match) ? match.bluesky_handle : match.bluesky_handle;
     const mastodonUsername = isMatchingTarget(match) ? match.mastodon_username : match.mastodon_username;
     const mastodonHandle = isMatchingTarget(match) ? match.mastodon_handle : null;
     const hasFollowBluesky = isMatchingTarget(match) ? match.has_follow_bluesky : match.has_been_followed_on_bluesky;
     const hasFollowMastodon = isMatchingTarget(match) ? match.has_follow_mastodon : match.has_been_followed_on_mastodon;
+    const isDismissed = isMatchingTarget(match) && (match as MatchingTarget).dismissed;
 
+    // Si on est dans la vue des comptes ignorés
+    if (activeView === 'ignored') {
+      return isDismissed;
+    }
+    
+    // Si on est dans la vue des comptes suivis
+    if (activeView === 'followed') {
+      return (hasFollowBluesky || hasFollowMastodon) && !isDismissed;
+    }
+    
+    // Vue par défaut: comptes non suivis
     // If user has Bluesky connected, show accounts with Bluesky handles that aren't followed
     const showForBluesky = session.user.bluesky_username && blueskyHandle && !hasFollowBluesky;
     
     // If user has Mastodon connected, show accounts with Mastodon handles that aren't followed
     const showForMastodon = session.user.mastodon_username && (mastodonHandle || mastodonUsername) && !hasFollowMastodon;
 
-    // Show accounts that match either condition when showOnlyNotFollowed is true
-    if (showOnlyNotFollowed) {
-      return showForBluesky || showForMastodon;
-    }
-    // When showOnlyNotFollowed is false, show accounts that have been followed on either platform
-    else {
-      return hasFollowBluesky || hasFollowMastodon;
-    }
+    // Show account if it matches criteria for either platform and isn't dismissed
+    return (showForBluesky || showForMastodon) && !isDismissed;
   });
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
@@ -107,6 +118,112 @@ export default function ManualReconnexion({
     setSelectedAccounts(new Set()); // Reset selection when switching
   };
 
+  const handleIgnoreAccount = async (targetTwitterId: string) => {
+    try {
+      // setIsLoading(true);
+
+      console.log("handleIgnoreAccount for -->", targetTwitterId)
+      
+      const response = await fetch("/api/migrate/ignore", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ 
+          targetTwitterId,
+          action: "ignore" 
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error("Failed to ignore account");
+      }
+      
+      // Mettre à jour l'état local pour marquer le compte comme ignoré
+      setMatches?.(matches.map(match => {
+        if (isMatchingTarget(match) && match.target_twitter_id === targetTwitterId) {
+          // Marquer le compte comme ignoré
+          return { ...match, dismissed: true };
+        } else if (isMatchedFollower(match) && match.source_twitter_id === targetTwitterId) {
+          // Cas peu probable mais pour être complet
+          return { ...match, dismissed: true };
+        }
+        return match;
+      }));
+      
+      // Retirer de la sélection si présent
+      if (selectedAccounts.has(targetTwitterId)) {
+        const newSelectedAccounts = new Set(selectedAccounts);
+        newSelectedAccounts.delete(targetTwitterId);
+        setSelectedAccounts(newSelectedAccounts);
+      }
+      
+      console.log({
+        type: "success",
+        // message: t('ignoreSuccess')
+      });
+      
+    } catch (error) {
+      console.error("Error ignoring account:", error);
+      console.log({
+        type: "error",
+        // message: t('ignoreError')
+      });
+    } finally {
+      // setIsLoading(false);
+    }
+  };
+
+  const handleUnignoreAccount = async (targetTwitterId: string) => {
+    try {
+      console.log("handleUnignoreAccount for -->", targetTwitterId);
+      
+      const response = await fetch("/api/migrate/ignore", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ 
+          targetTwitterId,
+          action: "unignore" 
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error("Failed to unignore account");
+      }
+      
+      // Mettre à jour l'état des matches pour marquer le compte comme non ignoré
+      setMatches?.(matches.map(match => {
+        if (isMatchingTarget(match) && match.target_twitter_id === targetTwitterId) {
+          // Marquer le compte comme non ignoré
+          return { ...match, dismissed: false };
+        } else if (isMatchedFollower(match) && match.source_twitter_id === targetTwitterId) {
+          // Cas peu probable mais pour être complet
+          return { ...match, dismissed: false };
+        }
+        return match;
+      }));
+      
+      // Si nous sommes dans la vue des ignorés, le compte ne devrait plus y apparaître
+      // donc on change de vue pour voir le compte restauré
+      if (activeView === 'ignored') {
+        setActiveView('notFollowed');
+      }
+      
+      console.log({
+        type: "success",
+        // message: t('unignoreSuccess')
+      });
+      
+    } catch (error) {
+      console.error("Error unignoring account:", error);
+      console.log({
+        type: "error",
+        // message: t('unignoreError')
+      });
+    }
+  };
 
   return (
     <div className="w-full max-w-4xl mx-auto bg-[#1A237E] rounded-lg p-3 sm:p-6 mt-4 sm:mt-12">
@@ -115,21 +232,43 @@ export default function ManualReconnexion({
           {t('title')}
         </h2>
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
-          <label className="relative inline-flex items-center cursor-pointer">
-            <input
-              type="checkbox"
-              checked={showOnlyNotFollowed}
-              onChange={handleToggleSwitch}
-              className="sr-only peer"
-            />
-            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[50%] after:translate-y-[-50%] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#d6356f]"></div>
-            <span className="ml-3 text-sm sm:text-base text-white">{t('showOnlyNotFollowed', 'Show not followed')}</span>
-          </label>
+          <div className="flex bg-[#2a3190] rounded-full p-1 shadow-md">
+            <button
+              onClick={() => setActiveView('notFollowed')}
+              className={`text-sm sm:text-base transition-all duration-200 ease-in-out rounded-full py-1.5 sm:py-2 px-4 sm:px-6 flex items-center justify-center min-w-[100px] sm:min-w-[120px] ${
+                activeView === 'notFollowed' 
+                ? 'bg-[#d6356f] text-white shadow-sm' 
+                : 'text-white hover:bg-[#3a41a0] hover:text-white'
+              }`}
+            >
+              {t('notFollowed')}
+            </button>
+            <button
+              onClick={() => setActiveView('followed')}
+              className={`text-sm sm:text-base transition-all duration-200 ease-in-out rounded-full py-1.5 sm:py-2 px-4 sm:px-6 flex items-center justify-center min-w-[100px] sm:min-w-[120px] ${
+                activeView === 'followed' 
+                ? 'bg-[#d6356f] text-white shadow-sm' 
+                : 'text-white hover:bg-[#3a41a0] hover:text-white'
+              }`}
+            >
+              {t('followed')}
+            </button>
+            <button
+              onClick={() => setActiveView('ignored')}
+              className={`text-sm sm:text-base transition-all duration-200 ease-in-out rounded-full py-1.5 sm:py-2 px-4 sm:px-6 flex items-center justify-center min-w-[100px] sm:min-w-[120px] ${
+                activeView === 'ignored' 
+                ? 'bg-[#d6356f] text-white shadow-sm' 
+                : 'text-white hover:bg-[#3a41a0] hover:text-white'
+              }`}
+            >
+              {t('ignored')}
+            </button>
+          </div>
           <button
             onClick={() => onToggleAutomaticReconnect()}
-            className="flex items-center text-white text-sm sm:text-base hover:text-gray-200"
+            className="flex items-center text-white text-sm sm:text-base hover:text-gray-200 transition-colors"
           >
-            <span className="mr-2">▶</span>
+            <span className="mr-2 text-[#d6356f]">▶</span>
             {t('automaticReconnect')}
           </button>
         </div>
@@ -160,29 +299,31 @@ export default function ManualReconnexion({
         </div>
 
         <div className="space-y-2">
-          {currentMatches.map((match) => {
+          {currentMatches.map((match, index) => {
             const targetTwitterId = isMatchingTarget(match) ? match.target_twitter_id : match.source_twitter_id;
-            if (!targetTwitterId) {
-              console.error('Match missing target_twitter_id:', match);
-              return null;
-            }
-
+            const blueskyHandle = isMatchingTarget(match) ? match.bluesky_handle : match.bluesky_handle;
             const hasFollowBluesky = isMatchingTarget(match) ? match.has_follow_bluesky : match.has_been_followed_on_bluesky;
             const hasFollowMastodon = isMatchingTarget(match) ? match.has_follow_mastodon : match.has_been_followed_on_mastodon;
+            const isDismissed = isMatchingTarget(match) && (match as MatchingTarget).dismissed;
+            
+            if (!targetTwitterId) return null;
             
             return (
               <AccountToMigrate
-                key={isMatchingTarget(match) ? match.target_twitter_id : match.source_twitter_id}
-                targetTwitterId={isMatchingTarget(match) ? match.target_twitter_id : match.source_twitter_id}
-                blueskyHandle={match.bluesky_handle}
+                key={`${targetTwitterId}-${index}`}
+                targetTwitterId={targetTwitterId}
+                blueskyHandle={blueskyHandle}
                 mastodonHandle={isMatchingTarget(match) ? match.mastodon_handle : null}
                 mastodonUsername={isMatchingTarget(match) ? match.mastodon_username : match.mastodon_username}
                 mastodonInstance={match.mastodon_instance}
                 mastodonId={match.mastodon_id}
                 isSelected={selectedAccounts.has(isMatchingTarget(match) ? match.target_twitter_id : match.source_twitter_id)}
                 onToggle={() => handleToggleAccount(isMatchingTarget(match) ? match.target_twitter_id : match.source_twitter_id)}
+                onIgnore={handleIgnoreAccount}
+                onUnignore={handleUnignoreAccount}
                 hasFollowBluesky={hasFollowBluesky}
                 hasFollowMastodon={hasFollowMastodon}
+                isDismissed={isDismissed}
                 session={session}
               />
             );
@@ -215,7 +356,7 @@ export default function ManualReconnexion({
                   // Ajouter les points de suspension si on n'est pas proche du début
                   if (currentPage > 3) {
                     pageNumbers.push('...');
-                  }
+                  } 
                   
                   // Ajouter la page courante si elle n'est pas déjà incluse
                   if (currentPage > 2 && currentPage < totalPages - 1) {

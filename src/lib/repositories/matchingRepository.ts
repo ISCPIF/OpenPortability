@@ -1,4 +1,4 @@
-import { MatchingTarget } from '../types/matching';
+import { MatchingTarget, StoredProcedureTarget } from '../types/matching';
 import { supabase, authClient } from '../supabase';
 import { logError, logWarning, logInfo, logDebug } from '../log_utils';
 
@@ -17,11 +17,21 @@ export class MatchingRepository {
     pageSize: number = 1000,
     pageNumber: number = 0
   ): Promise<{ data: StoredProcedureTarget[] | null; error: any }> {
-    return await this.supabase.rpc('get_followable_targets', {
+    console.log("getFollowableTargets", userId, pageSize, pageNumber);
+    // console.log("getFollowableTargets", userId, pageSize, pageNumber)
+    const result = await this.supabase.rpc('get_followable_targets', {
       user_id: userId,
       page_size: pageSize,
       page_number: pageNumber
     });
+    
+    console.log("getFollowableTargets result:", {
+      error: result.error,
+      dataLength: result.data?.length || 0,
+      firstItem: result.data && result.data.length > 0 ? result.data[0] : null
+    });
+    
+    return result;
   }
 
   async updateFollowStatus(
@@ -194,5 +204,49 @@ export class MatchingRepository {
     }
     
     return result;
+  }
+
+  async ignoreTarget(userId: string, targetTwitterId: string): Promise<void> {
+    try {
+      await this.supabase
+        .from("sources_targets")
+        .update({ dismissed: true })
+        .eq("source_id", userId)
+        .eq("target_twitter_id", targetTwitterId);
+        
+      console.log("Target marked as dismissed", {
+        userId,
+        targetTwitterId,
+        context: "MatchingRepository.ignoreTarget",
+      });
+    } catch (error) {
+      console.log("Failed to mark target as dismissed", {
+        error: error instanceof Error ? error.message : String(error),
+        context: "MatchingRepository.ignoreTarget",
+      });
+      throw error;
+    }
+  }
+
+  async unignoreTarget(userId: string, targetTwitterId: string): Promise<void> {
+    try {
+      await this.supabase
+        .from("sources_targets")
+        .update({ dismissed: false })
+        .eq("source_id", userId)
+        .eq("target_twitter_id", targetTwitterId);
+        
+      console.log("Target marked as not dismissed", {
+        userId,
+        targetTwitterId,
+        context: "MatchingRepository.unignoreTarget",
+      });
+    } catch (error) {
+      console.log("Failed to mark target as not dismissed", {
+        error: error instanceof Error ? error.message : String(error),
+        context: "MatchingRepository.unignoreTarget",
+      });
+      throw error;
+    }
   }
 }

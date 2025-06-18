@@ -37,7 +37,8 @@ export default function ReconnectPage() {
     handleAutomaticReconnection,
     handleManualReconnection,
     handleStartMigration,
-    refreshStats
+    refreshStats,
+    setAccountsToProcess
   } = useReconnectState()
 
   // Forcer un rafraîchissement des statistiques au chargement initial
@@ -110,6 +111,7 @@ export default function ReconnectPage() {
             isReconnectionComplete={isReconnectionComplete}
             missingProviders={missingProviders}
             accountsToProcess={accountsToProcess}
+            setAccountsToProcess={setAccountsToProcess}
             migrationResults={migrationResults}
             handleAutomaticReconnection={handleAutomaticReconnection}
             handleManualReconnection={handleManualReconnection}

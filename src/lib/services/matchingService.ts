@@ -254,4 +254,16 @@ export class MatchingService {
       throw new Error('Failed to update sources followers status');
     }
   }
+
+  async ignoreTarget(userId: string, targetTwitterId: string, action: string): Promise<void> {
+    if (action === 'ignore') {
+      return this.repository.ignoreTarget(userId, targetTwitterId);
+    } else {
+      return this.repository.unignoreTarget(userId, targetTwitterId);
+    }
+  }
+
+//   async unignoreTarget(userId: string, targetTwitterId: string): Promise<void> {
+//     return this.repository.unignoreTarget(userId, targetTwitterId);
+//   }
 }
