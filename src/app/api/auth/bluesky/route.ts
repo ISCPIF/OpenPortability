@@ -122,6 +122,7 @@ const blueskyPostHandler = withPublicValidation(
   },
   {
     applySecurityChecks: true, // Active les vérifications SQL/XSS sur les credentials
+    excludeFromSecurityChecks: ['password'], // Exclut le mot de passe des vérifications de sécurité
     customRateLimit: {
       windowMs: 5 * 60 * 1000, // 5 minutes
       max: 10, // 10 tentatives par fenêtre
