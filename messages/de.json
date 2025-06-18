@@ -532,24 +532,34 @@
             "effectiveFollowers": "Follower durch OpenPortability gewonnen"
         }
     },
-    "ManualReconnexion": {
-        "selectAll": "ALLE AUSWÄHLEN",
-        "next": "Nächste",
-        "prev": "Zurück",
-        "xAccountPseudo": "Account Handle",
-        "followOnMastodon": "Auf Mastodon folgen",
-        "mastodonBlueskyCorrespondence": "Mastodon/Bluesky Korrespondenz",
-        "connect": "VERBINDEN ({count})",
-        "followOnBluesky": "Auf Bluesky folgen",
-        "title": "Manuelle Wiederherstellung der Verbindung",
-        "automaticReconnect": "VERBINDE MICH AUTOMATISCH",
-        "showOnlyNotFollowed": "Nur nicht gefolgten Konten anzeigen"
+"ManualReconnexion": {
+      "title": "Manuelle Wiederverbindung",
+      "automaticReconnect": "AUTOMATISCH WIEDERVERBINDEN",
+      "selectAll": "ALLE AUSWÄHLEN",
+      "connect": "VERBINDEN ({count})",
+      "prev": "Zurück",
+      "next": "Weiter",
+      "xAccountPseudo": "Benutzername",
+      "mastodonBlueskyCorrespondence": "Mastodon/Bluesky Entsprechung",
+      "followOnBluesky": "Auf Bluesky folgen",
+      "followOnMastodon": "Auf Mastodon folgen",
+      "showOnlyNotFollowed": "Nur neue Konten anzeigen",
+      "notFollowed": "Nicht gefolgt",
+      "followed": "Bereits gefolgt",
+      "ignored": "Ignoriert",
+      "accountIgnored": "Konto erfolgreich ignoriert",
+      "accountRestored": "Konto erfolgreich wiederhergestellt",
+      "errorIgnoringAccount": "Fehler beim Ignorieren des Kontos",
+      "errorRestoringAccount": "Fehler beim Wiederherstellen des Kontos"
     },
     "AccountToMigrate": {
-        "followOnMastodon": "Auf Mastodon folgen",
-        "followOnBluesky": "Auf Bluesky folgen",
-        "followedOnBluesky": "Auf Bluesky gefolgt",
-        "followedOnMastodon": "Auf Mastodon gefolgt"
+      "followOnBluesky": "Auf Bluesky folgen",
+      "followOnMastodon": "Auf Mastodon folgen",
+      "followedOnBluesky": "Auf Bluesky gefolgt",
+      "followedOnMastodon": "Auf Mastodon gefolgt",
+      "ignore": "Ignorieren",
+      "unignore": "Wiederherstellen",
+      "errorIgnoringAccount": "Fehler beim Ignorieren des Kontos"
     },
     "reconnexionModal": {
         "title": "Du hast soeben die Verbindung mit {count} Accounts aktiviert!",

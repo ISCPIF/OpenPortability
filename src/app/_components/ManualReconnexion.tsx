@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import { plex } from '@/app/fonts/plex';
 import AccountToMigrate from './AccountToMigrate';
 import { MatchingTarget, MatchedFollower } from '@/lib/types/matching';
-// import { toast } from 'react-toastify';
+import { toast } from 'sonner';
 
 type Match = MatchingTarget | MatchedFollower;
 
@@ -17,6 +17,25 @@ function isMatchingTarget(match: Match): match is MatchingTarget {
 function isMatchedFollower(match: Match): match is MatchedFollower {
   return 'source_twitter_id' in match;
 }
+
+// Composant Toast personnalisé pour les notifications
+const CustomToast = ({ platform, message, buttonText }: { platform: string; message: string; buttonText: string }) => (
+  <div className={`${plex.className} flex flex-col space-y-3 p-4 bg-[#d6356f] text-white rounded-lg`}>
+    <div className="flex items-center space-x-2">
+      <div className="w-2 h-2 bg-white rounded-full" />
+      <span className="font-medium text-white/90">{platform}</span>
+    </div>
+    <p className="text-sm text-white/80">{message}</p>
+    {buttonText && (
+      <button 
+        onClick={() => window.location.href = '/dashboard'}
+        className="px-4 py-2 bg-white text-[#d6356f] rounded-md text-sm font-medium hover:bg-white/90 transition-colors"
+      >
+        {buttonText}
+      </button>
+    )}
+  </div>
+);
 
 interface ManualReconnexionProps {
   matches: Match[];
@@ -158,17 +177,19 @@ export default function ManualReconnexion({
         setSelectedAccounts(newSelectedAccounts);
       }
       
-      console.log({
-        type: "success",
-        // message: t('ignoreSuccess')
-      });
+      // Afficher une notification de succès
+      toast.success(
+        <CustomToast 
+          platform="OpenPortability" 
+          message={t('accountIgnored')} 
+          buttonText=""
+        />,
+        { autoClose: 3000 }
+      );
       
     } catch (error) {
       console.error("Error ignoring account:", error);
-      console.log({
-        type: "error",
-        // message: t('ignoreError')
-      });
+      toast.error(t('errorIgnoringAccount'));
     } finally {
       // setIsLoading(false);
     }
@@ -193,7 +214,7 @@ export default function ManualReconnexion({
         throw new Error("Failed to unignore account");
       }
       
-      // Mettre à jour l'état des matches pour marquer le compte comme non ignoré
+      // Mettre à jour l'état local pour marquer le compte comme non ignoré
       setMatches?.(matches.map(match => {
         if (isMatchingTarget(match) && match.target_twitter_id === targetTwitterId) {
           // Marquer le compte comme non ignoré
@@ -205,23 +226,24 @@ export default function ManualReconnexion({
         return match;
       }));
       
-      // Si nous sommes dans la vue des ignorés, le compte ne devrait plus y apparaître
-      // donc on change de vue pour voir le compte restauré
+      // Si nous sommes dans la vue des ignorés, changer automatiquement
       if (activeView === 'ignored') {
         setActiveView('notFollowed');
       }
       
-      console.log({
-        type: "success",
-        // message: t('unignoreSuccess')
-      });
+      // Afficher une notification de succès
+      toast.success(
+        <CustomToast 
+          platform="OpenPortability" 
+          message={t('accountRestored')} 
+          buttonText=""
+        />,
+        { autoClose: 3000 }
+      );
       
     } catch (error) {
       console.error("Error unignoring account:", error);
-      console.log({
-        type: "error",
-        // message: t('unignoreError')
-      });
+      toast.error(t('errorRestoringAccount'));
     }
   };
 

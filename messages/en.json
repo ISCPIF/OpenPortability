@@ -588,14 +588,25 @@
     "mastodonBlueskyCorrespondence": "Mastodon/Bluesky Correspondence",
     "followOnBluesky": "Follow on Bluesky",
     "followOnMastodon": "Follow on Mastodon",
-    "showOnlyNotFollowed": "Only show new accounts"
+    "showOnlyNotFollowed": "Only show new accounts",
+    "notFollowed": "Not followed",
+    "followed": "Already Followed",
+    "ignored": "Ignored",
+    "accountIgnored": "Account ignored successfully",
+    "accountRestored": "Account restored successfully",
+    "errorIgnoringAccount": "Error ignoring account",
+    "errorRestoringAccount": "Error restoring account"
+
 
   },
   "AccountToMigrate": {
     "followOnBluesky": "Follow on Bluesky",
     "followOnMastodon": "Follow on Mastodon",
     "followedOnBluesky": "Followed on Bluesky",
-    "followedOnMastodon": "Followed on Mastodon"
+    "followedOnMastodon": "Followed on Mastodon",
+    "ignore": "Ignore",
+    "unignore": "Restore",
+    "errorIgnoringAccount": "Error ignoring account"
   },
   "reconnexionModal": {
     "title": "You have just activated the connection with {count} accounts!",

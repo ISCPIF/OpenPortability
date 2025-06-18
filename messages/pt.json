@@ -406,19 +406,25 @@
         }
     },
     "ManualReconnexion": {
-        "followOnMastodon": "Seguir no Mastodon",
-        "title": "Reconexão manual",
+        "title": "Reconexão Manual",
         "automaticReconnect": "RECONECTAR-ME AUTOMATICAMENTE",
         "selectAll": "SELECIONAR TUDO",
         "connect": "CONECTAR ({count})",
         "prev": "Anterior",
         "next": "Próximo",
-        "xAccountPseudo": "Nome de usuário da conta",
-        "mastodonBlueskyCorrespondence": "Correspondência no Mastodon/Bluesky",
+        "xAccountPseudo": "Nome de usuário",
+        "mastodonBlueskyCorrespondence": "Correspondência Mastodon/Bluesky",
         "followOnBluesky": "Seguir no Bluesky",
-        "showOnlyNotFollowed": "Mostrar apenas novas contas"
-
-    },
+        "followOnMastodon": "Seguir no Mastodon",
+        "showOnlyNotFollowed": "Mostrar apenas contas novas",
+        "notFollowed": "Não seguido",
+        "followed": "Já seguido",
+        "ignored": "Ignorado",
+        "accountIgnored": "Conta ignorada com sucesso",
+        "accountRestored": "Conta restaurada com sucesso",
+        "errorIgnoringAccount": "Erro ao ignorar a conta",
+        "errorRestoringAccount": "Erro ao restaurar a conta"
+      },
     "largeFiles": {
         "progress": {
             "total": {
@@ -458,10 +464,13 @@
         }
     },
     "AccountToMigrate": {
-        "followedOnBluesky": "Seguido no Bluesky",
         "followOnBluesky": "Seguir no Bluesky",
         "followOnMastodon": "Seguir no Mastodon",
-        "followedOnMastodon": "Seguido no Mastodon"
+        "followedOnBluesky": "Seguido no Bluesky",
+        "followedOnMastodon": "Seguido no Mastodon",
+        "ignore": "Ignorar",
+        "unignore": "Restaurar",
+        "errorIgnoringAccount": "Erro ao ignorar a conta"
     },
     "Migrate": {
         "migrationProgress": "{current} de {total} contas reconectadas",

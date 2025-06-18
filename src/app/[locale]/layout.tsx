@@ -56,7 +56,7 @@ export default async function RootLayout({ children, params }: Props) {
             {children}
             </MotionWrapper>
             </main>
-            <Toaster />
+            <Toaster position="top-right" />
           </Providers>
         </NextIntlClientProvider>
       </body>
