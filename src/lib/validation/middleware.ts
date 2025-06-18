@@ -26,6 +26,7 @@ export interface ValidationOptions {
   expectedContentType?: string;
   validateQueryParams?: boolean; 
   queryParamsSchema?: z.ZodSchema<any>; 
+  excludeFromSecurityChecks?: string[]; // Liste des champs à exclure des vérifications de sécurité
 }
 
 /**
@@ -64,19 +65,28 @@ async function getRateLimitIdentifier(
 async function performSecurityValidation(
   data: any,
   endpoint: string,
-  userId?: string
+  userId?: string,
+  excludeFromSecurityChecks: string[] = []
 ): Promise<{ isSecure: boolean; errors: string[] }> {
   const errors: string[] = [];
   
   console.log('Validation', 'Security checks started', userId || 'anonymous', {
     endpoint,
-    dataKeys: Object.keys(data)
+    dataKeys: Object.keys(data),
+    excludedFields: excludeFromSecurityChecks
   });
   
   // Vérification SQL injection et XSS sur tous les champs string
   const checkSecurityPatterns = (obj: any, path = ''): void => {
     for (const [key, value] of Object.entries(obj)) {
       const currentPath = path ? `${path}.${key}` : key;
+      
+      // Vérifier si le champ actuel est dans la liste des exclusions
+      if (excludeFromSecurityChecks.includes(currentPath) || 
+          (path === '' && excludeFromSecurityChecks.includes(key))) {
+        console.log('Validation', `Skipping security check for excluded field: ${currentPath}`, userId || 'anonymous');
+        continue;
+      }
       
       if (typeof value === 'string') {
         // Check SQL injection
@@ -109,9 +119,8 @@ async function performSecurityValidation(
   checkSecurityPatterns(data);
   
   // Pour l'endpoint support, utiliser la fonction existante
-  if (endpoint === '/api/support' && data.subject && data.message && data.email) {
+  if (endpoint === '/api/support' && data.message && data.email) {
     const supportData: SupportFormData = {
-      subject: String(data.subject),
       message: String(data.message),
       email: String(data.email)
     };
@@ -287,7 +296,8 @@ export function withValidation<T>(
       skipRateLimit = false,
       expectedContentType,
       validateQueryParams = true, 
-      queryParamsSchema = z.object({}).passthrough() 
+      queryParamsSchema = z.object({}).passthrough(), 
+      excludeFromSecurityChecks = []
     } = options;
     
     const url = new URL(request.url);
@@ -534,7 +544,7 @@ export function withValidation<T>(
       // 4. Vérifications de sécurité
       if (applySecurityChecks) {
         // console.log('Validation', `${method} ${endpoint}`, 'Running security checks', session?.user?.id || 'anonymous');
-        const securityCheck = await performSecurityValidation(data, endpoint, session?.user?.id);
+        const securityCheck = await performSecurityValidation(data, endpoint, session?.user?.id, excludeFromSecurityChecks);
         
         if (!securityCheck.isSecure) {
           console.log('Security', `${method} ${endpoint}`, 'Security validation failed', session?.user?.id || 'anonymous', {
