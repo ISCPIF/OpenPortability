@@ -7,7 +7,23 @@ export interface MatchingTarget {
   mastodon_id: string | null;
   has_follow_bluesky: boolean;
   has_follow_mastodon: boolean;
+  dismissed?: boolean;
   total_count?: number;
+}
+
+export interface StoredProcedureTarget {
+  target_twitter_id: string;
+  bluesky_handle: string | null;
+  mastodon_handle: string | null;
+  mastodon_username: string | null;
+  mastodon_instance: string | null;
+  mastodon_id: string | null;
+  has_follow_bluesky: boolean;
+  has_follow_mastodon: boolean;
+  followed_at_bluesky: string | null;
+  followed_at_mastodon: string | null;
+  dismissed: boolean;
+  total_count: number;
 }
 
 export interface MatchedFollower {

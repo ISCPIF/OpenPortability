@@ -83,11 +83,11 @@ async function updateTaskStatus(
       .match({ id: taskId });
     
     if (error) {
-      logger.logError('PythonProcessor', 'updateTaskStatus', `Error updating task status: ${error.message}`, undefined, { taskId, status });
+      console.log('PythonProcessor', 'updateTaskStatus', `Error updating task status: ${error.message}`, undefined, { taskId, status });
       throw error;
     }
   } catch (error) {
-    logger.logError('PythonProcessor', 'updateTaskStatus', error instanceof Error ? error : String(error), undefined, { taskId });
+    console.log('PythonProcessor', 'updateTaskStatus', error instanceof Error ? error : String(error), undefined, { taskId });
     throw error;
   }
 }
@@ -142,9 +142,9 @@ async function updatePersonalizedSupportStatus(
       if (error) throw error;
     }
 
-    logger.logInfo('PythonProcessor', 'updatePersonalizedSupportStatus', `Updated support status for user ${userId}`, userId, { platform, isActive });
+    console.log('PythonProcessor', 'updatePersonalizedSupportStatus', `Updated support status for user ${userId}`, userId, { platform, isActive });
   } catch (error) {
-    logger.logError('PythonProcessor', 'updatePersonalizedSupportStatus', error instanceof Error ? error : String(error), userId, { platform, isActive });
+    console.log('PythonProcessor', 'updatePersonalizedSupportStatus', error instanceof Error ? error : String(error), userId, { platform, isActive });
     throw error;
   }
 }
@@ -172,7 +172,7 @@ async function executeDm(task: PythonTask, workerId: string, customMessage?: str
       args.push(customMessage);
     }
 
-    logger.logInfo('PythonProcessor', 'executeDm', `Executing ${task.platform} DM script`, task.user_id, { 
+    console.log('PythonProcessor', 'executeDm', `Executing ${task.platform} DM script`, task.user_id, { 
       taskId: task.id
     }, undefined, undefined, workerId);    
     
@@ -252,12 +252,12 @@ async function scheduleNextNewsletter(task: PythonTask): Promise<void> {
       });
 
     if (error) throw error;
-    logger.logInfo('PythonProcessor', 'scheduleNextNewsletter', `Scheduled next newsletter for ${nextScheduledDate.toISOString()}`, task.user_id, {
+    console.log('PythonProcessor', 'scheduleNextNewsletter', `Scheduled next newsletter for ${nextScheduledDate.toISOString()}`, task.user_id, {
       taskId: task.id,
       platform: task.platform
     });
     } catch (error) {
-      logger.logError('PythonProcessor', 'scheduleNextNewsletter', error instanceof Error ? error : String(error), task.user_id, { taskId: task.id });
+      console.log('PythonProcessor', 'scheduleNextNewsletter', error instanceof Error ? error : String(error), task.user_id, { taskId: task.id });
       throw error;
   }
 }
@@ -286,7 +286,7 @@ function shouldExecuteScheduledTask(task: PythonTask): boolean {
  */
 async function getUnfollowedStats(userId: string): Promise<{ bluesky: number, mastodon: number }> {
   const endTimer = logger.startPerformanceTimer('PythonProcessor', 'getUnfollowedStats', userId);
-  logger.logInfo('PythonProcessor', 'getUnfollowedStats', 'Fetching unfollowed stats', userId);
+  console.log('PythonProcessor', 'getUnfollowedStats', 'Fetching unfollowed stats', userId);
 
   const PAGE_SIZE = 1000;
   let page = 0;
@@ -301,25 +301,28 @@ async function getUnfollowedStats(userId: string): Promise<{ bluesky: number, ma
     });
 
     if (error) {
-      logger.logError('PythonProcessor', 'getUnfollowedStats', `Failed to get unfollowed stats: ${error.message}`, userId);
+      console.log('PythonProcessor', 'getUnfollowedStats', `Failed to get unfollowed stats: ${error.message}`, userId);
       endTimer();
       break;
     }
 
     if (!data || data.length === 0) {
       hasMore = false;
-      logger.logInfo('PythonProcessor', 'getUnfollowedStats', `End of unfollowed stats`, userId);
+      console.log('PythonProcessor', 'getUnfollowedStats', `End of unfollowed stats`, userId);
       endTimer();
       break;
     }
 
-    // Compter les utilisateurs non suivis sur chaque plateforme
+    // Compter les utilisateurs non suivis et non ignorés sur chaque plateforme
     data.forEach((target: any) => {
-      if (target.bluesky_handle && !target.has_follow_bluesky) {
-        stats.bluesky++;
-      }
-      if (target.mastodon_username && !target.has_follow_mastodon) {
-        stats.mastodon++;
+      // Ne compter que les comptes qui ne sont pas ignorés (dismissed = false)
+      if (!target.dismissed) {
+        if (target.bluesky_handle && !target.has_follow_bluesky) {
+          stats.bluesky++;
+        }
+        if (target.mastodon_username && !target.has_follow_mastodon) {
+          stats.mastodon++;
+        }
       }
     });
 
@@ -341,7 +344,7 @@ async function getUserLanguagePref(userId: string): Promise<string> {
       .single(); // Assumes one preference per user
 
     if (error && error.code !== 'PGRST116') { // PGRST116 = not found
-      logger.logError('PythonProcessor', 'getUserLanguagePref', `Failed to get language preference: ${error.message}`, userId);
+      console.log('PythonProcessor', 'getUserLanguagePref', `Failed to get language preference: ${error.message}`, userId);
       return 'en'; // Default to English on error
     }
 
@@ -349,11 +352,11 @@ async function getUserLanguagePref(userId: string): Promise<string> {
       // console.log(`🌐 User ${userId} language preference found: ${data.language}`);
       return data.language;
     } else {
-      logger.logInfo('PythonProcessor', 'getUserLanguagePref', 'No language preference found, using default', userId);
+      console.log('PythonProcessor', 'getUserLanguagePref', 'No language preference found, using default', userId);
       return 'en'; // Default to English if no preference found
     }
   } catch (error) {
-    logger.logError('PythonProcessor', 'getUserLanguagePref', error instanceof Error ? error : String(error), userId);
+    console.log('PythonProcessor', 'getUserLanguagePref', error instanceof Error ? error : String(error), userId);
     return 'en'; // Default to English on exception
   }
 }
@@ -367,12 +370,12 @@ export async function processPythonTask(
   allMessages: AllMessages // Ajout du paramètre allMessages
 ): Promise<void> {
   const taskTimer = logger.startPerformanceTimer('PythonProcessor', 'processPythonTask', task.user_id, { taskId: task.id }, undefined, undefined, workerId);
-  logger.logInfo('PythonProcessor', 'processPythonTask', `Processing task ${task.id} (type: ${task.task_type})`, task.user_id, {
+  console.log('PythonProcessor', 'processPythonTask', `Processing task ${task.id} (type: ${task.task_type})`, task.user_id, {
     platform: task.platform,
     workerId
   });  
   if (task.scheduled_for && !shouldExecuteScheduledTask(task)) {
-    logger.logInfo('PythonProcessor', 'processPythonTask', `Task ${task.id} is scheduled for later`, task.user_id, {
+    console.log('PythonProcessor', 'processPythonTask', `Task ${task.id} is scheduled for later`, task.user_id, {
       scheduledFor: task.scheduled_for,
       workerId
     });
@@ -388,13 +391,13 @@ export async function processPythonTask(
     
     // Récupérer la langue préférée de l'utilisateur au début
     const userLang = await getUserLanguagePref(task.user_id);
-    logger.logInfo('PythonProcessor', 'processPythonTask', `Processing with language: ${userLang}`, task.user_id, { workerId });
+    console.log('PythonProcessor', 'processPythonTask', `Processing with language: ${userLang}`, task.user_id, { workerId });
 
     // Obtenir les messages pour la langue (avec fallback sur 'en')
     const messages = allMessages[userLang] || allMessages['en'];
     if (!messages) {
         // Ceci ne devrait pas arriver si loadAllMessages dans index.ts garantit un fallback
-        logger.logError('PythonProcessor', 'processPythonTask', `Critical: No messages found for lang ${userLang} or fallback 'en'`, task.user_id, { workerId });
+        console.log('PythonProcessor', 'processPythonTask', `Critical: No messages found for lang ${userLang} or fallback 'en'`, task.user_id, { workerId });
         // Gérer l'erreur - peut-être utiliser un message codé en dur ici aussi
         throw new Error(`Missing messages for language ${userLang}`);
     }
@@ -404,7 +407,7 @@ export async function processPythonTask(
       case 'test-dm': { // Use block scope for clarity
         // Utiliser le message de test DM depuis le fichier JSON
         const testMessage = messages.testDm;
-        logger.logInfo('PythonProcessor', 'processPythonTask', 'Executing test DM task', task.user_id, { platform: task.platform, workerId });
+        console.log('PythonProcessor', 'processPythonTask', 'Executing test DM task', task.user_id, { platform: task.platform, workerId });
 
         result = await executeDm(task, workerId, testMessage);
         await updatePersonalizedSupportStatus(task.user_id, task.platform, result.success);
@@ -418,7 +421,7 @@ export async function processPythonTask(
         
         // Ne pas envoyer de message s'il n'y a pas de targets à suivre
         if (platformStats === 0) {
-          logger.logInfo('PythonProcessor', 'processPythonTask', 'Skipping newsletter task - no targets to follow', task.user_id, {
+          console.log('PythonProcessor', 'processPythonTask', 'Skipping newsletter task - no targets to follow', task.user_id, {
             platform: task.platform,
             platformStats,
             workerId
@@ -450,7 +453,7 @@ export async function processPythonTask(
           .replace('${count}', platformStats.toString())
           .replace('${platformName}', platformName);
         
-        logger.logInfo('PythonProcessor', 'processPythonTask', 'Executing newsletter task', task.user_id, { 
+        console.log('PythonProcessor', 'processPythonTask', 'Executing newsletter task', task.user_id, { 
           platform: task.platform, 
           platformStats, 
           workerId 
@@ -466,7 +469,7 @@ export async function processPythonTask(
       }
         
       default:
-        logger.logError('PythonProcessor', 'processPythonTask', `Unsupported task type: ${task.task_type}`, task.user_id, { workerId });
+        console.log('PythonProcessor', 'processPythonTask', `Unsupported task type: ${task.task_type}`, task.user_id, { workerId });
         throw new Error(`Unsupported task type: ${task.task_type}`);
     }
     
@@ -478,7 +481,7 @@ export async function processPythonTask(
       result.success ? null : result.error
     );
     
-    logger.logInfo('PythonProcessor', 'processPythonTask', `Task ${result.success ? 'completed' : 'failed'}`, task.user_id, {
+    console.log('PythonProcessor', 'processPythonTask', `Task ${result.success ? 'completed' : 'failed'}`, task.user_id, {
       taskId: task.id,
       success: result.success,
       workerId
@@ -487,7 +490,7 @@ export async function processPythonTask(
     taskTimer();
 
   } catch (error) {
-    logger.logError('PythonProcessor', 'processPythonTask', error instanceof Error ? error : String(error), task.user_id, {
+    console.log('PythonProcessor', 'processPythonTask', error instanceof Error ? error : String(error), task.user_id, {
       taskId: task.id,
       workerId
     });
@@ -496,7 +499,7 @@ export async function processPythonTask(
     try {
       await updatePersonalizedSupportStatus(task.user_id, task.platform, false);
     } catch (supportError) {
-    logger.logError('PythonProcessor', 'processPythonTask', `Failed to update support status: ${String(supportError)}`, task.user_id, {
+    console.log('PythonProcessor', 'processPythonTask', `Failed to update support status: ${String(supportError)}`, task.user_id, {
         taskId: task.id,
         workerId
       });
@@ -511,7 +514,7 @@ export async function processPythonTask(
         error instanceof Error ? error.message : String(error)
       );
     } catch (updateError) {
-      logger.logError('PythonProcessor', 'processPythonTask', `Failed to update task status: ${String(updateError)}`, task.user_id, {
+      console.log('PythonProcessor', 'processPythonTask', `Failed to update task status: ${String(updateError)}`, task.user_id, {
         taskId: task.id,
         workerId
       });

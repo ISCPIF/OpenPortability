@@ -10,7 +10,7 @@ const EmptySchema = z.object({}).strict()
 async function matchingFoundHandler(_request: Request, _data: z.infer<typeof EmptySchema>, session: any) {
   try {
     if (!session?.user?.id) {
-      logger.logWarning('API', 'GET /api/migrate/matching_found', 'Unauthorized access attempt');
+      console.log('API', 'GET /api/migrate/matching_found', 'Unauthorized access attempt');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -19,7 +19,7 @@ async function matchingFoundHandler(_request: Request, _data: z.infer<typeof Emp
 
     if (!session.user?.has_onboarded) {
       if (!session?.user?.twitter_id) {
-        logger.logWarning('API', 'GET /api/migrate/matching_found', 'Twitter ID not found in session', session.user.id);
+        console.log('API', 'GET /api/migrate/matching_found', 'Twitter ID not found in session', session.user.id);
         return NextResponse.json(
           { error: 'Twitter ID not found in session' },
           { status: 400 }
@@ -30,7 +30,7 @@ async function matchingFoundHandler(_request: Request, _data: z.infer<typeof Emp
       result = await matchingService.getFollowableTargets(session.user.id);
     }
     
-    logger.logInfo('API', 'GET /api/migrate/matching_found', 'Matches retrieved successfully', session.user.id, {
+    console.log('API', 'GET /api/migrate/matching_found', 'Matches retrieved successfully', session.user.id, {
       matchCount: result?.length || 0
     });
     
@@ -38,7 +38,7 @@ async function matchingFoundHandler(_request: Request, _data: z.infer<typeof Emp
 
   } catch (error) {
     const userId = session?.user?.id || 'unknown';
-    logger.logError('API', 'GET /api/migrate/matching_found', error, userId, {
+    console.log('API', 'GET /api/migrate/matching_found', error, userId, {
       context: 'Error in matching_found route'
     });
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

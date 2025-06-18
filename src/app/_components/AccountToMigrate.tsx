@@ -1,6 +1,6 @@
 import { FaTwitter, FaMastodon } from 'react-icons/fa';
 import { SiBluesky } from "react-icons/si";
-import { CheckCircle } from 'lucide-react';
+import { CheckCircle, XCircle, RefreshCw } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { MatchingTarget } from '@/lib/types/matching';
 
@@ -13,8 +13,11 @@ type AccountToMigrateProps = {
   mastodonId: string | null
   isSelected: boolean
   onToggle: () => void
+  onIgnore: (targetTwitterId: string) => void
+  onUnignore?: (targetTwitterId: string) => void
   hasFollowBluesky: boolean
   hasFollowMastodon: boolean
+  isDismissed?: boolean
   session: {
     user: {
       bluesky_username: string | null
@@ -32,8 +35,11 @@ export default function AccountToMigrate({
   mastodonId,
   isSelected,
   onToggle,
+  onIgnore,
+  onUnignore,
   hasFollowBluesky,
   hasFollowMastodon,
+  isDismissed = false,
   session
 }: AccountToMigrateProps) {
   const t = useTranslations('AccountToMigrate');
@@ -49,7 +55,7 @@ export default function AccountToMigrate({
         : 'bg-white hover:bg-gray-50'
     }`}>
       <div className="flex items-center space-x-2 sm:space-x-4 w-full sm:w-auto">
-        {(!hasFollowBluesky || !hasFollowMastodon) && (
+        {(!hasFollowBluesky || !hasFollowMastodon) && !isDismissed && (
           <input
             type="checkbox"
             checked={isSelected}
@@ -71,7 +77,7 @@ export default function AccountToMigrate({
         </div>
       </div>
       <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-start sm:justify-end mt-1 sm:mt-0">
-        {blueskyHandle && session.user.bluesky_username && (
+        {blueskyHandle && session.user.bluesky_username && !isDismissed && (
           hasFollowBluesky ? (
             <div className="flex items-center gap-1 px-2 sm:px-3 py-1 text-xs sm:text-sm text-blue-500">
               <CheckCircle className="w-3 h-3" />
@@ -86,7 +92,7 @@ export default function AccountToMigrate({
             </button>
           )
         )}
-        {(mastodonUsername && mastodonInstance && session.user.mastodon_username) && (
+        {(mastodonUsername && mastodonInstance && session.user.mastodon_username) && !isDismissed && (
           hasFollowMastodon ? (
             <div className="flex items-center gap-1 px-2 sm:px-3 py-1 text-xs sm:text-sm text-purple-500">
               <CheckCircle className="w-3 h-3" />
@@ -100,6 +106,30 @@ export default function AccountToMigrate({
               {t('followOnMastodon')}
             </button>
           )
+        )}
+        
+        {/* Bouton pour ignorer le compte */}
+        {!isDismissed && !hasFollowBluesky && !hasFollowMastodon && (
+          <button 
+            onClick={() => onIgnore(targetTwitterId)}
+            className="px-2 sm:px-3 py-1 text-xs sm:text-sm bg-gray-100 text-gray-600 rounded-full hover:bg-gray-200 transition-colors flex items-center gap-1"
+            title={t('ignore')}
+          >
+            <XCircle className="w-3 h-3" />
+            <span>{t('ignore')}</span>
+          </button>
+        )}
+        
+        {/* Bouton pour annuler l'ignorance du compte */}
+        {isDismissed && onUnignore && (
+          <button 
+            onClick={() => onUnignore(targetTwitterId)}
+            className="px-2 sm:px-3 py-1 text-xs sm:text-sm bg-gray-100 text-gray-600 rounded-full hover:bg-gray-200 transition-colors flex items-center gap-1"
+            title={t('unignore')}
+          >
+            <RefreshCw className="w-3 h-3" />
+            <span>{t('unignore')}</span>
+          </button>
         )}
       </div>
     </div>
