@@ -12,6 +12,7 @@ import SwitchSettingsSection from '@/app/_components/settings/SwitchSettingsSect
 import LoginSea from '@/app/_components/LoginSea';
 import ConnectedAccounts from '@/app/_components/ConnectedAccounts';
 import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 // import PersonalizedSupportFlowSection from '@/app/_components/settings/PersonalizedSupportFlowSection';
 import { Trash2 } from 'lucide-react';
 import { Dialog, Transition } from '@headlessui/react';
@@ -20,7 +21,14 @@ import { signOut } from 'next-auth/react';
 
 export default function SettingsPage() {
   const t = useTranslations('settings');
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
+  const router = useRouter();
+
+
+  if (status === "unauthenticated") {
+    router.replace("/auth/signin");
+    return;
+  }
   
   // Newsletter state
   const { 
@@ -92,7 +100,7 @@ export default function SettingsPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#2a39a9] relative w-full max-w-[90rem] m-auto">
+      <div className="min-h-screen bg-[#2a39a9] relative w-full m-auto">
         <div className="container mx-auto py-12">
           <div className="container flex flex-col m-auto text-center text-[#E2E4DF]">
             <div className="m-auto relative my-32 lg:my-40">
