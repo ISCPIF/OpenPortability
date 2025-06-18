@@ -117,6 +117,12 @@ export function useReconnectState() {
   // Vérifier les tokens et charger les données
   useEffect(() => {
 
+    if (status === "unauthenticated") {
+      router.replace("/auth/signin");
+      return;
+    }
+
+
     // Skip if we're not in a state where we need to load data
     if (status === "loading") {
       return;
@@ -126,12 +132,6 @@ export function useReconnectState() {
       setIsLoading(false);
       return;
     }
-
-    if (status === "unauthenticated") {
-      router.replace("/auth/signin");
-      return;
-    }
-
     if (!session.user?.has_onboarded && !session.user?.twitter_id) {
       router.replace("/dashboard");
       return;
