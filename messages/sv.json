@@ -552,25 +552,35 @@
       "effectiveFollowers": "följare som fåtts genom OpenPortability"
     }
   },
-  "ManualReconnexion": {
-    "title": "Manuell Återanslutning",
-    "automaticReconnect": "ÅTERANSLUT MIG AUTOMATISKT",
-    "selectAll": "VÄLJ ALLA",
-    "connect": "ANSLUT ({count})",
-    "prev": "Föregående",
-    "next": "Nästa",
-    "xAccountPseudo": "Kontoalias",
-    "mastodonBlueskyCorrespondence": "Mastodon/Bluesky Korrespondens",
-    "followOnBluesky": "Följ på Bluesky",
-    "followOnMastodon": "Följ på Mastodon",
-    "showOnlyNotFollowed": "Visa endast nya konton"
-  },
-  "AccountToMigrate": {
-    "followOnBluesky": "Följ på Bluesky",
-    "followOnMastodon": "Följ på Mastodon",
-    "followedOnBluesky": "Följde på Bluesky",
-    "followedOnMastodon": "Följde på Mastodon"
-  },
+"ManualReconnexion": {
+      "title": "Manuell Återanslutning",
+      "automaticReconnect": "ÅTERANSLUT MIG AUTOMATISKT",
+      "selectAll": "VÄLJ ALLA",
+      "connect": "ANSLUT ({count})",
+      "prev": "Föregående",
+      "next": "Nästa",
+      "xAccountPseudo": "Användarnamn",
+      "mastodonBlueskyCorrespondence": "Mastodon/Bluesky Korrespondens",
+      "followOnBluesky": "Följ på Bluesky",
+      "followOnMastodon": "Följ på Mastodon",
+      "showOnlyNotFollowed": "Visa endast nya konton",
+      "notFollowed": "Inte följd",
+      "followed": "Redan följd",
+      "ignored": "Ignorerad",
+      "accountIgnored": "Konto ignorerat framgångsrikt",
+      "accountRestored": "Konto återställt framgångsrikt",
+      "errorIgnoringAccount": "Fel vid ignorering av konto",
+      "errorRestoringAccount": "Fel vid återställning av konto"
+    },
+    "AccountToMigrate": {
+      "followOnBluesky": "Följ på Bluesky",
+      "followOnMastodon": "Följ på Mastodon",
+      "followedOnBluesky": "Följd på Bluesky",
+      "followedOnMastodon": "Följd på Mastodon",
+      "ignore": "Ignorera",
+      "unignore": "Återställ",
+      "errorIgnoringAccount": "Fel vid ignorering av konto"
+    },
   "reconnexionModal": {
     "title": "Du har just aktiverat anslutningen med {count} konton!",
     "message": "Grattis, din återanslutning är klar, du har kommit fram säkert.",

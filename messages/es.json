@@ -450,23 +450,33 @@
         }
     },
     "ManualReconnexion": {
-        "selectAll": "SELECCIONAR TODO",
+        "title": "Reconexión Manual",
         "automaticReconnect": "RECONECTARME AUTOMÁTICAMENTE",
-        "title": "Reconexión manual",
-        "connect": "CONECTAR",
-        "followOnBluesky": "Seguir en Bluesky",
+        "selectAll": "SELECCIONAR TODO",
+        "connect": "CONECTAR ({count})",
         "prev": "Anterior",
         "next": "Siguiente",
-        "mastodonBlueskyCorrespondence": "Correspondencia en Mastodon / Bluesky",
-        "xAccountPseudo": "Nombre de la cuenta",
+        "xAccountPseudo": "Nombre de usuario",
+        "mastodonBlueskyCorrespondence": "Correspondencia Mastodon/Bluesky",
+        "followOnBluesky": "Seguir en Bluesky",
         "followOnMastodon": "Seguir en Mastodon",
-        "showOnlyNotFollowed": "Mostrar solo cuentas no seguidas"
-    },
-    "AccountToMigrate": {
+        "showOnlyNotFollowed": "Mostrar solo cuentas nuevas",
+        "notFollowed": "No seguido",
+        "followed": "Ya seguido",
+        "ignored": "Ignorado",
+        "accountIgnored": "Cuenta ignorada con éxito",
+    "accountRestored": "Cuenta restaurada con éxito",
+    "errorIgnoringAccount": "Error al ignorar la cuenta",
+    "errorRestoringAccount": "Error al restaurar la cuenta"
+      },
+      "AccountToMigrate": {
         "followOnBluesky": "Seguir en Bluesky",
         "followOnMastodon": "Seguir en Mastodon",
         "followedOnBluesky": "Seguido en Bluesky",
-        "followedOnMastodon": "Seguido en Mastodon"
+        "followedOnMastodon": "Seguido en Mastodon",
+        "ignore": "Ignorar",
+        "unignore": "Restaurar",
+        "errorIgnoringAccount": "Error al ignorar la cuenta"
     },
     "reconnexionModal": {
         "title": "¡Acabas de activar tu conexión con {count} cuentas!",
