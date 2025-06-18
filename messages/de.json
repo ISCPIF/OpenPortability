@@ -592,30 +592,26 @@
     "cta": "ABSENDEN",
     "dismiss": "Durch Klicken auf 'Absenden' bestätige ich, dass ich die oben genannten Bedingungen gelesen habe und damit einverstanden bin. Sie müssen die Nutzungsbedingungen akzeptieren, um auf der OpenPortability-Plattform fortzufahren"
   },
-    "support": {
-        "modal": {
-            "form": {
-                "submit": "Nachricht senden",
-                "message": {
-                    "label": "Deine Nachricht",
-                    "placeholder": "Beschreibe dein Problem..."
-                },
-                "submitting": "Wird gesendet...",
-                "subject": {
-                    "label": "Betreff",
-                    "placeholder": "Wähle einen Betreff"
-                },
-                "email": {
-                    "placeholder": "beispiel@email.com",
-                    "label": "Deine E-Mail-Adresse"
-                }
-            },
-            "title": "Gibt es ein Problem?",
-            "description": "Schick uns eine Nachricht und wir werden uns so schnell wie möglich bei dir melden.",
-            "error": "Beim Senden deiner Nachricht ist ein Fehler aufgetreten.",
-            "success": "Die Nachricht wurde erfolgreich versendet!"
-        }
-    },
+  "support": {
+    "modal": {
+      "title": "Haben Sie ein Problem?",
+      "description": "Senden Sie uns eine Nachricht und wir melden uns so schnell wie möglich bei Ihnen.",
+      "form": {
+        "email": {
+          "label": "Ihre E-Mail",
+          "placeholder": "beispiel@email.com"
+        },
+        "message": {
+          "label": "Ihre Nachricht",
+          "placeholder": "Beschreiben Sie Ihr Problem..."
+        },
+        "submit": "Nachricht senden"
+      },
+      "success": "Nachricht erfolgreich gesendet!",
+      "success2": "Wir werden uns bald bei Ihnen melden, um Ihnen auf Ihrem Weg zu helfen.",
+      "error": "Beim Senden Ihrer Nachricht ist ein Fehler aufgetreten."
+    }
+  },
     "AutomaticReconnexion": {
         "reconnectionInProgress": "Automatische Wiederherstellung aktiviert",
         "chooseManualy": "Verknüpfe deine Follower",

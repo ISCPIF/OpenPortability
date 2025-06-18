@@ -456,28 +456,22 @@
   },
   "support": {
     "modal": {
-      "title": "Un problème ?",
-      "description": "Envoyez-nous un message et nous vous répondrons dans les plus brefs délais.",
-      "error": {
-        "send": "Erreur lors de l'envoi du message",
-        "unknown": "Une erreur inattendue s'est produite"
-      },
+      "title": "Vous avez un problème ?",
+      "description": "Envoyez-nous un message et nous vous répondrons dès que possible.",
       "form": {
         "email": {
-          "label": "Votre adresse email",
+          "label": "Votre email",
           "placeholder": "exemple@email.com"
         },
-        "subject": {
-          "label": "Sujet",
-          "placeholder": "Votre sujet"
-        },
         "message": {
-          "label": "Message",
-          "placeholder": "Votre message"
+          "label": "Votre message",
+          "placeholder": "Décrivez votre problème..."
         },
-        "submit": "Envoyer",
-        "submitting": "Envoi en cours..."
-      }
+        "submit": "Envoyer le message"
+      },
+      "success": "Message envoyé avec succès !",
+      "success2": "Nous vous répondrons bientôt pour vous aider dans votre parcours.",
+      "error": "Une erreur s'est produite lors de l'envoi de votre message."
     }
   },
 "errorModal": {
