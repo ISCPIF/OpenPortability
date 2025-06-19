@@ -1,4 +1,4 @@
-FROM node:20-alpine
+FROM node:24-alpine
 
 # Créer un utilisateur non-root
 RUN addgroup -g 1001 appgroup && \
@@ -7,7 +7,7 @@ RUN addgroup -g 1001 appgroup && \
 # Définir le répertoire de travail
 WORKDIR /app
 
-RUN npm install -g npm@11.2.0
+RUN npm install -g npm@11.4.2
 
 # Installer les dépendances système nécessaires (en tant que root)
 RUN apk add --no-cache python3 make g++ gcc
