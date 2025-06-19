@@ -1,24 +1,24 @@
 import { NextResponse } from "next/server";
 import { BskyAgent } from '@atproto/api';
+import { z } from "zod";
+import { withValidation } from "@/lib/validation/middleware";
 import { BlueskyService } from "@/lib/services/blueskyServices";
 import { BlueskyRepository } from "@/lib/repositories/blueskyRepository";
-import { AccountService } from "@/lib/services/accountService"
+import { AccountService } from "@/lib/services/accountService";
 import { decrypt } from '@/lib/encryption';
 import logger from '@/lib/log_utils';
-import { withValidation } from "@/lib/validation/middleware"
-import { z } from "zod"
-
-const blueskyRepository = new BlueskyRepository();
-const blueskyService = new BlueskyService(blueskyRepository);
-const accountService = new AccountService()
 
 // Schéma de validation pour le partage sur Bluesky
 const BlueskyShareSchema = z.object({
-  text: z.string().min(1, "Le texte ne peut pas être vide").max(300, "Le texte ne peut pas dépasser 300 caractères")
+  text: z.string().min(1, "Text can't be empty").max(2000, "Text can't exceed 2000 characters")
 }).strict();
 
 // Type pour les données validées
 type BlueskyShareRequest = z.infer<typeof BlueskyShareSchema>;
+
+const blueskyRepository = new BlueskyRepository();
+const blueskyService = new BlueskyService(blueskyRepository);
+const accountService = new AccountService();
 
 async function blueskyShareHandler(req: Request, data: BlueskyShareRequest, session: any) {
   try {

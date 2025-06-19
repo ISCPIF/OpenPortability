@@ -23,12 +23,6 @@ export default function SettingsPage() {
   const t = useTranslations('settings');
   const { data: session, status } = useSession();
   const router = useRouter();
-
-
-  if (status === "unauthenticated") {
-    router.replace("/auth/signin");
-    return;
-  }
   
   // Newsletter state
   const { 
@@ -76,6 +70,11 @@ export default function SettingsPage() {
   };
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  if (status === "unauthenticated") {
+    router.replace("/auth/signin");
+    return;
+  }
+
 
   const confirmDelete = async () => {
     try {
