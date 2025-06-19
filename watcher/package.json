@@ -8,15 +8,15 @@
     "dev": "ts-node src/monitor.ts"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.39.0",
-    "node-telegram-bot-api": "^0.64.0",
-    "dotenv": "^16.3.1",
-    "winston": "^3.11.0"
+    "@supabase/supabase-js": "^2.50.0",
+    "dotenv": "^16.5.0",
+    "node-telegram-bot-api": "^0.63.0",
+    "winston": "^3.17.0"
   },
   "devDependencies": {
-    "@types/node-telegram-bot-api": "^0.64.0",
-    "@types/node": "^20.10.5",
-    "typescript": "^5.3.3",
-    "ts-node": "^10.9.2"
+    "@types/node": "^24.0.3",
+    "@types/node-telegram-bot-api": "^0.64.9",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
   }
 }
