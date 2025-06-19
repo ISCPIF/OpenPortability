@@ -1,11 +1,11 @@
-# Build stage
-FROM node:20-alpine AS builder
+ # Build stage
+FROM node:24-alpine AS builder
 
 # Create non-root user
 RUN addgroup -g 1001 appgroup && \
     adduser -u 1001 -G appgroup -s /bin/sh -D appuser
 
-RUN npm install -g npm@11.2.0
+RUN npm install -g npm@11.4.2
 
 
 WORKDIR /app
@@ -31,13 +31,13 @@ COPY --chown=appuser:appgroup . .
 RUN npm run build
 
 # Production stage
-FROM node:20-alpine AS production
+FROM node:24-alpine AS production
 
 # Create the same non-root user in production stage
 RUN addgroup -g 1001 appgroup && \
     adduser -u 1001 -G appgroup -s /bin/sh -D appuser
 
-RUN npm install -g npm@11.2.0
+RUN npm install -g npm@11.4.2
 
 
 WORKDIR /app
@@ -72,11 +72,11 @@ EXPOSE 3000
 CMD ["npm", "run", "start"]
 
 # # Build stage
-# FROM node:20-alpine
+# FROM node:24-alpine
 # WORKDIR /app
 
 # # Update npm to latest version
-# RUN npm install -g npm@11.1.0
+# RUN npm install -g npm@11.4.2
 
 # # Copier uniquement les fichiers nécessaires pour npm install
 # COPY package*.json ./
