@@ -37,7 +37,7 @@ export const GET = withValidation(
   {
     requireAuth: true,
     applySecurityChecks: false, // Pas de données à valider pour GET
-    skipRateLimit: false,
+    skipRateLimit: true,
     validateQueryParams: true, // Activer explicitement la validation des paramètres d'URL
     queryParamsSchema: StatsQueryParamsSchema 
   }

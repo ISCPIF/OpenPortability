@@ -92,7 +92,7 @@ async function updateUserStatsHandler(
 // Configuration du rate limit spécifique: une fois par 10 minutes par utilisateur
 const userStatsRateLimit = {
   windowMs: 10 * 60 * 1000, // 10 minutes
-  maxRequests: 1,           // Une seule requête autorisée
+  maxRequests: 2,           // Une seule requête autorisée
   message: 'Stats can only be updated once every 10 minutes. Please try again later.'
 };
 

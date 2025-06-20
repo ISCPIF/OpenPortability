@@ -70,11 +70,11 @@ async function performSecurityValidation(
 ): Promise<{ isSecure: boolean; errors: string[] }> {
   const errors: string[] = [];
   
-  console.log('Validation', 'Security checks started', userId || 'anonymous', {
-    endpoint,
-    dataKeys: Object.keys(data),
-    excludedFields: excludeFromSecurityChecks
-  });
+  // console.log('Validation', 'Security checks started', userId || 'anonymous', {
+  //   endpoint,
+  //   dataKeys: Object.keys(data),
+  //   excludedFields: excludeFromSecurityChecks
+  // });
   
   // Vérification SQL injection et XSS sur tous les champs string
   const checkSecurityPatterns = (obj: any, path = ''): void => {
@@ -84,7 +84,7 @@ async function performSecurityValidation(
       // Vérifier si le champ actuel est dans la liste des exclusions
       if (excludeFromSecurityChecks.includes(currentPath) || 
           (path === '' && excludeFromSecurityChecks.includes(key))) {
-        console.log('Validation', `Skipping security check for excluded field: ${currentPath}`, userId || 'anonymous');
+        // console.log('Validation', `Skipping security check for excluded field: ${currentPath}`, userId || 'anonymous');
         continue;
       }
       
@@ -93,7 +93,7 @@ async function performSecurityValidation(
         const sqlResult = detectSqlInjectionPayload(value);
         if (sqlResult.isVulnerable) {
           errors.push(`SQL injection detected in field: ${currentPath} (Risk: ${sqlResult.riskLevel})`);
-          console.log('Security', 'SQL injection detected', `Field: ${currentPath}`, userId || 'anonymous', {
+          logger.logError('Security', 'SQL injection detected', `Field: ${currentPath}`, userId || 'anonymous', {
             patterns: sqlResult.detectedPatterns.slice(0, 3),
             riskLevel: sqlResult.riskLevel,
             value: value.substring(0, 100) // Log only first 100 chars
@@ -104,7 +104,7 @@ async function performSecurityValidation(
         const xssResult = detectXssPayload(value);
         if (xssResult.isVulnerable) {
           errors.push(`XSS detected in field: ${currentPath} (Risk: ${xssResult.riskLevel})`);
-          console.log('Security', 'XSS detected', `Field: ${currentPath}`, userId || 'anonymous', {
+          logger.logError('Security', 'XSS detected', `Field: ${currentPath}`, userId || 'anonymous', {
             patterns: xssResult.detectedPatterns.slice(0, 3),
             riskLevel: xssResult.riskLevel,
             value: value.substring(0, 100)
@@ -125,7 +125,7 @@ async function performSecurityValidation(
       email: String(data.email)
     };
     
-    console.log('Validation', 'Running extended support security checks', userId || 'anonymous');
+    // console.log('Validation', 'Running extended support security checks', userId || 'anonymous');
     const securityResult = secureSupportContentExtended(supportData, userId);
     if (!securityResult.isSecure) {
       errors.push(...(securityResult.securityReport.errors || []));
@@ -134,11 +134,11 @@ async function performSecurityValidation(
   
   // TODO: Ajouter des vérifications de sécurité spécifiques pour chaque endpoint
   
-  console.log('Validation', 'Security checks completed', userId || 'anonymous', {
-    endpoint,
-    errorsCount: errors.length,
-    isSecure: errors.length === 0
-  });
+  // console.log('Validation', 'Security checks completed', userId || 'anonymous', {
+  //   endpoint,
+  //   errorsCount: errors.length,
+  //   isSecure: errors.length === 0
+  // });
   
   return {
     isSecure: errors.length === 0,
@@ -180,40 +180,39 @@ function validateQueryParameters(
     const protoRegex = /(__proto__|constructor|prototype)/i;
     if (protoRegex.test(key)) {
       errors.push(`Potential prototype pollution detected in query parameter key: ${key}`);
-      console.log('Security', `Prototype pollution attempt in URL params for ${endpoint}`, userId || 'anonymous', {
-        parameter: key,
-        value: value.substring(0, 100) // Log only first 100 chars
-      });
+      logger.logError('Security', `Prototype pollution attempt in URL params for ${endpoint}`, userId || 'anonymous', 
+        key, value
+      );
       continue;
     }
     
     // Vérifier les tentatives de pollution de prototype dans les valeurs
     if (protoRegex.test(value)) {
       errors.push(`Potential prototype pollution detected in query parameter value: ${key}=${value}`);
-      console.log('Security', `Prototype pollution attempt in URL params for ${endpoint}`, userId || 'anonymous', {
-        parameter: key,
-        value: value.substring(0, 100)
-      });
+      logger.logError('Security', `Prototype pollution attempt in URL params for ${endpoint}`, userId || 'anonymous', 
+        key,
+        value
+      );
       continue;
     }
     
     // Vérifier les attaques JSONP
     if (key === 'callback' || key === 'jsonp') {
       errors.push(`JSONP callback parameter detected: ${key}`);
-      console.log('Security', `JSONP callback attempt in URL params for ${endpoint}`, userId || 'anonymous', {
-        parameter: key,
-        value: value.substring(0, 100)
-      });
+      logger.logError('Security', `JSONP callback attempt in URL params for ${endpoint}`, userId || 'anonymous', 
+        key,
+        value
+      );
       continue;
     }
     
     // Vérifier les injections SQL avec point-virgule (;)
     if (value.includes(';')) {
       errors.push(`SQL injection detected in query parameter: ${key}`);
-      console.log('Security', `SQL injection attempt in URL params for ${endpoint}`, userId || 'anonymous', {
-        parameter: key,
-        value: value.substring(0, 100)
-      });
+      logger.logError('Security', `SQL injection attempt in URL params for ${endpoint}`, userId || 'anonymous', 
+        key,
+        value
+      );
       continue;
     }
     
@@ -221,12 +220,12 @@ function validateQueryParameters(
     const sqlResult = detectSqlInjectionPayload(value);
     if (sqlResult.isVulnerable) {
       errors.push(`SQL injection detected in query parameter: ${key} (Risk: ${sqlResult.riskLevel})`);
-      console.log('Security', `SQL injection attempt in URL params for ${endpoint}`, userId || 'anonymous', {
-        parameter: key,
-        value: value.substring(0, 100),
-        patterns: sqlResult.detectedPatterns.slice(0, 3),
-        riskLevel: sqlResult.riskLevel
-      });
+      logger.logError('Security', `SQL injection attempt in URL params for ${endpoint}`, userId || 'anonymous', 
+        key,
+        value,
+        sqlResult.detectedPatterns.slice(0, 3)[0],
+        sqlResult.riskLevel
+      );
       continue;
     }
     
@@ -249,11 +248,11 @@ function validateQueryParameters(
     for (const pattern of dangerousPatterns) {
       if (pattern.test(value)) {
         errors.push(`XSS detected in query parameter: ${key}`);
-        console.log('Security', `XSS attempt in URL params for ${endpoint}`, userId || 'anonymous', {
-          parameter: key,
-          value: value.substring(0, 100),
-          pattern: pattern.toString()
-        });
+        logger.logError('Security', `XSS attempt in URL params for ${endpoint}`, userId || 'anonymous', 
+          key,
+          value,
+          pattern.toString()
+        );
         hasDangerousPattern = true;
         break;
       }
@@ -266,10 +265,10 @@ function validateQueryParameters(
     // Utiliser aussi la fonction existante detectDangerousContent comme filet de sécurité
     if (detectDangerousContent(value)) {
       errors.push(`XSS detected in query parameter: ${key}`);
-      console.log('Security', `XSS attempt in URL params for ${endpoint}`, userId || 'anonymous', {
-        parameter: key,
-        value: value.substring(0, 100)
-      });
+      logger.logError('Security', `XSS attempt in URL params for ${endpoint}`, userId || 'anonymous', 
+        key,
+        value
+      );
       continue;
     }
   }
@@ -322,7 +321,7 @@ export function withValidation<T>(
         session = await auth();
         
         if (!session?.user?.id) {
-          console.log('Validation', `${method} ${endpoint}`, 'Authentication required but not provided', 'anonymous');
+          logger.logError('Validation', `${method} ${endpoint}`, 'Authentication required but not provided', 'anonymous');
           return NextResponse.json(
             { error: 'Unauthorized' },
             { status: 401 }
@@ -340,11 +339,11 @@ export function withValidation<T>(
         const queryParamsValidation = validateQueryParameters(url, endpoint, session?.user?.id);
         
         if (!queryParamsValidation.isValid) {
-          console.log('Security', `${method} ${endpoint}`, 'URL parameters validation failed', session?.user?.id || 'anonymous', {
-            errors: queryParamsValidation.errors,
-            clientIP: request.headers.get('x-forwarded-for') || 'unknown',
-            userAgent: request.headers.get('user-agent') || 'unknown'
-          });
+          logger.logError('Security', `${method} ${endpoint}`, 'URL parameters validation failed', session?.user?.id || 'anonymous', 
+            queryParamsValidation.errors,
+            request.headers.get('x-forwarded-for') || 'unknown',
+            request.headers.get('user-agent') || 'unknown'
+          );
           
           return NextResponse.json(
             {
@@ -365,9 +364,9 @@ export function withValidation<T>(
           queryParamsSchema.parse(queryParams);
         } catch (error) {
           if (error instanceof ZodError) {
-            console.log('Validation', `${method} ${endpoint}`, 'URL parameters schema validation failed', session?.user?.id || 'anonymous', {
-              errors: error.errors
-            });
+            logger.logError('Validation', `${method} ${endpoint}`, 'URL parameters schema validation failed', session?.user?.id || 'anonymous', 
+              error.errors
+            );
             
             return NextResponse.json(
               {
@@ -400,10 +399,10 @@ export function withValidation<T>(
         const rateLimitResult = checkRateLimit(endpoint, identifier, customRateLimit);
         
         if (!rateLimitResult.allowed) {
-          console.log('Security', `${method} ${endpoint}`, 'Rate limit exceeded', session?.user?.id || 'anonymous', {
+          logger.logError('Security', `${method} ${endpoint}`, 'Rate limit exceeded', session?.user?.id || 'anonymous', 
             identifier,
-            retryAfter: rateLimitResult.retryAfter
-          });
+            rateLimitResult.retryAfter?.toString()
+          );
           return rateLimitResponse(rateLimitResult, rateLimitConfig);
         }
         
@@ -436,10 +435,10 @@ export function withValidation<T>(
               contentType.includes(expectedContentType);
             
             if (!isValidContentType) {
-              console.log('Validation', `${method} ${endpoint}`, 'Invalid content type', session?.user?.id || 'anonymous', {
-                expected: expectedContentType,
-                received: contentType
-              });
+              logger.logError('Validation', `${method} ${endpoint}`, 'Invalid content type', session?.user?.id || 'anonymous', 
+                expectedContentType,
+                contentType
+              );
               return NextResponse.json(
                 { error: `Invalid content type. Expected: ${expectedContentType}` },
                 { status: 400 }
@@ -477,9 +476,9 @@ export function withValidation<T>(
                 data = JSON.parse(bodyText);
                 data = schema.parse(data);
               } catch (jsonError) {
-                console.log('Validation', `${method} ${endpoint}`, 'JSON parsing failed', session?.user?.id || 'anonymous', {
-                  error: jsonError.message
-                });
+                logger.logError('Validation', `${method} ${endpoint}`, 'JSON parsing failed', session?.user?.id || 'anonymous', 
+                  jsonError instanceof Error ? jsonError.message : 'Unknown error'
+                );
                 return NextResponse.json(
                   {
                     error: 'Validation failed',
@@ -494,9 +493,9 @@ export function withValidation<T>(
                 );
               }
             } catch (jsonError) {
-              console.log('Validation', `${method} ${endpoint}`, 'JSON parsing failed', session?.user?.id || 'anonymous', {
-                error: jsonError.message
-              });
+              logger.logError('Validation', `${method} ${endpoint}`, 'JSON parsing failed', session?.user?.id || 'anonymous', 
+                jsonError instanceof Error ? jsonError.message : 'Unknown error'
+              );
               return NextResponse.json(
                 {
                   error: 'Validation failed',
@@ -523,9 +522,9 @@ export function withValidation<T>(
         // console.log('Validation', `${method} ${endpoint}`, 'Schema validation passed', session?.user?.id || 'anonymous');
       } catch (error) {
         if (error instanceof ZodError) {
-          console.log('Validation', `${method} ${endpoint}`, 'Schema validation failed', session?.user?.id || 'anonymous', {
-            errors: error.errors
-          });
+          logger.logError('Validation', `${method} ${endpoint}`, 'Schema validation failed', session?.user?.id || 'anonymous', 
+            error instanceof ZodError ? error.errors : 'Unknown error'
+          );
           
           return NextResponse.json(
             {
@@ -547,11 +546,11 @@ export function withValidation<T>(
         const securityCheck = await performSecurityValidation(data, endpoint, session?.user?.id, excludeFromSecurityChecks);
         
         if (!securityCheck.isSecure) {
-          console.log('Security', `${method} ${endpoint}`, 'Security validation failed', session?.user?.id || 'anonymous', {
-            errors: securityCheck.errors,
-            clientIP: request.headers.get('x-forwarded-for') || 'unknown',
-            userAgent: request.headers.get('user-agent') || 'unknown'
-          });
+          logger.logError('Security', `${method} ${endpoint}`, 'Security validation failed', session?.user?.id || 'anonymous', 
+            securityCheck.errors,
+            request.headers.get('x-forwarded-for') || 'unknown',
+            request.headers.get('user-agent') || 'unknown'
+          );
           
           return NextResponse.json(
             {
@@ -573,9 +572,9 @@ export function withValidation<T>(
       return response;
       
     } catch (error) {
-      console.log('API', `${method} ${endpoint}`, error, 'unknown', {
-        context: 'Validation middleware error'
-      });
+      // logger.logError('API', `${method} ${endpoint}`, error instanceof Error ? error.message : 'Unknown error', {
+      //   context: 'Validation middleware error'
+      // });
       
       return NextResponse.json(
         { error: 'Internal server error' },

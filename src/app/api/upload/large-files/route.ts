@@ -274,10 +274,6 @@ export const POST = withValidation(
     requireAuth: true,
     applySecurityChecks: true,
     expectedContentType: 'multipart/form-data',
-    customRateLimit: {
-      windowMs: 5 * 60 * 1000, // 5 minutes
-      maxRequests: 1000000,
-      identifier: 'userId'
-    }
+    skipRateLimit: false
   }
 );
