@@ -109,7 +109,7 @@ export default function AccountToMigrate({
         )}
         
         {/* Bouton pour ignorer le compte */}
-        {!isDismissed && !hasFollowBluesky && !hasFollowMastodon && (
+        {!isDismissed && (
           <button 
             onClick={() => onIgnore(targetTwitterId)}
             className="px-2 sm:px-3 py-1 text-xs sm:text-sm bg-gray-100 text-gray-600 rounded-full hover:bg-gray-200 transition-colors flex items-center gap-1"
