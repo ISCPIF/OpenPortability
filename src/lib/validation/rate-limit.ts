@@ -8,6 +8,9 @@ import { NextResponse } from 'next/server';
 // - Uploads: 5 req/5min par userId
 // - Endpoints de lecture purs: pas de limite (skipRateLimit)
 
+// Environment variable for debug mode (defaults to false)
+const DEBUG_RATE_LIMIT = 'true';
+
 // Configuration par endpoint
 export interface RateLimitConfig {
   windowMs: number;      // Fenêtre de temps en millisecondes
@@ -85,6 +88,25 @@ export const RATE_LIMIT_CONFIGS: Record<string, RateLimitConfig> = {
   }
 };
 
+// Debug configuration with much higher limits
+export const DEBUG_RATE_LIMIT_CONFIGS: Record<string, Partial<RateLimitConfig>> = {
+  // Higher limits for all endpoints in debug mode
+  'default': {
+    windowMs: 1 * 60 * 1000,  // 1 minute
+    maxRequests: 1000,        // Very high limit for testing
+  },
+  // You can override specific endpoints for debugging if needed
+  '/api/support': {
+    maxRequests: 100,         // Higher limit for testing support endpoints
+  },
+  '/api/upload': {
+    maxRequests: 50,          // Higher limit for testing uploads
+  },
+  '/api/upload/large-files': {
+    maxRequests: 20,          // Higher limit for testing large uploads
+  }
+};
+
 // Storage en mémoire pour les compteurs
 const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
 
@@ -103,6 +125,7 @@ export interface RateLimitResult {
   remaining: number;
   resetTime: number;
   retryAfter?: number;
+  debugMode?: boolean; // Indicate if debug mode was applied
 }
 
 /**
@@ -113,10 +136,21 @@ export function checkRateLimit(
   identifierValue: string,
   customConfig?: Partial<RateLimitConfig>
 ): RateLimitResult {
-  const config = {
+  // Start with the default config for the endpoint
+  let config = {
     ...(RATE_LIMIT_CONFIGS[endpoint] || RATE_LIMIT_CONFIGS.default),
     ...customConfig
   };
+  
+  // Apply debug configuration if debug mode is enabled
+  if (DEBUG_RATE_LIMIT) {
+    // Apply endpoint-specific debug config if it exists, otherwise use debug default
+    const debugConfig = DEBUG_RATE_LIMIT_CONFIGS[endpoint] || DEBUG_RATE_LIMIT_CONFIGS.default;
+    config = {
+      ...config,
+      ...debugConfig
+    };
+  }
   
   const key = `${endpoint}:${identifierValue}`;
   const now = Date.now();
@@ -132,7 +166,8 @@ export function checkRateLimit(
     return {
       allowed: true,
       remaining: config.maxRequests - 1,
-      resetTime: now + config.windowMs
+      resetTime: now + config.windowMs,
+      debugMode: DEBUG_RATE_LIMIT
     };
   }
   
@@ -142,7 +177,8 @@ export function checkRateLimit(
       allowed: false,
       remaining: 0,
       resetTime: userLimit.resetTime,
-      retryAfter: Math.ceil((userLimit.resetTime - now) / 1000)
+      retryAfter: Math.ceil((userLimit.resetTime - now) / 1000),
+      debugMode: DEBUG_RATE_LIMIT
     };
   }
   
@@ -151,7 +187,8 @@ export function checkRateLimit(
   return {
     allowed: true,
     remaining: config.maxRequests - userLimit.count,
-    resetTime: userLimit.resetTime
+    resetTime: userLimit.resetTime,
+    debugMode: DEBUG_RATE_LIMIT
   };
 }
 
@@ -164,10 +201,11 @@ export function rateLimitResponse(
 ): NextResponse {
   const message = config?.message || 'Too many requests. Please try again later.';
   
-  return NextResponse.json(
+  const response = NextResponse.json(
     {
       error: message,
-      retryAfter: result.retryAfter
+      retryAfter: result.retryAfter,
+      debugMode: result.debugMode // Include debug mode status in response
     },
     {
       status: 429,
@@ -175,10 +213,13 @@ export function rateLimitResponse(
         'X-RateLimit-Limit': String(config?.maxRequests || 30),
         'X-RateLimit-Remaining': String(result.remaining),
         'X-RateLimit-Reset': String(result.resetTime),
-        'Retry-After': String(result.retryAfter || 60)
+        'Retry-After': String(result.retryAfter || 60),
+        'X-Debug-Mode': result.debugMode ? 'true' : 'false'
       }
     }
   );
+  
+  return response;
 }
 
 /**
@@ -196,4 +237,11 @@ export function resetRateLimit(
   if (rateLimitStore.has(key)) {
     rateLimitStore.delete(key);
   }
+}
+
+/**
+ * Permet de savoir si le mode debug est activé pour les rate limits
+ */
+export function isRateLimitDebugMode(): boolean {
+  return DEBUG_RATE_LIMIT;
 }
