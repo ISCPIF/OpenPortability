@@ -1,5 +1,13 @@
 import { NextResponse } from 'next/server';
 
+// Stratégie de rate limiting:
+// - Endpoints publics: 10 req/5min par IP
+// - Actions utilisateur standard: 10 req/5min par userId
+// - Actions batch: 100 req/5min par userId
+// - Endpoints sensibles (support): 3 req/5min par IP
+// - Uploads: 5 req/5min par userId
+// - Endpoints de lecture purs: pas de limite (skipRateLimit)
+
 // Configuration par endpoint
 export interface RateLimitConfig {
   windowMs: number;      // Fenêtre de temps en millisecondes
@@ -13,8 +21,8 @@ export interface RateLimitConfig {
 export const RATE_LIMIT_CONFIGS: Record<string, RateLimitConfig> = {
   // Endpoints publics
   '/api/auth/bluesky': {
-    windowMs: 1 * 1000,  // 5 minutes
-    maxRequests: 1000,          // 10 tentatives de connexion
+    windowMs: 5 * 60 * 1000,  // 5 minutes
+    maxRequests: 10,          // 10 tentatives de connexion
     identifier: 'ip',
     skipAuth: true,
     message: 'Too many authentication attempts. Please try again later.'
@@ -29,44 +37,50 @@ export const RATE_LIMIT_CONFIGS: Record<string, RateLimitConfig> = {
   
   // Endpoints authentifiés
   '/api/support': {
-    windowMs: 60 * 1000,      // 1 minute
-    maxRequests: 10000,           // 5 emails par minute
-    identifier: 'userId',
+    windowMs:  5 * 60 * 1000,      // 1 minute
+    maxRequests: 3,           // 5 emails par minute
+    identifier: 'ip',
     message: 'Too many support requests. Please wait before sending another message.'
   },
   '/api/newsletter/request': {
-    windowMs: 60 * 1000,
-    maxRequests: 1000,          // Plus permissif pour les updates de consentements
+    windowMs: 5 * 60 * 1000,
+    maxRequests: 10,          // Plus permissif pour les updates de consentements
     identifier: 'userId'
   },
   '/api/share': {
-    windowMs: 60 * 1000,
-    maxRequests: 10000,          // Permet plusieurs partages rapides
+    windowMs: 5 * 60 * 1000,
+    maxRequests: 10,          // Permet plusieurs partages rapides
     identifier: 'userId'
   },
   '/api/migrate/send_follow': {
-    windowMs: 60 * 1000,
+    windowMs: 5 * 60 * 1000,
     maxRequests: 100,         // Batch processing, limite élevée
     identifier: 'userId',
     message: 'Too many follow requests. Please wait before sending more.'
   },
   '/api/upload': {
     windowMs: 5 * 60 * 1000,  // 5 minutes
-    maxRequests: 1000,           // 5 uploads par 5 minutes
+    maxRequests: 5,           // 5 uploads par 5 minutes
     identifier: 'userId',
     message: 'Too many uploads. Please wait before uploading more files.'
   },
   '/api/upload/large-files': {
-    windowMs: 10 * 60 * 1000, // 10 minutes
-    maxRequests: 1000000,           // 3 gros uploads par 10 minutes
+    windowMs: 5 * 60 * 1000, // 10 minutes
+    maxRequests: 5,           // 3 gros uploads par 10 minutes
     identifier: 'userId',
     message: 'Too many large file uploads. Please wait before uploading more.'
+  },
+  '/api/migrate/ignore': {
+    windowMs: 5 * 60 * 1000,
+    maxRequests: 100,
+    identifier: 'userId',
+    message: 'Too many ignore requests. Please wait before sending more.'
   },
   
   // Configuration par défaut
   'default': {
-    windowMs: 60 * 1000,
-    maxRequests: 3000,          // Limite généreuse par défaut
+    windowMs: 5 * 60 * 1000,
+    maxRequests: 10,          // Limite généreuse par défaut
     identifier: 'userId'
   }
 };

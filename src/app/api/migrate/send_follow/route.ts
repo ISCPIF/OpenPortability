@@ -203,9 +203,5 @@ export const POST = withValidation(
     requireAuth: true,
     applySecurityChecks: true,
     skipRateLimit: false,
-    customRateLimit: {
-      maxRequests: 100,  // Permettre un nombre plus élevé pour le traitement par lots
-      windowMs: 60 * 1000  // 1 minute
-    }
   }
 );

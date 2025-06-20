@@ -51,7 +51,8 @@ async function ignoreHandler(request: NextRequest, data: z.infer<typeof IgnoreTa
 // Options de validation
 const validationOptions = {
   requireAuth: true,
-  applySecurityChecks: true
+  applySecurityChecks: true,
+  skipRateLimit: false,
 };
 
 export const POST = withValidation(

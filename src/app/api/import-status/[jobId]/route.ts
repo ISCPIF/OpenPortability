@@ -90,6 +90,6 @@ export const GET = withValidation(
   {
     requireAuth: true,
     applySecurityChecks: false, // Pas de données à valider dans le body
-    skipRateLimit: false
+    skipRateLimit: true,
   }
 )
