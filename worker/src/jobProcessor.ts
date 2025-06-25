@@ -720,9 +720,9 @@ async function processBatchData(
   // await ensureSourceExists(userId, workerId);
 
   // Configuration adaptée selon le type
-  let CHUNK_SIZE = isFollowers ? 500 : 500;
+  let CHUNK_SIZE = isFollowers ? 250  : 250;
   const MIN_CHUNK_SIZE = 20;
-  const MAX_RETRIES = 3;
+  const MAX_RETRIES = 5;
   const BASE_DELAY = 500;
   
   let processedItems = 0;
@@ -829,7 +829,7 @@ async function batch_insert_followers(
     const { error } = await supabase.rpc('batch_insert_followers', {
       followers_data: followersData,
       relations_data: relationsData,
-      batch_size: 500,  // Taille de lot plus petite
+      batch_size: 200,  // Taille de lot plus petite
       statement_timeout_ms: 30000  // Timeout plus long (30 secondes)
     });
     return { error };
@@ -847,7 +847,7 @@ async function batch_insert_targets(
     const { error } = await supabase.rpc('batch_insert_targets', {
       targets_data: targetsData,
       relations_data: relationsData,
-      batch_size: 500,
+      batch_size: 200,
       statement_timeout_ms: 30000
     });
     return { error };
