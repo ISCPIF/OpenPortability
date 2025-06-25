@@ -35,7 +35,7 @@ interface WorkerConfig {
 
 const DEFAULT_CONFIG: WorkerConfig = {
   id: 'worker1',
-  pollingInterval: 15000,     // 1 seconde
+  pollingInterval: 60000,     // 1 seconde
   stalledJobTimeout: 60000,  // 1 minute
   circuitBreakerResetTimeout: 15000,  // 5 secondes
   retryDelay: 15000,         // 1 seconde
