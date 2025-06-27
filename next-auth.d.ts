@@ -23,6 +23,8 @@ declare module "next-auth" {
       bluesky_id?: string | null
       bluesky_username?: string | null
       bluesky_image?: string | null
+      facebook_id?: string | null
+      facebook_image?: string | null
     } & DefaultSession["user"]
   }
 
@@ -45,6 +47,8 @@ declare module "next-auth" {
     bluesky_id?: string | null
     bluesky_username?: string | null
     bluesky_image?: string | null
+    facebook_id?: string | null
+    facebook_image?: string | null
   }
 }
 
@@ -68,5 +72,7 @@ declare module "next-auth/jwt" {
     bluesky_id?: string
     bluesky_username?: string
     bluesky_image?: string
+    facebook_id?: string
+    facebook_image?: string
   }
 }

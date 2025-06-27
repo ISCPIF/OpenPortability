@@ -1,6 +1,7 @@
 import NextAuth, { NextAuthConfig } from "next-auth"
 import TwitterProvider from "next-auth/providers/twitter"
 import MastodonProvider from "next-auth/providers/mastodon"
+import FacebookProvider from "next-auth/providers/facebook"
 import { supabaseAdapter } from "@/lib/supabase-adapter"
 import type { TwitterData, MastodonProfile, BlueskyProfile } from "@/lib/supabase-adapter"
 import type { User, Account, Profile } from "next-auth"
@@ -70,18 +71,24 @@ export const authConfig = {
   },
   callbacks: {
     async signIn({ user, account, profile, error }) {
-      logger.logInfo('Auth', 'signIn', 'SignIn callback initiated', user?.id, { 
+      console.log('Auth', 'signIn', 'SignIn callback initiated', user?.id, { 
         provider: account?.provider,
         errorExists: !!error,
         profileExists: !!profile
       });
+
+      // if (session?.user?.id && account.provider === 'facebook') {
+      //   logger.logInfo('Auth', 'signIn', 'Facebook account verification', session.user.id, {
+      //     facebookId: profile.id,
+      //   });
+    
       
       if (error) {
-        logger.logError('Auth', 'signIn', error, user?.id, { provider: account?.provider });
+        console.log('Auth', 'signIn', error, user?.id, { provider: account?.provider });
       }
 
       if (!account) {
-        logger.logWarning('Auth', 'signIn', 'No account provided during sign in', user?.id);
+        console.log('Auth', 'signIn', 'No account provided during sign in', user?.id);
         return false;
       }
 
@@ -93,7 +100,7 @@ export const authConfig = {
           const mastodonProfile = profile as MastodonProfile;
           const instance = new URL(mastodonProfile.url).origin;
           
-          logger.logInfo('Auth', 'signIn', 'Mastodon account verification', session.user.id, {
+          console.log('Auth', 'signIn', 'Mastodon account verification', session.user.id, {
             mastodonId: mastodonProfile.id,
             instance
           });
@@ -107,7 +114,7 @@ export const authConfig = {
             .single();
 
             if (existingUser && existingUser.id !== session.user.id) {
-              logger.logWarning('Auth', 'signIn', 'This Mastodon account is already linked to another user', session.user.id, {
+              console.log('Auth', 'signIn', 'This Mastodon account is already linked to another user', session.user.id, {
                 existingUserId: existingUser.id,
                 mastodonId: mastodonProfile.id,
                 instance
@@ -118,7 +125,7 @@ export const authConfig = {
         
         // Si on essaie de lier un compte Bluesky
         if (session?.user?.id && account.provider === 'bluesky') {
-          logger.logInfo('Auth', 'signIn', 'Linking Bluesky account', session.user.id, {
+          console.log('Auth', 'signIn', 'Linking Bluesky account', session.user.id, {
             providerAccountId: account.providerAccountId
           });
           
@@ -136,14 +143,14 @@ export const authConfig = {
             session_state: account.session_state
           });
           
-          logger.logInfo('Auth', 'signIn', 'Successfully linked Bluesky account', session.user.id);
+          console.log('Auth', 'signIn', 'Successfully linked Bluesky account', session.user.id);
         }
 
         // Autoriser la connexion dans tous les cas
-        logger.logInfo('Auth', 'signIn', 'Authentication successful', user?.id, { provider: account.provider });
+        console.log('Auth', 'signIn', 'Authentication successful', user?.id, { provider: account.provider });
         return true;
       } catch (error) {
-        logger.logError('Auth', 'signIn', error, user?.id, { provider: account?.provider });
+        console.log('Auth', 'signIn', error, user?.id, { provider: account?.provider });
         return false;
       }
     },
@@ -159,7 +166,7 @@ export const authConfig = {
         token.automatic_reconnect = !!user.automatic_reconnect
         token.have_seen_bot_newsletter = !!user.have_seen_bot_newsletter
         
-        logger.logInfo('Auth', 'jwt', 'User token initialization', user.id, {
+        console.log('Auth', 'jwt', 'User token initialization', user.id, {
           hasOnboarded: !!user.has_onboarded,
           hqxNewsletter: !!user.hqx_newsletter
         });
@@ -168,14 +175,14 @@ export const authConfig = {
       if (account && profile) {
         try {
           if (account?.provider === 'bluesky') {
-            logger.logInfo('Auth', 'jwt', 'Bluesky token processing', token.id || '', {
+            console.log('Auth', 'jwt', 'Bluesky token processing', token.id || '', {
               provider: 'bluesky'
             });
             // The user object should already be properly formatted from the credentials provider
             return token;
           }
           if (account.provider === 'twitter' && profile && isTwitterProfile(profile)) {
-            logger.logInfo('Auth', 'jwt', 'Twitter profile update', token.id || '', {
+            console.log('Auth', 'jwt', 'Twitter profile update', token.id || '', {
               twitterId: profile.data.id,
               twitterUsername: profile.data.username
             });
@@ -192,7 +199,7 @@ export const authConfig = {
           else if ((account.provider === 'mastodon' || account.provider === 'piaille') && profile && isMastodonProfile(profile)) {
             const instance = profile.url ? new URL(profile.url).origin : undefined;
             
-            logger.logInfo('Auth', 'jwt', 'Mastodon profile update', token.id || '', {
+            console.log('Auth', 'jwt', 'Mastodon profile update', token.id || '', {
               mastodonId: profile.id,
               mastodonUsername: profile.username,
               instance
@@ -208,23 +215,22 @@ export const authConfig = {
             token.mastodon_instance = profile.url ? new URL(profile.url).origin : undefined
             token.name = profile.display_name
           }
-          // else if (account.provider === 'bluesky' && profile && isBlueskyProfile(profile)) {
-          //   await supabaseAdapter.updateUser(token.id || '', {
-          //     provider: 'bluesky',
-          //     profile: profile
-          //   })
-          //   // Utiliser des valeurs par défaut pour les champs optionnels
-          //   const blueskyId = profile.did || profile.id || token.id || ''
-          //   const blueskyUsername = profile.handle || profile.username || profile.identifier || 'unknown'
-          //   const blueskyName = profile.displayName || profile.name || blueskyUsername
-
-          //   token.bluesky_id = blueskyId
-          //   token.bluesky_username = blueskyUsername
-          //   token.bluesky_image = profile.avatar || undefined
-          //   token.name = blueskyName
-          // }
+          else if (account.provider === 'facebook' && profile) {
+            logger.logInfo('Auth', 'jwt', 'Facebook profile update', token.id || '', {
+              facebookId: profile.id,
+              name: profile.name
+            });
+            
+            await supabaseAdapter.updateUser(token.id || '', {
+              provider: 'facebook',
+              profile: profile
+            })
+            token.facebook_id = profile.id
+            token.name = profile.name
+            token.facebook_image = profile.picture?.data?.url
+          }
         } catch (error) {
-          logger.logError('Auth', 'jwt', error, token.id || '', { provider: account.provider });
+          console.log('Auth', 'jwt', error, token.id || '', { provider: account.provider });
         }
       }
 
@@ -232,7 +238,7 @@ export const authConfig = {
     },
     async session({ session, token }) {
       if (!supabaseAdapter.getUser) {
-        logger.logError('Auth', 'session', new Error('Required adapter methods are not implemented'), token.id);
+        console.log('Auth', 'session', new Error('Required adapter methods are not implemented'), token.id);
         throw new Error('Required adapter methods are not implemented');
       }
       if (session.user && token.id) {
@@ -271,7 +277,7 @@ export const authConfig = {
             }
           }
         } catch (error) {
-          logger.logError('Auth', 'session', error, token.id);
+          console.log('Auth', 'session', error, token.id);
         }
       }
       return session
@@ -382,7 +388,7 @@ export const authConfig = {
       // version: "2.0",
       // checks: ["none"], // Désactiver la vérification du state pour Twitter
       async profile(profile, tokens) {
-        logger.logInfo('Auth', 'twitter.profile', 'Processing Twitter profile', undefined, {
+        console.log('Auth', 'twitter.profile', 'Processing Twitter profile', undefined, {
           twitterId: profile.data.id,
           twitterUsername: profile.data.username
         });
@@ -421,7 +427,7 @@ export const authConfig = {
       // This will be rewrited on the fly later on
       issuer: "https://mastodon.space",
       profile(profile: MastodonProfile) {
-        logger.logInfo('Auth', 'mastodon.profile', 'Processing Mastodon profile', undefined, {
+        console.log('Auth', 'mastodon.profile', 'Processing Mastodon profile', undefined, {
           mastodonId: profile.id,
           mastodonUsername: profile.username,
           url: profile.url
@@ -440,7 +446,34 @@ export const authConfig = {
           research_accepted: false,
           automatic_reconnect: false
         }
-    }})
+    }}),
+    FacebookProvider({
+      clientId: process.env.FACEBOOK_CLIENT_ID!,
+      clientSecret: process.env.FACEBOOK_CLIENT_SECRET!,
+      checks: ["none"], // Désactiver la vérification PKCE pour Facebook
+      profile(profile) {
+        console.log('Auth', 'facebook.profile', 'Processing Facebook profile', undefined, {
+          facebookId: profile.id,
+          name: profile.name,
+          profileData: JSON.stringify(profile)
+        });
+        
+        return {
+          id: profile.id,
+          name: profile.name,
+          image: profile.picture?.data?.url,
+          provider: 'facebook', // Ajouter explicitement le provider
+          profile: profile, // Passer le profil complet
+          has_onboarded: false,
+          hqx_newsletter: false,
+          oep_accepted: false,
+          have_seen_newsletter: false,
+          have_seen_bot_newsletter: false,
+          research_accepted: false,
+          automatic_reconnect: false
+        }
+      },
+    }),
   ],
   pages: {
     signIn: '/auth/signin',
