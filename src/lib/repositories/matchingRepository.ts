@@ -249,4 +249,81 @@ export class MatchingRepository {
       throw error;
     }
   }
+
+  /**
+   * Récupère les personnes que l'utilisateur suit (following)
+   * @param userId UUID de l'utilisateur
+   * @param limit Nombre maximum de résultats (max 1000 par Supabase)
+   * @returns Liste des twitter_ids des personnes suivies
+   */
+  async getUserFollowing(userId: string, limit: number = 1000): Promise<string[]> {
+    const { data, error } = await this.supabase
+      .from('sources_targets')
+      .select('target_twitter_id')
+      .eq('source_id', userId)
+      .eq('dismissed', false)
+      .limit(Math.min(limit, 1000));
+
+    if (error) {
+      logError('Repository', 'MatchingRepository.getUserFollowing', error, userId, { limit });
+      throw error;
+    }
+
+    return data?.map(item => item.target_twitter_id) || [];
+  }
+
+  /**
+   * Récupère les followers de l'utilisateur
+   * @param userId UUID de l'utilisateur
+   * @param limit Nombre maximum de résultats (max 1000 par Supabase)
+   * @returns Liste des twitter_ids des followers
+   */
+  async getUserFollowers(userId: string, limit: number = 1000): Promise<string[]> {
+    const { data, error } = await this.supabase
+      .from('sources_followers')
+      .select('follower_id')
+      .eq('source_id', userId)
+      .limit(Math.min(limit, 1000));
+
+    if (error) {
+      logError('Repository', 'MatchingRepository.getUserFollowers', error, userId, { limit });
+      throw error;
+    }
+
+    return data?.map(item => item.follower_id) || [];
+  }
+
+  /**
+   * Récupère le réseau complet de l'utilisateur (following + followers)
+   * @param userId UUID de l'utilisateur
+   * @param limit Nombre maximum de résultats par type (max 1000 par Supabase)
+   * @returns Objet avec following, followers et stats
+   */
+  async getUserNetwork(userId: string, limit: number = 1000): Promise<{
+    following: string[];
+    followers: string[];
+    stats: {
+      followingCount: number;
+      followersCount: number;
+      totalConnections: number;
+    };
+  }> {
+    const [following, followers] = await Promise.all([
+      this.getUserFollowing(userId, limit),
+      this.getUserFollowers(userId, limit)
+    ]);
+
+    // Calculer les stats
+    const stats = {
+      followingCount: following.length,
+      followersCount: followers.length,
+      totalConnections: following.length + followers.length
+    };
+
+    return {
+      following,
+      followers,
+      stats
+    };
+  }
 }
