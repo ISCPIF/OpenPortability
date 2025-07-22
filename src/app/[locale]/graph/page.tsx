@@ -61,6 +61,15 @@ interface GraphData {
   edges: GraphEdge[];
 }
 
+// {{ ... }}
+
+// import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
+// import { useTranslations } from 'next-intl';
+// import dynamic from 'next/dynamic';
+// import { useGraphData } from '@/app/_components/graph/hooks/useGraphData';
+
+// // {{ ... }}
+
 export default function GraphPage() {
   // const t = useTranslations('Graph');
   
@@ -90,29 +99,32 @@ export default function GraphPage() {
   const [showCommunityFilter, setShowCommunityFilter] = useState(false);
   
   const sigmaRef = useRef<any>(null);
-
   // Charger les données automatiquement au montage du composant
   useEffect(() => {
     fetchStaticGraphData();
   }, [fetchStaticGraphData]);
 
-  // Mettre à jour les données filtrées quand staticGraphData change
+  // Mettre à jour les données filtrées quand staticGraphData ou l'overlay change
   useEffect(() => {
     if (staticGraphData) {
-      setFilteredGraphData(staticGraphData);
+      // Utiliser createGraphWithOverlay pour appliquer l'overlay si nécessaire
+      const graphWithOverlay = createGraphWithOverlay(staticGraphData);
+      setFilteredGraphData(graphWithOverlay);
       
-      // Extraire les communautés disponibles
-      const communities = new Set<number>();
-      staticGraphData.nodes?.forEach((node: GraphNode) => {
-        if (typeof node.community === 'number') {
-          communities.add(node.community);
-        }
-      });
-      const communityList = Array.from(communities).sort((a, b) => a - b);
-      setAvailableCommunities(communityList);
-      setSelectedCommunities(new Set(communityList));
+      // Extraire les communautés disponibles (seulement au premier chargement)
+      if (availableCommunities.length === 0) {
+        const communities = new Set<number>();
+        staticGraphData.nodes?.forEach((node: GraphNode) => {
+          if (typeof node.community === 'number') {
+            communities.add(node.community);
+          }
+        });
+        const communityList = Array.from(communities).sort((a, b) => a - b);
+        setAvailableCommunities(communityList);
+        setSelectedCommunities(new Set(communityList));
+      }
     }
-  }, [staticGraphData]);
+  }, [staticGraphData, createGraphWithOverlay, availableCommunities.length]);
 
   // Nettoyer les contextes WebGL au démontage
   useEffect(() => {
@@ -137,7 +149,6 @@ export default function GraphPage() {
     setAvailableCommunities([]);
     setShowCommunityFilter(false);
   }, []);
-
 
   const searchNodes = useCallback((query: string) => {
     if (!filteredGraphData || !query.trim()) {
@@ -222,29 +233,31 @@ export default function GraphPage() {
   }, [focusOnNode]);
 
   // Effet pour filtrer les données quand les communautés sélectionnées changent
-// {{ ... }}
-
-  // Mettre à jour les données filtrées quand staticGraphData ou l'overlay change
   useEffect(() => {
-    if (staticGraphData) {
-      // Utiliser createGraphWithOverlay pour appliquer l'overlay si nécessaire
-      const graphWithOverlay = createGraphWithOverlay(staticGraphData);
-      setFilteredGraphData(graphWithOverlay);
-      
-      // Extraire les communautés disponibles (seulement au premier chargement)
-      if (availableCommunities.length === 0) {
-        const communities = new Set<number>();
-        staticGraphData.nodes?.forEach((node: GraphNode) => {
-          if (typeof node.community === 'number') {
-            communities.add(node.community);
-          }
-        });
-        const communityList = Array.from(communities).sort((a, b) => a - b);
-        setAvailableCommunities(communityList);
-        setSelectedCommunities(new Set(communityList));
-      }
+    if (!staticGraphData) return;
+
+    if (selectedCommunities.size === 0 || selectedCommunities.size === availableCommunities.length) {
+      // Aucune communauté sélectionnée ou toutes sélectionnées = afficher tout
+      setFilteredGraphData(staticGraphData);
+      return;
     }
-  }, [staticGraphData, createGraphWithOverlay, availableCommunities.length]);
+
+    // Filtrer les nœuds selon les communautés sélectionnées
+    const filteredNodes = staticGraphData.nodes.filter(node => {
+      return typeof node.community === 'number' && selectedCommunities.has(node.community);
+    });
+
+    // Filtrer les arêtes pour ne garder que celles entre nœuds visibles
+    const visibleNodeIds = new Set(filteredNodes.map(node => node.id));
+    const filteredEdges = staticGraphData.edges.filter(edge => 
+      visibleNodeIds.has(edge.source) && visibleNodeIds.has(edge.target)
+    );
+
+    setFilteredGraphData({
+      nodes: filteredNodes,
+      edges: filteredEdges
+    });
+  }, [staticGraphData, selectedCommunities, availableCommunities]);
 
   const toggleCommunity = useCallback((communityId: number) => {
     setSelectedCommunities(prev => {
@@ -265,31 +278,6 @@ export default function GraphPage() {
   const deselectAllCommunities = useCallback(() => {
     setSelectedCommunities(new Set());
   }, []);
-
-  // {{ ... }}
-
-  // Mettre à jour les données filtrées quand staticGraphData ou l'overlay change
-  useEffect(() => {
-    if (staticGraphData) {
-      // Utiliser createGraphWithOverlay pour appliquer l'overlay si nécessaire
-      const graphWithOverlay = createGraphWithOverlay(staticGraphData);
-      setFilteredGraphData(graphWithOverlay);
-      
-      // Extraire les communautés disponibles (seulement au premier chargement)
-      if (availableCommunities.length === 0) {
-        const communities = new Set<number>();
-        staticGraphData.nodes?.forEach((node: GraphNode) => {
-          if (typeof node.community === 'number') {
-            communities.add(node.community);
-          }
-        });
-        const communityList = Array.from(communities).sort((a, b) => a - b);
-        setAvailableCommunities(communityList);
-        setSelectedCommunities(new Set(communityList));
-      }
-    }
-  }, [staticGraphData, createGraphWithOverlay, availableCommunities.length]);
-
 
   // Créer le graphe (simplifié car l'overlay est géré dans le hook)
   const createGraph = useMemo(() => {
@@ -324,6 +312,45 @@ export default function GraphPage() {
     }
 
     return graph;
+  }, [filteredGraphData]);
+
+  const getContainerDimensions = useMemo(() => {
+    if (!filteredGraphData || filteredGraphData.nodes.length === 0) {
+      return { height: '600px', aspectRatio: 'auto' };
+    }
+
+    const nodes = filteredGraphData.nodes;
+    const bounds = nodes.reduce((acc, node) => ({
+      minX: Math.min(acc.minX, node.x),
+      maxX: Math.max(acc.maxX, node.x),
+      minY: Math.min(acc.minY, node.y),
+      maxY: Math.max(acc.maxY, node.y)
+    }), {
+      minX: nodes[0].x,
+      maxX: nodes[0].x,
+      minY: nodes[0].y,
+      maxY: nodes[0].y
+    });
+
+    const graphWidth = bounds.maxX - bounds.minX;
+    const graphHeight = bounds.maxY - bounds.minY;
+    
+    // Calculer l'aspect ratio du graphe
+    const graphAspectRatio = graphWidth > 0 && graphHeight > 0 ? graphWidth / graphHeight : 1;
+    
+    // Limiter l'aspect ratio pour éviter des containers trop extrêmes
+    const clampedAspectRatio = Math.max(0.5, Math.min(2.5, graphAspectRatio));
+    
+    console.log('Container dimensions:', {
+      graphWidth, graphHeight, 
+      graphAspectRatio, 
+      clampedAspectRatio
+    });
+
+    return {
+      aspectRatio: clampedAspectRatio,
+      height: 'auto'
+    };
   }, [filteredGraphData]);
 
   const CommunityFilter = () => (
@@ -540,45 +567,6 @@ export default function GraphPage() {
         console.warn('Erreur lors du centrage automatique:', error);
       }
     }, 200);
-  }, [filteredGraphData]);
-
-  const getContainerDimensions = useMemo(() => {
-    if (!filteredGraphData || filteredGraphData.nodes.length === 0) {
-      return { height: '600px', aspectRatio: 'auto' };
-    }
-
-    const nodes = filteredGraphData.nodes;
-    const bounds = nodes.reduce((acc, node) => ({
-      minX: Math.min(acc.minX, node.x),
-      maxX: Math.max(acc.maxX, node.x),
-      minY: Math.min(acc.minY, node.y),
-      maxY: Math.max(acc.maxY, node.y)
-    }), {
-      minX: nodes[0].x,
-      maxX: nodes[0].x,
-      minY: nodes[0].y,
-      maxY: nodes[0].y
-    });
-
-    const graphWidth = bounds.maxX - bounds.minX;
-    const graphHeight = bounds.maxY - bounds.minY;
-    
-    // Calculer l'aspect ratio du graphe
-    const graphAspectRatio = graphWidth > 0 && graphHeight > 0 ? graphWidth / graphHeight : 1;
-    
-    // Limiter l'aspect ratio pour éviter des containers trop extrêmes
-    const clampedAspectRatio = Math.max(0.5, Math.min(2.5, graphAspectRatio));
-    
-    console.log('Container dimensions:', {
-      graphWidth, graphHeight, 
-      graphAspectRatio, 
-      clampedAspectRatio
-    });
-
-    return {
-      aspectRatio: clampedAspectRatio,
-      height: 'auto'
-    };
   }, [filteredGraphData]);
 
   return (
