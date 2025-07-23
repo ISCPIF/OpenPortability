@@ -73,57 +73,18 @@ export const focusOnNode = (
 export const centerGraph = (sigma: any, graphData: GraphData | null) => {
   if (!sigma || !graphData || graphData.nodes.length === 0) return;
 
-  // Attendre que le graphe soit rendu
-  setTimeout(() => {
-    try {
-      // Centrer la caméra sur le graphe
-      const camera = sigma.getCamera();
-      
-      // Calculer les bounds du graphe
-      const nodes = graphData.nodes;
-      if (nodes.length === 0) return;
-      
-      const bounds = nodes.reduce((acc, node) => ({
-        minX: Math.min(acc.minX, node.x),
-        maxX: Math.max(acc.maxX, node.x),
-        minY: Math.min(acc.minY, node.y),
-        maxY: Math.max(acc.maxY, node.y)
-      }), {
-        minX: nodes[0].x,
-        maxX: nodes[0].x,
-        minY: nodes[0].y,
-        maxY: nodes[0].y
-      });
-      
-      // Calculer le centre
-      const centerX = (bounds.minX + bounds.maxX) / 2;
-      const centerY = (bounds.minY + bounds.maxY) / 2;
-      
-      // Calculer les dimensions du graphe
-      const graphWidth = bounds.maxX - bounds.minX;
-      const graphHeight = bounds.maxY - bounds.minY;
-      
-      // Obtenir les dimensions du container
-      const container = sigma.getContainer();
-      const containerWidth = container.offsetWidth;
-      const containerHeight = container.offsetHeight;
-      
-      // Calculer les ratios nécessaires pour chaque dimension
-      const ratioX = graphWidth > 0 ? (graphWidth * 1.3) / containerWidth : 1;
-      const ratioY = graphHeight > 0 ? (graphHeight * 1.3) / containerHeight : 1;
-      
-      // Prendre le ratio le plus grand pour s'assurer que tout est visible
-      const finalRatio = Math.max(ratioX, ratioY, 0.05);
-      
-      // Animer vers la position centrée
-      camera.animate(
-        { x: centerX, y: centerY, ratio: finalRatio },
-        { duration: 1500, easing: 'quadraticOut' }
-      );
-    } catch (error) {
-      console.warn('Erreur lors du centrage automatique:', error);
-    }
-  }, 200);
+  try {
+    const camera = sigma.getCamera();
+    
+    // Approche simple : centrer sur le point (0,0) avec un zoom par défaut
+    // Cela devrait fonctionner de manière similaire à focusOnNode
+    camera.animate(
+      { x: 0, y: 0, ratio: 1 },
+      { duration: 1500, easing: 'quadraticOut' }
+    );
+  } catch (error) {
+    console.warn('Erreur lors du centrage automatique:', error);
+  }
 };
 
 // Utilitaires pour les dimensions du container
@@ -313,11 +274,11 @@ export const createSigmaGraph = (filteredGraphData: GraphData | null) => {
   
   // Ajouter tous les nœuds (avec overlay déjà appliqué)
   filteredGraphData.nodes.forEach(node => {
-    // Filtrer l'attribut 'type' qui peut causer des problèmes avec Sigma.js
     const { type, ...nodeAttributes } = node as any;
     
     graph.addNode(node.id, {
       ...nodeAttributes,
+      // Ne pas inclure de type du tout
       originalSize: node.size,
       originalColor: node.color,
       zIndex: node.zIndex || 1

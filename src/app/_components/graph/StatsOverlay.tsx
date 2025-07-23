@@ -3,13 +3,16 @@
 import React from 'react';
 import { useTranslations } from 'next-intl';
 import type { GraphData } from '@/lib/types/graph';
+import type { GlobalStats } from '@/lib/types/stats';
 
 interface StatsOverlayProps {
-  graphData?: GraphData | null;
-  userNetworkData?: any;
-  showUserNetwork?: boolean;
-  className?: string;
-}
+    graphData?: GraphData | null;
+    userNetworkData?: any;
+    showUserNetwork?: boolean;
+    globalStats?: GlobalStats | null;
+    globalStatsLoading?: boolean;
+    className?: string;
+  }
 
 interface StatItemProps {
   label: string;
@@ -35,7 +38,9 @@ export function StatsOverlay({
   graphData, 
   userNetworkData, 
   showUserNetwork,
-  className = '' 
+  className = '' ,
+  globalStats,
+  globalStatsLoading,     
 }: StatsOverlayProps) {
   const t = useTranslations('graph');
 
@@ -145,6 +150,27 @@ export function StatsOverlay({
             </div>
           </>
         )}
+
+        {/* Statistiques globales */}
+            {globalStats && (
+            <>
+                <StatItem 
+                label={t('stats.totalUsers')} 
+                value={globalStats.users.total} 
+                icon="👥" 
+                />
+                <StatItem 
+                label={t('stats.totalConnections')} 
+                value={globalStats.connections.followers + globalStats.connections.following} 
+                icon="🔗" 
+                />
+                <StatItem 
+                label={t('stats.reconnections')} 
+                value={globalStats.connections.withHandle} 
+                icon="🌉" 
+                />
+            </>
+            )}
 
         {/* Indicateur de mise à jour */}
         <div className="mt-4 pt-3 border-t border-white/10">

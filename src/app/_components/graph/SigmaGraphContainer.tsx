@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useRef, useEffect, useMemo, useCallback } from 'react';
+import React, { useRef, useEffect, useMemo, useCallback, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useGraphMode } from './GraphModeProvider';
 import { 
@@ -49,6 +49,9 @@ export function SigmaGraphContainer({
 }: SigmaGraphContainerProps) {
   const sigmaRef = useRef<any>(null);
   const { currentMode, showLabels, setResetZoomHandler } = useGraphMode();
+  
+  // State pour forcer la recréation du graphe
+  const [graphKey, setGraphKey] = useState(0);
 
   // Créer le graphe avec l'utilitaire existant
   const graph = useMemo(() => {
@@ -60,12 +63,11 @@ export function SigmaGraphContainer({
     return getContainerDimensions(graphData);
   }, [graphData]);
 
-  // Fonction de reset/recentrage
+  // Fonction de reset/recentrage par recréation du graphe
   const handleResetZoom = useCallback(() => {
-    if (sigmaRef.current && graphData) {
-      centerGraph(sigmaRef.current);
-    }
-  }, [graphData]);
+    // Incrémenter la key pour forcer la recréation complète du SigmaContainer
+    setGraphKey(prev => prev + 1);
+  }, []); // Pas de dépendances pour éviter la récursion
 
   // Enregistrer la fonction de reset dans le context
   useEffect(() => {
@@ -242,6 +244,7 @@ export function SigmaGraphContainer({
         }}
       >
         <SigmaContainer
+          key={graphKey}
           ref={sigmaRef}
           graph={graph}
           settings={sigmaSettings}

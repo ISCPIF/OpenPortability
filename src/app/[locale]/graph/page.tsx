@@ -40,7 +40,11 @@ export default function GraphPage() {
     fetchUserNetwork,
     toggleUserNetwork,
     createGraphWithOverlay,
-    session
+    session,
+    globalStats,
+    globalStatsLoading,
+    globalStatsError,
+    fetchGlobalStats
   } = useGraphData();
   
   const [filteredGraphData, setFilteredGraphData] = useState<GraphData | null>(null);
@@ -174,6 +178,8 @@ export default function GraphPage() {
           graphData={filteredGraphData}
           userNetworkData={userNetworkData}
           showUserNetwork={showUserNetwork}
+          globalStats={globalStats}
+          globalStatsLoading={globalStatsLoading}
         />
 
         {/* Container principal du graphe */}
@@ -335,7 +341,7 @@ export default function GraphPage() {
         <GraphLegendNew />
 
         {/* Vagues animées */}
-        <WaveAnimation />
+        {/* <WaveAnimation /> */}
       </div>
     </GraphModeProvider>
   );

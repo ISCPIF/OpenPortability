@@ -731,7 +731,10 @@
         "following": "Abonnements",
         "followers": "Abonnés",
         "foundInGraph": "Trouvés ici",
-        "liveUpdate": "Mise à jour en temps réel"
+        "liveUpdate": "Mise à jour en temps réel",
+        "totalUsers": "Utilisateurs totaux",
+        "totalConnections": "Connexions totales",
+        "reconnections": "Reconnexions"
       },
       "legend": {
         "title": "Légende de navigation",

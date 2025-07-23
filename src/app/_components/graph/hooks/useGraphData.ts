@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { GraphData, ConnectionType } from '../types';
+import type { GlobalStats } from '@/lib/types/stats';
 
 interface NetworkNode {
   id: string;
@@ -50,6 +51,11 @@ export function useGraphData() {
   const [userNetworkError, setUserNetworkError] = useState<string | null>(null);
   const [showUserNetwork, setShowUserNetwork] = useState(false);
 
+  // États pour les statistiques globales
+  const [globalStats, setGlobalStats] = useState<GlobalStats | null>(null);
+  const [globalStatsLoading, setGlobalStatsLoading] = useState(false);
+  const [globalStatsError, setGlobalStatsError] = useState<string | null>(null);
+
   const [userNetworkIds, setUserNetworkIds] = useState<{
     following: string[];
     followers: string[];
@@ -63,6 +69,25 @@ export function useGraphData() {
     graph: false,
     userNetwork: false
   });
+
+  const fetchGlobalStats = useCallback(async () => {
+    try {
+      setGlobalStatsLoading(true);
+      setGlobalStatsError(null);
+      
+      const response = await fetch('/api/stats/total');
+      if (!response.ok) {
+        throw new Error(`Error fetching global stats: ${response.status}`);
+      }
+      
+      const data: GlobalStats = await response.json();
+      setGlobalStats(data);
+    } catch (error: any) {
+      setGlobalStatsError(error.message || 'Failed to load global stats');
+    } finally {
+      setGlobalStatsLoading(false);
+    }
+  }, []);
 
   // Fonction unifiée pour récupérer les données du graphe (RGPD-compliant)
   const fetchGraphData = useCallback(async () => {
@@ -302,6 +327,12 @@ export function useGraphData() {
     }
   }, [graphData?.isAuthenticated, showUserNetwork, userNetworkData]);
 
+
+  useEffect(() => {
+    fetchGraphData();
+    fetchGlobalStats();
+  }, []);
+
   return {
     // Données unifiées (remplace staticGraphData et personalData)
     graphData,
@@ -327,6 +358,12 @@ export function useGraphData() {
     isAuthenticated: !!session?.user?.id,
     
     // Connexions utilisateur (si disponibles)
-    userNetworkIds
+    userNetworkIds,
+
+    // Statistiques globales
+    globalStats,
+    globalStatsLoading,
+    globalStatsError,
+    fetchGlobalStats
   };
 }
