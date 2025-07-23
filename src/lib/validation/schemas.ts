@@ -1,5 +1,8 @@
 import { z } from 'zod';
 
+// Schéma vide pour les endpoints GET sans paramètres
+export const EmptySchema = z.object({});
+
 // Types réutilisables
 export const EmailSchema = z.string()
   .email('Invalid email format')

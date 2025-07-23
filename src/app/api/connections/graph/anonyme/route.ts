@@ -2,23 +2,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { withValidation } from '@/lib/validation/middleware';
+import { EmptySchema } from '@/lib/validation/schemas';
+import { auth } from '@/app/auth';
+import { supabase } from '@/lib/supabase';
+import logger from '@/lib/log_utils';
 import * as fs from 'fs';
 import * as path from 'path';
 
-// Types pour la validation (simplifié)
-type AnonymousGraphQueryParams = {
-  // Paramètres optionnels pour compatibilité mais non utilisés
-  limit?: number;
-  min_connections?: number;
-  analysis_type?: 'basic' | 'community_analysis';
-};
-
-// Schéma de validation pour les paramètres de requête (simplifié)
-const AnonymousGraphQueryParamsSchema = z.object({
-  limit: z.coerce.number().int().min(1).max(1000).optional(),
-  min_connections: z.coerce.number().int().min(1).max(100).optional(),
-  analysis_type: z.enum(['basic', 'community_analysis']).optional(),
-}).strict() as z.ZodType<AnonymousGraphQueryParams>;
+//a faire :
+// - changer imporation du fichier static en recuperation depuis la db
+// - 
 
 // Configuration - chemin vers le fichier JSON statique
 const GRAPH_FILE_PATH = path.join(process.cwd(), 'social-graph/fine_tuned_json_nodes_only_opti11_with_usernames_and_sizes.json');
@@ -28,18 +21,29 @@ let cachedGraphData: any = null;
 let cacheTimestamp: number = 0;
 const CACHE_TTL = 30 * 60 * 1000; // 30 minutes
 
-// Fonction pour charger le fichier JSON
-async function loadGraphData(): Promise<any> {
+// Interface pour les données de graphe filtrées
+interface FilteredGraphData {
+  nodes: any[];
+  edges: any[];
+  isAuthenticated: boolean;
+  userConnections?: {
+    following: string[];
+    followers: string[];
+  };
+}
+
+// Fonction pour charger le fichier JSON statique (mode public)
+async function loadStaticGraphData(): Promise<any> {
   const now = Date.now();
   
   // Vérifier si le cache est encore valide
   if (cachedGraphData && (now - cacheTimestamp) < CACHE_TTL) {
-    console.log('Utilisation du cache en mémoire existant');
+    logger.logInfo('GraphCache', 'Using cached static graph data', 'Cache hit');
     return cachedGraphData;
   }
   
   try {
-    console.log('Chargement du fichier JSON:', GRAPH_FILE_PATH);
+    logger.logInfo('GraphFile', 'Loading static graph file', GRAPH_FILE_PATH);
     
     // Vérifier que le fichier existe
     if (!fs.existsSync(GRAPH_FILE_PATH)) {
@@ -48,47 +52,152 @@ async function loadGraphData(): Promise<any> {
     
     // Lire le fichier JSON
     const fileContent = fs.readFileSync(GRAPH_FILE_PATH, 'utf8');
-    const graphData = JSON.parse(fileContent);
+    const jsonData = JSON.parse(fileContent);
     
-    // Mettre en cache
-    cachedGraphData = graphData;
+    // Mettre à jour le cache
+    cachedGraphData = jsonData;
     cacheTimestamp = now;
     
-    console.log('Fichier JSON chargé avec succès', {
-      nodesCount: graphData.nodes?.length || 0,
-      edgesCount: graphData.edges?.length || 0,
-      fileSize: `${Math.round(fileContent.length / 1024 / 1024)}MB`
+    logger.logInfo('GraphFile', 'Static graph data loaded successfully', 'File cached', null, {
+      nodesCount: jsonData.nodes?.length || 0,
+      edgesCount: jsonData.edges?.length || 0
     });
     
-    return graphData;
+    return jsonData;
     
   } catch (error: any) {
-    console.error('Erreur lors du chargement du fichier JSON', { error: error.message });
-    throw new Error(`Impossible de charger le fichier JSON: ${error.message}`);
+    logger.logError('GraphFile', 'Error loading static graph file', 'File read failed', null, error);
+    throw new Error(`Erreur lors du chargement du fichier: ${error.message}`);
   }
 }
 
-// Handler GET pour l'API
-export const GET = withValidation(AnonymousGraphQueryParamsSchema, async (req: NextRequest, data: z.infer<typeof AnonymousGraphQueryParamsSchema>) => {
+// Fonction pour filtrer les données selon le mode RGPD
+async function filterGraphDataForRGPD(rawData: any, session: any): Promise<FilteredGraphData> {
+  const isAuthenticated = !!session?.user?.id;
+  
+  if (!isAuthenticated) {
+    // Mode public : supprimer tous les identifiants personnels
+    logger.logInfo('GraphFilter', 'Filtering graph data for public mode', 'Removing personal identifiers');
+    
+    const filteredNodes = rawData.nodes.map((node: any, index: number) => ({
+      id: `node_${index}`, // ID anonymisé
+      x: node.x,
+      y: node.y,
+      size: node.size,
+      color: node.color,
+      type: node.type,
+      community: node.community,
+      connection_count: typeof node.connection_count === 'bigint' ? Number(node.connection_count) : node.connection_count,
+      // Supprimer : twitter_id, label, username, name, etc.
+    }));
+    
+    const filteredEdges = rawData.edges.map((edge: any, index: number) => ({
+      id: `edge_${index}`, // ID anonymisé
+      source: `node_${rawData.nodes.findIndex((n: any) => n.id === edge.source)}`,
+      target: `node_${rawData.nodes.findIndex((n: any) => n.id === edge.target)}`,
+      size: edge.size,
+      color: edge.color,
+      type: edge.type,
+      // Supprimer les identifiants personnels
+    }));
+    
+    return {
+      nodes: filteredNodes,
+      edges: filteredEdges,
+      isAuthenticated: false
+    };
+  } else {
+    // Mode authentifié : récupérer les connexions de l'utilisateur
+    logger.logInfo('GraphFilter', 'Filtering graph data for authenticated mode', 'Getting user connections', session.user.id);
+    
+    try {
+      // Récupérer les connexions directes de l'utilisateur
+      const { data: userConnections, error } = await supabase
+        .rpc('get_user_network_ids', { user_id: session.user.id });
+      
+      if (error) {
+        logger.logWarning('GraphFilter', 'Failed to get user connections', 'Using fallback mode', session.user.id, error);
+      }
+      
+      const userFollowing = userConnections?.following || [];
+      const userFollowers = userConnections?.followers || [];
+      const userDirectConnections = [...userFollowing, ...userFollowers];
+      
+      // Mode authentifié : garder les twitter_id mais masquer les noms sauf pour les connexions directes
+      const filteredNodes = rawData.nodes.map((node: any) => {
+        const isDirectConnection = userDirectConnections.includes(node.twitter_id) || 
+                                  userDirectConnections.includes(node.id) ||
+                                  node.twitter_id === session.user.twitter_id ||
+                                  node.id === session.user.twitter_id;
+        
+        return {
+          ...node,
+          connection_count: typeof node.connection_count === 'bigint' ? Number(node.connection_count) : node.connection_count,
+          // Révéler le label/nom uniquement pour les connexions directes
+          label: isDirectConnection ? (node.label || node.name || node.username) : undefined,
+          username: isDirectConnection ? node.username : undefined,
+          name: isDirectConnection ? node.name : undefined,
+          // Garder twitter_id en interne mais ne pas l'exposer dans l'interface
+          twitter_id: node.twitter_id || node.id,
+          isDirectConnection: isDirectConnection
+        };
+      });
+      
+      return {
+        nodes: filteredNodes,
+        edges: rawData.edges,
+        isAuthenticated: true,
+        userConnections: {
+          following: userFollowing,
+          followers: userFollowers
+        }
+      };
+    } catch (error) {
+      logger.logError('GraphFilter', 'Error filtering authenticated data', 'Falling back to public mode', session.user.id, error);
+      // En cas d'erreur, revenir au mode public
+      return filterGraphDataForRGPD(rawData, null);
+    }
+  }
+}
+
+// Handler GET pour l'API RGPD-friendly
+export const GET = withValidation(EmptySchema, async (req: NextRequest, data: {}) => {
   try {
-    // Charger et retourner directement les données du graphe
-    const graphData = await loadGraphData();
+    // Détecter le mode d'authentification
+    const session = await auth();
+    const isAuthenticated = !!session?.user?.id;
     
-    // Retourner les données JSON telles quelles
-    const response = NextResponse.json(graphData);
+    logger.logInfo('GraphAPI', 'GET /api/connections/graph/anonyme', `Mode: ${isAuthenticated ? 'authenticated' : 'public'}`, session?.user?.id || 'anonymous');
     
-    // Headers de cache pour optimiser les performances
-    response.headers.set('Cache-Control', 'public, max-age=1800'); // 30 minutes
-    response.headers.set('X-Response-Type', 'static-json');
-    response.headers.set('X-Data-Source', 'file');
+    // Toujours charger le même fichier statique
+    const rawData = await loadStaticGraphData();
+    
+    // Filtrer les données selon le mode RGPD
+    const filteredData = await filterGraphDataForRGPD(rawData, session);
+    
+    logger.logInfo('GraphAPI', 'Graph data processed successfully', `Nodes: ${filteredData.nodes.length}, Edges: ${filteredData.edges.length}`, session?.user?.id || 'anonymous');
+    
+    // Retourner les données JSON
+    const response = NextResponse.json(filteredData);
+    
+    // Headers de cache adaptés selon le mode
+    if (isAuthenticated) {
+      // Mode authentifié : pas de cache (données personnalisées)
+      response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+      response.headers.set('X-Response-Type', 'authenticated-live');
+    } else {
+      // Mode public : cache long (données statiques)
+      response.headers.set('Cache-Control', 'public, max-age=1800'); // 30 minutes
+      response.headers.set('X-Response-Type', 'public-static');
+    }
+    
+    response.headers.set('X-Data-Source', isAuthenticated ? 'database' : 'file');
+    response.headers.set('X-RGPD-Mode', isAuthenticated ? 'authenticated' : 'public');
     
     return response;
     
   } catch (error: any) {
-    console.error('Erreur lors du traitement de la requête', {
-      context: 'api/connections/graph/anonyme',
-      error: error.message
-    });
+    logger.logError('GraphAPI', 'Error processing graph request', 'Request failed', null, error);
     
     return NextResponse.json(
       { error: error.message || 'Une erreur est survenue lors de la récupération du graphe' },
@@ -96,5 +205,7 @@ export const GET = withValidation(AnonymousGraphQueryParamsSchema, async (req: N
     );
   }
 }, {
-  requireAuth: false,
+  requireAuth: false, // Endpoint accessible aux deux modes
+  applySecurityChecks: false, // GET sans body sensible
+  skipRateLimit: false // Appliquer le rate limiting standard
 });

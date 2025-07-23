@@ -1,191 +1,151 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/app/auth';
+import { withValidation } from '@/lib/validation/middleware';
+import { EmptySchema } from '@/lib/validation/schemas';
+import { MatchingService } from '@/lib/services/matchingService';
 import { MatchingRepository } from '@/lib/repositories/matchingRepository';
-import fs from 'fs';
-import path from 'path';
+import logger from '@/lib/log_utils';
+import { StatsRepository } from '@/lib/repositories/statsRepository';
+import { StatsService } from '@/lib/services/statsServices';
 
-const GRAPH_FILE_PATH = path.join(process.cwd(), 'social-graph', 'cache', 'graph_complete_workflow_20250716_172957.json');
-
-interface NetworkNode {
-  id: string;
-  type: 'following' | 'follower' | 'mutual';
-  color: string;
-  size: number;
-  zIndex: number;
-  // Propriétés du graphe anonyme
-  x?: number;
-  y?: number;
-  label?: string;
-  community?: number;
+interface UserNetworkConnection {
+  twitter_id: string;
+  isReconnected: boolean;
 }
 
 interface UserNetworkResponse {
-  userNetwork: {
-    nodes: NetworkNode[];
-    userTwitterId: string | null;
-    stats: {
-      totalFollowing: number;
-      totalFollowers: number;
-      foundInGraph: number;
-      mutualConnections: number;
-    };
+  following: UserNetworkConnection[];
+  followers: UserNetworkConnection[];
+  stats: {
+    followingCount: number;
+    followersCount: number;
+    totalConnections: number;
+    reconnectedCount: number;
+    isLimited: boolean;
   };
 }
 
-// Cache pour éviter de relire le fichier à chaque requête
-let graphNodesCache: Map<string, any> | null = null;
-let cacheTimestamp: number = 0;
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+async function handleGetUserNetwork(
+  request: NextRequest,
+  data: {},
+  session: any
+): Promise<NextResponse> {
+  const userId = '10331991-0f76-4425-952f-27e25a494d2c';
+  const twitterId = session?.user?.twitter_id;
 
-async function loadGraphNodes(): Promise<Map<string, any>> {
-  const now = Date.now();
-  
-  // Utiliser le cache si valide
-  if (graphNodesCache && (now - cacheTimestamp) < CACHE_DURATION) {
-    return graphNodesCache;
-  }
+  logger.logInfo('UserNetwork', 'GET /api/connections/graph/user-network', 'Fetching user network', userId, {
+    twitterId
+  });
 
-  console.log('Loading graph nodes from file...');
-  
-  if (!fs.existsSync(GRAPH_FILE_PATH)) {
-    throw new Error('Graph file not found');
-  }
-
-  // Lire et parser le fichier JSON
-  const fileContent = fs.readFileSync(GRAPH_FILE_PATH, 'utf8');
-  const graphData = JSON.parse(fileContent);
-  
-  // Créer un Map pour un accès rapide par ID
-  const nodesMap = new Map();
-  if (graphData.nodes && Array.isArray(graphData.nodes)) {
-    graphData.nodes.forEach((node: any) => {
-      nodesMap.set(node.id, node);
-    });
-  }
-
-  graphNodesCache = nodesMap;
-  cacheTimestamp = now;
-  
-  console.log(`Loaded ${nodesMap.size} nodes into cache`);
-  return nodesMap;
-}
-
-export async function GET(request: NextRequest) {
   try {
-    // Vérifier l'authentification
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      );
-    }
+    const matchingService = new MatchingService();
+    const matchingRepository = new MatchingRepository();
 
-    const userId = session.user.id;
-    const userTwitterId = session.user.twitter_id || null;
+    // Récupérer le réseau existant et les connexions retrouvées en parallèle
+    const [userNetwork, userStats, socialGraphResult] = await Promise.all([
+      matchingService.getUserNetworkIds(userId),
+      (async () => {
+        const statsRepository = new StatsRepository();
+        const statsService = new StatsService(statsRepository);
+        return await statsService.getUserStats(userId, true);
+      })(),
+      // Essayer d'abord avec l'UUID, puis avec le twitter_id si disponible
+      matchingRepository.getSocialGraphData(userId)
+    ]);
 
-    console.log(`Fetching user network for user ${userId} (twitter_id: ${userTwitterId})`);
-
-    // Récupérer le réseau utilisateur
-    const matchingRepo = new MatchingRepository();
-    const userNetwork = await matchingRepo.getUserNetwork(userId);
-
-    // Charger les nœuds du graphe anonyme
-    const graphNodes = await loadGraphNodes();
-
-    // Identifier les connexions mutuelles
-    const followingSet = new Set(userNetwork.following);
-    const followersSet = new Set(userNetwork.followers);
-    const mutualConnections = userNetwork.following.filter(id => followersSet.has(id));
-
-    // Faire l'intersection avec le graphe anonyme
-    const networkNodes: NetworkNode[] = [];
-    const OVERLAY_COLOR = '#FF6B6B'; // Rouge pour l'overlay
-    const OVERLAY_SIZE_MULTIPLIER = 1.5;
-
-    // Traiter les following
-    userNetwork.following.forEach(twitterId => {
-      const graphNode = graphNodes.get(twitterId);
-      if (graphNode) {
-        const isMutual = followersSet.has(twitterId);
-        networkNodes.push({
-          id: twitterId,
-          type: isMutual ? 'mutual' : 'following',
-          color: OVERLAY_COLOR,
-          size: (graphNode.size || 10) * OVERLAY_SIZE_MULTIPLIER,
-          zIndex: 10,
-          // Propriétés du graphe original
-          x: graphNode.x,
-          y: graphNode.y,
-          label: graphNode.label,
-          community: graphNode.community
-        });
-      }
-    });
-
-    // Traiter les followers (seulement ceux qui ne sont pas déjà dans following)
-    userNetwork.followers.forEach(twitterId => {
-      if (!followingSet.has(twitterId)) { // Éviter les doublons
-        const graphNode = graphNodes.get(twitterId);
-        if (graphNode) {
-          networkNodes.push({
-            id: twitterId,
-            type: 'follower',
-            color: OVERLAY_COLOR,
-            size: (graphNode.size || 10) * OVERLAY_SIZE_MULTIPLIER,
-            zIndex: 10,
-            // Propriétés du graphe original
-            x: graphNode.x,
-            y: graphNode.y,
-            label: graphNode.label,
-            community: graphNode.community
-          });
-        }
-      }
-    });
-
-    // Ajouter l'utilisateur lui-même s'il est dans le graphe
-    if (userTwitterId && graphNodes.has(userTwitterId)) {
-      const userGraphNode = graphNodes.get(userTwitterId);
-      networkNodes.push({
-        id: userTwitterId,
-        type: 'following', // Type par défaut
-        color: '#FFD700', // Couleur dorée pour l'utilisateur
-        size: (userGraphNode.size || 10) * 2, // Encore plus gros
-        zIndex: 15, // Au-dessus de tout
-        x: userGraphNode.x,
-        y: userGraphNode.y,
-        label: userGraphNode.label || 'Vous',
-        community: userGraphNode.community
+    // Si pas de résultat avec l'UUID et qu'on a un twitter_id, essayer avec
+    let socialGraphData = socialGraphResult.data;
+    if (!socialGraphData && twitterId) {
+      logger.logInfo('UserNetwork', 'GET /api/connections/graph/user-network', 'Retrying with twitter_id', userId, {
+        twitterId
       });
+      const fallbackResult = await matchingRepository.getSocialGraphData(twitterId);
+      socialGraphData = fallbackResult.data;
     }
+
+    // Créer des Sets pour les connexions retrouvées
+    const reconnectedFollowing = new Set<string>();
+    const reconnectedFollowers = new Set<string>();
+
+    if (socialGraphData) {
+      if (socialGraphData.strategy === 'user_with_archive') {
+        // Ajouter les targets reconnectés
+        socialGraphData.targets.bluesky.forEach(target => reconnectedFollowing.add(target.twitter_id));
+        socialGraphData.targets.mastodon.forEach(target => reconnectedFollowing.add(target.twitter_id));
+        
+        // Ajouter les followers reconnectés
+        socialGraphData.followers.bluesky.forEach(follower => reconnectedFollowers.add(follower.twitter_id));
+        socialGraphData.followers.mastodon.forEach(follower => reconnectedFollowers.add(follower.twitter_id));
+      } else {
+        // Pour user_without_archive, les sources sont des connexions inverses
+        socialGraphData.found_in_sources.bluesky.forEach(source => reconnectedFollowers.add(source.source_twitter_id));
+        socialGraphData.found_in_sources.mastodon.forEach(source => reconnectedFollowers.add(source.source_twitter_id));
+      }
+    }
+
+    // Fusionner les listes avec déduplication et flag isReconnected
+    const followingWithFlags: UserNetworkConnection[] = [];
+    const followersWithFlags: UserNetworkConnection[] = [];
+
+    // Traiter following
+    const allFollowing = new Set([...userNetwork.following, ...reconnectedFollowing]);
+    allFollowing.forEach(twitterId => {
+      followingWithFlags.push({
+        twitter_id: twitterId,
+        isReconnected: reconnectedFollowing.has(twitterId)
+      });
+    });
+
+    // Traiter followers
+    const allFollowers = new Set([...userNetwork.followers, ...reconnectedFollowers]);
+    allFollowers.forEach(twitterId => {
+      followersWithFlags.push({
+        twitter_id: twitterId,
+        isReconnected: reconnectedFollowers.has(twitterId)
+      });
+    });
+
+    // Calculer les stats
+    const reconnectedCount = reconnectedFollowing.size + reconnectedFollowers.size;
+    const isLimited = userNetwork.following.length >= 100000 || userNetwork.followers.length >= 100000;
+
+    logger.logInfo('UserNetwork', 'GET /api/connections/graph/user-network', 'User network fetched successfully', userId, {
+      originalFollowingCount: userNetwork.following.length,
+      originalFollowersCount: userNetwork.followers.length,
+      finalFollowingCount: followingWithFlags.length,
+      finalFollowersCount: followersWithFlags.length,
+      reconnectedCount,
+      socialGraphStrategy: socialGraphData?.strategy || 'none',
+      isLimited
+    });
 
     const response: UserNetworkResponse = {
-      userNetwork: {
-        nodes: networkNodes,
-        userTwitterId,
-        stats: {
-          totalFollowing: userNetwork.stats.followingCount,
-          totalFollowers: userNetwork.stats.followersCount,
-          foundInGraph: networkNodes.length,
-          mutualConnections: mutualConnections.length
-        }
+      following: followingWithFlags,
+      followers: followersWithFlags,
+      stats: {
+        followingCount: userStats.connections.following,
+        followersCount: userStats.connections.followers,
+        totalConnections: userStats.connections.following + userStats.connections.followers,
+        reconnectedCount,
+        isLimited
       }
     };
 
-    console.log(`User network stats:`, response.userNetwork.stats);
-
-    return NextResponse.json(response, {
-      headers: {
-        'Cache-Control': 'public, max-age=300', // Cache 5 minutes
-      }
-    });
-
+    return NextResponse.json(response);
   } catch (error) {
-    console.error('Error fetching user network:', error);
+    logger.logError('UserNetwork', 'GET /api/connections/graph/user-network', 'Failed to fetch user network', userId, error);
     return NextResponse.json(
       { error: 'Failed to fetch user network' },
       { status: 500 }
     );
   }
 }
+
+export const GET = withValidation(
+  EmptySchema,
+  handleGetUserNetwork,
+  {
+    requireAuth: true,
+    applySecurityChecks: false, // GET sans paramètres
+    skipRateLimit: false
+  }
+);

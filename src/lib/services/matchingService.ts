@@ -263,6 +263,23 @@ export class MatchingService {
     }
   }
 
+  /**
+   * Récupère uniquement les listes des twitter_id du réseau utilisateur
+   * @param userId UUID de l'utilisateur
+   * @returns Objet avec following et followers (sans stats)
+   */
+  async getUserNetworkIds(userId: string): Promise<{
+    following: string[];
+    followers: string[];
+  }> {
+    const userNetwork = await this.repository.getUserNetwork(userId);
+    
+    return {
+      following: userNetwork.following,
+      followers: userNetwork.followers
+    };
+  }
+
 //   async unignoreTarget(userId: string, targetTwitterId: string): Promise<void> {
 //     return this.repository.unignoreTarget(userId, targetTwitterId);
 //   }

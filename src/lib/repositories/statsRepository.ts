@@ -66,11 +66,13 @@ export class StatsRepository {
           .single());
       }
 
+
       if (error) {
-        logError('Repository', 'StatsRepository.getUserCompleteStats', error, userId, { has_onboard });
+        console.log('Repository', 'StatsRepository.getUserCompleteStats', error, userId, { has_onboard });
         throw error;
       }
 
+      console.log("data from getUserCompleteStats", data)
       return data;
     }
 
@@ -80,7 +82,7 @@ export class StatsRepository {
         .single();
 
       if (error) {
-        logError('Repository', 'StatsRepository.getGlobalStats', error, 'unknown');
+        console.log('Repository', 'StatsRepository.getGlobalStats', error, 'unknown');
         throw error;
       }
 

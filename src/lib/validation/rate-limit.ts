@@ -79,6 +79,12 @@ export const RATE_LIMIT_CONFIGS: Record<string, RateLimitConfig> = {
     identifier: 'userId',
     message: 'Too many ignore requests. Please wait before sending more.'
   },
+  '/api/connections/graph/user-network': {
+    windowMs: 5 * 60 * 1000,  // 5 minutes
+    maxRequests: 20,          // 20 requêtes par 5 minutes
+    identifier: 'userId',
+    message: 'Too many network requests. Please wait before fetching your network again.'
+  },
   
   // Configuration par défaut
   'default': {
