@@ -21,6 +21,10 @@ interface GraphModeContextType {
   resetZoom: () => void;
   onResetZoom?: () => void;
   setResetZoomHandler: (handler: () => void) => void;
+  
+  // Nouveaux callbacks pour connecter à la logique métier
+  onModeChange?: (mode: GraphMode) => void;
+  setModeChangeHandler: (handler: (mode: GraphMode) => void) => void;
 }
 
 const GraphModeContext = createContext<GraphModeContextType | undefined>(undefined);
@@ -38,11 +42,16 @@ export function GraphModeProvider({
   const [showLabels, setShowLabels] = useState(true);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [onResetZoom, setOnResetZoom] = useState<(() => void) | undefined>();
+  const [onModeChange, setOnModeChange] = useState<((mode: GraphMode) => void) | undefined>();
 
   const setMode = useCallback((mode: GraphMode) => {
     setCurrentMode(mode);
+    // Appeler le callback de changement de mode si défini
+    if (onModeChange) {
+      onModeChange(mode);
+    }
     console.log('Mode changé vers:', mode);
-  }, []);
+  }, [onModeChange]);
 
   const toggleLabels = useCallback(() => {
     setShowLabels(prev => !prev);
@@ -64,6 +73,10 @@ export function GraphModeProvider({
     setOnResetZoom(() => handler);
   }, []);
 
+  const setModeChangeHandler = useCallback((handler: (mode: GraphMode) => void) => {
+    setOnModeChange(() => handler);
+  }, []);
+
   const value: GraphModeContextType = {
     currentMode,
     setMode,
@@ -74,6 +87,8 @@ export function GraphModeProvider({
     resetZoom,
     onResetZoom,
     setResetZoomHandler,
+    onModeChange,
+    setModeChangeHandler,
   };
 
   return (

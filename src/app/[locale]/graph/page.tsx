@@ -16,7 +16,7 @@ import {
 import type { GraphNode, GraphData } from '@/lib/types/graph';
 
 // Nouveaux composants
-import { GraphModeProvider } from '@/app/_components/graph/GraphModeProvider';
+import { GraphModeProvider, useGraphMode, type GraphMode } from '@/app/_components/graph/GraphModeProvider';
 import Header from '@/app/_components/Header';
 import { HamburgerMenu } from '@/app/_components/graph/HamburgerMenu';
 import { StatsOverlay } from '@/app/_components/graph/StatsOverlay';
@@ -47,6 +47,35 @@ export default function GraphPage() {
     fetchGlobalStats
   } = useGraphData();
   
+  // Handler pour les changements de mode depuis le HamburgerMenu
+  const handleModeChange = useCallback((mode: GraphMode) => {
+    console.log('Changement de mode vers:', mode);
+    
+    switch (mode) {
+      case 'anonyme':
+        // Mode vue d'ensemble - masquer l'overlay utilisateur
+        if (showUserNetwork) {
+          toggleUserNetwork();
+        }
+        break;
+        
+      case 'connexions':
+        // Mode connexions - afficher l'overlay utilisateur
+        if (!showUserNetwork && session?.user) {
+          toggleUserNetwork();
+        }
+        break;
+        
+      case 'migrations':
+        // Mode migrations - pour l'instant, même comportement que connexions
+        // TODO: implémenter la logique spécifique aux migrations
+        if (!showUserNetwork && session?.user) {
+          toggleUserNetwork();
+        }
+        break;
+    }
+  }, [showUserNetwork, toggleUserNetwork, session]);
+
   const [filteredGraphData, setFilteredGraphData] = useState<GraphData | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [searchResults, setSearchResults] = useState<GraphNode[]>([]);
@@ -163,9 +192,9 @@ export default function GraphPage() {
   }, []);
 
   return (
-    <GraphModeProvider>
-      {/* Background avec dégradé archipel */}
-      <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-blue-900 overflow-hidden">
+    <GraphModeProvider initialMode="anonyme">
+      <ModeHandler onModeChange={handleModeChange} />
+      <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-blue-900 relative overflow-hidden">
         
         {/* Header transparent */}
         <Header />
@@ -345,4 +374,15 @@ export default function GraphPage() {
       </div>
     </GraphModeProvider>
   );
+}
+
+// Composant pour gérer la connexion entre le context et la logique métier
+function ModeHandler({ onModeChange }: { onModeChange: (mode: GraphMode) => void }) {
+  const { setModeChangeHandler } = useGraphMode();
+  
+  useEffect(() => {
+    setModeChangeHandler(onModeChange);
+  }, [onModeChange, setModeChangeHandler]);
+  
+  return null;
 }
