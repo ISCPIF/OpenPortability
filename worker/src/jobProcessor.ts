@@ -753,17 +753,19 @@ async function processBatchData(
         const currentChunk = Math.floor(i / CHUNK_SIZE) + 1;
         
         // Execute batch insert
-        const { error: batchError } = await batchInsertFn(
+        const { error } = await batchInsertFn(
           supabase,
           dataToInsert,
-          relationsToInsert
+          relationsToInsert,
+          CHUNK_SIZE, // Pass current chunk size to PostgreSQL function
+          Math.min(120000, 30000 + (retryCount * 15000)) // Progressive timeout: 30s, 45s, 60s, 75s, 90s
         );
         
         const executionTime = Date.now() - startTime;
 
-        if (batchError) {
-          console.log(`[Worker ${workerId}] ${dataType} batch failed | Chunk: ${currentChunk}/${totalChunks} | Size: ${batch.length} | Error: ${batchError.message} | Code: ${batchError.code}`);
-          throw batchError;
+        if (error) {
+          console.log(`[Worker ${workerId}] ${dataType} batch failed | Chunk: ${currentChunk}/${totalChunks} | Size: ${batch.length} | Error: ${error.message} | Code: ${error.code}`);
+          throw error;
         }
 
         // Success
@@ -782,23 +784,34 @@ async function processBatchData(
         retryCount++;
         metrics.retries++;
         
+        const errorObj = error as any; // Type assertion for error object
         const errorMsg = String(error);
         const isTimeoutError = errorMsg.includes('canceling statement due to statement timeout') || 
                               errorMsg.includes('57014') ||
                               errorMsg.includes('timeout');
         
+
         if (isTimeoutError) {
           timeoutErrors.push({ chunkSize: batch.length, error: errorMsg });
-          CHUNK_SIZE = Math.max(MIN_CHUNK_SIZE, Math.floor(CHUNK_SIZE / 2));
-          console.log(`[Worker ${workerId}] ${dataType} timeout | Chunk: ${Math.floor(i / CHUNK_SIZE) + 1}/${totalChunks} | Reducing size to ${CHUNK_SIZE}`);
           
-          if (CHUNK_SIZE < batch.length) {
-            break; // Retry with smaller chunk
+          // Réduction plus agressive du chunk size
+          const newChunkSize = Math.max(MIN_CHUNK_SIZE, Math.floor(CHUNK_SIZE * 0.4));
+          
+          if (newChunkSize < CHUNK_SIZE) {
+            CHUNK_SIZE = newChunkSize;
+            console.log(`[Worker ${workerId}] ${dataType} timeout | Reducing chunk size: ${batch.length} → ${CHUNK_SIZE} | Retry: ${retryCount}/${MAX_RETRIES}`);
+            
+            // Recommencer immédiatement avec le nouveau chunk size
+            break; // Sortir de la boucle retry pour recommencer avec chunk plus petit
           }
         }
         
         if (retryCount === MAX_RETRIES) {
-          console.log(`[Worker ${workerId}] ${dataType} batch failed after ${MAX_RETRIES} retries | Chunk size: ${batch.length} | Error: ${errorMsg.substring(0, 100)}`);
+          console.log(`[Worker ${workerId}] ${dataType} batch failed after ${MAX_RETRIES} retries | Chunk size: ${batch.length} | Error: ${JSON.stringify({
+            message: errorObj?.message || String(error) || 'Unknown error',
+            code: errorObj?.code || 'NO_CODE',
+            hint: errorObj?.hint || 'No hint available'
+          })} | Total timeouts: ${timeoutErrors.length}`);
           metrics.failedBatches++;
           throw error;
         }
@@ -819,19 +832,22 @@ async function processBatchData(
   return processedItems;
 }
 
-// Keep the original batch insert functions as they are
+// Optimized batch insert functions using PostgreSQL stored procedures
 async function batch_insert_followers(
   supabase: any,
   followersData: any[],
-  relationsData: any[]
+  relationsData: any[],
+  batchSize: number = 100,
+  timeoutMs: number = 120000 // 2 minutes
 ): Promise<{ error: any }> {
   try {
     const { error } = await supabase.rpc('batch_insert_followers', {
       followers_data: followersData,
       relations_data: relationsData,
-      batch_size: 200,  // Taille de lot plus petite
-      statement_timeout_ms: 30000  // Timeout plus long (30 secondes)
+      batch_size: batchSize,
+      statement_timeout_ms: timeoutMs
     });
+    
     return { error };
   } catch (error) {
     return { error };
@@ -841,15 +857,18 @@ async function batch_insert_followers(
 async function batch_insert_targets(
   supabase: any,
   targetsData: any[],
-  relationsData: any[]
+  relationsData: any[],
+  batchSize: number = 100,
+  timeoutMs: number = 120000 // 2 minutes
 ): Promise<{ error: any }> {
   try {
     const { error } = await supabase.rpc('batch_insert_targets', {
       targets_data: targetsData,
       relations_data: relationsData,
-      batch_size: 200,
-      statement_timeout_ms: 30000
+      batch_size: batchSize,
+      statement_timeout_ms: timeoutMs
     });
+    
     return { error };
   } catch (error) {
     return { error };
