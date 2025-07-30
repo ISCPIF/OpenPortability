@@ -5,6 +5,7 @@ services:
       build:
         context: .
         dockerfile: Dockerfile
+      # user: "1001:1001"
       env_file:
         - .env.local
       environment:
@@ -18,7 +19,7 @@ services:
       ports:
         - "3000:3000"
       volumes:
-        - ./:/app:delegated
+        - ./:/app
         - /app/node_modules
         - /app/.next
         - shared-tmp:/app/tmp
@@ -26,26 +27,27 @@ services:
         - app_logs:/app/logs
 
 
-  # worker:
-  #   build:
-  #     context: ./worker
-  #     dockerfile: Dockerfile
-  #   volumes:
-  #     - ./worker:/app
-  #     - /app/node_modules
-  #     - shared-tmp:/app/tmp
-  #     - app_logs:/app/logs
-  #   env_file:
-  #     - ./worker/.env
-  #   environment:
-  #     - NODE_ENV=development
-  #   networks:
-  #     - app_network
-  #     - supabase_network_goodbyex
-  #   extra_hosts:
-  #     - "host.docker.internal:host-gateway"
-  #   depends_on:
-  #     - app
+  worker:
+    build:
+      context: ./worker
+      dockerfile: Dockerfile
+    # user: "1001:1001"
+    volumes:
+      - ./worker:/app
+      - /app/node_modules
+      - shared-tmp:/app/tmp
+      - app_logs:/app/logs
+    env_file:
+      - ./worker/.env
+    environment:
+      - NODE_ENV=development
+    networks:
+      - app_network
+      - supabase_network_goodbyex
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - app
 
   nginx:
     image: nginx:alpine
@@ -61,6 +63,26 @@ services:
     networks:
       - app_network
     command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
+
+  redis:
+    image: redis:7-alpine
+    container_name: openportability_redis
+    restart: unless-stopped
+    networks:
+      - app_network
+    volumes:
+      - ./redis.conf:/usr/local/etc/redis/redis.conf:ro
+      - redis_data:/data
+    command: redis-server /usr/local/etc/redis/redis.conf
+    # Ne pas exposer le port en production pour la sécurité
+    # ports:
+    #   - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "votre_mot_de_passe_redis_securise_ici", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
   # watcher:
   #   build:
@@ -123,3 +145,5 @@ volumes:
       type: none
       device: /home/ubuntu/openportability_logs
       o: "bind,noexec"
+  redis_data:
+    driver: local
