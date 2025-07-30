@@ -6,6 +6,14 @@ import { join, dirname } from 'path';
 import { createWriteStream, existsSync, promises as fs } from 'fs';
 import { sleep } from './utils';
 import logger from './log_utils';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+import { spawn } from 'child_process';
+import { JobManager } from './jobManager';
+import { BigJobProcessor } from './bigJobProcessor';
+import { SocialMappingService } from './socialMappingService';
+
+const execAsync = promisify(exec);
 
 // Charger les variables d'environnement
 dotenv.config();
@@ -275,7 +283,9 @@ async function cleanupTempFiles(filePaths: string[], workerId: string) {
   
     // Essayer de supprimer le répertoire
     try {
-      await fs.rmdir(userDir);
+      // await fs.rmdir(userDir);
+      await fs.rm(userDir, { recursive: true, force: true });
+
       // console.log(
       //   'JobProcessor',
       //   'cleanupTempFiles',
@@ -370,7 +380,7 @@ interface JobStats {
   };
 }
 
-async function updateJobProgress(
+export async function updateJobProgress(
   jobId: string, 
   processedItems: { followers: number; following: number }, 
   totalItems: { followers: number; following: number }, 
@@ -553,7 +563,12 @@ interface ImportJob {
   stats?: JobStats;
 }
 
-export async function processJob(job: ImportJob, workerId: string) {
+export async function processJob(job: ImportJob, workerId: string): Promise<{
+  followers: number;
+  following: number;
+  total: number;
+  processed: number;
+}> {
   const startTime = Date.now();
   const metrics = {
     batchesProcessed: 0,
@@ -570,288 +585,566 @@ export async function processJob(job: ImportJob, workerId: string) {
   try {
     if (!await acquireLock(job.id, workerId)) {
       console.log(`[Worker ${workerId}] Job ${job.id} already locked`);
-      return;
+      return {
+        followers: 0,
+        following: 0,
+        total: 0,
+        processed: 0,
+      };
     }
 
-    await updateJobProgress(job.id, {followers: 0, following: 0}, {followers: 0, following: 0}, workerId, 'processing');
+    console.log(`[Worker ${workerId}] 🚀 Starting job ${job.id} for user ${job.user_id}`);
 
-    await ensureSourceExists(job.user_id, workerId);
-    console.log(`[Worker ${workerId}] Starting job ${job.id} for user ${job.user_id}`);
-
-    // Validate files exist
+    // Traiter les fichiers
     for (const filePath of job.file_paths) {
-      if (!existsSync(filePath)) {
-        throw new Error(`File not found: ${filePath}`);
+      const data = await processTwitterFile(filePath, workerId);
+      if (filePath.toLowerCase().includes('following')) {
+        followingData.push(...data);
+      } else {
+        followersData.push(...data);
       }
     }
-    
-    let followersFilePath = '';
-    let followingFilePath = '';
-    
-    for (const filePath of job.file_paths) {
-      if (filePath.toLowerCase().includes('follower')) {
-        followersFilePath = filePath;
-      } else if (filePath.toLowerCase().includes('following')) {
-        followingFilePath = filePath;
-      }
-    }
-    
-    try {
-      if (followersFilePath) {
-        followersData = await processTwitterFile(followersFilePath, workerId);
-        console.log(`[Worker ${workerId}] Parsed ${followersData.length} followers`);
-      }
+
+    console.log(`[Worker ${workerId}] 📊 Data loaded - Followers: ${followersData.length}, Following: ${followingData.length}`);
+
+    // Décider si utiliser BigJobProcessor
+    if (BigJobProcessor.shouldUseBigProcessor(followersData.length, followingData.length)) {
+      console.log(`[Worker ${workerId}] 🔄 Switching to BigJobProcessor for large dataset`);
       
-      if (followingFilePath) {
-        followingData = await processTwitterFile(followingFilePath, workerId);
-        console.log(`[Worker ${workerId}] Parsed ${followingData.length} following`);
+      const jobManager = new JobManager();
+      const bigProcessor = new BigJobProcessor(jobManager, workerId);
+      
+      const bigResult = await bigProcessor.processBigJob(
+        job.id,
+        job.user_id,
+        followersData,
+        followingData
+      );
+
+      if (bigResult.success) {
+        // Après le traitement big job, mettre à jour les mappings sociaux
+        await updateSocialMappingsAfterImport(followingData, workerId);
+        
+        return {
+          followers: followersData.length,
+          following: followingData.length,
+          total: bigResult.totalProcessed,
+          processed: bigResult.totalProcessed
+        };
+      } else {
+        throw new Error(bigResult.error || 'Big job processing failed');
       }
-    } catch (error) {
-      console.log(`[Worker ${workerId}] Failed to parse Twitter files: ${error}`);
-      throw new Error(`Error processing Twitter files: ${error}`);
     }
 
-    // Calculate total items for progress tracking
+    // Traitement normal pour les petits datasets
     const totalItems = {
       followers: followersData.length,
       following: followingData.length
     };
-    const currentProgress = {
-      followers: 0,
-      following: 0,
-    };
 
-    // Update job status to processing
-    // await updateJobProgress(job.id, currentProgress, totalItems, workerId, 'processing');
-
-    // Process followers
-    if (followersData.length > 0) {
-      const processedFollowers = await processBatchData(
+    // Process followers and targets in PARALLEL instead of sequential
+    const [followersProcessed, targetsProcessed] = await Promise.all([
+      processBatchDataViaPsql(
         followersData,
         job.user_id,
         workerId,
         'followers',
-        batch_insert_followers,
         metrics
-      );
-      
-      currentProgress.followers = processedFollowers;
-      metrics.processedItemsFollowers = processedFollowers;
-      
-      // await updateJobProgress(job.id, currentProgress, totalItems, workerId, 'processing');
-    }
-
-    // Process following
-    if (followingData.length > 0) {
-      const processedFollowing = await processBatchData(
+      ),
+      processBatchDataViaPsql(
         followingData,
         job.user_id,
         workerId,
-        'following',
-        batch_insert_targets,
+        'targets', 
         metrics
-      );
-      
-      currentProgress.following = processedFollowing;
-      metrics.processedItemsFollowing = processedFollowing;
-      
-      // await updateJobProgress(job.id, currentProgress, totalItems, workerId, 'processing');
-    }
+      )
+    ]);
 
-    // Mark job as completed
-    await updateJobProgress(
-      job.id,
-      { followers: followersData.length, following: followingData.length },
-      totalItems,
-      workerId,
-      'completed'
-    );
+    // Après le traitement normal, mettre à jour les mappings sociaux
+    await updateSocialMappingsAfterImport(followingData, workerId);
 
-    const totalTime = Date.now() - startTime;
-    console.log(`[Worker ${workerId}] Job ${job.id} completed | Total time: ${totalTime}ms | Followers: ${metrics.processedItemsFollowers} | Following: ${metrics.processedItemsFollowing} | Failed batches: ${metrics.failedBatches} | Retries: ${metrics.retries}`);
-    
+    const totalProcessed = followersProcessed + targetsProcessed;
+    const duration = Date.now() - startTime;
+
+    console.log(`[Worker ${workerId}] ✅ Job ${job.id} completed in ${duration}ms - Processed: ${totalProcessed} items`);
+
+    return {
+      followers: followersData.length,
+      following: followingData.length,
+      total: totalProcessed,
+      processed: totalProcessed,
+    };
+
   } catch (error) {
-    console.log(`[Worker ${workerId}] Job ${job.id} failed: ${error}`);
-
-    await updateJobProgress(
-      job.id,
-      { followers: metrics.processedItemsFollowers, following: metrics.processedItemsFollowing },
-      { followers: followersData?.length || 0, following: followingData?.length || 0 },
-      workerId,
-      'failed',
-      String(error)
-    );
+    const duration = Date.now() - startTime;
+    console.log(`[Worker ${workerId}] ❌ Job ${job.id} failed after ${duration}ms:`, error);
+    throw error;
   } finally {
-    await cleanupTempFiles(job.file_paths, workerId);
-    const { error: hasBoardError } = await supabaseAuth
-    .from('users')
-    .update({ has_onboarded: true })
-    .eq('id', job.user_id);
-    if (hasBoardError) {
-      console.log(`❌ [Worker ${workerId}] Error updating has_onboarded:`, hasBoardError);
-    }
     await releaseLock(job.id, workerId);
-
+    
+    // Cleanup temp files
+    if (job.file_paths && job.file_paths.length > 0) {
+      await cleanupTempFiles(job.file_paths, workerId);
+    }
   }
 }
 
-// Generic batch processing function
-async function processBatchData(
+/**
+ * Update social mappings after successful import
+ */
+async function updateSocialMappingsAfterImport(followingData: any[], workerId: string): Promise<void> {
+  if (!followingData || followingData.length === 0) {
+    console.log(`[Worker ${workerId}] No following data to update social mappings`);
+    return;
+  }
+
+  try {
+    console.log(`[Worker ${workerId}] 🔄 Starting social mappings update for ${followingData.length} following records`);
+    
+    // Extraire les twitter IDs depuis les données following
+    const twitterIds = followingData.map(item => item.following?.accountId).filter(Boolean);
+    
+    if (twitterIds.length === 0) {
+      console.log(`[Worker ${workerId}] No valid twitter IDs found in following data`);
+      return;
+    }
+
+    // Utiliser le service de mapping social
+    const socialMappingService = new SocialMappingService();
+    const result = await socialMappingService.batchUpdateSourcesTargets(twitterIds);
+    
+    console.log(`[Worker ${workerId}] ✅ Social mappings update completed:`, {
+      processed: result.processed,
+      updated: result.updated,
+      errors: result.errors,
+      duration: `${result.duration}ms`
+    });
+
+  } catch (error) {
+    console.log(`[Worker ${workerId}] ⚠️ Social mappings update failed (non-critical):`, error);
+    // Ne pas faire échouer le job principal si les mappings échouent
+  }
+}
+
+// CSV conversion and psql import functions
+export async function convertTwitterDataToCSV(
+  data: any[],
+  userId: string,
+  dataType: 'followers' | 'targets',
+  workerId: string
+): Promise<{ dataContent: string; relationsContent: string }> {
+  try {
+    // Prepare data for CSV export
+    const isFollowers = dataType === 'followers';
+    const itemKey = isFollowers ? 'follower' : 'following';
+    
+    // Create data CSV content (for sources_followers or sources_targets main data)
+    const dataRows = data.map(item => {
+      const twitterId = item[itemKey].accountId;
+      return `"${twitterId}"`;
+    }).join('\n');
+    
+    const dataHeader = 'twitter_id';
+    const dataContent = `${dataHeader}\n${dataRows}`;
+    
+    // Create relations CSV content (for the relationship tables)
+    const relationsRows = data.map(item => {
+      const twitterId = item[itemKey].accountId;
+      if (isFollowers) {
+        return `"${userId}","${twitterId}"`;
+      } else {
+        return `"${userId}","${twitterId}"`;
+      }
+    }).join('\n');
+    
+    const relationsHeader = isFollowers 
+      ? 'source_id,follower_id' 
+      : 'source_id,target_twitter_id';
+    const relationsContent = `${relationsHeader}\n${relationsRows}`;
+    
+    console.log(`[Worker ${workerId}] ✅ CSV content created: ${data.length} data rows, ${data.length} relation rows`);
+    
+    return { dataContent, relationsContent };
+    
+  } catch (error) {
+    console.log(`[Worker ${workerId}] ❌ Error creating CSV content:`, error);
+    throw error;
+  }
+}
+
+export async function importCSVViaPsql(
+  dataContent: string,
+  relationsContent: string,
+  dataType: 'followers' | 'targets',
+  userId: string,
+  workerId: string,
+  skipTriggerManagement: boolean = false
+): Promise<{ success: boolean; processed: number; error?: string }> {
+  const maxRetries = 3;
+  const baseDelayMs = 1000; // 1 second base delay
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const result = await importCSVViaPsqlAttempt(dataContent, relationsContent, dataType, userId, workerId, skipTriggerManagement);
+      
+      if (result.success || attempt === maxRetries) {
+        return result;
+      }
+      
+      // Check if error is retryable (deadlock or timeout)
+      const isRetryable = result.error && (
+        result.error.includes('deadlock detected') ||
+        result.error.includes('Command timeout') ||
+        result.error.includes('could not serialize access')
+      );
+      
+      if (!isRetryable) {
+        return result; // Non-retryable error, fail immediately
+      }
+      
+      // Calculate exponential backoff delay
+      const delayMs = baseDelayMs * Math.pow(2, attempt - 1);
+      console.log(`[Worker ${workerId}] 🔄 Retry attempt ${attempt}/${maxRetries} after ${delayMs}ms delay (${result.error?.substring(0, 100)}...)`);
+      
+      // Wait before retry
+      await new Promise(resolve => setTimeout(resolve, delayMs));
+      
+    } catch (error) {
+      console.log(`[Worker ${workerId}] ❌ Unexpected error in retry attempt ${attempt}:`, error);
+      if (attempt === maxRetries) {
+        return { success: false, processed: 0, error: `Max retries exceeded: ${error}` };
+      }
+    }
+  }
+  
+  return { success: false, processed: 0, error: 'Max retries exceeded' };
+}
+
+async function importCSVViaPsqlAttempt(
+  dataContent: string,
+  relationsContent: string,
+  dataType: 'followers' | 'targets',
+  userId: string,
+  workerId: string,
+  skipTriggerManagement: boolean = false
+): Promise<{ success: boolean; processed: number; error?: string }> {
+  const startTime = Date.now();
+  const isFollowers = dataType === 'followers';
+  
+  // Parse data to get counts
+  const dataLines = dataContent.trim().split('\n');
+  const relationsLines = relationsContent.trim().split('\n');
+  const dataCount = Math.max(0, dataLines.length - 1); // Exclude header
+  const relationsCount = Math.max(0, relationsLines.length - 1); // Exclude header
+
+  console.log(`[Worker ${workerId}] 🚀 ${skipTriggerManagement ? 'Simple' : 'Optimized'} bulk import for ${dataType} | Base records: ${dataCount} | Relations: ${relationsCount}...`);
+  
+  // Calculate timeout based on data volume - increased base timeout for trigger management overhead
+  const timeoutValue = Math.max(180, Math.min(1200, 180 + Math.floor((dataCount + relationsCount) / 1000) * 30));
+  console.log(`[Worker ${workerId}] ⏱️ Using timeout: ${timeoutValue}s for ${dataCount + relationsCount} total records`);
+
+  const baseTableName = isFollowers ? 'followers' : 'targets';
+  const relationTableName = isFollowers ? 'sources_followers' : 'sources_targets';
+  const baseTempTable = `temp_${baseTableName}_${Date.now()}`;
+  const relationTempTable = `temp_${relationTableName}_${Date.now()}`;
+  const relationTempColumns = isFollowers ? 'source_id UUID, follower_id TEXT' : 'source_id UUID, target_twitter_id TEXT';
+  const conflictColumns = isFollowers ? 'source_id, follower_id' : 'source_id, target_twitter_id';
+
+  try {
+    // STEP 1: Import base records (triggers managed by BigJobProcessor if skipTriggerManagement=true)
+    const baseImportSql = `
+      BEGIN;
+      
+      -- Set statement timeout for this transaction
+      SET statement_timeout TO '${timeoutValue}s';
+      
+      -- Create temporary table
+      CREATE TEMP TABLE ${baseTempTable} (
+        twitter_id TEXT
+      );
+      
+      -- Import base records data from stdin
+      COPY ${baseTempTable} FROM STDIN WITH (FORMAT csv, HEADER true, DELIMITER ',');
+      
+      -- Import base records into main table with conflict resolution
+      INSERT INTO ${baseTableName} (twitter_id)
+      SELECT DISTINCT twitter_id 
+      FROM ${baseTempTable}
+      ON CONFLICT (twitter_id) DO NOTHING;
+      
+      -- Drop temp table
+      DROP TABLE ${baseTempTable};
+      
+      COMMIT;
+    `;
+
+    // Execute base records import
+    console.log(`[Worker ${workerId}] 🚀 Step 1: Importing base records into ${baseTableName} table...`);
+    const baseResult = await executePostgresCommandWithStdin(baseImportSql, dataContent, workerId);
+    if (!baseResult.success) {
+      throw new Error(`Base records import failed: ${baseResult.error}`);
+    }
+    console.log(`[Worker ${workerId}] ✅ Step 1 completed: Base records imported into ${baseTableName}`);
+
+    // STEP 2: Import relations (triggers managed by BigJobProcessor if skipTriggerManagement=true)
+    const relationsImportSql = `
+      BEGIN;
+      
+      -- Set statement timeout for this transaction
+      SET statement_timeout TO '${timeoutValue}s';
+      
+      -- Create temporary table for relations
+      CREATE TEMP TABLE ${relationTempTable} (
+        ${relationTempColumns}
+      );
+      
+      -- Import relations data from stdin
+      COPY ${relationTempTable} FROM STDIN WITH (FORMAT csv, HEADER true, DELIMITER ',');
+      
+      -- Import relations into main table with conflict resolution
+      INSERT INTO ${relationTableName} (${conflictColumns})
+      SELECT ${conflictColumns}
+      FROM ${relationTempTable}
+      ON CONFLICT (${conflictColumns}) DO NOTHING;
+      
+      -- Drop temp table
+      DROP TABLE ${relationTempTable};
+      
+      COMMIT;
+    `;
+
+    console.log(`[Worker ${workerId}] 🚀 Step 2: Importing relationships into ${relationTableName}...`);
+    const relationResult = await executePostgresCommandWithStdin(relationsImportSql, relationsContent, workerId);
+    if (!relationResult.success) {
+      throw new Error(`Relationships import failed: ${relationResult.error}`);
+    }
+
+    const executionTime = Date.now() - startTime;
+    console.log(`[Worker ${workerId}] ✅ Step 2 completed: Relationships imported into ${relationTableName}`);
+    console.log(`[Worker ${workerId}] 🎉 ${skipTriggerManagement ? 'Simple' : 'Optimized'} bulk import completed for ${dataType} | Base records: ${dataCount} | Relations: ${relationsCount} | Time: ${executionTime}ms`);
+    
+    return { success: true, processed: relationsCount };
+    
+  } catch (error) {
+    const executionTime = Date.now() - startTime;
+    console.log(`[Worker ${workerId}] ❌ ${skipTriggerManagement ? 'Simple' : 'Optimized'} bulk import failed for ${dataType} | Time: ${executionTime}ms | Error: ${error}`);
+    
+    // Clean up CSV files
+    try {
+      const timestamp = Date.now();
+      const dataFilePath = `/tmp/${dataType}_data_${userId}_${timestamp}.csv`;
+      const relationsFilePath = `/tmp/${dataType}_relations_${userId}_${timestamp}.csv`;
+      await fs.unlink(dataFilePath).catch(() => {});
+      await fs.unlink(relationsFilePath).catch(() => {});
+      console.log(`[Worker ${workerId}] 🧹 Cleaned up CSV files: ${dataFilePath}, ${relationsFilePath}`);
+    } catch (cleanupError) {
+      console.log(`[Worker ${workerId}] ⚠️ Failed to cleanup CSV files:`, cleanupError);
+    }
+    
+    return { success: false, processed: 0, error: String(error) };
+  }
+}
+
+export async function executePostgresCommand(sql: string, workerId: string, timeoutMs: number = 120000): Promise<{ success: boolean; error?: string }> {
+  return new Promise((resolve) => {
+    const env = {
+      PGHOST: process.env.POSTGRES_HOST || 'localhost',
+      PGPORT: process.env.POSTGRES_PORT || '5432',
+      PGDATABASE: process.env.POSTGRES_DB || 'postgres',
+      PGUSER: process.env.POSTGRES_USER || 'postgres',
+      PGPASSWORD: process.env.POSTGRES_PASSWORD || 'postgres'
+    };
+
+    const psqlProcess = spawn('psql', ['-c', sql], {
+      env: { ...process.env, ...env },
+      stdio: ['pipe', 'pipe', 'pipe']
+    });
+
+    let stdout = '';
+    let stderr = '';
+    let isResolved = false;
+
+    // Set timeout for the psql process
+    const timeoutId = setTimeout(() => {
+      if (!isResolved) {
+        isResolved = true;
+        psqlProcess.kill('SIGTERM');
+        console.log(`[Worker ${workerId}] ⏰ psql command timeout after ${timeoutMs}ms`);
+        resolve({ success: false, error: 'Command timeout' });
+      }
+    }, timeoutMs);
+
+    psqlProcess.stdout.on('data', (data) => {
+      stdout += data.toString();
+    });
+
+    psqlProcess.stderr.on('data', (data) => {
+      stderr += data.toString();
+    });
+
+    psqlProcess.on('close', (code) => {
+      if (!isResolved) {
+        isResolved = true;
+        clearTimeout(timeoutId);
+        if (code === 0) {
+          console.log(`[Worker ${workerId}] ✅ psql command executed successfully`);
+          resolve({ success: true });
+        } else {
+          console.log(`[Worker ${workerId}] ❌ psql command failed with code ${code}`);
+          console.log(`[Worker ${workerId}] stderr:`, stderr);
+          console.log(`[Worker ${workerId}] stdout:`, stdout);
+          resolve({ success: false, error: stderr || `Process exited with code ${code}` });
+        }
+      }
+    });
+
+    psqlProcess.on('error', (error) => {
+      if (!isResolved) {
+        isResolved = true;
+        clearTimeout(timeoutId);
+        console.log(`[Worker ${workerId}] ❌ psql process error:`, error);
+        resolve({ success: false, error: error.message });
+      }
+    });
+  });
+}
+
+async function executePostgresCommandWithStdin(sql: string, stdinData: string, workerId: string): Promise<{ success: boolean; error?: string }> {
+  return new Promise((resolve) => {
+    const env = {
+      PGHOST: process.env.POSTGRES_HOST || 'localhost',
+      PGPORT: process.env.POSTGRES_PORT || '5432',
+      PGDATABASE: process.env.POSTGRES_DB || 'postgres',
+      PGUSER: process.env.POSTGRES_USER || 'postgres',
+      PGPASSWORD: process.env.POSTGRES_PASSWORD || 'postgres'
+    };
+
+    // Augmenter le timeout pour les gros volumes
+    const timeoutMs = 120000; // 2 minutes
+    const psqlProcess = spawn('psql', ['-c', sql], {
+      env: { ...process.env, ...env },
+      stdio: ['pipe', 'pipe', 'pipe']
+    });
+
+    let stdout = '';
+    let stderr = '';
+    let resolved = false;
+    let writeError: Error | null = null;
+
+    // Timeout de sécurité
+    const timeout = setTimeout(() => {
+      if (!resolved) {
+        console.log(`[Worker ${workerId}] ⏰ psql command timeout after ${timeoutMs}ms`);
+        psqlProcess.kill('SIGTERM');
+        resolved = true;
+        resolve({ success: false, error: 'Command timeout' });
+      }
+    }, timeoutMs);
+
+    psqlProcess.stdout.on('data', (data) => {
+      stdout += data.toString();
+    });
+
+    psqlProcess.stderr.on('data', (data) => {
+      stderr += data.toString();
+    });
+
+    // Gestion des erreurs d'écriture (EPIPE)
+    psqlProcess.stdin.on('error', (error) => {
+      console.log(`[Worker ${workerId}] ❌ stdin write error:`, error.message);
+      writeError = error;
+      // Ne pas résoudre ici, attendre la fermeture du processus
+    });
+
+    // Écriture des données avec gestion d'erreur
+    try {
+      // Vérifier si le processus est encore vivant avant d'écrire
+      if (!psqlProcess.killed) {
+        psqlProcess.stdin.write(stdinData);
+        psqlProcess.stdin.end();
+      }
+    } catch (error) {
+      console.log(`[Worker ${workerId}] ❌ Error writing to stdin:`, error);
+      writeError = error as Error;
+    }
+
+    psqlProcess.on('close', (code) => {
+      if (resolved) return;
+      resolved = true;
+      clearTimeout(timeout);
+
+      if (writeError) {
+        console.log(`[Worker ${workerId}] ❌ psql failed due to write error: ${writeError.message}`);
+        resolve({ success: false, error: `Write error: ${writeError.message}` });
+        return;
+      }
+
+      if (code === 0) {
+        console.log(`[Worker ${workerId}] ✅ psql command executed successfully`);
+        resolve({ success: true });
+      } else {
+        console.log(`[Worker ${workerId}] ❌ psql command failed with code ${code}`);
+        console.log(`[Worker ${workerId}] stderr:`, stderr);
+        console.log(`[Worker ${workerId}] stdout:`, stdout);
+        resolve({ success: false, error: stderr || `Process exited with code ${code}` });
+      }
+    });
+
+    psqlProcess.on('error', (error) => {
+      if (resolved) return;
+      resolved = true;
+      clearTimeout(timeout);
+      console.log(`[Worker ${workerId}] ❌ psql process error:`, error);
+      resolve({ success: false, error: error.message });
+    });
+  });
+}
+
+async function processBatchDataViaPsql(
   data: any[],
   userId: string,
   workerId: string,
-  dataType: 'followers' | 'following',
-  batchInsertFn: Function,
+  dataType: 'followers' | 'targets',
   metrics: any
 ): Promise<number> {
-  const isFollowers = dataType === 'followers';
-  const itemKey = isFollowers ? 'follower' : 'following';
   
-  // Validation
-  if (!data || !Array.isArray(data)) {
-    throw new Error(`${dataType} data must be an array`);
+  if (data.length === 0) {
+    console.log(`[Worker ${workerId}] No ${dataType} data to process`);
+    return 0;
   }
 
-  if (data.length > 0 && !data[0]?.[itemKey]?.accountId) {
-    throw new Error(`Invalid ${dataType} data structure: missing accountId`);
-  }
+  console.log(`[Worker ${workerId}] 🚀 Starting ${dataType} processing via psql COPY | Total items: ${data.length}`);
 
-  // Create source if it doesn't exist
-  // await ensureSourceExists(userId, workerId);
-
-  // Configuration adaptée selon le type
-  let CHUNK_SIZE = isFollowers ? 500 : 500;
-  const MIN_CHUNK_SIZE = 20;
-  const MAX_RETRIES = 3;
-  const BASE_DELAY = 500;
-  
-  let processedItems = 0;
-  const timeoutErrors: any[] = [];
-  const totalChunks = Math.ceil(data.length / CHUNK_SIZE);
-
-  for (let i = 0; i < data.length;) {
-    const batch = data.slice(i, i + CHUNK_SIZE);
-    let retryCount = 0;
-    let successfulProcessing = false;
-
-    while (retryCount < MAX_RETRIES && !successfulProcessing) {
-      try {
-        // Prepare data based on type
-        const dataToInsert = batch.map((item: any) => ({
-          twitter_id: item[itemKey].accountId,
-        }));
-
-        const relationsToInsert = batch.map((item: any) => ({
-          source_id: userId,
-          ...(isFollowers 
-            ? { follower_id: item[itemKey].accountId }
-            : { target_twitter_id: item[itemKey].accountId }
-          ),
-        }));
-
-        const startTime = Date.now();
-        const currentChunk = Math.floor(i / CHUNK_SIZE) + 1;
-        
-        // Execute batch insert
-        const { error: batchError } = await batchInsertFn(
-          supabase,
-          dataToInsert,
-          relationsToInsert
-        );
-        
-        const executionTime = Date.now() - startTime;
-
-        if (batchError) {
-          console.log(`[Worker ${workerId}] ${dataType} batch failed | Chunk: ${currentChunk}/${totalChunks} | Size: ${batch.length} | Error: ${batchError.message} | Code: ${batchError.code}`);
-          throw batchError;
-        }
-
-        // Success
-        successfulProcessing = true;
-        i += CHUNK_SIZE;
-        processedItems += batch.length;
-        metrics.batchesProcessed++;
-        metrics.successfulBatches++;
-        
-        // Dynamic chunk size adjustment (silent)
-        // if (executionTime < 10000 && CHUNK_SIZE < 150) {
-        //   CHUNK_SIZE = Math.min(150, Math.floor(CHUNK_SIZE * 1.2));
-        // }
-        
-      } catch (error) {
-        retryCount++;
-        metrics.retries++;
-        
-        const errorMsg = String(error);
-        const isTimeoutError = errorMsg.includes('canceling statement due to statement timeout') || 
-                              errorMsg.includes('57014') ||
-                              errorMsg.includes('timeout');
-        
-        if (isTimeoutError) {
-          timeoutErrors.push({ chunkSize: batch.length, error: errorMsg });
-          CHUNK_SIZE = Math.max(MIN_CHUNK_SIZE, Math.floor(CHUNK_SIZE / 2));
-          console.log(`[Worker ${workerId}] ${dataType} timeout | Chunk: ${Math.floor(i / CHUNK_SIZE) + 1}/${totalChunks} | Reducing size to ${CHUNK_SIZE}`);
-          
-          if (CHUNK_SIZE < batch.length) {
-            break; // Retry with smaller chunk
-          }
-        }
-        
-        if (retryCount === MAX_RETRIES) {
-          console.log(`[Worker ${workerId}] ${dataType} batch failed after ${MAX_RETRIES} retries | Chunk size: ${batch.length} | Error: ${errorMsg.substring(0, 100)}`);
-          metrics.failedBatches++;
-          throw error;
-        }
-        
-        await new Promise(resolve => setTimeout(resolve, Math.pow(2, retryCount) * BASE_DELAY));
-      }
+  try {
+    // Convert to CSV
+    const { dataContent, relationsContent } = await convertTwitterDataToCSV(data, userId, dataType, workerId);
+    
+    // Import via psql COPY
+    const result = await importCSVViaPsql(
+      dataContent, 
+      relationsContent, 
+      dataType, 
+      userId, 
+      workerId, 
+      true // skipTriggerManagement=true
+    );
+    
+    if (!result.success) {
+      throw new Error(result.error || 'Import failed');
     }
     
-    // Delay between batches
-    await new Promise(resolve => setTimeout(resolve, BASE_DELAY));
-  }
-
-  if (timeoutErrors.length > 0) {
-    console.log(`[Worker ${workerId}] ${dataType} completed with ${timeoutErrors.length} timeout adjustments | Final chunk size: ${CHUNK_SIZE}`);
-  }
-
-  // console.log(`[Worker ${workerId}] Successfully processed ${processedItems} ${dataType}`);
-  return processedItems;
-}
-
-// Keep the original batch insert functions as they are
-async function batch_insert_followers(
-  supabase: any,
-  followersData: any[],
-  relationsData: any[]
-): Promise<{ error: any }> {
-  try {
-    const { error } = await supabase.rpc('batch_insert_followers', {
-      followers_data: followersData,
-      relations_data: relationsData,
-      batch_size: 500,  // Taille de lot plus petite
-      statement_timeout_ms: 30000  // Timeout plus long (30 secondes)
-    });
-    return { error };
+    metrics.batchesProcessed++;
+    metrics.successfulBatches++;
+    
+    console.log(`[Worker ${workerId}] ✅ ${dataType} processing completed via psql COPY | Processed: ${result.processed} items`);
+    
+    return result.processed;
+    
   } catch (error) {
-    return { error };
+    metrics.failedBatches++;
+    console.log(`[Worker ${workerId}] ❌ ${dataType} processing failed via psql COPY:`, error);
+    throw error;
   }
-}
 
-async function batch_insert_targets(
-  supabase: any,
-  targetsData: any[],
-  relationsData: any[]
-): Promise<{ error: any }> {
-  try {
-    const { error } = await supabase.rpc('batch_insert_targets', {
-      targets_data: targetsData,
-      relations_data: relationsData,
-      batch_size: 500,
-      statement_timeout_ms: 30000
-    });
-    return { error };
-  } catch (error) {
-    return { error };
-  }
+  
 }
