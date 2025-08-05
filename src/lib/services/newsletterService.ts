@@ -45,16 +45,25 @@ export const fetchNewsletterData = async (): Promise<RawNewsletterResponse> => {
  */
 export const updateNewsletterConsent = async (
   consent: Consent,
-  email?: string
+  email?: string | null
 ): Promise<boolean> => {
   try {
+    // Construire le payload en évitant d'envoyer null ou email invalide
+    const payload: any = {
+      consents: [consent]
+    };
+    
+    console.log("payload ---->", payload)
+    
+    // N'ajouter email que s'il est défini, non null, et a un format valide
+    if (email && typeof email === 'string' && email.trim() && email.includes('@')) {
+      payload.email = email.trim();
+    }
+
     const response = await fetch('/api/newsletter/request', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email,
-        consents: [consent]
-      })
+      body: JSON.stringify(payload)
     });
     
     if (!response.ok) {

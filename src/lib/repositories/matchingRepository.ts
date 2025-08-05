@@ -1,5 +1,6 @@
 import { MatchingTarget, StoredProcedureTarget } from '../types/matching';
 import { supabase, authClient } from '../supabase';
+import { redis } from '../redis';
 import { logError, logWarning, logInfo, logDebug } from '../log_utils';
 
 // Types pour la fonction get_social_graph_data
@@ -63,7 +64,6 @@ export class MatchingRepository {
     this.supabase = supabase;
     this.authClient = authClient;
   }
-  // }
 
   async getFollowableTargets(
     userId: string,
@@ -71,20 +71,146 @@ export class MatchingRepository {
     pageNumber: number = 0
   ): Promise<{ data: StoredProcedureTarget[] | null; error: any }> {
     console.log("getFollowableTargets", userId, pageSize, pageNumber);
-    // console.log("getFollowableTargets", userId, pageSize, pageNumber)
+    
+    try {
+      // 1. Essayer Redis-first approach
+      const redisResult = await this.getFollowableTargetsFromRedis(userId, pageSize, pageNumber);
+      if (redisResult.data !== null) {
+        console.log("getFollowableTargets Redis success:", {
+          dataLength: redisResult.data.length,
+          firstItem: redisResult.data.length > 0 ? redisResult.data[0] : null
+        });
+        return redisResult;
+      }
+    } catch (redisError) {
+      logWarning('Repository', 'MatchingRepository.getFollowableTargets', 'Redis unavailable, falling back to SQL', userId, {
+        error: redisError instanceof Error ? redisError.message : 'Unknown Redis error'
+      });
+    }
+
+    // 2. Fallback vers la fonction SQL existante
+    console.log("getFollowableTargets falling back to SQL function");
     const result = await this.supabase.rpc('get_followable_targets', {
       user_id: userId,
       page_size: pageSize,
       page_number: pageNumber
     });
     
-    console.log("getFollowableTargets result:", {
+    console.log("getFollowableTargets SQL result:", {
       error: result.error,
       dataLength: result.data?.length || 0,
       firstItem: result.data && result.data.length > 0 ? result.data[0] : null
     });
     
     return result;
+  }
+
+  /**
+   * Nouvelle implémentation Redis-first pour getFollowableTargets
+   */
+  private async getFollowableTargetsFromRedis(
+    userId: string,
+    pageSize: number,
+    pageNumber: number
+  ): Promise<{ data: StoredProcedureTarget[] | null; error: any }> {
+    try {
+      // 1. Récupérer tous les sources_targets de l'utilisateur qui ne sont pas encore suivis
+      const { data: sourcesTargets, error: dbError } = await this.supabase
+        .from('sources_targets')
+        .select('target_twitter_id, has_follow_bluesky, has_follow_mastodon, followed_at_bluesky, followed_at_mastodon, dismissed')
+        .eq('source_id', userId)
+        .or('has_follow_bluesky.eq.false,has_follow_mastodon.eq.false'); // Au moins une plateforme non suivie
+
+      if (dbError) {
+        throw new Error(`Database error: ${dbError.message}`);
+      }
+
+      if (!sourcesTargets || sourcesTargets.length === 0) {
+        return { data: [], error: null };
+      }
+
+      // 2. Récupérer les correspondances depuis Redis en batch
+      const twitterIds = sourcesTargets.map(st => st.target_twitter_id);
+      
+      // Utiliser la méthode batchGetSocialMappings au lieu de mget
+      const mappings = await redis.batchGetSocialMappings(twitterIds);
+
+      // 3. Construire les résultats avec les correspondances trouvées
+      const results: StoredProcedureTarget[] = [];
+      let totalCount = 0;
+
+      for (const sourceTarget of sourcesTargets) {
+        const twitterId = sourceTarget.target_twitter_id;
+        
+        // Récupérer les mappings depuis la Map retournée
+        const mapping = mappings.get(twitterId);
+
+        // Si au moins une correspondance existe
+        if (mapping && (mapping.bluesky || mapping.mastodon)) {
+          const result: StoredProcedureTarget = {
+            target_twitter_id: twitterId,
+            bluesky_handle: mapping.bluesky || null,
+            mastodon_handle: mapping.mastodon?.username || null,
+            mastodon_id: mapping.mastodon?.id || null,
+            mastodon_username: mapping.mastodon?.username || null,
+            mastodon_instance: mapping.mastodon?.instance || null,
+            has_follow_bluesky: sourceTarget.has_follow_bluesky || false,
+            has_follow_mastodon: sourceTarget.has_follow_mastodon || false,
+            followed_at_bluesky: sourceTarget.followed_at_bluesky,
+            followed_at_mastodon: sourceTarget.followed_at_mastodon,
+            dismissed: sourceTarget.dismissed || false,
+            total_count: 0 // Sera mis à jour après
+          };
+
+          results.push(result);
+          totalCount++;
+        }
+      }
+
+      // 4. Appliquer la pagination
+      const startIndex = pageNumber * pageSize;
+      const endIndex = startIndex + pageSize;
+      const paginatedResults = results.slice(startIndex, endIndex);
+
+      // 5. Ajouter le total_count à chaque résultat
+      paginatedResults.forEach(result => {
+        result.total_count = totalCount;
+      });
+
+      return { data: paginatedResults, error: null };
+
+    } catch (error) {
+      logError('Repository', 'MatchingRepository.getFollowableTargetsFromRedis', error, userId);
+      return { data: null, error: error };
+    }
+  }
+
+  /**
+   * Parser les données Redis selon le format choisi
+   * Format: "handle|id" pour Bluesky, "id|username|instance" pour Mastodon
+   */
+  private parseRedisMapping(redisValue: string | null): any {
+    if (!redisValue) return null;
+
+    const parts = redisValue.split('|');
+    
+    // Détecter le format selon le nombre de parties
+    if (parts.length === 2) {
+      // Format Bluesky: "handle|id"
+      return {
+        handle: parts[0],
+        id: parts[1]
+      };
+    } else if (parts.length === 3) {
+      // Format Mastodon: "id|username|instance"
+      return {
+        id: parts[0],
+        username: parts[1],
+        instance: parts[2]
+      };
+    }
+
+    return null;
   }
 
   async updateFollowStatus(
@@ -481,7 +607,7 @@ export class MatchingRepository {
     // Fallback sur count direct si pas de cache
     const { count, error } = await this.supabase
       .from('sources_targets')
-      .select('*', { count: 'exact', head: true })
+      .select('*', { count: 'exact', head: true})
       .eq('source_id', userId)
       .eq('dismissed', false);
 
@@ -515,7 +641,7 @@ export class MatchingRepository {
     // Fallback sur count direct si pas de cache
     const { count, error } = await this.supabase
       .from('sources_followers')
-      .select('*', { count: 'exact', head: true })
+      .select('*', { count: 'exact', head: true})
       .eq('source_id', userId);
 
     console.log("count", count)

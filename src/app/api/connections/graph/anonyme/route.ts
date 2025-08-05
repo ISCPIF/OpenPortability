@@ -14,7 +14,7 @@ import * as path from 'path';
 // - 
 
 // Configuration - chemin vers le fichier JSON statique
-const GRAPH_FILE_PATH = path.join(process.cwd(), 'social-graph/fine_tuned_json_nodes_only_opti11_with_usernames_and_sizes.json');
+const GRAPH_FILE_PATH = path.join(process.cwd(), 'public/graph-data/fine_tuned_json_nodes_only_opti11_with_usernames_and_sizes.json');
 
 // Cache en mémoire pour éviter de relire le fichier à chaque requête
 let cachedGraphData: any = null;

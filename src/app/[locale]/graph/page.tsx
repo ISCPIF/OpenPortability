@@ -19,8 +19,7 @@ import type { GraphNode, GraphData } from '@/lib/types/graph';
 import { GraphModeProvider, useGraphMode, type GraphMode } from '@/app/_components/graph/GraphModeProvider';
 import Header from '@/app/_components/Header';
 import { HamburgerMenu } from '@/app/_components/graph/HamburgerMenu';
-import { StatsOverlay } from '@/app/_components/graph/StatsOverlay';
-import { GraphLegendNew } from '@/app/_components/graph/GraphLegendNew';
+import { StatsLegendCombined } from '@/app/_components/graph/StatsLegendCombined';
 import { SigmaGraphContainer } from '@/app/_components/graph/SigmaGraphContainer';
 import { WaveAnimation } from '@/app/_components/graph/WaveAnimation';
 
@@ -44,7 +43,11 @@ export default function GraphPage() {
     globalStats,
     globalStatsLoading,
     globalStatsError,
-    fetchGlobalStats
+    fetchGlobalStats,
+    top100EdgesData,
+    top100EdgesLoading,
+    top100EdgesError,
+    fetchTop100EdgesData
   } = useGraphData();
   
   // Handler pour les changements de mode depuis le HamburgerMenu
@@ -193,181 +196,81 @@ export default function GraphPage() {
 
   return (
     <GraphModeProvider initialMode="anonyme">
+      <Header />
       <ModeHandler onModeChange={handleModeChange} />
-      <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-blue-900 relative overflow-hidden">
+      <div className="h-screen w-screen relative overflow-hidden">
         
-        {/* Header transparent */}
-        <Header />
-
-        {/* Menu hamburger vertical */}
-        <HamburgerMenu />
-
-        {/* Stats overlay */}
-        <StatsOverlay 
-          graphData={filteredGraphData}
-          userNetworkData={userNetworkData}
-          showUserNetwork={showUserNetwork}
-          globalStats={globalStats}
-          globalStatsLoading={globalStatsLoading}
-        />
-
-        {/* Container principal du graphe */}
-        <div className="pt-20 pb-32 px-4 md:px-8">
-          {/* Loading State */}
-          {loading && (
-            <div className="max-w-4xl mx-auto mb-8">
-              <div className="bg-white/10 backdrop-blur-lg rounded-xl p-8 border border-white/20 text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
-                <p className="text-white text-lg">Chargement des données du graphe...</p>
-              </div>
-            </div>
-          )}
-
-          {/* Error State */}
-          {error && (
-            <div className="max-w-4xl mx-auto mb-8">
-              <div className="bg-red-500/10 backdrop-blur-lg rounded-xl p-6 border border-red-500/20">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center">
-                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  </div>
-                  <div>
-                    <h3 className="text-red-400 font-semibold">Erreur de chargement</h3>
-                    <p className="text-red-300">{error}</p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => fetchStaticGraphData()}
-                  className="mt-4 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors"
-                >
-                  Réessayer
-                </button>
-              </div>
-            </div>
-          )}
-
-          {/* Contrôles du graphe - Version simplifiée pour le nouveau design */}
-          {staticGraphData && !loading && (
-            <div className="max-w-6xl mx-auto mb-8">
-              <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
-                <div className="flex flex-col lg:flex-row gap-6 items-center">
-                  
-                  {/* Info du graphe */}
-                  <div className="flex items-center space-x-4">
-                    <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
-                      <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                    </div>
-                    <div>
-                      <p className="text-white font-medium">Archipel des connexions chargé</p>
-                      <p className="text-slate-300 text-sm">
-                        {filteredGraphData?.nodes.length || 0} îlots • {filteredGraphData?.edges.length || 0} liaisons
-                        {availableCommunities.length > 0 && (
-                          <span className="ml-2">• {availableCommunities.length} communautés</span>
-                        )}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Contrôles principaux */}
-                  <div className="flex items-center space-x-3 ml-auto">
-                    {/* Bouton réseau utilisateur */}
-                    {session?.user && (
-                      <button
-                        onClick={toggleUserNetwork}
-                        disabled={userNetworkLoading}
-                        className={`px-4 py-2 rounded-full transition-colors font-medium ${
-                          showUserNetwork
-                            ? 'bg-pink-500 hover:bg-pink-600 text-white'
-                            : 'bg-white/10 hover:bg-white/20 text-white'
-                        } ${userNetworkLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                      >
-                        {userNetworkLoading ? (
-                          <div className="flex items-center space-x-2">
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                            <span>Chargement...</span>
-                          </div>
-                        ) : (
-                          <div className="flex items-center space-x-2">
-                            <span>⚓</span>
-                            <span>{showUserNetwork ? 'Masquer mes amarres' : 'Mes amarres'}</span>
-                          </div>
-                        )}
-                      </button>
-                    )}
-
-                    {/* Recherche rapide */}
-                    <div className="relative">
-                      <input
-                        type="text"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="Rechercher un îlot..."
-                        className="w-64 px-4 py-2 pr-10 rounded-full bg-white/10 border border-white/20 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-white/30"
-                      />
-                      <svg 
-                        className="absolute right-3 top-2.5 w-5 h-5 text-white/60" 
-                        fill="none" 
-                        stroke="currentColor" 
-                        viewBox="0 0 24 24"
-                      >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                      </svg>
-                      
-                      {/* Résultats de recherche */}
-                      {showSearchResults && searchResults.length > 0 && (
-                        <div className="absolute z-50 w-full mt-2 bg-white/95 backdrop-blur-lg rounded-lg shadow-lg border border-white/20 max-h-60 overflow-y-auto">
-                          {searchResults.map(node => (
-                            <button
-                              key={node.id}
-                              onClick={() => handleSelectSearchResult(node)}
-                              className="w-full px-4 py-2 text-left hover:bg-blue-50 transition-colors flex items-center justify-between"
-                            >
-                              <span className="font-medium text-slate-800">{node.label}</span>
-                              <span className="text-xs text-slate-500">{node.id}</span>
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-
-                    <button
-                      onClick={handleReset}
-                      className="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-full transition-colors"
-                    >
-                      🔄 Recharger
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Container du graphe Sigma */}
-          <div className="max-w-7xl mx-auto">
-            <SigmaGraphContainer
-              graphData={filteredGraphData}
-              loading={loading}
-              selectedNodeId={selectedNodeId}
-              onNodeSelect={handleNodeSelect}
-            />
-          </div>
-
-          {/* Instructions */}
-          {staticGraphData && !loading && (
-            <div className="mt-8 text-center">
-              <p className="text-white/60 text-sm">
-                🧭 Naviguez dans l'archipel des connexions • 🔍 Utilisez la recherche pour localiser un îlot • ⚓ Découvrez vos amarres
-              </p>
-            </div>
-          )}
+        {/* Container du graphe Sigma - Prend toute la page */}
+        <div className="absolute inset-0 w-full h-full">
+          <SigmaGraphContainer
+            graphData={filteredGraphData}
+            loading={loading}
+            selectedNodeId={selectedNodeId}
+            onNodeSelect={handleNodeSelect}
+          />
         </div>
 
-        {/* Légende */}
-        <GraphLegendNew />
+        {/* Header transparent - Position absolue */}
+        {/* <div className="absolute top-0 left-0 right-0 z-50">
+          <Header />
+        </div> */}
+
+        {/* Menu hamburger vertical - Position absolue */}
+        {/* <div className="absolute top-0 left-0 z-40">
+          <HamburgerMenu />
+        </div> */}
+
+        {/* Stats overlay - Position absolue */}
+        <div className="absolute top-0 right-0 z-40">
+          <StatsLegendCombined 
+            graphData={filteredGraphData}
+            userNetworkData={userNetworkData}
+            showUserNetwork={showUserNetwork}
+            globalStats={globalStats}
+            globalStatsLoading={globalStatsLoading}
+          />
+        </div>
+
+        {/* Légende - Position absolue */}
+        <div className="absolute bottom-4 left-4 z-30">
+          {/* <GraphLegendNew /> */}
+        </div>
+
+        {/* Loading State - Position absolue centrée */}
+        {loading && (
+          <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm">
+            <div className="bg-white/10 backdrop-blur-lg rounded-xl p-8 border border-white/20 text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+              <p className="text-white text-lg">Chargement des données du graphe...</p>
+            </div>
+          </div>
+        )}
+
+        {/* Error State - Position absolue centrée */}
+        {error && (
+          <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm">
+            <div className="bg-red-500/10 backdrop-blur-lg rounded-xl p-6 border border-red-500/20 max-w-md">
+              <div className="flex items-center space-x-3">
+                <div className="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center">
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-red-400 font-semibold">Erreur de chargement</h3>
+                  <p className="text-red-300">{error}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => fetchStaticGraphData()}
+                className="mt-4 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition-colors"
+              >
+                Réessayer
+              </button>
+            </div>
+          </div>
+        )}
+
 
         {/* Vagues animées */}
         {/* <WaveAnimation /> */}

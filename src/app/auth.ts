@@ -29,7 +29,7 @@ async function createMastodonApp(instance: string){
       // TODO: limiter au strict nécessaire
       // https://docs.joinmastodon.org/api/oauth-scopes/#granular
       "scopes": "read write:follows",
-      "website": "https://openportability.org"
+      "website": "https://app.beta.v2.helloquitx.com/"
     };
     
     try {

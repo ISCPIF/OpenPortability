@@ -11,7 +11,6 @@ import { promisify } from 'util';
 import { spawn } from 'child_process';
 import { JobManager } from './jobManager';
 import { BigJobProcessor } from './bigJobProcessor';
-import { SocialMappingService } from './socialMappingService';
 
 const execAsync = promisify(exec);
 
@@ -593,91 +592,172 @@ export async function processJob(job: ImportJob, workerId: string): Promise<{
       };
     }
 
-    console.log(`[Worker ${workerId}] 🚀 Starting job ${job.id} for user ${job.user_id}`);
+    await updateJobProgress(job.id, {followers: 0, following: 0}, {followers: 0, following: 0}, workerId, 'processing');
+
+    await ensureSourceExists(job.user_id, workerId);
+    console.log(`[Worker ${workerId}] Starting job ${job.id} for user ${job.user_id}`);
 
     // Traiter les fichiers
     for (const filePath of job.file_paths) {
-      const data = await processTwitterFile(filePath, workerId);
-      if (filePath.toLowerCase().includes('following')) {
-        followingData.push(...data);
-      } else {
-        followersData.push(...data);
+      if (!existsSync(filePath)) {
+        throw new Error(`File not found: ${filePath}`);
       }
     }
+    
+    let followersFilePath = '';
+    let followingFilePath = '';
+    
+    for (const filePath of job.file_paths) {
+      if (filePath.toLowerCase().includes('follower')) {
+        followersFilePath = filePath;
+      } else if (filePath.toLowerCase().includes('following')) {
+        followingFilePath = filePath;
+      }
+    }
+    
+    try {
+      if (followersFilePath) {
+        followersData = await processTwitterFile(followersFilePath, workerId);
+        console.log(`[Worker ${workerId}] Parsed ${followersData.length} followers`);
+      }
+      
+      if (followingFilePath) {
+        followingData = await processTwitterFile(followingFilePath, workerId);
+        console.log(`[Worker ${workerId}] Parsed ${followingData.length} following`);
+      }
+    } catch (error) {
+      console.log(`[Worker ${workerId}] Failed to parse Twitter files: ${error}`);
+      throw new Error(`Error processing Twitter files: ${error}`);
+    }
 
-    console.log(`[Worker ${workerId}] 📊 Data loaded - Followers: ${followersData.length}, Following: ${followingData.length}`);
+    // 🚀 DECISION LOGIC: Use BigJobProcessor for large volumes
+    const totalRecords = followersData.length + followingData.length;
+    const shouldUseBigProcessor = BigJobProcessor.shouldUseBigProcessor(
+      followersData.length, 
+      followingData.length
+    );
 
-    // Décider si utiliser BigJobProcessor
-    if (BigJobProcessor.shouldUseBigProcessor(followersData.length, followingData.length)) {
-      console.log(`[Worker ${workerId}] 🔄 Switching to BigJobProcessor for large dataset`);
+    console.log(`[Worker ${workerId}] Processing decision`, {
+      jobId: job.id,
+      followersCount: followersData.length,
+      followingCount: followingData.length,
+      totalRecords,
+      processingMode: shouldUseBigProcessor ? 'BIG_JOB' : 'NORMAL',
+      threshold: '100k records'
+    });
+
+    if (shouldUseBigProcessor) {
+      // 🔥 BIG JOB MODE: Use parallel chunked processing
+      console.log(`[Worker ${workerId}] 🚀 Switching to BIG JOB mode for ${totalRecords} records`);
       
       const jobManager = new JobManager();
-      const bigProcessor = new BigJobProcessor(jobManager, workerId);
+      const bigJobProcessor = new BigJobProcessor(jobManager, workerId);
       
-      const bigResult = await bigProcessor.processBigJob(
+      const bigJobResult = await bigJobProcessor.processBigJob(
         job.id,
         job.user_id,
         followersData,
         followingData
       );
 
-      if (bigResult.success) {
-        // Après le traitement big job, mettre à jour les mappings sociaux
-        await updateSocialMappingsAfterImport(followingData, workerId);
-        
-        return {
-          followers: followersData.length,
-          following: followingData.length,
-          total: bigResult.totalProcessed,
-          processed: bigResult.totalProcessed
-        };
-      } else {
-        throw new Error(bigResult.error || 'Big job processing failed');
+      if (!bigJobResult.success) {
+        throw new Error(`Big job processing failed: ${bigJobResult.error}`);
       }
+
+      // Mark job as completed
+      await updateJobProgress(
+        job.id,
+        { followers: followersData.length, following: followingData.length },
+        { followers: followersData.length, following: followingData.length },
+        workerId,
+        'completed'
+      );
+
+      const totalTime = Date.now() - startTime;
+      console.log(`[Worker ${workerId}] 🎉 BIG JOB completed`, {
+        jobId: job.id,
+        totalTime: `${totalTime}ms`,
+        totalProcessed: bigJobResult.totalProcessed,
+        chunksCompleted: bigJobResult.chunksCompleted,
+        parallelWorkers: bigJobResult.parallelWorkers,
+        throughput: `${Math.round(bigJobResult.totalProcessed / (totalTime / 1000))} records/sec`
+      });
+
+      return {
+        followers: followersData.length,
+        following: followingData.length,
+        total: bigJobResult.totalProcessed,
+        processed: bigJobResult.totalProcessed
+      };
+
+    } else {
+      // 📦 NORMAL MODE: Use current optimized processing
+      console.log(`[Worker ${workerId}] 📦 Using NORMAL mode for ${totalRecords} records`);
+
+      // Calculate total items for progress tracking
+      const totalItems = {
+        followers: followersData.length,
+        following: followingData.length
+      };
+      const currentProgress = {
+        followers: 0,
+        following: 0,
+      };
+
+      // Process followers and targets in PARALLEL instead of sequential
+      const [followersProcessed, targetsProcessed] = await Promise.all([
+        processBatchDataViaPsql(
+          followersData,
+          job.user_id,
+          workerId,
+          'followers',
+          metrics
+        ),
+        processBatchDataViaPsql(
+          followingData,
+          job.user_id,
+          workerId,
+          'targets', 
+          metrics
+        )
+      ]);
+
+      metrics.processedItemsFollowers = followersProcessed;
+      metrics.processedItemsFollowing = targetsProcessed;
+
+      // Mark job as completed
+      await updateJobProgress(
+        job.id,
+        { followers: followersData.length, following: followingData.length },
+        totalItems,
+        workerId,
+        'completed'
+      );
+
+      const totalTime = Date.now() - startTime;
+      console.log(`[Worker ${workerId}] Job ${job.id} completed | Total time: ${totalTime}ms | Followers: ${metrics.processedItemsFollowers} | Following: ${metrics.processedItemsFollowing} | Failed batches: ${metrics.failedBatches} | Retries: ${metrics.retries}`);
+      
+      return {
+        followers: metrics.processedItemsFollowers,
+        following: metrics.processedItemsFollowing,
+        total: metrics.processedItemsFollowers + metrics.processedItemsFollowing,
+        processed: metrics.processedItemsFollowers + metrics.processedItemsFollowing
+      };
     }
-
-    // Traitement normal pour les petits datasets
-    const totalItems = {
-      followers: followersData.length,
-      following: followingData.length
-    };
-
-    // Process followers and targets in PARALLEL instead of sequential
-    const [followersProcessed, targetsProcessed] = await Promise.all([
-      processBatchDataViaPsql(
-        followersData,
-        job.user_id,
-        workerId,
-        'followers',
-        metrics
-      ),
-      processBatchDataViaPsql(
-        followingData,
-        job.user_id,
-        workerId,
-        'targets', 
-        metrics
-      )
-    ]);
-
-    // Après le traitement normal, mettre à jour les mappings sociaux
-    await updateSocialMappingsAfterImport(followingData, workerId);
-
-    const totalProcessed = followersProcessed + targetsProcessed;
-    const duration = Date.now() - startTime;
-
-    console.log(`[Worker ${workerId}] ✅ Job ${job.id} completed in ${duration}ms - Processed: ${totalProcessed} items`);
-
-    return {
-      followers: followersData.length,
-      following: followingData.length,
-      total: totalProcessed,
-      processed: totalProcessed,
-    };
-
+    
   } catch (error) {
-    const duration = Date.now() - startTime;
-    console.log(`[Worker ${workerId}] ❌ Job ${job.id} failed after ${duration}ms:`, error);
+    console.log(`[Worker ${workerId}] Job ${job.id} failed: ${error}`);
+
+    await updateJobProgress(
+      job.id,
+      { followers: metrics.processedItemsFollowers, following: metrics.processedItemsFollowing },
+      { followers: followersData?.length || 0, following: followingData?.length || 0 },
+      workerId,
+      'failed',
+      String(error)
+    );
+    
+    // Retourner les statistiques même en cas d'erreur
     throw error;
   } finally {
     await releaseLock(job.id, workerId);
@@ -689,42 +769,42 @@ export async function processJob(job: ImportJob, workerId: string): Promise<{
   }
 }
 
-/**
- * Update social mappings after successful import
- */
-async function updateSocialMappingsAfterImport(followingData: any[], workerId: string): Promise<void> {
-  if (!followingData || followingData.length === 0) {
-    console.log(`[Worker ${workerId}] No following data to update social mappings`);
-    return;
-  }
+// /**
+//  * Update social mappings after successful import
+//  */
+// async function updateSocialMappingsAfterImport(followingData: any[], workerId: string): Promise<void> {
+//   if (!followingData || followingData.length === 0) {
+//     console.log(`[Worker ${workerId}] No following data to update social mappings`);
+//     return;
+//   }
 
-  try {
-    console.log(`[Worker ${workerId}] 🔄 Starting social mappings update for ${followingData.length} following records`);
+//   try {
+//     console.log(`[Worker ${workerId}] 🔄 Starting social mappings update for ${followingData.length} following records`);
     
-    // Extraire les twitter IDs depuis les données following
-    const twitterIds = followingData.map(item => item.following?.accountId).filter(Boolean);
+//     // Extraire les twitter IDs depuis les données following
+//     const twitterIds = followingData.map(item => item.following?.accountId).filter(Boolean);
     
-    if (twitterIds.length === 0) {
-      console.log(`[Worker ${workerId}] No valid twitter IDs found in following data`);
-      return;
-    }
+//     if (twitterIds.length === 0) {
+//       console.log(`[Worker ${workerId}] No valid twitter IDs found in following data`);
+//       return;
+//     }
 
-    // Utiliser le service de mapping social
-    const socialMappingService = new SocialMappingService();
-    const result = await socialMappingService.batchUpdateSourcesTargets(twitterIds);
+//     // Utiliser le service de mapping social
+//     const socialMappingService = new SocialMappingService();
+//     const result = await socialMappingService.batchUpdateSourcesTargets(twitterIds);
     
-    console.log(`[Worker ${workerId}] ✅ Social mappings update completed:`, {
-      processed: result.processed,
-      updated: result.updated,
-      errors: result.errors,
-      duration: `${result.duration}ms`
-    });
+//     console.log(`[Worker ${workerId}] ✅ Social mappings update completed:`, {
+//       processed: result.processed,
+//       updated: result.updated,
+//       errors: result.errors,
+//       duration: `${result.duration}ms`
+//     });
 
-  } catch (error) {
-    console.log(`[Worker ${workerId}] ⚠️ Social mappings update failed (non-critical):`, error);
-    // Ne pas faire échouer le job principal si les mappings échouent
-  }
-}
+//   } catch (error) {
+//     console.log(`[Worker ${workerId}] ⚠️ Social mappings update failed (non-critical):`, error);
+//     // Ne pas faire échouer le job principal si les mappings échouent
+//   }
+// }
 
 // CSV conversion and psql import functions
 export async function convertTwitterDataToCSV(

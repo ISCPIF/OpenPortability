@@ -1,5 +1,7 @@
 import { MatchingRepository } from '../repositories/matchingRepository';
 import { MatchingResult, MatchingTarget, MatchingStats } from '../types/matching';
+import { StatsService } from './statsServices';
+import { StatsRepository } from '../repositories/statsRepository';
 
 export interface FollowAction {
   userId: string;
@@ -12,9 +14,13 @@ export interface FollowAction {
 
 export class MatchingService {
   private repository: MatchingRepository;
+  private statsRepo : StatsRepository;
+  private statsService: StatsService;
 
   constructor() {
     this.repository = new MatchingRepository();
+    this.statsRepo = new StatsRepository();
+    this.statsService = new StatsService(this.statsRepo);
   }
 
   async getFollowableTargets(userId: string): Promise<MatchingResult> {
@@ -113,6 +119,7 @@ export class MatchingService {
     });
 
     try {
+      // 1. Mise à jour des relations dans sources_targets
       await this.repository.updateFollowStatusBatch(
         userId,
         targetIds,
@@ -120,6 +127,13 @@ export class MatchingService {
         success,
         error
       );
+      
+      // 2. Rafraîchir les stats utilisateur (remplace le trigger PostgreSQL)
+      if (success) {
+        console.log('[MatchingService.updateFollowStatusBatch] Refreshing user stats after successful follow');
+        await this.statsService.refreshUserStats(userId, true);
+      }
+      
       console.log('[MatchingService.updateFollowStatusBatch] Successfully updated follow status for batch');
     } catch (error) {
       console.error('[MatchingService.updateFollowStatusBatch] Failed to update follow status batch:', error);

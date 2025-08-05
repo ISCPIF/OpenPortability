@@ -78,8 +78,10 @@ export const centerGraph = (sigma: any, graphData: GraphData | null) => {
     
     // Approche simple : centrer sur le point (0,0) avec un zoom par défaut
     // Cela devrait fonctionner de manière similaire à focusOnNode
+    // y = hauteur
+    // z = largeur
     camera.animate(
-      { x: 0, y: 0, ratio: 1 },
+      { x: 0.50, y: 0.50, ratio: 0.5}, // ← Changer de 1 à 0.1
       { duration: 1500, easing: 'quadraticOut' }
     );
   } catch (error) {
@@ -370,4 +372,168 @@ export const createCenterGraphEffect = () => {
       }, delay);
     }
   };
+};
+
+// Utilitaires pour le mode influencer network
+export const calculateTopInfluencers = (graphData: GraphData | null, count: number = 100): Set<string> => {
+  console.log('🔍 calculateTopInfluencers - Début du calcul');
+  console.log('📊 Données reçues:', {
+    hasGraphData: !!graphData,
+    nodesCount: graphData?.nodes?.length || 0,
+    edgesCount: graphData?.edges?.length || 0,
+    requestedCount: count
+  });
+
+  if (!graphData?.nodes || !graphData?.edges) {
+    console.warn('⚠️ calculateTopInfluencers - Données manquantes');
+    return new Set();
+  }
+  
+  // Calculer le degré de chaque nœud (nombre de connexions)
+  const nodeDegrees = new Map<string, number>();
+  
+  graphData.nodes.forEach(node => {
+    nodeDegrees.set(node.id, 0);
+  });
+  
+  console.log('🔗 Analyse des edges pour calculer les degrés...');
+  graphData.edges.forEach((edge, index) => {
+    if (index < 5) { // Log des 5 premières edges pour debug
+      console.log(`Edge ${index}:`, { source: edge.source, target: edge.target });
+    }
+    
+    const sourceCount = nodeDegrees.get(edge.source) || 0;
+    const targetCount = nodeDegrees.get(edge.target) || 0;
+    nodeDegrees.set(edge.source, sourceCount + 1);
+    nodeDegrees.set(edge.target, targetCount + 1);
+  });
+  
+  // Trier par degré et prendre les N premiers
+  const sortedNodes = Array.from(nodeDegrees.entries())
+    .sort(([,a], [,b]) => b - a)
+    .slice(0, count)
+    .map(([nodeId]) => nodeId);
+  
+  console.log('🏆 Top influenceurs calculés:');
+  console.log('📈 Top 10 degrés:', Array.from(nodeDegrees.entries())
+    .sort(([,a], [,b]) => b - a)
+    .slice(0, 10)
+    .map(([id, degree]) => ({ id: id.substring(0, 10) + '...', degree }))
+  );
+  
+  const result = new Set(sortedNodes);
+  console.log('✅ calculateTopInfluencers terminé - Influenceurs trouvés:', result.size);
+  
+  return result;
+};
+
+export const createInfluencerNetwork = (
+  selectedInfluencer: string,
+  top100EdgesData: any,
+  graphData: GraphData | null
+): GraphData | null => {
+  console.log('🌟 createInfluencerNetwork - Début de la création');
+  console.log('📋 Paramètres:', {
+    selectedInfluencer: selectedInfluencer,
+    hasTop100EdgesData: !!top100EdgesData,
+    top100EdgesCount: top100EdgesData?.edges?.length || 0,
+    hasGraphData: !!graphData,
+    graphNodesCount: graphData?.nodes?.length || 0
+  });
+
+  if (!selectedInfluencer || !top100EdgesData || !graphData) {
+    console.warn('⚠️ createInfluencerNetwork - Paramètres manquants');
+    return null;
+  }
+
+  try {
+    console.log('🔍 Filtrage des edges pour l\'influenceur:', selectedInfluencer);
+    
+    // Filtrer les edges où source == selectedInfluencer
+    const influencerEdges = top100EdgesData.edges?.filter((edge: any) => 
+      edge.source === selectedInfluencer
+    ) || [];
+
+    console.log('🔗 Edges trouvées pour l\'influenceur:', influencerEdges.length);
+    
+    // Log des premières edges trouvées
+    if (influencerEdges.length > 0) {
+      console.log('📝 Premières edges de l\'influenceur:');
+      influencerEdges.slice(0, 5).forEach((edge: any, index: number) => {
+        console.log(`  ${index + 1}. ${edge.source} → ${edge.target}`);
+      });
+    }
+
+    if (influencerEdges.length === 0) {
+      console.warn('⚠️ Aucune edge trouvée pour l\'influenceur:', selectedInfluencer);
+      
+      // Debug: Vérifier si l'influenceur existe dans les données
+      const influencerExistsInEdges = top100EdgesData.edges?.some((edge: any) => 
+        edge.source === selectedInfluencer || edge.target === selectedInfluencer
+      );
+      console.log('🔍 L\'influenceur existe-t-il dans les edges (source ou target)?', influencerExistsInEdges);
+      
+      // Log quelques exemples d'IDs dans les edges
+      if (top100EdgesData.edges?.length > 0) {
+        console.log('📋 Exemples d\'IDs dans les edges:');
+        const sampleEdges = top100EdgesData.edges.slice(0, 5);
+        sampleEdges.forEach((edge: any, index: number) => {
+          console.log(`  ${index + 1}. source: "${edge.source}", target: "${edge.target}"`);
+        });
+      }
+      
+      return null;
+    }
+
+    // Collecter tous les nœuds impliqués (source + targets)
+    const involvedNodeIds = new Set<string>();
+    involvedNodeIds.add(selectedInfluencer); // Ajouter l'influenceur lui-même
+
+    influencerEdges.forEach((edge: any) => {
+      involvedNodeIds.add(edge.target);
+    });
+
+    console.log('👥 Nœuds impliqués dans le réseau:', involvedNodeIds.size);
+    console.log('🔍 IDs des nœuds impliqués (premiers 10):', Array.from(involvedNodeIds).slice(0, 10));
+
+    // Filtrer les nœuds du graphe principal qui correspondent aux IDs
+    const networkNodes = graphData.nodes.filter(node => 
+      involvedNodeIds.has(node.id)
+    ).map(node => ({
+      ...node,
+      // Coloration spéciale pour l'influenceur
+      color: node.id === selectedInfluencer ? '#dc2626' : '#3b82f6',
+      size: node.id === selectedInfluencer ? (node.size || 5) * 2.5 : (node.size || 5) * 1.2
+    }));
+
+    console.log('🎯 Nœuds trouvés dans le graphe principal:', networkNodes.length);
+    
+    if (networkNodes.length !== involvedNodeIds.size) {
+      console.warn('⚠️ Certains nœuds impliqués n\'ont pas été trouvés dans le graphe principal');
+      console.log('📊 Nœuds manquants:', involvedNodeIds.size - networkNodes.length);
+    }
+
+    // Créer les données du réseau de l'influenceur
+    const influencerNetwork: GraphData = {
+      nodes: networkNodes,
+      edges: influencerEdges.map((edge: any) => ({
+        ...edge,
+        color: '#dc2626', // Rouge pour les arêtes de l'influenceur
+        size: 2
+      }))
+    };
+
+    console.log('✅ Réseau influenceur créé avec succès:');
+    console.log('📊 Statistiques finales:', {
+      nodes: networkNodes.length,
+      edges: influencerEdges.length,
+      influencerId: selectedInfluencer
+    });
+    
+    return influencerNetwork;
+
+  } catch (error) {
+    console.error('💥 Erreur lors de la création du réseau influenceur:', error);
+    return null;
+  }
 };

@@ -4,6 +4,7 @@ import { JobManager } from './jobManager';
 import { processJob } from './jobProcessor';
 import { redisClient } from './redisClient';
 import logger from './log_utils';
+import { authClient } from './supabase'
 
 // Charger les variables d'environnement au tout début
 dotenv.config();
@@ -227,6 +228,19 @@ async function startWorker(): Promise<void> {
           jobType: job.job_type
         });
 
+        // Stocker le job en processing dans Redis pour l'API
+        const processingJobData = {
+          id: job.id,
+          user_id: job.user_id,
+          status: 'processing',
+          total_items: job.total_items,
+          stats: job.stats || {},
+          error_log: null,
+          updated_at: new Date().toISOString()
+        };
+        
+        await redisClient.getClient().set(`job:${job.id}`, JSON.stringify(processingJobData), 'EX', 3600);
+
         // Traitement du job
         const startTime = Date.now();
         
@@ -248,6 +262,19 @@ async function startWorker(): Promise<void> {
             processingTime: `${processingTime}ms`,
             stats: jobStats
           });
+
+          const { error: hasBoardError } = await authClient
+          .from('users')
+          .update({ has_onboarded: true })
+          .eq('id', job.user_id);
+
+          if (hasBoardError) {
+            console.log('Worker', 'processJob', `❌ Failed to update user ${job.user_id} onboarded status`, {
+              workerId,
+              jobId: job.id,
+              error: hasBoardError.message
+            });
+          }
 
         } catch (processingError) {
           const errorMessage = processingError instanceof Error ? processingError.message : 'Unknown processing error';

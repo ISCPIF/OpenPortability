@@ -3,14 +3,17 @@
 # Enhanced script de test pour l'endpoint /api/upload/large-files
 # Usage: AUTH_COOKIE="your_cookie" TEST_FILES_DIR="/path/to/twitter/archive" ./test-upload-enhanced.sh
 # Tests de sécurité pour l'upload des fichiers follower.js et following.js d'archives Twitter
+# Adapté pour la nouvelle architecture Redis avec polling du statut des jobs
 
 API_URL="http://localhost:3000/api/upload/large-files"
+STATUS_API_URL="http://localhost:3000/api/import-status"
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 OUTPUT_FILE="upload_large_files_test_${TIMESTAMP}.txt"
 
-echo "=== ENHANCED TESTING LARGE FILES UPLOAD API ===" | tee "$OUTPUT_FILE"
+echo "=== ENHANCED TESTING LARGE FILES UPLOAD API (Redis Architecture) ===" | tee "$OUTPUT_FILE"
 echo "Date: $(date)" | tee -a "$OUTPUT_FILE"
 echo "Target: $API_URL" | tee -a "$OUTPUT_FILE"
+echo "Status API: $STATUS_API_URL" | tee -a "$OUTPUT_FILE"
 echo
 
 # Vérification des variables d'environnement
@@ -40,12 +43,86 @@ FAILED_DETAILS=()
 TMP_DIR=$(mktemp -d)
 echo "Temporary directory created: $TMP_DIR" | tee -a "$OUTPUT_FILE"
 
-# Fonction pour exécuter un test d'upload
+# Fonction pour créer des fichiers de test malveillants
+create_malicious_file() {
+  local filename="$1"
+  local content="$2"
+  local filepath="$TMP_DIR/$filename"
+  echo -e "$content" > "$filepath"
+  echo "$filepath"
+}
+
+# Fonction pour polling du statut d'un job
+poll_job_status() {
+  local job_id="$1"
+  local description="$2"
+  local max_attempts=30  # 30 tentatives = 5 minutes max
+  local attempt=0
+  
+  echo "  📊 Polling job status for: $description" | tee -a "$OUTPUT_FILE"
+  echo "  Job ID: $job_id" | tee -a "$OUTPUT_FILE"
+  
+  while [ $attempt -lt $max_attempts ]; do
+    attempt=$((attempt + 1))
+    
+    local status_response
+    status_response=$(curl -s -X GET "$STATUS_API_URL/$job_id" \
+      -H "Cookie: $AUTH_COOKIE" \
+      -w "\nHTTP_CODE:%{http_code}\nTIME:%{time_total}" \
+      --max-time 10 2>/dev/null)
+    
+    local http_code=$(echo "$status_response" | grep "HTTP_CODE:" | cut -d: -f2)
+    local response_time=$(echo "$status_response" | grep "TIME:" | cut -d: -f2)
+    local content=$(echo "$status_response" | grep -v "HTTP_CODE:" | grep -v "TIME:")
+    
+    if [ "$http_code" = "200" ]; then
+      # Extraire le statut du job depuis la réponse JSON
+      local job_status=$(echo "$content" | grep -o '"status":"[^"]*"' | cut -d'"' -f4)
+      local progress=$(echo "$content" | grep -o '"progress":[0-9]*' | cut -d':' -f2)
+      local total_items=$(echo "$content" | grep -o '"totalItems":[0-9]*' | cut -d':' -f2)
+      
+      echo "    Attempt $attempt: Status=$job_status, Progress=$progress/$total_items (${response_time}s)" | tee -a "$OUTPUT_FILE"
+      
+      case "$job_status" in
+        "completed")
+          echo "  ✅ Job completed successfully!" | tee -a "$OUTPUT_FILE"
+          return 0
+          ;;
+        "failed")
+          echo "  ❌ Job failed!" | tee -a "$OUTPUT_FILE"
+          echo "  Error details: $content" | tee -a "$OUTPUT_FILE"
+          return 1
+          ;;
+        "pending"|"processing")
+          # Continue polling
+          sleep 10
+          ;;
+        *)
+          echo "  ⚠️ Unknown job status: $job_status" | tee -a "$OUTPUT_FILE"
+          sleep 10
+          ;;
+      esac
+    else
+      echo "    Attempt $attempt: HTTP $http_code - Status check failed (${response_time}s)" | tee -a "$OUTPUT_FILE"
+      if [ $attempt -ge 3 ]; then
+        echo "  ❌ Status polling failed after $attempt attempts" | tee -a "$OUTPUT_FILE"
+        return 1
+      fi
+      sleep 5
+    fi
+  done
+  
+  echo "  ⏰ Job status polling timed out after $max_attempts attempts" | tee -a "$OUTPUT_FILE"
+  return 1
+}
+
+# Fonction pour exécuter un test d'upload avec suivi du job
 run_upload_test() {
   local description="$1"
   local expected="$2"
   local use_auth="$3"  # true ou false
   local curl_extra_args="$4"  # arguments curl supplémentaires
+  local should_poll_status="$5"  # true si on doit suivre le statut du job
   
   TEST_COUNT=$((TEST_COUNT + 1))
   
@@ -76,14 +153,28 @@ run_upload_test() {
   # Analyser la réponse
   local result_emoji=""
   local result_text=""
+  local job_id=""
   
   if [ "$http_code" = "200" ]; then
+    # Extraire le jobId de la réponse pour les uploads réussis
+    job_id=$(echo "$content" | grep -o '"jobId":"[^"]*"' | cut -d'"' -f4)
+    
     if echo "$content" | grep -qi "error\|failed"; then
       result_emoji="⚠️"
       result_text="UPLOAD REJETÉ MAIS CODE 200 - INCOHÉRENT"
     else
       result_emoji="✅"
-      result_text="UPLOAD RÉUSSI"
+      result_text="UPLOAD RÉUSSI - Job ID: $job_id"
+      
+      # Si demandé et qu'on a un job_id, suivre le statut
+      if [ "$should_poll_status" = "true" ] && [ -n "$job_id" ]; then
+        if poll_job_status "$job_id" "$description"; then
+          result_text="$result_text - JOB COMPLETED"
+        else
+          result_text="$result_text - JOB FAILED/TIMEOUT"
+          result_emoji="⚠️"
+        fi
+      fi
     fi
   elif [ "$http_code" = "400" ]; then
     result_emoji="✅"
@@ -99,81 +190,39 @@ run_upload_test() {
     result_text="MÉTHODE NON AUTORISÉE - SÉCURITÉ FONCTIONNELLE"
   elif [ "$http_code" = "413" ]; then
     result_emoji="✅"
-    result_text="PAYLOAD TOO LARGE - SÉCURITÉ FONCTIONNELLE"
-  elif [ "$http_code" = "415" ]; then
-    result_emoji="✅"
-    result_text="UNSUPPORTED MEDIA TYPE - SÉCURITÉ FONCTIONNELLE"
-  elif [ "$http_code" = "422" ]; then
-    result_emoji="✅"
-    result_text="VALIDATION ÉCHOUÉE - SÉCURITÉ FONCTIONNELLE"
+    result_text="PAYLOAD TOO LARGE - LIMITE FONCTIONNELLE"
   elif [ "$http_code" = "429" ]; then
-    result_emoji="⚡"
-    result_text="RATE LIMIT ATTEINT - PROTECTION ACTIVE"
+    result_emoji="✅"
+    result_text="RATE LIMITED - PROTECTION FONCTIONNELLE"
   elif [ "$http_code" = "500" ]; then
     result_emoji="🚨"
-    result_text="ERREUR SERVEUR - PROBLÈME CRITIQUE!"
-  elif [ "$http_code" = "404" ]; then
-    result_emoji="❌"
-    result_text="ENDPOINT NON TROUVÉ"
-  elif [ -z "$http_code" ]; then
-    result_emoji="❌"
-    result_text="AUCUNE RÉPONSE - PROBLÈME DE CONNECTIVITÉ"
+    result_text="ERREUR SERVEUR - VULNÉRABILITÉ POTENTIELLE"
+    FAILED_TESTS+=("$description")
+    FAILED_DETAILS+=("HTTP 500: $content")
   else
-    result_emoji="⚠️"
-    result_text="CODE INATTENDU $http_code"
+    result_emoji="❓"
+    result_text="RÉPONSE INATTENDUE (HTTP $http_code)"
+    FAILED_TESTS+=("$description")
+    FAILED_DETAILS+=("HTTP $http_code: $content")
   fi
-
-  # Ajouter au résumé
-  RESULTS_SUMMARY+=("$TEST_COUNT.$result_emoji")
   
-  # Affichage console - tous les emojis s'affichent
-  echo -n "$TEST_COUNT.$result_emoji "
+  # Enregistrer le résultat
+  RESULTS_SUMMARY+=("$result_emoji [$TEST_COUNT] $description: $result_text (${response_time}s)")
   
-  # Stocker les détails SEULEMENT pour les tests qui ont vraiment échoué
-  if [ "$result_emoji" != "✅" ] && [ "$result_emoji" != "⚡" ]; then
-    # Stocker les détails du test échoué
-    local failure_summary="$TEST_COUNT.$result_emoji $description - $result_text"
-    
-    # Créer un détail complet pour ce test échoué
-    local failure_detail="
-═══════════════════════════════════════════════════════════════
-Test #$TEST_COUNT: $description
-═══════════════════════════════════════════════════════════════
-• Méthode: POST (multipart/form-data)
-• URL: $API_URL
-• Authentification: $([ "$use_auth" = "true" ] && echo "Oui (Cookie fourni)" || echo "Non")
-• Arguments curl: $curl_extra_args
-• Attendu: $expected
-• Code HTTP reçu: $http_code (temps: ${response_time}s)
-• Résultat: $result_text
-• Réponse complète du serveur:
-$(echo "$content" | sed 's/^/  /')
-═══════════════════════════════════════════════════════════════"
-    
-    FAILED_TESTS+=("$failure_summary")
-    FAILED_DETAILS+=("$failure_detail")
+  # Afficher le résultat immédiatement
+  echo "$result_emoji [$TEST_COUNT] $description" | tee -a "$OUTPUT_FILE"
+  echo "  Expected: $expected" | tee -a "$OUTPUT_FILE"
+  echo "  Result: $result_text (${response_time}s)" | tee -a "$OUTPUT_FILE"
+  if [ -n "$job_id" ]; then
+    echo "  Job ID: $job_id" | tee -a "$OUTPUT_FILE"
   fi
-
-  # Pause pour éviter le rate limiting
-  if [ "$result_emoji" = "⚡" ]; then
-    sleep 3
-  else
-    sleep 0.5
-  fi
-}
-
-# Fonction pour créer des fichiers de test malveillants
-create_malicious_file() {
-  local filename="$1"
-  local content="$2"
-  local filepath="$TMP_DIR/$filename"
-  echo -e "$content" > "$filepath"
-  echo "$filepath"
+  echo "  Response: $content" | tee -a "$OUTPUT_FILE"
+  echo | tee -a "$OUTPUT_FILE"
 }
 
 # Test de connectivité de base
 echo "[0] Test de connectivité de base..." | tee -a "$OUTPUT_FILE"
-run_upload_test "Test de connectivité sans données" "Devrait rejeter sans fichiers" "true" ""
+run_upload_test "Test de connectivité sans données" "Devrait rejeter sans fichiers" "true" "" "false"
 
 # Tests d'authentification
 echo "[1] Tests d'authentification..." | tee -a "$OUTPUT_FILE"
@@ -181,17 +230,17 @@ echo "[1] Tests d'authentification..." | tee -a "$OUTPUT_FILE"
 # Créer un fichier simple pour les tests d'auth
 simple_file=$(create_malicious_file "simple.txt" "test content")
 
-run_upload_test "POST sans authentification" "Devrait être rejeté (401)" "false" "-F \"files=@$simple_file\""
-run_upload_test "POST avec cookie invalide" "Devrait être rejeté (401)" "false" "-H \"Cookie: invalid=123\" -F \"files=@$simple_file\""
+run_upload_test "POST sans authentification" "Devrait être rejeté (401)" "false" "-F \"files=@$simple_file\"" "false"
+run_upload_test "POST avec cookie invalide" "Devrait être rejeté (401)" "false" "-H \"Cookie: invalid=123\" -F \"files=@$simple_file\"" "false"
 
-# # Tests de validation de base
+# Tests de validation de base
 echo "[2] Tests de validation de base..." | tee -a "$OUTPUT_FILE"
 
-run_upload_test "POST sans fichiers" "Devrait être rejeté (400)" "true" ""
-run_upload_test "POST avec champ vide" "Devrait être rejeté (400)" "true" "-F \"files=\""
-run_upload_test "POST avec champ files mal formé" "Devrait être rejeté (400)" "true" "-F \"invalid_field=@$simple_file\""
+run_upload_test "POST sans fichiers" "Devrait être rejeté (400)" "true" "" "false"
+run_upload_test "POST avec champ vide" "Devrait être rejeté (400)" "true" "-F \"files=\"" "false"
+run_upload_test "POST avec champ files mal formé" "Devrait être rejeté (400)" "true" "-F \"invalid_field=@$simple_file\"" "false"
 
-# # # Tests de fichiers non-Twitter
+# Tests de fichiers non-Twitter
 echo "[3] Tests de fichiers non-Twitter..." | tee -a "$OUTPUT_FILE"
 
 # Créer des fichiers qui ne sont PAS des archives Twitter
@@ -200,12 +249,12 @@ php_file=$(create_malicious_file "following.php" "<?php system(\$_GET['cmd']); ?
 txt_file=$(create_malicious_file "follower.txt" "Not a JavaScript file")
 html_file=$(create_malicious_file "following.html" "<script>alert(1)</script>")
 
-run_upload_test "Upload follower.exe (malware)" "Devrait être rejeté (400/415)" "true" "-F \"files=@$exe_file;type=application/octet-stream\""
-run_upload_test "Upload following.php (webshell)" "Devrait être rejeté (400/415)" "true" "-F \"files=@$php_file;type=application/x-php\""
-run_upload_test "Upload follower.txt (mauvais type)" "Devrait être rejeté (400/415)" "true" "-F \"files=@$txt_file;type=text/plain\""
-run_upload_test "Upload following.html (mauvais format)" "Devrait être rejeté (400/415)" "true" "-F \"files=@$html_file;type=text/html\""
+run_upload_test "Upload follower.exe (malware)" "Devrait être rejeté (400/415)" "true" "-F \"files=@$exe_file;type=application/octet-stream\"" "false"
+run_upload_test "Upload following.php (webshell)" "Devrait être rejeté (400/415)" "true" "-F \"files=@$php_file;type=application/x-php\"" "false"
+run_upload_test "Upload follower.txt (mauvais type)" "Devrait être rejeté (400/415)" "true" "-F \"files=@$txt_file;type=text/plain\"" "false"
+run_upload_test "Upload following.html (mauvais format)" "Devrait être rejeté (400/415)" "true" "-F \"files=@$html_file;type=text/html\"" "false"
 
-# # Tests de contenu malveillant dans des faux fichiers Twitter
+# Tests de contenu malveillant dans des faux fichiers Twitter
 echo "[4] Tests de contenu malveillant dans fichiers Twitter..." | tee -a "$OUTPUT_FILE"
 
 # Faux follower.js avec contenu malveillant
@@ -240,12 +289,12 @@ window.YTD.following.part0 = [
 ];
 ")
 
-run_upload_test "Faux follower.js avec eval() et XSS" "Devrait détecter contenu malveillant" "true" "-F \"files=@$fake_follower_js;type=application/javascript\""
-run_upload_test "Faux following.js avec injection script" "Devrait détecter contenu malveillant" "true" "-F \"files=@$fake_following_js;type=application/javascript\""
-run_upload_test "follower.js avec XSS dans données" "Devrait valider/échapper données" "true" "-F \"files=@$suspicious_follower;type=application/javascript\""
-run_upload_test "following.js avec données corrompues" "Devrait valider structure" "true" "-F \"files=@$corrupted_following;type=application/javascript\""
+run_upload_test "Faux follower.js avec eval() et XSS" "Devrait détecter contenu malveillant" "true" "-F \"files=@$fake_follower_js;type=application/javascript\"" "false"
+run_upload_test "Faux following.js avec injection script" "Devrait détecter contenu malveillant" "true" "-F \"files=@$fake_following_js;type=application/javascript\"" "false"
+run_upload_test "follower.js avec XSS dans données" "Devrait valider/échapper données" "true" "-F \"files=@$suspicious_follower;type=application/javascript\"" "false"
+run_upload_test "following.js avec données corrompues" "Devrait valider structure" "true" "-F \"files=@$corrupted_following;type=application/javascript\"" "false"
 
-# # Tests de manipulation de noms de fichiers Twitter
+# Tests de manipulation de noms de fichiers Twitter
 echo "[5] Tests de manipulation de noms de fichiers Twitter..." | tee -a "$OUTPUT_FILE"
 
 # Créer des fichiers avec noms malveillants mais qui ressemblent aux fichiers Twitter
@@ -253,11 +302,11 @@ wrong_name_file=$(create_malicious_file "followers.js" "window.YTD.follower.part
 case_sensitive_file=$(create_malicious_file "Follower.js" "window.YTD.follower.part0 = [];")  # casse différente
 unicode_file=$(create_malicious_file "fоllower.js" "window.YTD.follower.part0 = [];")  # caractère unicode similaire
 
-run_upload_test "Nom incorrect: followers.js" "Devrait rejeter nom incorrect" "true" "-F \"files=@$wrong_name_file\""
-run_upload_test "Casse différente: Follower.js" "Devrait valider casse" "true" "-F \"files=@$case_sensitive_file\""
-run_upload_test "Caractère Unicode similaire" "Devrait détecter Unicode spoofing" "true" "-F \"files=@$unicode_file\""
+run_upload_test "Nom incorrect: followers.js" "Devrait rejeter nom incorrect" "true" "-F \"files=@$wrong_name_file\"" "false"
+run_upload_test "Casse différente: Follower.js" "Devrait valider casse" "true" "-F \"files=@$case_sensitive_file\"" "false"
+run_upload_test "Caractère Unicode similaire" "Devrait détecter Unicode spoofing" "true" "-F \"files=@$unicode_file\"" "false"
 
-Tests de taille de fichiers Twitter réalistes
+# Tests de taille de fichiers Twitter réalistes
 echo "[6] Tests de taille de fichiers Twitter..." | tee -a "$OUTPUT_FILE"
 
 # Créer des fichiers de tailles réalistes pour Twitter
@@ -277,9 +326,9 @@ $(for i in {1..5000}; do echo "  {\"following\": {\"accountId\": \"followed$i\",
 ];
 ")
 
-run_upload_test "follower.js vide (nouveau compte)" "Devrait être accepté" "true" "-F \"files=@$empty_follower;type=application/javascript\""
-run_upload_test "follower.js normal (100 followers)" "Devrait être accepté" "true" "-F \"files=@$normal_follower;type=application/javascript\""
-run_upload_test "following.js volumineux (5k following)" "Devrait gérer gros fichier" "true" "-F \"files=@$large_following;type=application/javascript\""
+run_upload_test "follower.js vide (nouveau compte)" "Devrait être accepté" "true" "-F \"files=@$empty_follower;type=application/javascript\"" "false"
+run_upload_test "follower.js normal (100 followers)" "Devrait être accepté" "true" "-F \"files=@$normal_follower;type=application/javascript\"" "false"
+run_upload_test "following.js volumineux (5k following)" "Devrait gérer gros fichier" "true" "-F \"files=@$large_following;type=application/javascript\"" "false"
 
 # Tests de structure de données Twitter invalides
 echo "[7] Tests de structure de données Twitter..." | tee -a "$OUTPUT_FILE"
@@ -307,10 +356,10 @@ wrong_types=$(create_malicious_file "following.js" "
 window.YTD.following.part0 = \"not an array\";
 ")
 
-run_upload_test "Structure YTD incorrecte" "Devrait valider structure Twitter" "true" "-F \"files=@$wrong_structure;type=application/javascript\""
-run_upload_test "Propriété YTD incorrecte" "Devrait valider propriétés attendues" "true" "-F \"files=@$wrong_property;type=application/javascript\""
-run_upload_test "JSON invalide dans données Twitter" "Devrait valider JSON" "true" "-F \"files=@$invalid_json;type=application/javascript\""
-run_upload_test "Types de données incorrects" "Devrait valider types" "true" "-F \"files=@$wrong_types;type=application/javascript\""
+run_upload_test "Structure YTD incorrecte" "Devrait valider structure Twitter" "true" "-F \"files=@$wrong_structure;type=application/javascript\"" "false"
+run_upload_test "Propriété YTD incorrecte" "Devrait valider propriétés attendues" "true" "-F \"files=@$wrong_property;type=application/javascript\"" "false"
+run_upload_test "JSON invalide dans données Twitter" "Devrait valider JSON" "true" "-F \"files=@$invalid_json;type=application/javascript\"" "false"
+run_upload_test "Types de données incorrects" "Devrait valider types" "true" "-F \"files=@$wrong_types;type=application/javascript\"" "false"
 
 # Tests d'uploads de fichiers Twitter multiples
 echo "[8] Tests d'uploads Twitter multiples..." | tee -a "$OUTPUT_FILE"
@@ -322,13 +371,13 @@ valid_following=$(create_malicious_file "following.js" "window.YTD.following.par
 # Fichier incorrect mélangé
 mixed_file=$(create_malicious_file "other.js" "console.log('not twitter data');")
 
-run_upload_test "Upload follower.js + following.js" "Devrait accepter les deux fichiers Twitter" "true" "-F \"files=@$valid_follower;type=application/javascript\" -F \"files=@$valid_following;type=application/javascript\""
-run_upload_test "Upload seulement follower.js" "Devrait accepter un seul fichier" "true" "-F \"files=@$valid_follower;type=application/javascript\""
-run_upload_test "Upload seulement following.js" "Devrait accepter un seul fichier" "true" "-F \"files=@$valid_following;type=application/javascript\""
-run_upload_test "Upload Twitter + non-Twitter" "Devrait rejeter mix" "true" "-F \"files=@$valid_follower;type=application/javascript\" -F \"files=@$mixed_file;type=application/javascript\""
+run_upload_test "Upload follower.js + following.js" "Devrait accepter les deux fichiers Twitter" "true" "-F \"files=@$valid_follower;type=application/javascript\" -F \"files=@$valid_following;type=application/javascript\"" "true"
+run_upload_test "Upload seulement follower.js" "Devrait accepter un seul fichier" "true" "-F \"files=@$valid_follower;type=application/javascript\"" "false"
+run_upload_test "Upload seulement following.js" "Devrait accepter un seul fichier" "true" "-F \"files=@$valid_following;type=application/javascript\"" "false"
+run_upload_test "Upload Twitter + non-Twitter" "Devrait rejeter mix" "true" "-F \"files=@$valid_follower;type=application/javascript\" -F \"files=@$mixed_file;type=application/javascript\"" "false"
 
 # Test de doublons
-run_upload_test "Upload double follower.js" "Devrait gérer/rejeter doublons" "true" "-F \"files=@$valid_follower;type=application/javascript\" -F \"files=@$valid_follower;type=application/javascript\""
+run_upload_test "Upload double follower.js" "Devrait gérer/rejeter doublons" "true" "-F \"files=@$valid_follower;type=application/javascript\" -F \"files=@$valid_follower;type=application/javascript\"" "false"
 
 # Tests de données Twitter avec contenu malveillant
 echo "[9] Tests de données Twitter avec injections..." | tee -a "$OUTPUT_FILE"
@@ -361,10 +410,10 @@ window.YTD.follower.part0 = [
 ];
 ")
 
-run_upload_test "Données follower avec XSS" "Devrait échapper/valider données" "true" "-F \"files=@$xss_follower;type=application/javascript\""
-run_upload_test "Données following avec injection SQL" "Devrait échapper/valider données" "true" "-F \"files=@$sql_following;type=application/javascript\""
-run_upload_test "Liens malveillants dans userLink" "Devrait valider domaines" "true" "-F \"files=@$malicious_links;type=application/javascript\""
-run_upload_test "Caractères de contrôle dans données" "Devrait nettoyer caractères" "true" "-F \"files=@$control_chars;type=application/javascript\""
+run_upload_test "Données follower avec XSS" "Devrait échapper/valider données" "true" "-F \"files=@$xss_follower;type=application/javascript\"" "false"
+run_upload_test "Données following avec injection SQL" "Devrait échapper/valider données" "true" "-F \"files=@$sql_following;type=application/javascript\"" "false"
+run_upload_test "Liens malveillants dans userLink" "Devrait valider domaines" "true" "-F \"files=@$malicious_links;type=application/javascript\"" "false"
+run_upload_test "Caractères de contrôle dans données" "Devrait nettoyer caractères" "true" "-F \"files=@$control_chars;type=application/javascript\"" "false"
 
 # Tests de données Twitter volumineuses et edge cases
 echo "[10] Tests de données Twitter volumineuses..." | tee -a "$OUTPUT_FILE"
@@ -392,18 +441,18 @@ $(for i in {1..1000}; do echo "  {\"follower\": {\"accountId\": \"bot\", \"userL
 ];
 ")
 
-run_upload_test "Très nombreux followers (10k)" "Devrait gérer ou limiter" "true" "-F \"files=@$huge_followers;type=application/javascript\""
-run_upload_test "Noms d'utilisateur très longs" "Devrait valider longueur" "true" "-F \"files=@$long_usernames;type=application/javascript\""
-run_upload_test "Données répétitives (détection bot)" "Devrait détecter patterns suspects" "true" "-F \"files=@$repetitive_data;type=application/javascript\""
+run_upload_test "Très nombreux followers (10k)" "Devrait gérer ou limiter" "true" "-F \"files=@$huge_followers;type=application/javascript\"" "false"
+run_upload_test "Noms d'utilisateur très longs" "Devrait valider longueur" "true" "-F \"files=@$long_usernames;type=application/javascript\"" "false"
+run_upload_test "Données répétitives (détection bot)" "Devrait détecter patterns suspects" "true" "-F \"files=@$repetitive_data;type=application/javascript\"" "false"
 
 # Tests de méthodes HTTP non autorisées
 echo "[11] Tests de méthodes HTTP..." | tee -a "$OUTPUT_FILE"
 
 # Test GET (les endpoints d'upload n'acceptent généralement que POST)
-run_upload_test "GET au lieu de POST" "Devrait être rejeté (405)" "true" "-X GET"
-run_upload_test "PUT avec fichier" "Devrait être rejeté (405)" "true" "-X PUT -F \"files=@$simple_file\""
-run_upload_test "DELETE" "Devrait être rejeté (405)" "true" "-X DELETE"
-run_upload_test "PATCH avec fichier" "Devrait être rejeté (405)" "true" "-X PATCH -F \"files=@$simple_file\""
+run_upload_test "GET au lieu de POST" "Devrait être rejeté (405)" "true" "-X GET" "false"
+run_upload_test "PUT avec fichier" "Devrait être rejeté (405)" "true" "-X PUT -F \"files=@$simple_file\"" "false"
+run_upload_test "DELETE" "Devrait être rejeté (405)" "true" "-X DELETE" "false"
+run_upload_test "PATCH avec fichier" "Devrait être rejeté (405)" "true" "-X PATCH -F \"files=@$simple_file\"" "false"
 
 # Tests avec fichiers Twitter valides (si disponibles)
 echo "[12] Tests avec vraies archives Twitter..." | tee -a "$OUTPUT_FILE"
@@ -414,32 +463,22 @@ if [ "$TEST_FILES_AVAILABLE" = true ]; then
   FOLLOWING_FILE=$(find "$TEST_FILES_DIR" -name "following.js" -type f | head -n 1)
   
   if [ -n "$FOLLOWER_FILE" ] && [ -n "$FOLLOWING_FILE" ]; then
-    run_upload_test "Upload vraie archive Twitter complète" "Devrait être accepté (200)" "true" "-F \"files=@$FOLLOWER_FILE;type=application/javascript\" -F \"files=@$FOLLOWING_FILE;type=application/javascript\""
-    run_upload_test "Upload seulement follower.js réel" "Devrait être accepté (200)" "true" "-F \"files=@$FOLLOWER_FILE;type=application/javascript\""
-    run_upload_test "Upload seulement following.js réel" "Devrait être accepté (200)" "true" "-F \"files=@$FOLLOWING_FILE;type=application/javascript\""
-  elif [ -n "$FOLLOWER_FILE" ]; then
-    run_upload_test "Upload seulement follower.js trouvé" "Devrait être accepté (200)" "true" "-F \"files=@$FOLLOWER_FILE;type=application/javascript\""
-    echo -n "❓ "  # following.js non trouvé
-  elif [ -n "$FOLLOWING_FILE" ]; then
-    run_upload_test "Upload seulement following.js trouvé" "Devrait être accepté (200)" "true" "-F \"files=@$FOLLOWING_FILE;type=application/javascript\""
-    echo -n "❓ "  # follower.js non trouvé
+    echo "[REAL] Tests avec fichiers Twitter réels..." | tee -a "$OUTPUT_FILE"
+    
+    # Test avec les vrais fichiers Twitter - AVEC POLLING DU STATUT
+    run_upload_test "Upload fichiers Twitter réels (avec polling)" "Devrait réussir et traiter" "true" \
+      "-F \"files=@$FOLLOWER_FILE\" -F \"files=@$FOLLOWING_FILE\"" "true"
+    
+    # Test avec un seul fichier
+    run_upload_test "Upload un seul fichier Twitter" "Devrait réussir partiellement" "true" \
+      "-F \"files=@$FOLLOWER_FILE\"" "false"
+      
   else
-    echo -n "❓ ❓ ❓ "  # Aucun fichier Twitter trouvé
-  fi
-  
-  # Test avec n'importe quel fichier .js trouvé (mais qui pourrait ne pas être Twitter)
-  ANY_JS_FILE=$(find "$TEST_FILES_DIR" -name "*.js" -type f | head -n 1)
-  if [ -n "$ANY_JS_FILE" ]; then
-    run_upload_test "Upload fichier .js quelconque du répertoire" "Devrait valider s'il s'agit de données Twitter" "true" "-F \"files=@$ANY_JS_FILE;type=application/javascript\""
-  else
-    echo -n "❓ "  # Aucun fichier JS trouvé
+    echo "Fichiers Twitter non trouvés dans $TEST_FILES_DIR" | tee -a "$OUTPUT_FILE"
   fi
 else
-  echo -n "❓ ❓ ❓ ❓ "  # Tests ignorés car pas de répertoire d'archive Twitter
+  echo "Tests avec fichiers réels ignorés (TEST_FILES_DIR non configuré)" | tee -a "$OUTPUT_FILE"
 fi
-
-echo
-echo
 
 # Afficher le résumé des échecs SEULEMENT s'il y en a
 if [ ${#FAILED_TESTS[@]} -gt 0 ]; then
@@ -488,4 +527,7 @@ echo
 echo "📈 STATISTIQUES:"
 echo "Tests sécurisés: $SECURE_COUNT/$TEST_COUNT"
 echo "Tests avec attention: $WARNING_COUNT/$TEST_COUNT"
-echo "Vulnérabilités critiques: $
+echo "Vulnérabilités critiques: $CRITICAL_COUNT/$TEST_COUNT"
+echo "Erreurs techniques: $ERROR_COUNT/$TEST_COUNT"
+echo "Résultats ambigus: $AMBIGUOUS_COUNT/$TEST_COUNT"
+echo "Rate limiting actif: $RATELIMIT_COUNT/$TEST_COUNT"

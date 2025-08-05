@@ -85,6 +85,14 @@ export function useReconnectState() {
 
         const matchesData = await matchesResponse.json();
 
+        console.log("===== DEBUG FRONTEND RESPONSE =====")
+        console.log("Raw matchesData:", JSON.stringify(matchesData, null, 2))
+        console.log("matchesData.matches exists:", !!matchesData.matches)
+        console.log("matchesData.matches.following exists:", !!matchesData.matches?.following)
+        console.log("matchesData.matches.following length:", matchesData.matches?.following?.length || 'N/A')
+        console.log("Type of matchesData.matches.following:", typeof matchesData.matches?.following)
+        console.log("====================================")
+
         setAccountsToProcess(matchesData.matches.following);
         matchesFetchedRef.current = true;
         globalMatchesFetched.current = true;
@@ -319,16 +327,16 @@ export function useReconnectState() {
       }
 
       // Update user stats after migration is complete
-      try {
-        await fetch('/api/update/user_stats', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        });
-      } catch (error) {
-        console.error('handleStartMigration: Error updating user stats:', error);
-      }
+      // try {
+      //   await fetch('/api/update/user_stats', {
+      //     method: 'POST',
+      //     headers: {
+      //       'Content-Type': 'application/json'
+      //     }
+      //   });
+      // } catch (error) {
+      //   console.error('handleStartMigration: Error updating user stats:', error);
+      // }
 
       setIsReconnectionComplete(true);
       setIsMigrating(false);

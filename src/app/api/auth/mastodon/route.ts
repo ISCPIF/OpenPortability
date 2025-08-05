@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase';
 import logger from '@/lib/log_utils';
 import { withValidation } from '@/lib/validation/middleware';
 import { z } from 'zod';
+import redis from '@/lib/redis'; // Import redis
 
 // Schema vide pour GET (pas de body)
 const EmptySchema = z.object({});
@@ -35,8 +36,16 @@ export const GET = withValidation(
         );
       }
 
-      const instancesList = instances?.map(row => row.instance) || [];
+      const instancesList = instances?.map((row: any) => row.instance) || [];
       
+      // 3. Mettre en cache de façon permanente (invalidé uniquement par trigger)
+      await redis.set('mastodon:instances', JSON.stringify(instancesList));
+      
+      logger.logInfo('API', 'GET /api/auth/mastodon', 'Mastodon instances fetched from DB and cached', 'anonymous', {
+        context: 'Database fallback successful, data cached in Redis permanently',
+        count: instancesList.length
+      });
+
       console.log('API', 'GET /api/auth/mastodon', 'anonymous', {
         context: 'Successfully fetched Mastodon instances',
         count: instancesList.length
@@ -47,7 +56,7 @@ export const GET = withValidation(
         {
           status: 200,
           headers: {
-            'Cache-Control': 'public, max-age=300' // Cache 5 minutes
+            'Cache-Control': 'public, max-age=86400' // Cache 24 heures
           }
         }
       );

@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { GraphData, ConnectionType } from '../types';
 import type { GlobalStats } from '@/lib/types/stats';
+import graphDataFile from '../graph-data/fine_tuned_json_nodes_only_opti11_with_usernames_and_sizes.json';
+import top100EdgesDataFile from '../graph-data/top_100_edges.json';
 
 interface NetworkNode {
   id: string;
@@ -51,6 +53,11 @@ export function useGraphData() {
   const [userNetworkError, setUserNetworkError] = useState<string | null>(null);
   const [showUserNetwork, setShowUserNetwork] = useState(false);
 
+    // État pour les données des top 100 influenceurs
+  const [top100EdgesData, setTop100EdgesData] = useState<any>(null);
+  const [top100EdgesLoading, setTop100EdgesLoading] = useState<boolean>(false);
+  const [top100EdgesError, setTop100EdgesError] = useState<string | null>(null);
+
   // États pour les statistiques globales
   const [globalStats, setGlobalStats] = useState<GlobalStats | null>(null);
   const [globalStatsLoading, setGlobalStatsLoading] = useState(false);
@@ -69,6 +76,36 @@ export function useGraphData() {
     graph: false,
     userNetwork: false
   });
+
+    // Fonction pour récupérer les données des top 100 influenceurs
+    const fetchTop100EdgesData = useCallback(async () => {
+      try {
+        setTop100EdgesLoading(true);
+        setTop100EdgesError(null);
+        
+        // Charger le fichier JSON statique depuis le dossier public
+        const response = await fetch('/graph-data/top_100_edges.json');
+        
+        if (!response.ok) {
+          throw new Error(`Erreur ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        
+        setTop100EdgesData(data);
+        
+        console.log('🌟 Top 100 edges data loaded successfully:', {
+          edgesCount: data.edges?.length || 0,
+          structure: Object.keys(data)
+        });
+        
+      } catch (error) {
+        console.error('❌ Error fetching top 100 edges data:', error);
+        setTop100EdgesError(error instanceof Error ? error.message : 'Erreur lors du chargement des données');
+      } finally {
+        setTop100EdgesLoading(false);
+      }
+    }, []);
 
   const fetchGlobalStats = useCallback(async () => {
     try {
@@ -105,23 +142,31 @@ export function useGraphData() {
       setError(null);
       
       const isAuthenticated = !!session?.user?.id;
-      console.log(`Fetching graph data - Mode: ${isAuthenticated ? 'authenticated' : 'public'}`);
+      // console.log(`Loading graph data from static file - Mode: ${isAuthenticated ? 'authenticated' : 'public'}`);
       
-      const response = await fetch('/api/connections/graph/anonyme', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        // Les cookies de session sont automatiquement inclus
-      });
+      // // Charger directement le fichier JSON statique
+      // const response = await fetch('/graph-data/fine_tuned_json_nodes_only_opti11_with_usernames_and_sizes.json');
+
+      // if (!response.ok) {
+      //   throw new Error(`Error loading graph data file: ${response.status} ${response.statusText}`);
+      // }
       
-      if (!response.ok) {
-        throw new Error(`Error fetching graph: ${response.status} ${response.statusText}`);
-      }
+      // const rawData = await response.json();
+
+      const rawData = graphDataFile;
       
-      const data: RGPDGraphData = await response.json();
+      // Adapter les données au format RGPDGraphData
+      const data: RGPDGraphData = {
+        nodes: rawData.nodes || [],
+        edges: rawData.edges || [],
+        metadata: rawData.metadata,
+        community_analysis: rawData.community_analysis,
+        isAuthenticated: isAuthenticated,
+        // Pour les données statiques, pas de connexions utilisateur spécifiques
+        userConnections: undefined
+      };
       
-      console.log('Graph data loaded successfully:', {
+      console.log('Graph data loaded successfully from static file:', {
         mode: data.isAuthenticated ? 'authenticated' : 'public',
         nodesCount: data.nodes?.length || 0,
         edgesCount: data.edges?.length || 0,
@@ -364,6 +409,12 @@ export function useGraphData() {
     globalStats,
     globalStatsLoading,
     globalStatsError,
-    fetchGlobalStats
+    fetchGlobalStats,
+    
+    // Données des top 100 influenceurs
+    top100EdgesData,
+    top100EdgesLoading,
+    top100EdgesError,
+    fetchTop100EdgesData
   };
 }
