@@ -145,3 +145,58 @@ export class RedisClientManager {
 
 // Export singleton instance
 export const redisClient = RedisClientManager.getInstance();
+
+// Job stats interface matching the API format
+export interface RedisJobStats {
+  total: number;
+  progress: number;
+  followers: number;    // ← nombre simple (processed count)
+  following: number;    // ← nombre simple (processed count)
+  processed: number;
+}
+
+// Function to update job stats in Redis
+export async function updateJobStats(
+  jobId: string, 
+  stats: RedisJobStats,
+  workerId?: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    await redisClient.ensureConnection();
+    const redis = redisClient.getClient();
+    
+    const jobKey = `job:${jobId}`;
+    
+    // Get existing job data
+    const existingJobData = await redis.get(jobKey);
+    let jobData: any = {};
+    
+    if (existingJobData) {
+      try {
+        jobData = JSON.parse(existingJobData);
+      } catch (parseError) {
+        console.log(`[Worker ${workerId || 'unknown'}] ⚠️ Failed to parse existing job data, creating new`);
+      }
+    }
+    
+    // Update stats
+    jobData.stats = stats;
+    jobData.updated_at = new Date().toISOString();
+    
+    // Save back to Redis with TTL of 24 hours
+    await redis.setex(jobKey, 86400, JSON.stringify(jobData));
+    
+    if (workerId) {
+      console.log(`[Worker ${workerId}] 📊 Updated job stats: ${stats.processed}/${stats.total} (${Math.round((stats.processed/stats.total)*100)}%)`);
+    }
+    
+    return { success: true };
+    
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown Redis error';
+    if (workerId) {
+      console.log(`[Worker ${workerId}] ❌ Failed to update job stats: ${errorMessage}`);
+    }
+    return { success: false, error: errorMessage };
+  }
+}

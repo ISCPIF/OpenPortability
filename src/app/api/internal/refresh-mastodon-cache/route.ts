@@ -2,11 +2,19 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { redis } from '@/lib/redis';
 import logger from '@/lib/log_utils';
+import { withInternalValidation } from '@/lib/validation/internal-middleware';
+import { z } from 'zod';
 
-export async function POST(request: NextRequest) {
+// Schéma vide pour les requêtes GET sans body
+const EmptySchema = z.object({});
+
+async function handleRefreshMastodonCache(
+  request: NextRequest,
+  validatedData: z.infer<typeof EmptySchema>
+): Promise<NextResponse> {
   try {
-    logger.logInfo('WEBHOOK', 'POST /api/internal/refresh-mastodon-cache', 'Starting Mastodon cache refresh', 'system', {
-      context: 'Mastodon cache refresh triggered by PostgreSQL trigger'
+    logger.logInfo('API', 'GET /api/internal/refresh-mastodon-cache', 'Starting Mastodon cache refresh', 'system', {
+      context: 'Mastodon cache refresh triggered via GET request'
     });
 
     // Récupérer les instances depuis la DB
@@ -16,7 +24,7 @@ export async function POST(request: NextRequest) {
       .order('instance');
 
     if (error) {
-      logger.logError('WEBHOOK', 'POST /api/internal/refresh-mastodon-cache', error, 'system', {
+      logger.logError('API', 'GET /api/internal/refresh-mastodon-cache', error, 'system', {
         context: 'Database error while fetching instances for cache refresh'
       });
       return NextResponse.json({ error: 'Failed to fetch instances' }, { status: 500 });
@@ -27,7 +35,7 @@ export async function POST(request: NextRequest) {
     // Mettre à jour Redis sans TTL (cache permanent, invalidé uniquement par trigger)
     await redis.set('mastodon:instances', JSON.stringify(instancesList));
 
-    logger.logInfo('WEBHOOK', 'POST /api/internal/refresh-mastodon-cache', 'Mastodon cache updated successfully', 'system', {
+    logger.logInfo('API', 'GET /api/internal/refresh-mastodon-cache', 'Mastodon cache updated successfully', 'system', {
       context: 'Mastodon instances cached in Redis (permanent cache)',
       count: instancesList.length
     });
@@ -40,8 +48,8 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    logger.logError('WEBHOOK', 'POST /api/internal/refresh-mastodon-cache', error, 'system', {
-      context: 'Failed to update Mastodon cache from webhook'
+    logger.logError('API', 'GET /api/internal/refresh-mastodon-cache', error, 'system', {
+      context: 'Failed to update Mastodon cache from GET request'
     });
 
     return NextResponse.json({ 
@@ -50,3 +58,15 @@ export async function POST(request: NextRequest) {
     }, { status: 500 });
   }
 }
+
+// Export du handler GET avec middleware de validation interne
+export const GET = withInternalValidation(
+  EmptySchema,
+  handleRefreshMastodonCache,
+  {
+    allowEmptyBody: true,       // Permet les requêtes GET sans body
+    disableInDev: false,         // Désactivé en développement
+    requireSignature: true,     // Signature HMAC requise en production
+    logSecurityEvents: true     // Logs de sécurité activés
+  }
+);

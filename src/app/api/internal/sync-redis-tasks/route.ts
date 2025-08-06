@@ -1,16 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 import { redis } from '@/lib/redis';
+import { withInternalValidation } from '@/lib/validation/internal-middleware';
+import { z } from 'zod';
+
+// Schéma vide pour les requêtes GET sans body
+const EmptySchema = z.object({});
 
 /**
- * Endpoint pour synchroniser les tâches python_tasks vers Redis
+ * Handler pour synchroniser les tâches python_tasks vers Redis
  * À appeler quotidiennement via cron job
  */
-export async function POST(request: NextRequest) {
+async function handleSyncRedisTasks(
+  request: NextRequest,
+  validatedData: z.infer<typeof EmptySchema>
+): Promise<NextResponse> {
   try {
-    console.log('🔄 [sync-redis-tasks] Starting daily sync...');
-
-    console.log("sync-redis-tasks request --->", request )
+    console.log('🔄 [sync-redis-tasks] Starting daily sync via GET...');
 
     console.log('🧹 Cleaning existing Redis queues...');
     const existingKeys = await redis.keys('consent_tasks:*');
@@ -108,37 +114,14 @@ export async function POST(request: NextRequest) {
   }
 }
 
-/**
- * GET pour vérifier le statut de la sync
- */
-export async function GET() {
-  try {
-    const today = new Date().toISOString().split('T')[0];
-    const queueKey = `consent_tasks:${today}`;
-    
-    // Compter les tâches dans Redis
-    const redisCount = await redis.llen(queueKey);
-    
-    // Compter les tâches dans DB
-    const { count: dbCount } = await supabase
-      .from('python_tasks')
-      .select('*', { count: 'exact', head: true })
-      .in('status', ['pending', 'waiting'])
-      .gte('created_at', `${today}T00:00:00Z`)
-      .lt('created_at', `${new Date(Date.now() + 24*60*60*1000).toISOString().split('T')[0]}T00:00:00Z`);
-    
-    return NextResponse.json({
-      date: today,
-      redis_tasks: redisCount,
-      db_tasks: dbCount || 0,
-      in_sync: redisCount === (dbCount || 0)
-    });
-    
-  } catch (error) {
-    console.error('❌ [sync-redis-tasks] Status error:', error);
-    return NextResponse.json(
-      { error: 'Failed to get sync status' },
-      { status: 500 }
-    );
+// Export du handler GET principal avec middleware de validation interne
+export const GET = withInternalValidation(
+  EmptySchema,
+  handleSyncRedisTasks,
+  {
+    allowEmptyBody: true,       // Permet les requêtes GET sans body
+    disableInDev: false,        // Activé même en développement
+    requireSignature: true,     // Signature HMAC requise en production
+    logSecurityEvents: true     // Logs de sécurité activés
   }
-}
+);

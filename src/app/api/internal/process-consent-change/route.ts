@@ -3,11 +3,12 @@ import { z } from 'zod';
 import { supabase, authClient } from '@/lib/supabase';
 import { redis } from '@/lib/redis';
 import { UserRepository } from '@/lib/repositories/userRepository';
+import { withInternalValidation } from '@/lib/validation/internal-middleware';
 
 // Schéma de validation pour le payload du trigger
 const ConsentChangeSchema = z.object({
   user_id: z.string().uuid(),
-  consent_type: z.enum(['bluesky_dm', 'mastodon_dm', 'email_newsletter']),
+  consent_type: z.enum(['bluesky_dm', 'mastodon_dm', 'email_newsletter', 'oep_newsletter', 'research_participation']),
   consent_value: z.boolean(),
   old_consent_value: z.boolean().optional().nullable(),
   handle: z.string().optional().nullable(), // Handle pour bluesky_dm/mastodon_dm
@@ -22,13 +23,14 @@ const ConsentChangeSchema = z.object({
 // Instance du repository
 const userRepository = new UserRepository();
 
-export async function POST(request: NextRequest) {
+/**
+ * Handler principal pour traiter les changements de consent
+ */
+async function handleConsentChange(
+  request: NextRequest,
+  validatedData: z.infer<typeof ConsentChangeSchema>
+): Promise<NextResponse> {
   try {
-    const body = await request.json();
-    console.log(' [process-consent-change] Received payload:', JSON.stringify(body, null, 2));
-
-    // Validation du payload
-    const validatedData = ConsentChangeSchema.parse(body);
     const { user_id, consent_type, consent_value, handle, metadata } = validatedData;
 
     console.log(` [process-consent-change] Processing ${consent_type} = ${consent_value} for user ${user_id}`);
@@ -60,6 +62,18 @@ export async function POST(request: NextRequest) {
   }
 }
 
+// Export du POST wrappé avec le middleware de validation interne
+export const POST = withInternalValidation(
+  ConsentChangeSchema,
+  handleConsentChange,
+  {
+    disableInDev: true,        // Désactivé en dev pour faciliter les tests
+    requireSignature: true,    // Signature HMAC requise
+    logSecurityEvents: true,   // Logs de sécurité activés
+    allowEmptyBody: false      // Body requis pour cet endpoint
+  }
+);
+
 /**
  * Gère les consents de DM pour les plateformes (bluesky_dm, mastodon_dm)
  */
@@ -73,19 +87,22 @@ async function handlePlatformDMConsent(
   const platform = consentType === 'bluesky_dm' ? 'bluesky' : 'mastodon';
   
   if (consentValue) {
-    // Consent activé → Créer tâche test-dm
-    if (!handle) {
-      console.log(` [handlePlatformDMConsent] No handle provided for ${platform}, skipping task creation`);
-      return;
+    // Consent activé
+    if (handle) {
+      // Handle disponible → Tâche 'pending' avec payload (DB + Redis)
+      await createTestDMTask(userId, platform, handle, metadata);
+      console.log(` [handlePlatformDMConsent] Created pending test-dm task for ${platform}: ${handle}`);
+    } else {
+      // Pas de handle → Tâche 'waiting' sans payload (DB seulement)
+      await createWaitingTestDMTask(userId, platform, metadata);
+      console.log(` [handlePlatformDMConsent] Created waiting test-dm task for ${platform} (no handle yet)`);
     }
     
-    await createTestDMTask(userId, platform, handle, metadata);
-    console.log(` [handlePlatformDMConsent] Created test-dm task for ${platform}: ${handle}`);
-    
   } else {
-    // Consent désactivé → Supprimer tâches en attente
+    // Consent désactivé → Supprimer tâches en attente (pending ET waiting)
     await userRepository.deletePendingPythonTasks(userId, platform);
-    console.log(` [handlePlatformDMConsent] Deleted pending tasks for ${platform}`);
+    await deleteWaitingPythonTasks(userId, platform);
+    console.log(` [handlePlatformDMConsent] Deleted pending and waiting tasks for ${platform}`);
   }
 }
 
@@ -200,6 +217,55 @@ async function createTestDMTask(
 }
 
 /**
+ * Crée une tâche test-dm dans python_tasks (status 'waiting')
+ */
+async function createWaitingTestDMTask(
+  userId: string,
+  platform: 'bluesky' | 'mastodon',
+  metadata: any
+) {
+  try {
+    // 1. Vérifier s'il existe déjà une tâche waiting pour éviter les doublons
+    const { data: existingTask } = await supabase
+      .from('python_tasks')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('platform', platform)
+      .eq('task_type', 'test-dm')
+      .eq('status', 'waiting')
+      .single();
+
+    if (existingTask) {
+      console.log(` [createWaitingTestDMTask] Task already exists for ${userId}:${platform}, skipping`);
+      return;
+    }
+
+    // 2. Créer la tâche dans python_tasks
+    const { data: newTask, error: dbError } = await supabase
+      .from('python_tasks')
+      .insert({
+        user_id: userId,
+        status: 'waiting',
+        task_type: 'test-dm',
+        platform: platform
+      })
+      .select('id')
+      .single();
+
+    if (dbError) {
+      console.error(` [createWaitingTestDMTask] DB error:`, dbError);
+      throw dbError;
+    }
+
+    console.log(` [createWaitingTestDMTask] Created python_task ${newTask.id} for ${platform}`);
+
+  } catch (error) {
+    console.error(` [createWaitingTestDMTask] Error for ${platform}:`, error);
+    throw error;
+  }
+}
+
+/**
  * Ajoute une tâche à Redis avec déduplication
  */
 async function addTaskToRedis(
@@ -260,6 +326,32 @@ async function deletePendingPythonTasks(userId: string, platform: 'bluesky' | 'm
     
   } catch (error) {
     console.error(` [deletePendingPythonTasks] Error for ${platform}:`, error);
+    throw error;
+  }
+}
+
+/**
+ * Supprime les tâches Python en attente pour une plateforme
+ */
+async function deleteWaitingPythonTasks(userId: string, platform: 'bluesky' | 'mastodon') {
+  try {
+    // Supprimer de python_tasks
+    const { error } = await supabase
+      .from('python_tasks')
+      .delete()
+      .eq('user_id', userId)
+      .eq('platform', platform)
+      .eq('status', 'waiting');
+
+    if (error) {
+      console.error(` [deleteWaitingPythonTasks] DB error:`, error);
+      throw error;
+    }
+
+    console.log(` [deleteWaitingPythonTasks] Deleted waiting tasks for ${platform}`);
+    
+  } catch (error) {
+    console.error(` [deleteWaitingPythonTasks] Error for ${platform}:`, error);
     throw error;
   }
 }
