@@ -7,6 +7,7 @@ export interface InternalSecurityOptions {
   maxTimestampAge?: number;      // 300s par défaut - âge max du timestamp
   requireSignature?: boolean;    // true par défaut - exige la signature HMAC
   logSecurityEvents?: boolean;   // true par défaut - log les événements de sécurité
+  allowEmptyBody?: boolean;      // false par défaut - permet les requêtes sans body (GET)
 }
 
 /**
@@ -35,16 +36,19 @@ export function withInternalValidation<T>(
   options: InternalSecurityOptions = {}
 ) {
   const {
-    disableInDev = true,
+    disableInDev = true,  // Temporairement remettre à true
     maxTimestampAge = 300, // 5 minutes
     requireSignature = true,
-    logSecurityEvents = true
+    logSecurityEvents = true,
+    allowEmptyBody = false
   } = options;
 
   return async (request: NextRequest): Promise<NextResponse> => {
     const startTime = Date.now();
     const endpoint = request.nextUrl.pathname;
     const method = request.method;
+
+    console.log(`🚀 [MIDDLEWARE START] ${method} ${endpoint} - ${new Date().toISOString()}`);
 
     try {
       // Désactiver en développement si configuré
@@ -71,7 +75,7 @@ export function withInternalValidation<T>(
             contentType: request.headers.get('content-type')
           });
 
-          if (rawBody.length === 0) {
+          if (rawBody.length === 0 && !allowEmptyBody) {
             console.log('Empty payload received in internal request', { endpoint });
             return NextResponse.json(
               { error: 'Empty payload - body required' },
@@ -210,7 +214,7 @@ export function withInternalValidation<T>(
           contentType: request.headers.get('content-type')
         });
 
-        if (rawBody.length === 0) {
+        if (rawBody.length === 0 && !allowEmptyBody) {
           console.log('Empty payload received in internal request', { endpoint });
           return NextResponse.json(
             { error: 'Empty payload - body required' },
@@ -218,13 +222,20 @@ export function withInternalValidation<T>(
           );
         }
 
-        // Parse JSON payload
-        body = JSON.parse(rawBody);
-        console.log('🔍 DEBUG - Parsed JSON:', body);
+        // Parse JSON payload seulement si on a un body
+        if (rawBody.length > 0) {
+          body = JSON.parse(rawBody);
+          console.log('🔍 DEBUG - Parsed JSON:', body);
 
-        // Formater exactement comme PostgreSQL le fait
-        postgresFormattedPayload = formatJsonLikePostgreSQL(body);
-        console.log('🔍 DEBUG - PostgreSQL formatted payload:', postgresFormattedPayload);
+          // Formater exactement comme PostgreSQL le fait
+          postgresFormattedPayload = formatJsonLikePostgreSQL(body);
+          console.log('🔍 DEBUG - PostgreSQL formatted payload:', postgresFormattedPayload);
+        } else {
+          // Body vide autorisé, utiliser un objet vide
+          body = {};
+          postgresFormattedPayload = '';  // PostgreSQL utilise chaîne vide pour GET, pas '{}'
+          console.log('🔍 DEBUG - Empty body allowed, using empty object and empty payload for HMAC');
+        }
       } catch (parseError) {
         console.log('Payload parsing failed in internal request', {
           endpoint,

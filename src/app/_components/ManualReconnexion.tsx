@@ -64,16 +64,16 @@ export default function ManualReconnexion({
   const [activeView, setActiveView] = useState<'notFollowed' | 'followed' | 'ignored'>('notFollowed');
   // const [isLoading, setIsLoading] = useState(false);
   const itemsPerPage = 50;
-  console.log("===== DEBUG MANUAL RECONNEXION =====")
-  console.log("Raw matches received:", matches)
-  console.log("Matches length:", matches?.length || 0)
-  console.log("Session user:", session?.user)
-  console.log("User has bluesky:", !!session?.user?.bluesky_username)
-  console.log("User has mastodon:", !!session?.user?.mastodon_username)
-  console.log("Bluesky username:", session?.user?.bluesky_username)
-  console.log("Mastodon username:", session?.user?.mastodon_username)
-  console.log("Active view:", activeView)
-  console.log("=====================================")
+  // console.log("===== DEBUG MANUAL RECONNEXION =====")
+  // console.log("Raw matches received:", matches)
+  // console.log("Matches length:", matches?.length || 0)
+  // console.log("Session user:", session?.user)
+  // console.log("User has bluesky:", !!session?.user?.bluesky_username)
+  // console.log("User has mastodon:", !!session?.user?.mastodon_username)
+  // console.log("Bluesky username:", session?.user?.bluesky_username)
+  // console.log("Mastodon username:", session?.user?.mastodon_username)
+  // console.log("Active view:", activeView)
+  // console.log("=====================================")
 
   // Filter matches based on user's connected accounts and active view
   const filteredMatches = matches.filter(match => {
@@ -84,26 +84,26 @@ export default function ManualReconnexion({
     const hasFollowMastodon = isMatchingTarget(match) ? match.has_follow_mastodon : match.has_been_followed_on_mastodon;
     const isDismissed = isMatchingTarget(match) && (match as MatchingTarget).dismissed;
 
-    console.log("=== FILTERING MATCH ===")
-    console.log("Match:", match)
-    console.log("blueskyHandle:", blueskyHandle)
-    console.log("mastodonUsername:", mastodonUsername)
-    console.log("mastodonHandle:", mastodonHandle)
-    console.log("hasFollowBluesky:", hasFollowBluesky)
-    console.log("hasFollowMastodon:", hasFollowMastodon)
-    console.log("isDismissed:", isDismissed)
-    console.log("activeView:", activeView)
+    // console.log("=== FILTERING MATCH ===")
+    // console.log("Match:", match)
+    // console.log("blueskyHandle:", blueskyHandle)
+    // console.log("mastodonUsername:", mastodonUsername)
+    // console.log("mastodonHandle:", mastodonHandle)
+    // console.log("hasFollowBluesky:", hasFollowBluesky)
+    // console.log("hasFollowMastodon:", hasFollowMastodon)
+    // console.log("isDismissed:", isDismissed)
+    // console.log("activeView:", activeView)
 
     // Si on est dans la vue des comptes ignorés
     if (activeView === 'ignored') {
-      console.log("Ignored view - returning:", isDismissed)
+      // console.log("Ignored view - returning:", isDismissed)
       return isDismissed;
     }
     
     // Si on est dans la vue des comptes suivis
     if (activeView === 'followed') {
       const result = (hasFollowBluesky || hasFollowMastodon) && !isDismissed;
-      console.log("Followed view - returning:", result)
+      // console.log("Followed view - returning:", result)
       return result;
     }
     
@@ -114,20 +114,20 @@ export default function ManualReconnexion({
     // If user has Mastodon connected, show accounts with Mastodon handles that aren't followed
     const showForMastodon = session.user.mastodon_username && (mastodonHandle || mastodonUsername) && !hasFollowMastodon;
 
-    console.log("showForBluesky:", showForBluesky)
-    console.log("showForMastodon:", showForMastodon)
-    console.log("Final result:", (showForBluesky || showForMastodon) && !isDismissed)
-    console.log("======================")
+    // console.log("showForBluesky:", showForBluesky)
+    // console.log("showForMastodon:", showForMastodon)
+    // console.log("Final result:", (showForBluesky || showForMastodon) && !isDismissed)
+    // console.log("======================")
 
     // Show account if it matches criteria for either platform and isn't dismissed
     return (showForBluesky || showForMastodon) && !isDismissed;
   });
   
-  console.log("===== FILTERING RESULTS =====")
-  console.log("Original matches count:", matches?.length || 0)
-  console.log("Filtered matches count:", filteredMatches?.length || 0)
-  console.log("Filtered matches:", filteredMatches)
-  console.log("==============================")
+  // console.log("===== FILTERING RESULTS =====")
+  // console.log("Original matches count:", matches?.length || 0)
+  // console.log("Filtered matches count:", filteredMatches?.length || 0)
+  // console.log("Filtered matches:", filteredMatches)
+  // console.log("==============================")
   
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
@@ -362,14 +362,14 @@ export default function ManualReconnexion({
             const hasFollowMastodon = isMatchingTarget(match) ? match.has_follow_mastodon : match.has_been_followed_on_mastodon;
             const isDismissed = isMatchingTarget(match) && (match as MatchingTarget).dismissed;
             
-            console.log("=== JSX RENDERING MATCH ===")
-            console.log("Match index:", index)
-            console.log("Match:", match)
-            console.log("isMatchingTarget:", isMatchingTarget(match))
-            console.log("targetTwitterId:", targetTwitterId)
-            console.log("targetTwitterId exists:", !!targetTwitterId)
-            console.log("Will render:", !!targetTwitterId)
-            console.log("===========================")
+            // console.log("=== JSX RENDERING MATCH ===")
+            // console.log("Match index:", index)
+            // console.log("Match:", match)
+            // console.log("isMatchingTarget:", isMatchingTarget(match))
+            // console.log("targetTwitterId:", targetTwitterId)
+            // console.log("targetTwitterId exists:", !!targetTwitterId)
+            // console.log("Will render:", !!targetTwitterId)
+            // console.log("===========================")
             
             if (!targetTwitterId) return null;
             

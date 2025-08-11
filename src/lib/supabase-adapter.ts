@@ -503,7 +503,7 @@ export async function createUser(
 export async function getUser(id: string): Promise<CustomAdapterUser | null> {
   const { data: user, error: userError } = await authClient
     .from('users')
-    .select('*')
+    .select('*, twitter_id::text')
     .eq('id', id)
     .single()
 
@@ -514,10 +514,19 @@ export async function getUser(id: string): Promise<CustomAdapterUser | null> {
 
   if (!user) return null
 
+  // console.log("🔍 [DEBUG] Raw user data from Supabase:", {
+  //   id: user.id,
+  //   twitter_id: user.twitter_id,
+  //   twitter_id_type: typeof user.twitter_id,
+  //   twitter_id_string: String(user.twitter_id)
+  // });
+
   return {
     id: user.id,
     name: user.name,
-    twitter_id: user.twitter_id,
+    email: "none",
+    emailVerified: null,
+    twitter_id: user.twitter_id || null,
     twitter_username: user.twitter_username,
     twitter_image: user.twitter_image,
     bluesky_id: user.bluesky_id,
@@ -534,8 +543,6 @@ export async function getUser(id: string): Promise<CustomAdapterUser | null> {
     // have_seen_bot_newsletter: user.have_seen_bot_newsletter,
     research_accepted: user.research_accepted,
     automatic_reconnect: user.automatic_reconnect,
-    email: "none",
-    emailVerified: null,
     facebook_id: user.facebook_id,
     facebook_image: user.facebook_image
   }

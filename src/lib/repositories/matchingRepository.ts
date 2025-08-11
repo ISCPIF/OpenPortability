@@ -117,7 +117,7 @@ export class MatchingRepository {
       // 1. Récupérer tous les sources_targets de l'utilisateur qui ne sont pas encore suivis
       const { data: sourcesTargets, error: dbError } = await this.supabase
         .from('sources_targets')
-        .select('target_twitter_id, has_follow_bluesky, has_follow_mastodon, followed_at_bluesky, followed_at_mastodon, dismissed')
+        .select('node_id, has_follow_bluesky, has_follow_mastodon, followed_at_bluesky, followed_at_mastodon, dismissed')
         .eq('source_id', userId)
         .or('has_follow_bluesky.eq.false,has_follow_mastodon.eq.false'); // Au moins une plateforme non suivie
 
@@ -129,18 +129,22 @@ export class MatchingRepository {
         return { data: [], error: null };
       }
 
+      console.log("getFollowableTargetsFromRedis sourceTargets lenght --->", sourcesTargets.length);
+
       // 2. Récupérer les correspondances depuis Redis en batch
-      const twitterIds = sourcesTargets.map(st => st.target_twitter_id);
+      const twitterIds = sourcesTargets.map(st => st.node_id);
       
       // Utiliser la méthode batchGetSocialMappings au lieu de mget
       const mappings = await redis.batchGetSocialMappings(twitterIds);
+
+      console.log("getFollowableTargetsFromRedis mappings length --->", mappings.size)
 
       // 3. Construire les résultats avec les correspondances trouvées
       const results: StoredProcedureTarget[] = [];
       let totalCount = 0;
 
       for (const sourceTarget of sourcesTargets) {
-        const twitterId = sourceTarget.target_twitter_id;
+        const twitterId = sourceTarget.node_id;
         
         // Récupérer les mappings depuis la Map retournée
         const mapping = mappings.get(twitterId);
@@ -237,7 +241,7 @@ export class MatchingRepository {
       .from('sources_targets')
       .update(updates)
       .eq('source_id', userId)
-      .eq('target_twitter_id', targetId);
+      .eq('node_id', parseInt(targetId));  // CORRIGÉ: target_twitter_id → node_id et conversion en BIGINT
 
     if (updateError) {
       logError('Repository', 'MatchingRepository.updateFollowStatus', updateError, userId, {
@@ -273,7 +277,7 @@ export class MatchingRepository {
       .from('sources_targets')
       .update(updates)
       .eq('source_id', userId)
-      .in('target_twitter_id', targetIds);
+      .in('node_id', targetIds.map(id => parseInt(id)));
 
     if (updateError) {
       logError('Repository', 'MatchingRepository.updateFollowStatusBatch', updateError, userId, {
@@ -364,25 +368,101 @@ export class MatchingRepository {
     pageSize: number = 1000,
     pageNumber: number = 0
   ): Promise<{ data: StoredProcedureTarget[] | null; error: any }> {
-    const result = await this.supabase.rpc('get_sources_from_follower', {
-      follower_twitter_id_param: twitterId,
+    console.log(`🔍 [STEP 1] Starting getSourcesFromFollower for twitterId: ${twitterId}, pageSize: ${pageSize}, pageNumber: ${pageNumber}`);
+    
+    // DEBUG: Vérifier la conversion parseInt
+    const parsedTwitterId = BigInt(twitterId);
+    console.log(`🔢 [DEBUG] Original twitterId: "${twitterId}" (type: ${typeof twitterId})`);
+    console.log(`🔢 [DEBUG] Parsed twitterId: ${parsedTwitterId} (type: ${typeof parsedTwitterId})`);
+    console.log(`🔢 [DEBUG] Expected: 1309241221039165446`);
+    console.log(`🔢 [DEBUG] Match expected: ${parsedTwitterId === BigInt(1309241221039165446)}`);
+    
+    // ÉTAPE 1: Récupérer les UUIDs depuis sources_followers (ULTRA RAPIDE)
+    const step1Start = Date.now();
+    console.log(`⚡ [STEP 1] Calling get_sources_from_follower RPC...`);
+    
+    const uuidResult = await this.supabase.rpc('get_sources_from_follower', {
+      follower_twitter_id_param: parsedTwitterId.toString(), // CORRIGÉ: Convertir BigInt en string
       page_size: pageSize,
       page_number: pageNumber
     });
     
-    if (result.error) {
-      logError('Repository', 'MatchingRepository.getSourcesFromFollower', result.error, 'unknown', { 
-        twitterId, 
-        context: 'Error getting sources from follower' 
-      });
-    } else {
-      logDebug('Repository', 'MatchingRepository.getSourcesFromFollower', 'Successfully retrieved sources', 'unknown', { 
-        twitterId, 
-        dataLength: result.data?.length || 0 
-      });
-    }
+    const step1Duration = Date.now() - step1Start;
+    console.log(`✅ [STEP 1] get_sources_from_follower completed in ${step1Duration}ms`);
     
-    return result;
+    // DEBUG: Afficher la réponse brute de Supabase
+    console.log(`🔍 [DEBUG] Raw Supabase response:`, JSON.stringify(uuidResult, null, 2));
+    
+    if (uuidResult.error) {
+      console.error(`❌ [STEP 1] Error getting source UUIDs:`, uuidResult.error);
+      return { data: null, error: uuidResult.error };
+    }
+
+    console.log(`📊 [STEP 1] Retrieved ${uuidResult.data?.length || 0} UUID records`);
+    console.log(`📊 [DEBUG] First 3 records:`, uuidResult.data?.slice(0, 3));
+
+    // Si pas de résultats, retourner vide
+    if (!uuidResult.data || uuidResult.data.length === 0) {
+      console.log(`🚫 [STEP 1] No sources found for follower ${twitterId} - returning empty array`);
+      return { data: [], error: null };
+    }
+
+    // ÉTAPE 2: Convertir UUIDs → Twitter IDs (RAPIDE)
+    const sourceUuids = uuidResult.data.map(item => item.source_id);
+    console.log(`🔄 [STEP 2] Starting UUID to Twitter ID conversion for ${sourceUuids.length} UUIDs`);
+    console.log(`🔄 [STEP 2] Sample UUIDs:`, sourceUuids.slice(0, 3));
+    
+    const step2Start = Date.now();
+    const twitterIdResult = await this.supabase.rpc('get_twitter_ids_from_source_ids', {
+      source_uuids: sourceUuids
+    });
+    
+    const step2Duration = Date.now() - step2Start;
+    console.log(`✅ [STEP 2] get_twitter_ids_from_source_ids completed in ${step2Duration}ms`);
+
+    if (twitterIdResult.error) {
+      console.error(`❌ [STEP 2] Error converting UUIDs to Twitter IDs:`, twitterIdResult.error);
+      return { data: null, error: twitterIdResult.error };
+    }
+
+    console.log(`📊 [STEP 2] Retrieved ${twitterIdResult.data?.length || 0} Twitter ID mappings`);
+
+    // ÉTAPE 3: Merger les données (UUID + statuts de suivi + Twitter IDs)
+    console.log(`🔗 [STEP 3] Starting data merging and mapping...`);
+    const step3Start = Date.now();
+    
+    const twitterIdMap = new Map(
+      twitterIdResult.data?.map(item => [item.source_id, item.twitter_id]) || []
+    );
+    
+    console.log(`📋 [STEP 3] Created Twitter ID map with ${twitterIdMap.size} entries`);
+
+    const finalData = uuidResult.data
+      .map(item => {
+        const twitterId = twitterIdMap.get(item.source_id);
+        if (!twitterId) {
+          console.warn(`⚠️ [STEP 3] No Twitter ID found for UUID: ${item.source_id}`);
+          return null;
+        }
+        
+        return {
+          source_twitter_id: twitterId.toString(),
+          has_been_followed_on_bluesky: item.has_been_followed_on_bluesky,
+          has_been_followed_on_mastodon: item.has_been_followed_on_mastodon,
+          // Ajouter d'autres champs si nécessaire pour StoredProcedureTarget
+        };
+      })
+      .filter(item => item !== null); // Supprimer les null
+
+    const step3Duration = Date.now() - step3Start;
+    const totalDuration = Date.now() - step1Start;
+    
+    console.log(`✅ [STEP 3] Data merging completed in ${step3Duration}ms`);
+    console.log(`🎉 [FINAL] getSourcesFromFollower completed successfully!`);
+    console.log(`📊 [FINAL] Stats - Input UUIDs: ${sourceUuids.length}, Mapped Twitter IDs: ${twitterIdMap.size}, Final results: ${finalData.length}`);
+    console.log(`⏱️ [FINAL] Total duration: ${totalDuration}ms (Step1: ${step1Duration}ms, Step2: ${step2Duration}ms, Step3: ${step3Duration}ms)`);
+    
+    return { data: finalData, error: null };
   }
 
   async ignoreTarget(userId: string, targetTwitterId: string): Promise<void> {
@@ -391,7 +471,7 @@ export class MatchingRepository {
         .from("sources_targets")
         .update({ dismissed: true })
         .eq("source_id", userId)
-        .eq("target_twitter_id", targetTwitterId);
+        .eq("node_id", parseInt(targetTwitterId));
         
       console.log("Target marked as dismissed", {
         userId,
@@ -413,7 +493,7 @@ export class MatchingRepository {
         .from("sources_targets")
         .update({ dismissed: false })
         .eq("source_id", userId)
-        .eq("target_twitter_id", targetTwitterId);
+        .eq("node_id", parseInt(targetTwitterId));
         
       console.log("Target marked as not dismissed", {
         userId,
@@ -445,11 +525,11 @@ export class MatchingRepository {
       while (hasMore) {
         const { data, error } = await this.supabase
           .from('sources_targets')
-          .select('target_twitter_id')
+          .select('node_id')
           .eq('source_id', userId)
           .eq('dismissed', false)
           .range(offset, offset + BATCH_SIZE - 1)
-          .order('target_twitter_id'); // Ordre consistant pour la pagination
+          .order('node_id'); // Ordre consistant pour la pagination
 
         if (error) {
           logError('Repository', 'MatchingRepository.getUserFollowing', error, userId, { 
@@ -460,7 +540,7 @@ export class MatchingRepository {
           throw error;
         }
 
-        const batch = data?.map(item => item.target_twitter_id) || [];
+        const batch = data?.map(item => item.node_id) || [];
         allFollowing.push(...batch);
 
         // Vérifier si on a atteint la limite demandée

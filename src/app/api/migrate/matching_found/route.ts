@@ -25,7 +25,10 @@ async function matchingFoundHandler(_request: Request, _data: z.infer<typeof Emp
           { status: 400 }
         );
       }
-      result = await matchingService.getSourcesFromFollower(session.user.twitter_id);
+      // CORRIGÉ: Convertir en string pour éviter la perte de précision JavaScript
+      const twitterIdString = session.user.twitter_id.toString();
+      // console.log(`[API] Converting Twitter ID: ${session.user.twitter_id} (${typeof session.user.twitter_id}) → "${twitterIdString}" (${typeof twitterIdString})`);
+      result = await matchingService.getSourcesFromFollower(twitterIdString);
     } else {
       result = await matchingService.getFollowableTargets(session.user.id);
     }
@@ -54,13 +57,13 @@ async function matchingFoundHandler(_request: Request, _data: z.infer<typeof Emp
     };
     
 
-    console.log("===== DEBUG API RESPONSE =====")
-    console.log("Original result:", JSON.stringify(result, null, 2))
-    console.log("result?.following exists:", !!result?.following)
-    console.log("result?.following length:", result?.following?.length || 'N/A')
-    console.log("Final responseData:", JSON.stringify(responseData, null, 2))
-    console.log("responseData.matches.following length:", responseData?.matches?.following?.length || 'N/A')
-    console.log("===============================")
+    // console.log("===== DEBUG API RESPONSE =====")
+    // console.log("Original result:", JSON.stringify(result, null, 2))
+    // console.log("result?.following exists:", !!result?.following)
+    // console.log("result?.following length:", result?.following?.length || 'N/A')
+    // console.log("Final responseData:", JSON.stringify(responseData, null, 2))
+    // console.log("responseData.matches.following length:", responseData?.matches?.following?.length || 'N/A')
+    // console.log("===============================")
     
     return NextResponse.json(responseData);
 

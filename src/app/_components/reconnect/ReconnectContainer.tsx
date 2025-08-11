@@ -30,7 +30,7 @@ type ReconnectContainerProps = {
   handleAutomaticReconnection: () => void;
   handleManualReconnection: () => void;
   handleStartMigration: (accounts: string[]) => void;
-  refreshStats: () => void;
+  // refreshStats: () => void;
 };
 
 function ReconnectContainer({
@@ -50,7 +50,7 @@ function ReconnectContainer({
   handleAutomaticReconnection,
   handleManualReconnection,
   handleStartMigration,
-  refreshStats,
+  // refreshStats,
 }: ReconnectContainerProps) {
   
   // Memoize the state determination to prevent recalculation on every render
@@ -116,7 +116,7 @@ function ReconnectContainer({
             globalStats={globalStats}
             handleAutomaticReconnection={handleAutomaticReconnection}
             handleManualReconnection={handleManualReconnection}
-            refreshStats={refreshStats}
+            refreshStats={handleAutomaticReconnection}
           />
         )}
 

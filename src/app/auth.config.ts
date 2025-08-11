@@ -246,7 +246,13 @@ export const authConfig = {
           const user = await supabaseAdapter.getUser(token.id)
           
           if (user) {
-            logger.logDebug('Auth', 'session', 'User session refresh', token.id);
+            // console.log("🔍 [DEBUG] User from DB:", {
+            //   id: user.id,
+            //   twitter_id: user.twitter_id,
+            //   twitter_id_type: typeof user.twitter_id,
+            //   twitter_username: user.twitter_username
+            // });
+            // logger.logDebug('Auth', 'session', 'User session refresh', token.id);
             
             session.user = {
               ...session.user,
@@ -261,7 +267,8 @@ export const authConfig = {
               name: token.name || user.name,
               
               // For Twitter and Bluesky, use token values first
-              twitter_id: token.twitter_id || user.twitter_id || undefined,
+              // CORRIGÉ: Toujours utiliser la valeur DB pour twitter_id (plus fiable)
+              twitter_id: user.twitter_id || undefined,
               twitter_username: token.twitter_username || user.twitter_username || undefined,
               twitter_image: token.twitter_image || user.twitter_image || undefined,
               
@@ -280,6 +287,9 @@ export const authConfig = {
           console.log('Auth', 'session', error, token.id);
         }
       }
+
+      // console.log("SESSION FROM CALLBACK IS ---->", session)
+      // console.log("type of twitter id ->", typeof session.user.twitter_id)
       return session
     },
     async redirect({ url, baseUrl }) {

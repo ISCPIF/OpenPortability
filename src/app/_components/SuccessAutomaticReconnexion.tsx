@@ -88,8 +88,10 @@ export default function SuccessAutomaticReconnexion({
   };
                           
   useEffect(() => {
-    // Appeler onSuccess une seule fois au montage du composant
-    onSuccess();
+    // Appeler onSuccess seulement si fourni (pour déclencher la migration automatique)
+    if (onSuccess) {
+      onSuccess();
+    }
   }, []); // Enlever onSuccess des dépendances car on veut l'appeler qu'une fois
 
   return (

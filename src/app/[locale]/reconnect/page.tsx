@@ -37,19 +37,19 @@ export default function ReconnectPage() {
     handleAutomaticReconnection,
     handleManualReconnection,
     handleStartMigration,
-    refreshStats,
+    // refreshStats,
     setAccountsToProcess
   } = useReconnectState()
 
-  // Forcer un rafraîchissement des statistiques au chargement initial
-  useEffect(() => {
-    // Forcer le rechargement des données au premier rendu
-    const loadInitialData = async () => {
-      await refreshStats();
-    };
+  // // Forcer un rafraîchissement des statistiques au chargement initial
+  // useEffect(() => {
+  //   // Forcer le rechargement des données au premier rendu
+  //   const loadInitialData = async () => {
+  //     await refreshStats();
+  //   };
     
-    loadInitialData();
-  }, [refreshStats]);
+  //   loadInitialData();
+  // }, [refreshStats]);
 
 
   // Ne bloquer que sur isLoading et stats, pas sur globalStats
@@ -66,6 +66,8 @@ export default function ReconnectPage() {
       </div>
     )
   }
+
+  console.log("stats from page reconnect ", stats)
 
   return (
     <div className="min-h-screen bg-[#E8E9E4]">
@@ -116,7 +118,7 @@ export default function ReconnectPage() {
             handleAutomaticReconnection={handleAutomaticReconnection}
             handleManualReconnection={handleManualReconnection}
             handleStartMigration={handleStartMigration}
-            refreshStats={refreshStats}
+            // refreshStats={refreshStats}
           />
 
           {/* Statistiques globales */}
