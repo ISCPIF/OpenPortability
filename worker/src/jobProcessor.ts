@@ -6,6 +6,15 @@ import { join, dirname } from 'path';
 import { createWriteStream, existsSync, promises as fs } from 'fs';
 import { sleep } from './utils';
 import logger from './log_utils';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+import { spawn } from 'child_process';
+import { JobManager } from './jobManager';
+import { convertTwitterDataToCSV, importCSVViaPsql } from './csvUtils';
+import { WorkerPool, WorkerPoolResult } from './workerPool';
+import { updateJobStats as updateRedisJobStats, RedisJobStats } from './redisClient';
+
+
 
 // Charger les variables d'environnement
 dotenv.config();
@@ -16,14 +25,19 @@ const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const BATCH_SIZE = 500;
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 3000;
-const LOCK_DIR = '/app/tmp/locks';
 const UPLOADS_DIR = '/app/tmp/uploads';
-const LOCK_TIMEOUT = 10 * 60 * 1000;
+
+// Stratégie d'import
+const MONOLITHIC_THRESHOLD = 1000000; // 1M records
+const PARALLEL_WORKERS = 3;
+const PARALLEL_CHUNK_SIZE = 1000;
+
+// Constantes pour le batch parallel import
+const FOLLOWERS_CHUNK_SIZE = 10000; // Taille des chunks pour followers
+const TARGETS_CHUNK_SIZE = 10000;   // Taille des chunks pour targets/following
+const BATCH_CONCURRENCY = 10;        // Nombre de workers parallèles
 
 // S'assurer que les dossiers existent
-if (!existsSync(LOCK_DIR)) {
-  fs.mkdir(LOCK_DIR, { recursive: true });
-}
 if (!existsSync(UPLOADS_DIR)) {
   fs.mkdir(UPLOADS_DIR, { recursive: true });
 }
@@ -41,220 +55,18 @@ interface LockData {
   timestamp: number;
 }
 
-// Système de verrous pour les fichiers
-interface FileLockData {
-  workerId: string;
-  timestamp: number;
-  directory?: string;
-}
-
-async function acquireFileLock(directory: string, workerId: string): Promise<boolean> {
-  try {
-    // Créer un nom de fichier de verrou basé sur le chemin du répertoire
-    const directoryHash = Buffer.from(directory).toString('base64').replace(/[\/\+\=]/g, '_');
-    const lockFile = `${LOCK_DIR}/dir_${directoryHash}.lock`;
-    
-    // Assurer que le répertoire des verrous existe
-    if (!existsSync(LOCK_DIR)) {
-      await fs.mkdir(LOCK_DIR, { recursive: true });
-    }
-    
-    const lockData: FileLockData = {
-      workerId,
-      directory,
-      timestamp: Date.now()
-    };
-    
-    if (existsSync(lockFile)) {
-      // Si le verrou existe déjà, vérifier s'il est périmé
-      const existingLockContent = await fs.readFile(lockFile, 'utf-8');
-      let existingLock: FileLockData;
-      
-      try {
-        existingLock = JSON.parse(existingLockContent);
-        const lockAge = Date.now() - existingLock.timestamp;
-        
-        // Si le verrou est périmé (plus de 30 secondes), on le remplace
-        if (lockAge > LOCK_TIMEOUT) {
-          await fs.writeFile(lockFile, JSON.stringify(lockData));
-          console.log(
-            'JobProcessor',
-            'acquireFileLock',
-            `Acquired stale lock for directory`,
-            workerId,
-            { directory, lockAge: `${lockAge}ms`, previousOwner: existingLock.workerId }
-          );
-          return true;
-        }
-        
-        // Sinon, on ne peut pas acquérir le verrou
-        console.log(
-          'JobProcessor',
-          'acquireFileLock',
-          `Failed to acquire lock, already held by another worker`,
-          workerId,
-          { directory, owner: existingLock.workerId }
-        );
-        return false;
-      } catch (err) {
-        // Si le fichier de verrou est corrompu, on le remplace
-        await fs.writeFile(lockFile, JSON.stringify(lockData));
-        console.log(
-          'JobProcessor',
-          'acquireFileLock',
-          `Acquired corrupted lock for directory`,
-          workerId,
-          { directory }
-        );
-        return true;
-      }
-    }
-    
-    // Créer un nouveau verrou
-    await fs.writeFile(lockFile, JSON.stringify(lockData), { flag: 'wx' });
-    console.log(
-      'JobProcessor',
-      'acquireFileLock',
-      `Acquired new lock for directory`,
-      workerId,
-      { directory }
-    );
-    return true;
-  } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'EEXIST') {
-      // Une autre tentative d'écriture simultanée a réussi
-      console.log(
-        'JobProcessor',
-        'acquireFileLock',
-        `Race condition on lock acquisition`,
-        workerId,
-        { directory }
-      );
-      return false;
-    }
-    
-    console.log(
-      'JobProcessor',
-      'acquireFileLock',
-      `Error acquiring lock`,
-      workerId,
-      { directory },
-      err as Error
-    );
-    return false;
-  }
-}
-
-async function releaseFileLock(directory: string, workerId: string): Promise<boolean> {
-  try {
-    const directoryHash = Buffer.from(directory).toString('base64').replace(/[\/\+\=]/g, '_');
-    const lockFile = `${LOCK_DIR}/dir_${directoryHash}.lock`;
-    
-    if (!existsSync(lockFile)) {
-      console.log(
-        'JobProcessor',
-        'releaseFileLock',
-        `Lock file doesn't exist`,
-        workerId,
-        { directory }
-      );
-      return true;
-    }
-    
-    // Vérifier que le verrou appartient bien à ce worker
-    const existingLockContent = await fs.readFile(lockFile, 'utf-8');
-    let existingLock: FileLockData;
-    
-    try {
-      existingLock = JSON.parse(existingLockContent);
-      
-      if (existingLock.workerId !== workerId) {
-        console.log(
-          'JobProcessor',
-          'releaseFileLock',
-          `Cannot release lock owned by another worker`,
-          workerId,
-          { directory, owner: existingLock.workerId }
-        );
-        return false;
-      }
-      
-      // Supprimer le fichier de verrou
-      await fs.unlink(lockFile);
-      // console.log(
-      //   'JobProcessor',
-      //   'releaseFileLock',
-      //   `Released lock for directory`,
-      //   workerId,
-      //   { directory }
-      // );
-      return true;
-    } catch (err) {
-      // Si le fichier de verrou est corrompu, on le supprime quand même
-      try {
-        await fs.unlink(lockFile);
-        console.log(
-          'JobProcessor',
-          'releaseFileLock',
-          `Released corrupted lock for directory`,
-          workerId,
-          { directory }
-        );
-        return true;
-      } catch (unlinkErr) {
-        console.log(
-          'JobProcessor',
-          'releaseFileLock',
-          `Error removing corrupted lock file`,
-          workerId,
-          { directory },
-          unlinkErr as Error
-        );
-        return false;
-      }
-    }
-  } catch (err) {
-    console.log(
-      'JobProcessor',
-      'releaseFileLock',
-      `Error releasing lock`,
-      workerId,
-      { directory },
-      err as Error
-    );
-    return false;
-  }
-}
-
 async function cleanupTempFiles(filePaths: string[], workerId: string) {
   if (!filePaths || filePaths.length === 0) {
     return;
   }
   
-  // Obtenir le répertoire parent à partir du premier chemin de fichier
   const userDir = dirname(filePaths[0]);
   
-  // Essayer d'acquérir un verrou sur le répertoire
-  // const lockAcquired = await acquireFileLock(userDir, workerId);
-  
-  // if (!lockAcquired) {
-  //   console.log(
-  //     'JobProcessor',
-  //     'cleanupTempFiles',
-  //     `Skipping cleanup, could not acquire directory lock`,
-  //     workerId,
-  //     { userDir, fileCount: filePaths.length }
-  //   );
-  //   return;
-  // }
-  
   try {
-    // Supprimer chaque fichier individuellement
     for (const path of filePaths) {
       try {
         await fs.unlink(path);
       } catch (error) {
-        // Journaliser l'erreur mais ne pas la propager
         const err = error as NodeJS.ErrnoException;
         console.log(
           'JobProcessor',
@@ -265,109 +77,85 @@ async function cleanupTempFiles(filePaths: string[], workerId: string) {
           err
         );
         
-        // Si le fichier n'existe pas, ce n'est pas une erreur critique
         if (err.code !== 'ENOENT') {
-          // Attendre un peu avant de continuer pour donner le temps aux autres processus
-          await new Promise(resolve => setTimeout(resolve, 100));
+          await sleep(100);
         }
       }
     }
-  
-    // Essayer de supprimer le répertoire
+    
     try {
-      await fs.rmdir(userDir);
-      // console.log(
-      //   'JobProcessor',
-      //   'cleanupTempFiles',
-      //   `Successfully removed directory`,
-      //   workerId,
-      //   { userDir }
-      // );
+      const files = await fs.readdir(userDir);
+      if (files.length === 0) {
+        await fs.rmdir(userDir);
+        console.log(
+          'JobProcessor',
+          'cleanupTempFiles',
+          `Removed empty directory`,
+          workerId,
+          { userDir }
+        );
+      }
     } catch (error) {
-      // Journaliser l'erreur mais ne pas la propager
-      const err = error as NodeJS.ErrnoException;
-      console.log(
-        'JobProcessor',
-        'cleanupTempFiles',
-        `Error removing directory`,
-        workerId,
-        { userDir, errorCode: err.code },
-        err
-      );
+      // Directory not empty or other error, ignore
     }
-  } finally {
-    // Toujours libérer le verrou à la fin
-    // await releaseFileLock(userDir, workerId);
+    
+  } catch (error) {
+    console.log(
+      'JobProcessor',
+      'cleanupTempFiles',
+      `Error during cleanup`,
+      workerId,
+      { userDir },
+      error as Error
+    );
   }
 }
 
 async function acquireLock(jobId: string, workerId: string): Promise<boolean> {
-  const lockFile = `${LOCK_DIR}/job_${jobId}.lock`;
   try {
-    const lockData: LockData = {
-      workerId,
-      timestamp: Date.now()
-    };
+    const { data, error } = await supabase
+      .from('job_locks')
+      .insert([{ job_id: jobId, worker_id: workerId, created_at: new Date() }]);
     
-    // Check if lock exists and is stale
-    if (existsSync(lockFile)) {
-      const existingLock = JSON.parse(await fs.readFile(lockFile, 'utf-8'));
-      const lockAge = Date.now() - existingLock.timestamp;
-      
-      if (lockAge > LOCK_TIMEOUT) {
-        // Lock is stale, we can take it
-        // console.log(`🔓 [Worker ${workerId}] Taking over stale lock for job ${jobId}`);
-        await fs.writeFile(lockFile, JSON.stringify(lockData));
-        return true;
+    if (error) {
+      if (error.code === '23505') {
+        return false;
       }
-      return false;
+      throw error;
     }
-
-    // Create new lock
-    await fs.writeFile(lockFile, JSON.stringify(lockData), { flag: 'wx' });
+    
     return true;
-  } catch (err) {
+  } catch (error) {
+    console.log(`[Worker ${workerId}] Error acquiring lock for job ${jobId}:`, error);
     return false;
   }
 }
 
 async function releaseLock(jobId: string, workerId: string) {
-  const lockFile = `${LOCK_DIR}/job_${jobId}.lock`;
   try {
-    const lockData = JSON.parse(await fs.readFile(lockFile, 'utf-8'));
-    if (lockData.workerId === workerId) {
-      await fs.unlink(lockFile);
-      // console.log(`🔓 [Worker ${workerId}] Released lock for job ${jobId}`);
-    }
-  } catch (err) {
-    // Ignore errors if file doesn't exist
+    await supabase
+      .from('job_locks')
+      .delete()
+      .eq('job_id', jobId)
+      .eq('worker_id', workerId);
+  } catch (error) {
+    console.log(`[Worker ${workerId}] Error releasing lock for job ${jobId}:`, error);
   }
 }
 
 async function refreshLock(jobId: string, workerId: string): Promise<boolean> {
-  const lockFile = `${LOCK_DIR}/job_${jobId}.lock`;
   try {
-    const lockData = JSON.parse(await fs.readFile(lockFile, 'utf-8'));
-    if (lockData.workerId === workerId) {
-      lockData.timestamp = Date.now();
-      await fs.writeFile(lockFile, JSON.stringify(lockData));
-      return true;
-    }
-    return false;
-  } catch (err) {
+    const { error } = await supabase
+      .from('job_locks')
+      .update({ created_at: new Date() })
+      .eq('job_id', jobId)
+      .eq('worker_id', workerId);
+    
+    return !error;
+  } catch (error) {
+    console.log(`[Worker ${workerId}] Error refreshing lock for job ${jobId}:`, error);
     return false;
   }
-}
-
-interface JobStats {
-  followers: {
-    processed: number;
-    total: number;
-  };
-  following: {
-    processed: number;
-    total: number;
-  };
 }
 
 async function updateJobProgress(
@@ -378,12 +166,9 @@ async function updateJobProgress(
   status: 'processing' | 'completed' | 'failed' = 'processing',
   errorMessage?: string
 ) {
-  const updateData: any = {
-    status,
-    updated_at: new Date().toISOString(),
-    stats: {
-      total: totalItems.followers + totalItems.following,
-      progress: Math.round(((processedItems.followers + processedItems.following) / (totalItems.followers + totalItems.following)) * 100),
+  try {
+    // Structure stats pour la DB (format complexe)
+    const stats = {
       followers: {
         processed: processedItems.followers,
         total: totalItems.followers
@@ -391,30 +176,34 @@ async function updateJobProgress(
       following: {
         processed: processedItems.following,
         total: totalItems.following
-      },
-      processed: processedItems.followers + processedItems.following
+      }
+    };
+
+    const updateData: any = {
+      processed_items: processedItems.followers + processedItems.following,
+      total_items: totalItems.followers + totalItems.following,
+      stats: stats,
+      updated_at: new Date().toISOString()
+    };
+
+    if (status !== 'processing') {
+      updateData.status = status;
     }
-  };
 
-  if (status === 'completed') {
-    updateData.completed_at = new Date().toISOString();
-  }
+    if (errorMessage) {
+      updateData.error_log = errorMessage;
+    }
 
-  if (status === 'failed' && errorMessage) {
-    updateData.error_log = errorMessage;
-  }
+    await supabase
+      .from('import_jobs')
+      .update(updateData)
+      .eq('id', jobId);
 
-  const { error } = await supabase
-    .from('import_jobs')
-    .update(updateData)
-    .eq('id', jobId);
-
-  if (error) {
-    console.log(`❌ [Worker ${workerId}] Failed to update job progress:`, error);
+  } catch (error) {
+    console.log(`[Worker ${workerId}] Error updating job progress:`, error);
   }
 }
 
-// Performance tracking interfaces
 interface JobMetrics {
   startTime: number;
   endTime?: number;
@@ -427,21 +216,21 @@ interface JobMetrics {
   retries: number;
 }
 
+
+
 const jobMetrics: Map<string, JobMetrics> = new Map();
 
 const supabase = createClient(supabaseUrl, supabaseKey, 
   {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false
-    },
     global: {
       fetch: (input: RequestInfo | URL, init?: RequestInit) => {
-        return fetch(input, {
-          ...init,
-          signal: AbortSignal.timeout(30000), // 30 second timeout
-        });
-      },
+        const timeout = 30000;
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeout);
+        
+        return fetch(input, { ...init, signal: controller.signal })
+          .finally(() => clearTimeout(timeoutId));
+      }
     }
   });
 
@@ -450,12 +239,13 @@ const supabaseAuth = createClient(supabaseUrl, supabaseKey, {
     autoRefreshToken: false,
     persistSession: false
   },
-  db: {
-    schema: "next-auth"
+  global: {
+    headers: {
+      'Cache-Control': 'no-cache'
+    }
   }
 });
 
-// Validation des fichiers Twitter
 function validateTwitterData(content: string, type: 'following' | 'follower'): string | null {
   const prefix = `window.YTD.${type}.part0 = `;
   
@@ -494,11 +284,11 @@ function validateTwitterData(content: string, type: 'following' | 'follower'): s
   } catch (error) {
     return `Invalid JSON in ${type}.js: ${error instanceof Error ? error.message : 'Unknown error'}`;
   }
+
 }
 
 async function processTwitterFile(filePath: string, workerId: string): Promise<any[]> {
   try {
-    // console.log(`📖 [Worker ${workerId}] Reading file: ${filePath}`);
     const content = await readFile(filePath, 'utf-8');
     const type = filePath.toLowerCase().includes('following') ? 'following' : 'follower';
     
@@ -508,38 +298,51 @@ async function processTwitterFile(filePath: string, workerId: string): Promise<a
       throw new Error(error);
     }
 
-    // Parser le JSON
+    // Parser le JSON depuis le format Twitter JavaScript
     const prefix = `window.YTD.${type}.part0 = `;
     const jsonStr = content.substring(prefix.length);
     const data = JSON.parse(jsonStr);
-    // console.log(`✅ [Worker ${workerId}] Successfully parsed ${data.length} items from ${filePath}`);
+    
+    console.log(`[Worker ${workerId}] Successfully parsed ${data.length} items from ${filePath}`);
     return data;
   } catch (error) {
-    console.log(`❌ [Worker ${workerId}] Error processing file ${filePath}:`, error);
+    console.log(`[Worker ${workerId}] Error reading file ${filePath}:`, error);
     throw error;
   }
 }
 
 async function ensureSourceExists(userId: string, workerId: string) {
-  // Vérifier si la source existe déjà
-  const { data: source } = await supabase
-    .from('sources')
-    .select('id')
-    .eq('id', userId)
-    .single();
-
-  // Si la source n'existe pas, la créer
-  if (!source) {
-    console.log(`📝 [Worker ${workerId}] Creating source for user ${userId}`);
-    const { error } = await supabase
+  try {
+    const { data: existingSource } = await supabase
       .from('sources')
-      .insert({ id: userId });
+      .select('id')
+      .eq('id', userId)
+      .single();
 
-    if (error) {
-      console.log(`❌ [Worker ${workerId}] Error creating source:`, error);
-      throw error;
+    if (!existingSource) {
+      const { error } = await supabase
+        .from('sources')
+        .insert([{ id: userId }]);
+
+      if (error && error.code !== '23505') {
+        throw error;
+      }
     }
+  } catch (error) {
+    console.log(`[Worker ${workerId}] Error ensuring source exists:`, error);
+    throw error;
   }
+}
+
+interface JobStats {
+  followers: {
+    processed: number;
+    total: number;
+  };
+  following: {
+    processed: number;
+    total: number;
+  };
 }
 
 interface ImportJob {
@@ -553,324 +356,471 @@ interface ImportJob {
   stats?: JobStats;
 }
 
-export async function processJob(job: ImportJob, workerId: string) {
+export async function processJob(job: ImportJob, workerId: string): Promise<{
+  followers: number;
+  following: number;
+  total: number;
+  processed: number;
+}> {
   const startTime = Date.now();
-  const metrics = {
-    batchesProcessed: 0,
-    successfulBatches: 0,
-    failedBatches: 0,
-    retries: 0,
-    processedItemsFollowers: 0,
-    processedItemsFollowing: 0,
-  };
-
-  let followersData: any[] = [];
-  let followingData: any[] = [];
+  console.log(`[Worker ${workerId}] 🚀 Starting job ${job.id} for user ${job.user_id}`);
 
   try {
-    if (!await acquireLock(job.id, workerId)) {
-      console.log(`[Worker ${workerId}] Job ${job.id} already locked`);
-      return;
-    }
-
-    await updateJobProgress(job.id, {followers: 0, following: 0}, {followers: 0, following: 0}, workerId, 'processing');
-
     await ensureSourceExists(job.user_id, workerId);
-    console.log(`[Worker ${workerId}] Starting job ${job.id} for user ${job.user_id}`);
 
-    // Validate files exist
+    let followersData: any[] = [];
+    let followingData: any[] = [];
+
     for (const filePath of job.file_paths) {
-      if (!existsSync(filePath)) {
-        throw new Error(`File not found: ${filePath}`);
+      const data = await processTwitterFile(filePath, workerId);
+      
+      if (filePath.includes('follower')) {
+        followersData = followersData.concat(data);
+      } else if (filePath.includes('following')) {
+        followingData = followingData.concat(data);
       }
     }
-    
-    let followersFilePath = '';
-    let followingFilePath = '';
-    
-    for (const filePath of job.file_paths) {
-      if (filePath.toLowerCase().includes('follower')) {
-        followersFilePath = filePath;
-      } else if (filePath.toLowerCase().includes('following')) {
-        followingFilePath = filePath;
-      }
-    }
-    
-    try {
-      if (followersFilePath) {
-        followersData = await processTwitterFile(followersFilePath, workerId);
-        console.log(`[Worker ${workerId}] Parsed ${followersData.length} followers`);
-      }
-      
-      if (followingFilePath) {
-        followingData = await processTwitterFile(followingFilePath, workerId);
-        console.log(`[Worker ${workerId}] Parsed ${followingData.length} following`);
-      }
-    } catch (error) {
-      console.log(`[Worker ${workerId}] Failed to parse Twitter files: ${error}`);
-      throw new Error(`Error processing Twitter files: ${error}`);
+
+    const totalRecords = followersData.length + followingData.length;
+    console.log(`[Worker ${workerId}] 📊 Processing ${totalRecords.toLocaleString()} total records (${followersData.length} followers, ${followingData.length} following)`);
+
+    const strategy = getOptimalStrategy(totalRecords);
+    console.log(`[Worker ${workerId}] 🎯 Using ${strategy} strategy`);
+
+    // let result;
+    // if (strategy === 'monolithic') {
+    //   result = await processMonolithicImport(followersData, followingData, job.user_id, workerId);
+    // } else {
+    const result = await processBatchParallelImport(followersData, followingData, job.user_id, workerId, job.id);
+    // }
+
+    if (!result.success) {
+      throw new Error(result.error || 'Import failed');
     }
 
-    // Calculate total items for progress tracking
-    const totalItems = {
-      followers: followersData.length,
-      following: followingData.length
-    };
-    const currentProgress = {
-      followers: 0,
-      following: 0,
-    };
-
-    // Update job status to processing
-    // await updateJobProgress(job.id, currentProgress, totalItems, workerId, 'processing');
-
-    // Process followers
-    if (followersData.length > 0) {
-      const processedFollowers = await processBatchData(
-        followersData,
-        job.user_id,
-        workerId,
-        'followers',
-        batch_insert_followers,
-        metrics
-      );
-      
-      currentProgress.followers = processedFollowers;
-      metrics.processedItemsFollowers = processedFollowers;
-      
-      // await updateJobProgress(job.id, currentProgress, totalItems, workerId, 'processing');
-    }
-
-    // Process following
-    if (followingData.length > 0) {
-      const processedFollowing = await processBatchData(
-        followingData,
-        job.user_id,
-        workerId,
-        'following',
-        batch_insert_targets,
-        metrics
-      );
-      
-      currentProgress.following = processedFollowing;
-      metrics.processedItemsFollowing = processedFollowing;
-      
-      // await updateJobProgress(job.id, currentProgress, totalItems, workerId, 'processing');
-    }
-
-    // Mark job as completed
     await updateJobProgress(
       job.id,
       { followers: followersData.length, following: followingData.length },
-      totalItems,
+      { followers: followersData.length, following: followingData.length },
       workerId,
       'completed'
     );
 
-    const totalTime = Date.now() - startTime;
-    console.log(`[Worker ${workerId}] Job ${job.id} completed | Total time: ${totalTime}ms | Followers: ${metrics.processedItemsFollowers} | Following: ${metrics.processedItemsFollowing} | Failed batches: ${metrics.failedBatches} | Retries: ${metrics.retries}`);
-    
+    const executionTime = Date.now() - startTime;
+    // console.log(`[Worker ${workerId}] ✅ Job ${job.id} completed in ${executionTime}ms`);
+
+    return {
+      followers: followersData.length,
+      following: followingData.length,
+      total: totalRecords,
+      processed: totalRecords
+    };
+
   } catch (error) {
-    console.log(`[Worker ${workerId}] Job ${job.id} failed: ${error}`);
+    const executionTime = Date.now() - startTime;
+    const errorMessage = String(error);
+    
+    console.log(`[Worker ${workerId}] ❌ Job ${job.id} failed after ${executionTime}ms:`, error);
 
     await updateJobProgress(
       job.id,
-      { followers: metrics.processedItemsFollowers, following: metrics.processedItemsFollowing },
-      { followers: followersData?.length || 0, following: followingData?.length || 0 },
+      { followers: 0, following: 0 },
+      { followers: 0, following: 0 },
       workerId,
       'failed',
-      String(error)
+      errorMessage
     );
+
+    throw error;
   } finally {
     await cleanupTempFiles(job.file_paths, workerId);
-    const { error: hasBoardError } = await supabaseAuth
-    .from('users')
-    .update({ has_onboarded: true })
-    .eq('id', job.user_id);
-    if (hasBoardError) {
-      console.log(`❌ [Worker ${workerId}] Error updating has_onboarded:`, hasBoardError);
-    }
-    await releaseLock(job.id, workerId);
-
   }
 }
 
-// Generic batch processing function
-async function processBatchData(
+// Strategy selection
+function getOptimalStrategy(totalRecords: number): 'monolithic' | 'batch_parallel' {
+  return totalRecords < MONOLITHIC_THRESHOLD ? 'monolithic' : 'batch_parallel';
+}
+
+// Batch parallel import for > 1M records using WorkerPool
+async function processBatchParallelImport(
+  followersData: any[],
+  followingData: any[],
+  userId: string,
+  workerId: string,
+  jobId: string 
+): Promise<{ success: boolean; error?: string }> {
+  const startTime = Date.now();
+  const totalRecords = followersData.length + followingData.length;
+  
+  console.log(`[Worker ${workerId}] 🚀 Starting batch parallel import for ${totalRecords.toLocaleString()} records`);
+
+  try {
+    // Step 1: Disable triggers globally
+    console.log(`[Worker ${workerId}] 🔧 Step 1: Disabling triggers for batch import...`);
+    const disableResult = await disableTriggersForBatchImport(workerId);
+    if (!disableResult.success) {
+      throw new Error(`Failed to disable triggers: ${disableResult.error}`);
+    }
+
+    // Step 2: Process followers using WorkerPool
+    if (followersData.length > 0) {
+      console.log(`[Worker ${workerId}] 🔄 Step 2A: Processing ${followersData.length} followers with WorkerPool...`);
+      
+      const followersPool = new WorkerPool(BATCH_CONCURRENCY);
+      const followersChunks = chunkArray(followersData, FOLLOWERS_CHUNK_SIZE);
+      
+      // Add progress tracking with Redis updates every 5 chunks
+      let completedChunks = 0;
+      let lastRedisUpdate = 0;
+      const REDIS_UPDATE_INTERVAL = 5;
+      
+      followersPool.onTaskCompleted((result: WorkerPoolResult) => {
+        completedChunks++;
+        if (result.success) {
+          // console.log(`[Worker ${workerId}] ✅ Followers chunk ${completedChunks}/${followersChunks.length} completed (${result.duration}ms)`);
+        } else {
+          console.log(`[Worker ${workerId}] ❌ Followers chunk ${completedChunks}/${followersChunks.length} failed: ${result.error}`);
+        }
+        
+        // Update Redis every 5 chunks
+        if (completedChunks - lastRedisUpdate >= REDIS_UPDATE_INTERVAL || completedChunks === followersChunks.length) {
+          lastRedisUpdate = completedChunks;
+          const processedFollowers = completedChunks * FOLLOWERS_CHUNK_SIZE;
+          const progressPercent = Math.round((processedFollowers / totalRecords) * 100);
+          
+          // Update Redis stats async without blocking workers
+          // const jobId = workerId.split('_')[0]; // Extract jobId from workerId
+          const stats: RedisJobStats = {
+            total: totalRecords,
+            progress: progressPercent,
+            followers: processedFollowers,
+            following: 0,
+            processed: processedFollowers
+          };
+          updateRedisJobStats(jobId, stats, workerId)
+            .catch(err => console.log(`[Worker ${workerId}] ⚠️ Redis stats update failed: ${err.message}`));
+        // }
+        }
+      });
+
+      // Add all follower chunks to the pool
+      followersChunks.forEach((chunk, index) => {
+        followersPool.addTask({
+          data: chunk,
+          userId,
+          dataType: 'followers',
+          chunkIndex: index,
+          workerId
+        });
+      });
+
+      // Wait for all followers to complete
+      const followersResults = await followersPool.waitForCompletion();
+      const followersSummary = followersPool.getResultsSummary();
+      
+      // console.log(`[Worker ${workerId}] ✅ Step 2A completed: ${followersSummary.successfulChunks}/${followersChunks.length} chunks successful | ${followersSummary.totalProcessed} followers processed | Avg time: ${Math.round(followersSummary.averageChunkTime)}ms`);
+      
+      if (followersSummary.failedChunks > 0) {
+        throw new Error(`${followersSummary.failedChunks} follower chunks failed: ${followersSummary.errors.join(', ')}`);
+      }
+    }
+
+    // Step 3: Process following using WorkerPool  
+    if (followingData.length > 0) {
+      console.log(`[Worker ${workerId}] 🔄 Step 2B: Processing ${followingData.length} following with WorkerPool...`);
+      
+      const followingPool = new WorkerPool(BATCH_CONCURRENCY);
+      const followingChunks = chunkArray(followingData, TARGETS_CHUNK_SIZE);
+      
+      // Add progress tracking with Redis updates every 5 chunks
+      let completedChunks = 0;
+      let lastRedisUpdate = 0;
+      const REDIS_UPDATE_INTERVAL = 5;
+      
+      followingPool.onTaskCompleted((result: WorkerPoolResult) => {
+        completedChunks++;
+        if (result.success) {
+          console.log(`[Worker ${workerId}] ✅ Following chunk ${completedChunks}/${followingChunks.length} completed (${result.duration}ms)`);
+        } else {
+          console.log(`[Worker ${workerId}] ❌ Following chunk ${completedChunks}/${followingChunks.length} failed: ${result.error}`);
+        }
+        
+        // Update Redis every 5 chunks
+        if (completedChunks - lastRedisUpdate >= REDIS_UPDATE_INTERVAL || completedChunks === followingChunks.length) {
+          lastRedisUpdate = completedChunks;
+          const processedFollowing = completedChunks * TARGETS_CHUNK_SIZE;
+          const totalProcessed = followersData.length + processedFollowing;
+          const progressPercent = Math.round((totalProcessed / totalRecords) * 100);
+          
+          // Update Redis stats async without blocking workers
+          const jobId = workerId.split('_')[0]; // Extract jobId from workerId
+          const stats: RedisJobStats = {
+            total: totalRecords,
+            progress: progressPercent,
+            followers: followersData.length,
+            following: processedFollowing,
+            processed: totalProcessed
+          };
+
+          updateRedisJobStats(jobId, stats, workerId)
+            .catch(err => console.log(`[Worker ${workerId}] ⚠️ Redis stats update failed: ${err.message}`));
+        }
+      });
+
+      // Add all following chunks to the pool
+      followingChunks.forEach((chunk, index) => {
+        followingPool.addTask({
+          data: chunk,
+          userId,
+          dataType: 'targets',
+          chunkIndex: index,
+          workerId
+        });
+      });
+
+      // Wait for all following to complete
+      const followingResults = await followingPool.waitForCompletion();
+      const followingSummary = followingPool.getResultsSummary();
+      
+      // console.log(`[Worker ${workerId}] ✅ Step 2B completed: ${followingSummary.successfulChunks}/${followingChunks.length} chunks successful | ${followingSummary.totalProcessed} following processed | Avg time: ${Math.round(followingSummary.averageChunkTime)}ms`);
+      
+      if (followingSummary.failedChunks > 0) {
+        throw new Error(`${followingSummary.failedChunks} following chunks failed: ${followingSummary.errors.join(', ')}`);
+      }
+    }
+
+    // Step 4: Re-enable triggers
+    console.log(`[Worker ${workerId}] 🔧 Step 3: Re-enabling triggers after batch import...`);
+    const enableResult = await enableTriggersAfterBatchImport(workerId);
+    if (!enableResult.success) {
+      console.log(`[Worker ${workerId}] ⚠️ Warning: Failed to re-enable triggers: ${enableResult.error}`);
+    }
+
+    const executionTime = Date.now() - startTime;
+    const throughput = Math.round(totalRecords / (executionTime / 1000));
+    
+    console.log(`[Worker ${workerId}] 🎉 Batch parallel import completed | Time: ${executionTime}ms | Throughput: ${throughput} records/sec`);
+    
+    return { success: true };
+
+  } catch (error) {
+    const executionTime = Date.now() - startTime;
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    
+    console.log(`[Worker ${workerId}] ❌ Batch parallel import failed after ${executionTime}ms: ${errorMessage}`);
+    
+    // Try to re-enable triggers even on failure
+    try {
+      await enableTriggersAfterBatchImport(workerId);
+    } catch (enableError) {
+      console.log(`[Worker ${workerId}] ⚠️ Failed to re-enable triggers after error: ${enableError}`);
+    }
+    
+    return { success: false, error: errorMessage };
+  }
+}
+
+// Helper functions for trigger management
+async function disableTriggersForBatchImport(workerId: string): Promise<{ success: boolean; error?: string }> {
+  const disableSQL = `
+    SET statement_timeout TO '180s';
+    SET work_mem TO '64MB';
+    SET maintenance_work_mem TO '512MB';
+    SET temp_buffers TO '32MB';
+    
+    ALTER TABLE sources_followers DISABLE TRIGGER ALL;
+    ALTER TABLE sources_targets DISABLE TRIGGER ALL;
+  `;
+  
+  const result = await executePostgresCommand(disableSQL, workerId, 90000);
+  return result;
+}
+
+async function enableTriggersAfterBatchImport(workerId: string): Promise<{ success: boolean; error?: string }> {
+  const enableSQL = `
+    ALTER TABLE sources_followers ENABLE TRIGGER ALL;
+    ALTER TABLE sources_targets ENABLE TRIGGER ALL;
+  `;
+  
+  const result = await executePostgresCommand(enableSQL, workerId, 90000);
+  return result;
+}
+
+// Utility function to chunk arrays
+function chunkArray<T>(array: T[], chunkSize: number): T[][] {
+  const chunks: T[][] = [];
+  for (let i = 0; i < array.length; i += chunkSize) {
+    chunks.push(array.slice(i, i + chunkSize));
+  }
+  return chunks;
+}
+
+export { 
+  acquireLock, 
+  releaseLock, 
+  refreshLock, 
+  updateJobProgress,
+  cleanupTempFiles,
+  validateTwitterData,
+  processTwitterFile,
+  ensureSourceExists
+};
+
+
+export async function executePostgresCommand(sql: string, workerId: string, timeoutMs: number = 120000): Promise<{ success: boolean; error?: string }> {
+  return new Promise((resolve) => {
+    const env = {
+      PGHOST: process.env.POSTGRES_HOST || 'localhost',
+      PGPORT: process.env.POSTGRES_PORT || '5432',
+      PGDATABASE: process.env.POSTGRES_DB || 'postgres',
+      PGUSER: process.env.POSTGRES_USER || 'postgres',
+      PGPASSWORD: process.env.POSTGRES_PASSWORD || 'postgres'
+    };
+
+    console.log(`[Worker ${workerId}] 🕒 Using adaptive timeout: ${timeoutMs}ms (${Math.round(timeoutMs/1000)}s)`);
+    const psqlProcess = spawn('psql', ['-c', sql], {
+      env: { ...process.env, ...env },
+      stdio: ['pipe', 'pipe', 'pipe']
+    });
+
+    let stdout = '';
+    let stderr = '';
+    let resolved = false;
+    let writeError: Error | null = null;
+
+    // Timeout de sécurité
+    const timeout = setTimeout(() => {
+      if (!resolved) {
+        console.log(`[Worker ${workerId}] ⏰ psql command timeout after ${timeoutMs}ms`);
+        psqlProcess.kill('SIGTERM');
+        resolved = true;
+        resolve({ success: false, error: 'Command timeout' });
+      }
+    }, timeoutMs);
+
+    psqlProcess.stdout.on('data', (data) => {
+      stdout += data.toString();
+    });
+
+    psqlProcess.stderr.on('data', (data) => {
+      stderr += data.toString();
+    });
+
+    // Gestion des erreurs d'écriture (EPIPE)
+    psqlProcess.stdin.on('error', (error) => {
+      console.log(`[Worker ${workerId}] ❌ stdin write error:`, error.message);
+      writeError = error;
+      // Ne pas résoudre ici, attendre la fermeture du processus
+    });
+
+    // Écriture des données avec gestion d'erreur
+    try {
+      // Vérifier si le processus est encore vivant avant d'écrire
+      if (!psqlProcess.killed) {
+        psqlProcess.stdin.write('');
+        psqlProcess.stdin.end();
+      }
+    } catch (error) {
+      console.log(`[Worker ${workerId}] ❌ Error writing to stdin:`, error);
+      writeError = error as Error;
+    }
+
+    psqlProcess.on('close', (code) => {
+      if (resolved) return;
+      resolved = true;
+      clearTimeout(timeout);
+
+      if (writeError) {
+        console.log(`[Worker ${workerId}] ❌ psql failed due to write error: ${writeError.message}`);
+        resolve({ success: false, error: `Write error: ${writeError.message}` });
+        return;
+      }
+
+      if (code === 0) {
+        // console.log(`[Worker ${workerId}] ✅ psql command executed successfully`);
+        resolve({ success: true });
+      } else {
+        console.log(`[Worker ${workerId}] ❌ psql command failed with code ${code}`);
+        console.log(`[Worker ${workerId}] stderr:`, stderr);
+        console.log(`[Worker ${workerId}] stdout:`, stdout);
+        resolve({ success: false, error: stderr || `Process exited with code ${code}` });
+      }
+    });
+
+    psqlProcess.on('error', (error) => {
+      if (resolved) return;
+      resolved = true;
+      clearTimeout(timeout);
+      console.log(`[Worker ${workerId}] ❌ psql process error:`, error);
+      resolve({ success: false, error: error.message });
+    });
+  });
+}
+
+
+async function processBatchDataViaPsql(
   data: any[],
   userId: string,
   workerId: string,
-  dataType: 'followers' | 'following',
-  batchInsertFn: Function,
+  dataType: 'followers' | 'targets',
   metrics: any
 ): Promise<number> {
-  const isFollowers = dataType === 'followers';
-  const itemKey = isFollowers ? 'follower' : 'following';
   
-  // Validation
-  if (!data || !Array.isArray(data)) {
-    throw new Error(`${dataType} data must be an array`);
+  if (data.length === 0) {
+    console.log(`[Worker ${workerId}] No ${dataType} data to process`);
+    return 0;
   }
 
-  if (data.length > 0 && !data[0]?.[itemKey]?.accountId) {
-    throw new Error(`Invalid ${dataType} data structure: missing accountId`);
-  }
+  console.log(`[Worker ${workerId}] 🚀 Starting ${dataType} processing via psql COPY | Total items: ${data.length}`);
 
-  // Create source if it doesn't exist
-  // await ensureSourceExists(userId, workerId);
-
-  // Configuration adaptée selon le type
-  let CHUNK_SIZE = isFollowers ? 250  : 250;
-  const MIN_CHUNK_SIZE = 20;
-  const MAX_RETRIES = 5;
-  const BASE_DELAY = 500;
-  
-  let processedItems = 0;
-  const timeoutErrors: any[] = [];
-  const totalChunks = Math.ceil(data.length / CHUNK_SIZE);
-
-  for (let i = 0; i < data.length;) {
-    const batch = data.slice(i, i + CHUNK_SIZE);
-    let retryCount = 0;
-    let successfulProcessing = false;
-
-    while (retryCount < MAX_RETRIES && !successfulProcessing) {
-      try {
-        // Prepare data based on type
-        const dataToInsert = batch.map((item: any) => ({
-          twitter_id: item[itemKey].accountId,
-        }));
-
-        const relationsToInsert = batch.map((item: any) => ({
-          source_id: userId,
-          ...(isFollowers 
-            ? { follower_id: item[itemKey].accountId }
-            : { target_twitter_id: item[itemKey].accountId }
-          ),
-        }));
-
-        const startTime = Date.now();
-        const currentChunk = Math.floor(i / CHUNK_SIZE) + 1;
-        
-        // Execute batch insert
-        const { error } = await batchInsertFn(
-          supabase,
-          dataToInsert,
-          relationsToInsert,
-          CHUNK_SIZE, // Pass current chunk size to PostgreSQL function
-          Math.min(120000, 30000 + (retryCount * 15000)) // Progressive timeout: 30s, 45s, 60s, 75s, 90s
-        );
-        
-        const executionTime = Date.now() - startTime;
-
-        if (error) {
-          console.log(`[Worker ${workerId}] ${dataType} batch failed | Chunk: ${currentChunk}/${totalChunks} | Size: ${batch.length} | Error: ${error.message} | Code: ${error.code}`);
-          throw error;
-        }
-
-        // Success
-        successfulProcessing = true;
-        i += CHUNK_SIZE;
-        processedItems += batch.length;
-        metrics.batchesProcessed++;
-        metrics.successfulBatches++;
-        
-        // Dynamic chunk size adjustment (silent)
-        // if (executionTime < 10000 && CHUNK_SIZE < 150) {
-        //   CHUNK_SIZE = Math.min(150, Math.floor(CHUNK_SIZE * 1.2));
-        // }
-        
-      } catch (error) {
-        retryCount++;
-        metrics.retries++;
-        
-        const errorObj = error as any; // Type assertion for error object
-        const errorMsg = String(error);
-        const isTimeoutError = errorMsg.includes('canceling statement due to statement timeout') || 
-                              errorMsg.includes('57014') ||
-                              errorMsg.includes('timeout');
-        
-
-        if (isTimeoutError) {
-          timeoutErrors.push({ chunkSize: batch.length, error: errorMsg });
-          
-          // Réduction plus agressive du chunk size
-          const newChunkSize = Math.max(MIN_CHUNK_SIZE, Math.floor(CHUNK_SIZE * 0.4));
-          
-          if (newChunkSize < CHUNK_SIZE) {
-            CHUNK_SIZE = newChunkSize;
-            console.log(`[Worker ${workerId}] ${dataType} timeout | Reducing chunk size: ${batch.length} → ${CHUNK_SIZE} | Retry: ${retryCount}/${MAX_RETRIES}`);
-            
-            // Recommencer immédiatement avec le nouveau chunk size
-            break; // Sortir de la boucle retry pour recommencer avec chunk plus petit
-          }
-        }
-        
-        if (retryCount === MAX_RETRIES) {
-          console.log(`[Worker ${workerId}] ${dataType} batch failed after ${MAX_RETRIES} retries | Chunk size: ${batch.length} | Error: ${JSON.stringify({
-            message: errorObj?.message || String(error) || 'Unknown error',
-            code: errorObj?.code || 'NO_CODE',
-            hint: errorObj?.hint || 'No hint available'
-          })} | Total timeouts: ${timeoutErrors.length}`);
-          metrics.failedBatches++;
-          throw error;
-        }
-        
-        await new Promise(resolve => setTimeout(resolve, Math.pow(2, retryCount) * BASE_DELAY));
-      }
+  try {
+    // Convert to CSV
+    const { dataContent, relationsContent } = await convertTwitterDataToCSV(data, userId, dataType, workerId);
+    
+    // Import via psql COPY
+    const result = await importCSVViaPsql(
+      dataContent, 
+      relationsContent, 
+      dataType, 
+      userId, 
+      workerId, 
+      true // skipTriggerManagement=true
+    );
+    
+    if (!result.success) {
+      throw new Error(result.error || 'Import failed');
     }
     
-    // Delay between batches
-    await new Promise(resolve => setTimeout(resolve, BASE_DELAY));
+    metrics.batchesProcessed++;
+    metrics.successfulBatches++;
+    
+    // console.log(`[Worker ${workerId}] ✅ ${dataType} processing completed via psql COPY | Processed: ${result.processed} items`);
+    
+    return result.processed;
+    
+  } catch (error) {
+    metrics.failedBatches++;
+    console.log(`[Worker ${workerId}] ❌ ${dataType} processing failed via psql COPY:`, error);
+    throw error;
   }
 
-  if (timeoutErrors.length > 0) {
-    console.log(`[Worker ${workerId}] ${dataType} completed with ${timeoutErrors.length} timeout adjustments | Final chunk size: ${CHUNK_SIZE}`);
-  }
-
-  // console.log(`[Worker ${workerId}] Successfully processed ${processedItems} ${dataType}`);
-  return processedItems;
+  
 }
 
-// Optimized batch insert functions using PostgreSQL stored procedures
-async function batch_insert_followers(
-  supabase: any,
-  followersData: any[],
-  relationsData: any[],
-  batchSize: number = 100,
-  timeoutMs: number = 120000 // 2 minutes
-): Promise<{ error: any }> {
+async function updateJobStats(jobId: string, stats: JobStats, workerId: string) {
   try {
-    const { error } = await supabase.rpc('batch_insert_followers', {
-      followers_data: followersData,
-      relations_data: relationsData,
-      batch_size: batchSize,
-      statement_timeout_ms: timeoutMs
-    });
-    
-    return { error };
-  } catch (error) {
-    return { error };
-  }
-}
+    const updateData: any = {
+      stats: stats,
+      updated_at: new Date().toISOString()
+    };
 
-async function batch_insert_targets(
-  supabase: any,
-  targetsData: any[],
-  relationsData: any[],
-  batchSize: number = 100,
-  timeoutMs: number = 120000 // 2 minutes
-): Promise<{ error: any }> {
-  try {
-    const { error } = await supabase.rpc('batch_insert_targets', {
-      targets_data: targetsData,
-      relations_data: relationsData,
-      batch_size: batchSize,
-      statement_timeout_ms: timeoutMs
-    });
-    
-    return { error };
+    await supabase
+      .from('import_jobs')
+      .update(updateData)
+      .eq('id', jobId);
+
   } catch (error) {
-    return { error };
+    console.log(`[Worker ${workerId}] Error updating job stats:`, error);
   }
 }

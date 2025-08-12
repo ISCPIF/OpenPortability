@@ -5,6 +5,7 @@ services:
       build:
         context: .
         dockerfile: Dockerfile
+      # user: "1001:1001"
       env_file:
         - .env.local
       environment:
@@ -18,18 +19,21 @@ services:
       ports:
         - "3000:3000"
       volumes:
-        # - ./:/app:delegated
+        # Mount entire directory but preserve container's node_modules
+        # - ./:/app
         # - /app/node_modules
-        # - /app/.next
         - shared-tmp:/app/tmp
-        # - ./public:/app/public
         - app_logs:/app/logs
+      depends_on:
+        redis-init:
+          condition: service_completed_successfully
 
 
   worker:
     build:
       context: ./worker
       dockerfile: Dockerfile
+    # user: "1001:1001"
     volumes:
       - ./worker:/app
       - /app/node_modules
@@ -45,7 +49,8 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
-      - app
+      redis-init:
+        condition: service_completed_successfully
 
   nginx:
     image: nginx:alpine
@@ -55,33 +60,70 @@ services:
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/certs:/etc/nginx/certs:ro
-      # - ./nginx/auth:/etc/nginx/auth:ro
+      - ./nginx/auth:/etc/nginx/auth:ro
     depends_on:
       - app
     networks:
       - app_network
     command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
 
-  watcher:
-    build:
-      context: ./watcher
-      dockerfile: Dockerfile
-    environment:
-      - NODE_ENV=production
-    env_file:
-      - ./watcher/.env
+  redis:
+    image: redis:7-alpine
+    container_name: openportability_redis
     restart: unless-stopped
+    networks:
+      - app_network
+    volumes:
+      - ./redis.conf:/usr/local/etc/redis/redis.conf:ro
+      - redis_data:/data
+    command: redis-server /usr/local/etc/redis/redis.conf
+    # Ne pas exposer le port en production pour la sécurité
+    # ports:
+    #   - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "votre_mot_de_passe_redis_securise_ici", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Conteneur d'initialisation des mappings Redis
+  redis-init:
+    build:
+      context: ./redis
+      dockerfile: Dockerfile.init
+    env_file:
+      - redis/.env.redis
     networks:
       - app_network
       - supabase_network_goodbyex
     extra_hosts:
       - "host.docker.internal:host-gateway"
-    healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "host.docker.internal:54321"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: "no"  # Ne pas redémarrer automatiquement - c'est un job d'initialisation
+
+  # watcher:
+  #   build:
+  #     context: ./watcher
+  #     dockerfile: Dockerfile
+  #   environment:
+  #     - NODE_ENV=production
+  #   env_file:
+  #     - ./watcher/.env
+  #   restart: unless-stopped
+  #   networks:
+  #     - app_network
+  #     - supabase_network_goodbyex
+  #   extra_hosts:
+  #     - "host.docker.internal:host-gateway"
+  #   healthcheck:
+  #     test: ["CMD", "wget", "--spider", "-q", "host.docker.internal:54321"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+  #     start_period: 30s
 
   python_worker:
     build:
@@ -123,3 +165,5 @@ volumes:
       type: none
       device: /home/ubuntu/openportability_logs
       o: "bind,noexec"
+  redis_data:
+    driver: local
