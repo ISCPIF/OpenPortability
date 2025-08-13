@@ -70,13 +70,6 @@ flowchart TD
 
 ### 1. Pages Publiques
 
-#### Page d'Accueil (`/`)
-**Composants:**
-- Hero section avec proposition de valeur
-- Fonctionnalités principales
-- Témoignages utilisateurs
-- Call-to-action inscription
-
 **Métadonnées SEO:**
 ```tsx
 export const metadata = {
@@ -86,11 +79,6 @@ export const metadata = {
 }
 ```
 
-#### Page À Propos (`/about`)
-- Mission et vision
-- Équipe
-- Technologie utilisée
-- Open source
 
 #### Page Confidentialité (`/privacy`)
 - Politique de confidentialité
@@ -114,17 +102,7 @@ const signinSchema = z.object({
 })
 ```
 
-#### Inscription (`/auth/signup`)
-**Composants:**
-- Formulaire inscription
-- Validation en temps réel
-- Conditions d'utilisation
-- Redirection post-inscription
 
-#### Vérification Email (`/auth/verify-email`)
-- Message de confirmation
-- Renvoi d'email
-- Redirection automatique
 
 ### 3. Tableau de Bord Principal
 
@@ -149,14 +127,13 @@ export default function DashboardLayout({
 ```
 
 **Composants:**
-- Sidebar de navigation
 - Header avec profil utilisateur
 - Widgets de statut
 - Raccourcis actions
 
 ### 4. Import de Données
 
-#### Import Twitter (`/dashboard/import`)
+#### Import Twitter (`/upload`)
 **Composants:**
 - Zone de drag & drop
 - Validation de fichier
