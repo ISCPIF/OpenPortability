@@ -2,18 +2,26 @@
 
 ## Architecture des Pages Next.js
 
-L'application utilise Next.js 15 avec App Router pour une structure moderne et performante.
+L'application utilise Next.js 15 avec App Router et internationalisation (i18n) pour une structure moderne et multilingue.
 
 ```
 src/app/
-├── (auth)/              # Groupe de routes authentifiées
-├── (dashboard)/         # Groupe de routes tableau de bord
-├── api/                 # API Routes
-├── globals.css          # Styles globaux
-├── layout.tsx           # Layout racine
-├── loading.tsx          # Composant de chargement
-├── not-found.tsx        # Page 404
-└── page.tsx             # Page d'accueil
+├── [locale]/            # Routes internationalisées
+│   ├── auth/           # Pages d'authentification
+│   ├── dashboard/      # Tableau de bord principal
+│   ├── graph/          # Visualisation du graphe de connexions
+│   ├── privacy_policy/ # Politique de confidentialité
+│   ├── reconnect/      # Pages de reconnexion/migration
+│   ├── settings/       # Paramètres utilisateur
+│   ├── test-graph/     # Page de test du graphe
+│   ├── upload/         # Upload d'archives Twitter
+│   ├── layout.tsx      # Layout avec i18n
+│   └── page.tsx        # Page d'accueil
+├── _components/        # Composants React réutilisables
+├── api/               # API Routes
+├── globals.css        # Styles globaux
+├── layout.tsx         # Layout racine
+└── not-found.tsx      # Page 404
 ```
 
 ## Diagramme de Navigation
@@ -23,88 +31,79 @@ flowchart TD
     Home[🏠 Page d'accueil<br/>/] --> Auth{Authentifié ?}
     
     Auth -->|Non| Login[🔐 Connexion<br/>/auth/signin]
-    Auth -->|Oui| Dashboard[📊 Tableau de bord<br/>/dashboard]
+    Auth -->|Oui| CheckOnboard{Onboardé ?}
     
-    Login --> Register[📝 Inscription<br/>/auth/signup]
-    Login --> ForgotPassword[🔑 Mot de passe oublié<br/>/auth/forgot-password]
+    Login --> AuthError[❌ Erreur Auth<br/>/auth/error]
     
-    Register --> EmailVerification[📧 Vérification email<br/>/auth/verify-email]
-    EmailVerification --> Dashboard
+    CheckOnboard -->|Non| Dashboard[📊 Dashboard<br/>/dashboard]
+    CheckOnboard -->|Oui| Reconnect[🔄 Reconnexion<br/>/reconnect]
     
-    Dashboard --> Import[📁 Import Twitter<br/>/dashboard/import]
-    Dashboard --> Connections[🔗 Connexions<br/>/dashboard/connections]
-    Dashboard --> Migration[🔄 Migration<br/>/dashboard/migrate]
-    Dashboard --> Stats[📈 Statistiques<br/>/dashboard/stats]
-    Dashboard --> Settings[⚙️ Paramètres<br/>/dashboard/settings]
+    Dashboard --> Upload[📁 Upload Archive<br/>/upload]
+    Dashboard --> Settings[⚙️ Paramètres<br/>/settings]
+    Dashboard --> Graph[🕸️ Graphe<br/>/graph]
     
-    Import --> ImportStatus[⏳ Statut Import<br/>/dashboard/import/status]
-    ImportStatus --> ImportResults[✅ Résultats<br/>/dashboard/import/results]
+    Upload --> Dashboard
     
-    Connections --> BlueskyConnect[🦋 Connexion Bluesky<br/>/dashboard/connections/bluesky]
-    Connections --> MastodonConnect[🐘 Connexion Mastodon<br/>/dashboard/connections/mastodon]
+    Reconnect --> Dashboard
     
-    Migration --> MigrationWizard[🧙‍♂️ Assistant Migration<br/>/dashboard/migrate/wizard]
-    Migration --> MigrationHistory[📜 Historique<br/>/dashboard/migrate/history]
+    Settings --> Dashboard
     
-    Stats --> StatsOverview[📊 Vue d'ensemble<br/>/dashboard/stats/overview]
-    Stats --> StatsTimeline[📈 Timeline<br/>/dashboard/stats/timeline]
-    Stats --> StatsExport[📤 Export<br/>/dashboard/stats/export]
+    Graph --> TestGraph[🧪 Test Graphe<br/>/test-graph]
+    Graph --> GraphData[📊 Données Graphe<br/>/graph/graph-data]
     
-    Settings --> Profile[👤 Profil<br/>/dashboard/settings/profile]
-    Settings --> Privacy[🔒 Confidentialité<br/>/dashboard/settings/privacy]
-    Settings --> Notifications[🔔 Notifications<br/>/dashboard/settings/notifications]
-    Settings --> Billing[💳 Facturation<br/>/dashboard/settings/billing]
+    Home --> Privacy[🔒 Politique<br/>/privacy_policy]
     
     classDef public fill:#e3f2fd
     classDef auth fill:#fff3e0
     classDef dashboard fill:#e8f5e8
     classDef feature fill:#f3e5f5
     
-    class Home public
-    class Login,Register,ForgotPassword,EmailVerification auth
-    class Dashboard dashboard
-    class Import,Connections,Migration,Stats,Settings,ImportStatus,ImportResults,BlueskyConnect,MastodonConnect,MigrationWizard,MigrationHistory,StatsOverview,StatsTimeline,StatsExport,Profile,Privacy,Notifications,Billing feature
+    class Home,Privacy public
+    class Login,AuthError auth
+    class Dashboard,Upload,Settings,Graph,TestGraph,GraphData dashboard
+    class Reconnect feature
 ```
 
 ## Pages Détaillées
 
 ### 1. Pages Publiques
 
-**Métadonnées SEO:**
-```tsx
-export const metadata = {
-  title: 'OpenPortability - Migrez vos données Twitter',
-  description: 'Importez vos données Twitter et migrez vers Bluesky, Mastodon facilement.',
-  keywords: ['twitter', 'migration', 'bluesky', 'mastodon', 'données sociales']
-}
-```
+#### Page d'Accueil (`/[locale]/page.tsx`)
+**Composants principaux:**
+- Hero section avec proposition de valeur OpenPortability
+- Fonctionnalités de migration Twitter → Bluesky/Mastodon
+- Interface multilingue (français/anglais)
+- Call-to-action pour commencer la migration
 
+**Layout:** Utilise le layout internationalisé avec gestion des locales
 
-#### Page Confidentialité (`/privacy`)
-- Politique de confidentialité
-- Gestion des données
+#### Page Politique de Confidentialité (`/[locale]/privacy_policy/`)
+- Politique de confidentialité complète
+- Gestion des données personnelles
+- Droits RGPD
 - Cookies et tracking
 
-### 2. Pages d'Authentification
+### 2. Pages d'Authentification (`/[locale]/auth/`)
 
-#### Connexion (`/auth/signin`)
-**Composants:**
-- Formulaire email/mot de passe
-- Connexion OAuth (Google, GitHub)
-- Lien vers inscription
-- Récupération mot de passe
+#### Connexion (`/[locale]/auth/signin/page.tsx`)
+**Composants principaux:**
+- Interface de connexion multi-providers
+- Support Twitter, Mastodon, Bluesky
+- Gestion des erreurs d'authentification
+- Redirection post-connexion selon statut onboarding
 
-**Validation:**
-```tsx
-const signinSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(8)
-})
-```
+**Hooks utilisés:**
+- NextAuth pour l'authentification
+- Redirection conditionnelle selon `has_onboarded`
 
+#### Erreur d'Authentification (`/[locale]/auth/error/page.tsx`)
+**Fonctionnalités:**
+- Affichage des erreurs d'authentification
+- Messages d'erreur localisés
+- Boutons de retry et support
+- Gestion des erreurs OAuth spécifiques
 
-
-### 3. Tableau de Bord Principal
+### 3. Dashboard Principal (`/[locale]/dashboard/`)
 
 #### Dashboard (`/dashboard`)
 **Layout:**
@@ -127,216 +126,214 @@ export default function DashboardLayout({
 ```
 
 **Composants:**
-- Header avec profil utilisateur
-- Widgets de statut
-- Raccourcis actions
+- `NewsLetterFirstSeen` - Première interaction newsletter
+- `MigrateStats` - Statistiques de migration
+- `ReconnexionOptions` - Options de reconnexion automatique/manuelle
+- Interface conditionnelle selon statut d'onboarding
 
-### 4. Import de Données
+**Hooks utilisés:**
+- `useStats` - Statistiques utilisateur
+- `useDashboardState` - État global du dashboard
+- `useAuthTokens` - Gestion des tokens d'authentification
 
-#### Import Twitter (`/upload`)
-**Composants:**
-- Zone de drag & drop
-- Validation de fichier
-- Barre de progression
-- Historique des imports
+### 4. Pages de Reconnexion (`/[locale]/reconnect/`)
 
-**États:**
-```tsx
-type ImportState = 
-  | 'idle'
-  | 'uploading'
-  | 'validating'
-  | 'processing'
-  | 'completed'
-  | 'error'
-```
+#### Reconnexion Principale (`/[locale]/reconnect/page.tsx`)
+**Composants principaux:**
+- `AutomaticReconnectionState` - Reconnexion automatique
+- `ManualReconnectionState` - Sélection manuelle des comptes
+- `ReconnectionCompleteState` - État de completion
+- Gestion des états de connexion multiples
 
-#### Statut Import (`/dashboard/import/status`)
+**Hooks utilisés:**
+- `useReconnectState` - État principal de reconnexion
+- `useAuthTokens` - Validation des tokens
+- `useStats` - Statistiques de migration
+
+### 5. Upload d'Archives (`/[locale]/upload/`)
+
+#### Upload Principal (`/[locale]/upload/page.tsx`)
+**Composants principaux:**
+- `UploadButton` - Interface d'upload avec drag & drop
+- `UploadResults` - Résultats et statut du traitement
+- Validation des archives Twitter (.zip, .tar.gz)
 - Progression en temps réel
-- Détails par étape
-- Logs d'erreur
-- Actions de retry
 
-### 5. Connexions Sociales
+**Fonctionnalités:**
+- Support archives Twitter complètes
+- Validation côté client et serveur
+- Traitement asynchrone avec worker
+- Redirection vers dashboard après succès
 
-#### Connexions (`/dashboard/connections`)
-**Composants:**
-- Liste des plateformes
-- Statut de connexion
-- Boutons de connexion/déconnexion
-- Permissions accordées
+### 6. Paramètres (`/[locale]/settings/`)
 
-#### Connexion Bluesky (`/dashboard/connections/bluesky`)
-- OAuth flow Bluesky
-- Configuration des permissions
-- Test de connexion
-- Gestion des erreurs
+#### Paramètres Principaux (`/[locale]/settings/page.tsx`)
+**Composants principaux:**
+- `SettingsOptions` - Options de configuration
+- `NewsLetterConsentsUpdate` - Gestion des consentements
+- `SupportModale` - Support et contact
+- Gestion des préférences utilisateur
 
-#### Connexion Mastodon (`/dashboard/connections/mastodon`)
-- Sélection d'instance
-- OAuth flow Mastodon
-- Validation des permissions
-- Configuration avancée
+### 7. Graphe de Connexions (`/[locale]/graph/`)
 
-### 6. Migration de Données
+#### Graphe Principal (`/[locale]/graph/page.tsx`)
+**Composants principaux:**
+- `SigmaGraphContainer` - Visualisation interactive du graphe
+- `GraphControls` - Contrôles de zoom et navigation
+- `CommunityFilters` - Filtres par communautés
+- Graphe de réseau social avec Sigma.js
 
-#### Migration (`/dashboard/migrate`)
-**Composants:**
-- Sélection de plateforme cible
-- Configuration de migration
-- Planification
-- Historique des migrations
+**Fonctionnalités:**
+- Visualisation des connexions utilisateur
+- Filtrage par communautés
+- Mode overlay pour réseau personnel
+- Navigation interactive
 
-#### Assistant Migration (`/dashboard/migrate/wizard`)
-**Étapes:**
-1. Sélection des données
-2. Configuration des options
-3. Planification
-4. Confirmation
-5. Lancement
+## Composants Partagés (`/src/app/_components/`)
 
-**Composant Wizard:**
+### Composants d'Authentification
+- `BlueSkyLogin.tsx` - Interface de connexion Bluesky
+- `BlueSkyLoginButton.tsx` - Bouton de connexion Bluesky
+- `MastodonLoginButton.tsx` - Bouton de connexion Mastodon
+- `TwitterLoginButton.tsx` - Bouton de connexion Twitter
+- `DashboardLoginButtons.tsx` - Ensemble des boutons de connexion
+- `LoginButtons.tsx` - Boutons de connexion génériques
+
+### Composants de Migration
+- `AutomaticReconnexion.tsx` - Reconnexion automatique
+- `ManualReconnexion.tsx` - Reconnexion manuelle avec sélection
+- `LaunchReconnection.tsx` - Lancement du processus de reconnexion
+- `ReconnexionOptions.tsx` - Choix entre auto/manuel
+- `AccountToMigrate.tsx` - Comptes à migrer
+- `MigrationComplete.tsx` - État de completion
+
+### Composants de Statistiques
+- `MigrateStats.tsx` - Statistiques de migration
+- `StatsReconnexion.tsx` - Stats spécifiques reconnexion
+- `ProfileCard.tsx` - Carte de profil utilisateur
+- `ConnectedAccounts.tsx` - Comptes connectés
+
+### Composants d'Interface
+- `Header.tsx` - En-tête avec navigation
+- `Footer.tsx` - Pied de page
+- `LoadingIndicator.tsx` - Indicateur de chargement
+- `ProgressSteps.tsx` - Étapes de progression
+- `ErrorModal.tsx` - Modal d'erreur
+- `SuccessModal.tsx` - Modal de succès
+- `ConsentModal.tsx` - Modal de consentement
+
+### Composants Visuels
+- `DashboardSea.tsx` - Animation dashboard
+- `LoginSea.tsx` - Animation page de connexion
+- `MigrateSea.tsx` - Animation page migration
+- `Boat.tsx` - Animation bateau
+
+### Composants de Paramètres
+- `SettingsOptions.tsx` - Options de paramètres
+- `NewsLetterConsentsUpdate.tsx` - Gestion des consentements
+- `NewsLetterFirstSeen.tsx` - Première interaction newsletter
+- `RequestNewsLetterDM.tsx` - Demande de newsletter DM
+- `SupportModale.tsx` - Modal de support
+
+### Composants d'Upload
+- `UploadButton.tsx` - Bouton d'upload avec drag & drop
+- `UploadResults.tsx` - Résultats d'upload
+
+### Composants Spécialisés
+- `PartageButton.tsx` - Bouton de partage
+- `RefreshTokenModale.tsx` - Modal de refresh token
+- `BlueSkyPreviewModal.tsx` - Prévisualisation Bluesky
+- `MatchedBlueSkyProfiles.tsx` - Profils Bluesky correspondants
+
+## Hooks Personnalisés (`/src/hooks/`)
+
+### `useAuthTokens.ts`
 ```tsx
-const MigrationWizard = () => {
-  const [step, setStep] = useState(1)
-  const [config, setConfig] = useState<MigrationConfig>()
-  
-  return (
-    <WizardContainer>
-      <StepIndicator currentStep={step} totalSteps={5} />
-      {step === 1 && <DataSelection />}
-      {step === 2 && <OptionsConfig />}
-      {step === 3 && <Scheduling />}
-      {step === 4 && <Confirmation />}
-      {step === 5 && <Launch />}
-    </WizardContainer>
-  )
-}
+const {
+  tokens,
+  isLoading,
+  verifyTokens,
+  refreshTokens,
+  missingProviders
+} = useAuthTokens()
 ```
+**Fonctionnalités:**
+- Vérification des tokens Bluesky/Mastodon
+- Refresh automatique des tokens expirés
+- Détection des providers manquants
 
-### 7. Statistiques et Analytics
-
-#### Statistiques (`/dashboard/stats`)
-**Composants:**
-- Métriques clés
-- Graphiques interactifs
-- Comparaisons temporelles
-- Export de données
-
-#### Vue d'ensemble (`/dashboard/stats/overview`)
-- KPIs principaux
-- Widgets de résumé
-- Tendances récentes
-- Actions rapides
-
-#### Timeline (`/dashboard/stats/timeline`)
-- Graphiques temporels
-- Filtres par période
-- Métriques sélectionnables
-- Annotations d'événements
-
-### 8. Paramètres
-
-#### Profil (`/dashboard/settings/profile`)
-**Composants:**
-- Informations personnelles
-- Avatar utilisateur
-- Préférences de langue
-- Fuseau horaire
-
-#### Confidentialité (`/dashboard/settings/privacy`)
-- Visibilité du profil
-- Partage des données
-- Suppression de compte
-- Export RGPD
-
-#### Notifications (`/dashboard/settings/notifications`)
-- Préférences email
-- Notifications push
-- Notifications DM
-- Fréquence newsletter
-
-## Composants Réutilisables
-
-### Layout Components
+### `useReconnectState.ts`
 ```tsx
-// Layout principal
-const MainLayout = ({ children }: { children: ReactNode }) => (
-  <div className="min-h-screen bg-gray-50">
-    <Navigation />
-    <main>{children}</main>
-    <Footer />
-  </div>
-)
-
-// Layout dashboard
-const DashboardLayout = ({ children }: { children: ReactNode }) => (
-  <div className="flex h-screen">
-    <Sidebar />
-    <div className="flex-1 flex flex-col">
-      <DashboardHeader />
-      <main className="flex-1 overflow-auto p-6">
-        {children}
-      </main>
-    </div>
-  </div>
-)
+const {
+  matchesData,
+  isLoading,
+  migrationResults,
+  handleStartMigration,
+  handleAutomaticReconnection,
+  handleManualReconnection
+} = useReconnectState()
 ```
+**Fonctionnalités:**
+- Gestion complète du processus de reconnexion
+- États de migration (automatique/manuelle)
+- Résultats de migration en temps réel
+- Gestion des erreurs de migration
 
-### UI Components
+### `useStats.ts`
 ```tsx
-// Composants de base
-export { Button } from './ui/button'
-export { Input } from './ui/input'
-export { Card } from './ui/card'
-export { Dialog } from './ui/dialog'
-export { Toast } from './ui/toast'
-
-// Composants métier
-export { FileUpload } from './features/file-upload'
-export { ProgressBar } from './features/progress-bar'
-export { StatsChart } from './features/stats-chart'
-export { ConnectionCard } from './features/connection-card'
+const {
+  stats,
+  isLoading,
+  error,
+  refreshStats
+} = useStats()
 ```
+**Fonctionnalités:**
+- Statistiques utilisateur avec cache Redis
+- Refresh automatique et manuel
+- Gestion des erreurs de chargement
 
-## Gestion d'État
-
-### Context Providers
+### `useDashboardState.ts`
 ```tsx
-// Contexte utilisateur
-const UserContext = createContext<UserContextType>()
-
-// Contexte import
-const ImportContext = createContext<ImportContextType>()
-
-// Contexte migration
-const MigrationContext = createContext<MigrationContextType>()
+const {
+  dashboardData,
+  isLoading,
+  refreshDashboard,
+  hasConnectedServices
+} = useDashboardState()
 ```
+**Fonctionnalités:**
+- État global du dashboard
+- Détection des services connectés
+- Refresh des données dashboard
 
-### Hooks Personnalisés
+### `useNewsLetter.ts`
 ```tsx
-// Hook pour l'import
-const useImport = () => {
-  const [status, setStatus] = useState<ImportStatus>('idle')
-  const [progress, setProgress] = useState(0)
-  
-  const startImport = useCallback(async (file: File) => {
-    // Logique d'import
-  }, [])
-  
-  return { status, progress, startImport }
-}
-
-// Hook pour les statistiques
-const useStats = (timeRange: TimeRange) => {
-  const { data, loading, error } = useSWR(
-    `/api/stats?range=${timeRange}`,
-    fetcher
-  )
-  
-  return { stats: data, loading, error }
-}
+const {
+  consents,
+  updateConsent,
+  isLoading,
+  submitConsents
+} = useNewsLetter()
 ```
+**Fonctionnalités:**
+- Gestion des consentements newsletter
+- Update des préférences DM
+- Soumission des consentements
+
+
+### `useMastodonInstances.ts`
+```tsx
+const {
+  instances,
+  isLoading,
+  searchInstances
+} = useMastodonInstances()
+```
+**Fonctionnalités:**
+- Liste des instances Mastodon
+- Recherche d'instances
+- Cache des instances populaires
 
 ## Responsive Design
 
@@ -360,69 +357,4 @@ const useStats = (timeRange: TimeRange) => {
     @apply px-8;
   }
 }
-```
-
-### Navigation Mobile
-```tsx
-const MobileNavigation = () => {
-  const [isOpen, setIsOpen] = useState(false)
-  
-  return (
-    <div className="md:hidden">
-      <button onClick={() => setIsOpen(!isOpen)}>
-        <MenuIcon />
-      </button>
-      {isOpen && (
-        <div className="fixed inset-0 z-50 bg-white">
-          <NavigationItems />
-        </div>
-      )}
-    </div>
-  )
-}
-```
-
-## Performance et SEO
-
-### Optimisations
-- **Code Splitting**: Pages chargées à la demande
-- **Image Optimization**: Next.js Image component
-- **Font Optimization**: Preload des fonts critiques
-- **Bundle Analysis**: Analyse de la taille des bundles
-
-### Métadonnées Dynamiques
-```tsx
-export async function generateMetadata({ params }: PageProps) {
-  const user = await getUser(params.id)
-  
-  return {
-    title: `${user.name} - OpenPortability`,
-    description: `Profil de migration de ${user.name}`,
-    openGraph: {
-      title: `${user.name} sur OpenPortability`,
-      images: [user.avatar]
-    }
-  }
-}
-```
-
-## Accessibilité
-
-### Standards WCAG
-- **Contraste**: Ratio minimum 4.5:1
-- **Navigation clavier**: Tous les éléments accessibles
-- **Screen readers**: Labels et descriptions appropriées
-- **Focus management**: Ordre logique de navigation
-
-### Composants Accessibles
-```tsx
-const AccessibleButton = ({ children, ...props }: ButtonProps) => (
-  <button
-    {...props}
-    className="focus:ring-2 focus:ring-blue-500 focus:outline-none"
-    aria-label={props['aria-label']}
-  >
-    {children}
-  </button>
-)
 ```
