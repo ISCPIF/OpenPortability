@@ -466,43 +466,6 @@ Next request serves fresh data from cache
 - **Database Load**: 70-90% reduction via caching
 - **Memory Usage**: ~1KB per cached user stats
 
-## Dark Areas & Considerations
-
-### 1. **Potential Race Conditions**
-- **Issue**: Multiple simultaneous updates to `user_stats_cache` could trigger multiple Redis webhook calls
-- **Mitigation**: PostgreSQL transaction isolation + idempotent webhook endpoint
-- **Monitoring**: Check for duplicate Redis updates in logs
-
-### 2. **Cache Consistency**
-- **Issue**: Redis and PostgreSQL cache tables could become inconsistent
-- **Risk**: Webhook failures or Redis downtime during updates
-- **Mitigation**: TTL ensures eventual consistency + fallback to database
-
-### 3. **Webhook Reliability**
-- **Issue**: `secure_webhook_call` failures could leave Redis stale
-- **Risk**: Users see outdated stats until cache expires
-- **Monitoring**: Track webhook success rates in PostgreSQL logs
-
-### 4. **Memory Usage**
-- **Issue**: Redis memory consumption grows with user base
-- **Current**: ~30KB users × 1KB stats = ~30MB
-- **Scaling**: Need monitoring and potential key eviction policies
-
-### 5. **Database Connection Pool**
-- **Issue**: High concurrent stats requests could exhaust connections
-- **Risk**: Database timeouts during peak usage
-- **Mitigation**: Connection pooling + Redis caching reduces DB load
-
-### 6. **Trigger Performance**
-- **Issue**: Heavy stats computation in triggers could slow down writes
-- **Risk**: Import operations become slower due to stats refresh
-- **Consideration**: Async stats updates vs real-time accuracy trade-off
-
-### 7. **Cross-Table Dependencies**
-- **Issue**: Stats depend on `sources_*`, `nodes`, and `"next-auth".users` tables
-- **Risk**: Schema changes could break stats calculations
-- **Monitoring**: Need integration tests for stats accuracy
-
 ## Monitoring & Observability
 
 ### 1. **Key Metrics**
