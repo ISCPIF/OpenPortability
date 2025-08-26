@@ -71,3 +71,4 @@ nginx.conf
 /watcher/Dockerfile
 
 src/app/_components/graph/graph-data/top_100_edges.json
+src/app/[locale]/graph/graph-data/fine_tuned_json_nodes_only_opti11_with_usernames_and_sizes.json
