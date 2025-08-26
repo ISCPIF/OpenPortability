@@ -294,7 +294,7 @@ export class MatchingService {
 
   async updateFollowStatusBatch(
     userId: string,
-    targetIds: string[],
+    targetIds: number[],
     platform: 'bluesky' | 'mastodon',
     success: boolean,
     error?: string

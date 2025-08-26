@@ -16,7 +16,7 @@ import { useDashboardState } from '@/hooks/useDashboardState';
 import NewsletterSection from '@/app/_components/dashboard/NewsletterSection';
 import OnboardingSection from '@/app/_components/dashboard/OnboardingSection';
 import TutorialSection from '@/app/_components/dashboard/TutorialSection';
-import NewsLetterConsentsUpdate from '@/app/_components/NewsLetterConsentsUpdate'
+// import NewsLetterConsentsUpdate from '@/app/_components/NewsLetterConsentsUpdate'
 
 export default function DashboardPage() {
   const {
@@ -25,6 +25,7 @@ export default function DashboardPage() {
     stats,
     globalStats,
     mastodonInstances,
+    newsletterData,
     isLoading,
     setIsLoading,
     showNewsletterModal,
@@ -240,6 +241,7 @@ export default function DashboardPage() {
                   setShowModal={setShowNewsletterModal}
                   onUpdate={update}
                   haveSeenNewsletter={!!session.user.have_seen_newsletter}
+                  newsletterData={newsletterData}
                   onModalOpenChange={handleNewsletterFirstSeenOpen}
                 />
               )}
@@ -248,9 +250,9 @@ export default function DashboardPage() {
               <TutorialSection />
             </div>
           </div>
-          {session?.user?.have_seen_newsletter && (
+          {/* {session?.user?.have_seen_newsletter && (
             <NewsLetterConsentsUpdate userId={session.user.id} />
-          )}
+          )} */}
         </div>
         
         <Footer />

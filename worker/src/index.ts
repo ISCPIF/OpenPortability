@@ -185,6 +185,59 @@ function randomSleep(min: number, max: number): Promise<void> {
   return sleep(delay);
 }
 
+// Fonction utilitaire pour retry avec backoff exponentiel
+async function updateUserOnboardedStatusWithRetry(
+  authClient: any,
+  userId: string,
+  maxRetries: number = 3,
+  baseDelay: number = 1000
+): Promise<{ success: boolean; error?: string }> {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const { error } = await authClient
+        .from('users')
+        .update({ has_onboarded: true })
+        .eq('id', userId);
+
+      if (!error) {
+        return { success: true };
+      }
+
+      // Si c'est un timeout et qu'on a encore des tentatives
+      if (error.message.includes('timeout') && attempt < maxRetries) {
+        const delay = baseDelay * Math.pow(2, attempt - 1); // Backoff exponentiel
+        console.log(`Worker updateUserOnboardedStatus ⏳ Attempt ${attempt}/${maxRetries} failed (timeout), retrying in ${delay}ms...`, {
+          userId,
+          error: error.message
+        });
+        await new Promise(resolve => setTimeout(resolve, delay));
+        continue;
+      }
+
+      // Autre erreur ou dernière tentative
+      return { success: false, error: error.message };
+
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      
+      // Si c'est un timeout et qu'on a encore des tentatives
+      if (errorMessage.includes('timeout') && attempt < maxRetries) {
+        const delay = baseDelay * Math.pow(2, attempt - 1);
+        console.log(`Worker updateUserOnboardedStatus ⏳ Attempt ${attempt}/${maxRetries} failed (exception), retrying in ${delay}ms...`, {
+          userId,
+          error: errorMessage
+        });
+        await new Promise(resolve => setTimeout(resolve, delay));
+        continue;
+      }
+
+      return { success: false, error: errorMessage };
+    }
+  }
+
+  return { success: false, error: 'Max retries exceeded' };
+}
+
 async function startWorker(): Promise<void> {
   const workerId = WORKER_CONFIG.id;
   let jobManager: JobManager | null = null;
@@ -263,16 +316,12 @@ async function startWorker(): Promise<void> {
             stats: jobStats
           });
 
-          const { error: hasBoardError } = await authClient
-          .from('users')
-          .update({ has_onboarded: true })
-          .eq('id', job.user_id);
-
-          if (hasBoardError) {
+          const { success, error } = await updateUserOnboardedStatusWithRetry(authClient, job.user_id);
+          if (!success) {
             console.log('Worker', 'processJob', `❌ Failed to update user ${job.user_id} onboarded status`, {
               workerId,
               jobId: job.id,
-              error: hasBoardError.message
+              error
             });
           }
 

@@ -1,7 +1,6 @@
 import NextAuth, { NextAuthConfig } from "next-auth"
 import TwitterProvider from "next-auth/providers/twitter"
 import MastodonProvider from "next-auth/providers/mastodon"
-import FacebookProvider from "next-auth/providers/facebook"
 import { supabaseAdapter } from "@/lib/supabase-adapter"
 import type { TwitterData, MastodonProfile, BlueskyProfile } from "@/lib/supabase-adapter"
 import type { User, Account, Profile } from "next-auth"
@@ -77,11 +76,6 @@ export const authConfig = {
         profileExists: !!profile
       });
 
-      // if (session?.user?.id && account.provider === 'facebook') {
-      //   logger.logInfo('Auth', 'signIn', 'Facebook account verification', session.user.id, {
-      //     facebookId: profile.id,
-      //   });
-    
       
       if (error) {
         console.log('Auth', 'signIn', error, user?.id, { provider: account?.provider });
@@ -214,20 +208,6 @@ export const authConfig = {
             token.mastodon_image = profile.avatar
             token.mastodon_instance = profile.url ? new URL(profile.url).origin : undefined
             token.name = profile.display_name
-          }
-          else if (account.provider === 'facebook' && profile) {
-            logger.logInfo('Auth', 'jwt', 'Facebook profile update', token.id || '', {
-              facebookId: profile.id,
-              name: profile.name
-            });
-            
-            await supabaseAdapter.updateUser(token.id || '', {
-              provider: 'facebook',
-              profile: profile
-            })
-            token.facebook_id = profile.id
-            token.name = profile.name
-            token.facebook_image = profile.picture?.data?.url
           }
         } catch (error) {
           console.log('Auth', 'jwt', error, token.id || '', { provider: account.provider });
@@ -456,34 +436,7 @@ export const authConfig = {
           research_accepted: false,
           automatic_reconnect: false
         }
-    }}),
-    FacebookProvider({
-      clientId: process.env.FACEBOOK_CLIENT_ID!,
-      clientSecret: process.env.FACEBOOK_CLIENT_SECRET!,
-      checks: ["none"], // Désactiver la vérification PKCE pour Facebook
-      profile(profile) {
-        console.log('Auth', 'facebook.profile', 'Processing Facebook profile', undefined, {
-          facebookId: profile.id,
-          name: profile.name,
-          profileData: JSON.stringify(profile)
-        });
-        
-        return {
-          id: profile.id,
-          name: profile.name,
-          image: profile.picture?.data?.url,
-          provider: 'facebook', // Ajouter explicitement le provider
-          profile: profile, // Passer le profil complet
-          has_onboarded: false,
-          hqx_newsletter: false,
-          oep_accepted: false,
-          have_seen_newsletter: false,
-          have_seen_bot_newsletter: false,
-          research_accepted: false,
-          automatic_reconnect: false
-        }
-      },
-    }),
+    }})
   ],
   pages: {
     signIn: '/auth/signin',

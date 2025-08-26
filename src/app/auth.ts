@@ -5,7 +5,7 @@ import type { TwitterData, MastodonProfile, BlueskyProfile } from "@/lib/supabas
 import { supabase } from "@/lib/supabase"
 import logger from '@/lib/log_utils'
 
-export type { FacebookProfile, TwitterData as TwitterProfile } from "@/lib/supabase-adapter"
+export type { TwitterData as TwitterProfile } from "@/lib/supabase-adapter"
 export type { MastodonProfile }
 export type { BlueskyProfile }
 
@@ -163,6 +163,6 @@ export function isBlueskyProfile(profile: Profile): profile is BlueskyProfile {
     return profile && 'handle' in profile;
 }
 
-export function isFacebookProfile(profile: Profile): profile is FacebookProfile {
-  return profile && 'id' in profile && 'name' in profile;
-}
+// export function isFacebookProfile(profile: Profile): profile is FacebookProfile {
+//   return profile && 'id' in profile && 'name' in profile;
+// }

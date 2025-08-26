@@ -8,7 +8,7 @@ type ReconnectionCompleteStateProps = {
   globalStats: any;
   handleAutomaticReconnection: () => void;
   handleManualReconnection: () => void;
-  // refreshStats: () => void;
+  refreshStats: () => void;
 };
 
 export default function ReconnectionCompleteState({

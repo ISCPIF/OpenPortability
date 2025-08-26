@@ -33,9 +33,9 @@ const PARALLEL_WORKERS = 3;
 const PARALLEL_CHUNK_SIZE = 1000;
 
 // Constantes pour le batch parallel import
-const FOLLOWERS_CHUNK_SIZE = 10000; // Taille des chunks pour followers
-const TARGETS_CHUNK_SIZE = 10000;   // Taille des chunks pour targets/following
-const BATCH_CONCURRENCY = 10;        // Nombre de workers parallèles
+const FOLLOWERS_CHUNK_SIZE = 15000; // Taille des chunks pour followers
+const TARGETS_CHUNK_SIZE = 15000;   // Taille des chunks pour targets/following
+const BATCH_CONCURRENCY = 15;        // Nombre de workers parallèles
 
 // S'assurer que les dossiers existent
 if (!existsSync(UPLOADS_DIR)) {

@@ -19,12 +19,14 @@ services:
       ports:
         - "3000:3000"
       volumes:
-        - ./:/app
-        - /app/node_modules
-        - /app/.next
+        # Mount entire directory but preserve container's node_modules
+        # - ./:/app
+        # - /app/node_modules
         - shared-tmp:/app/tmp
-        - ./public:/app/public
         - app_logs:/app/logs
+      depends_on:
+        redis-init:
+          condition: service_completed_successfully
 
 
   worker:
@@ -47,7 +49,8 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
-      - app
+      redis-init:
+        condition: service_completed_successfully
 
   nginx:
     image: nginx:alpine
@@ -84,6 +87,23 @@ services:
       retries: 3
       start_period: 10s
 
+  # Conteneur d'initialisation des mappings Redis
+  redis-init:
+    build:
+      context: ./redis
+      dockerfile: Dockerfile.init
+    env_file:
+      - redis/.env.redis
+    networks:
+      - app_network
+      - supabase_network_goodbyex
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: "no"  # Ne pas redémarrer automatiquement - c'est un job d'initialisation
+
   # watcher:
   #   build:
   #     context: ./watcher
@@ -105,26 +125,26 @@ services:
   #     retries: 3
   #     start_period: 30s
 
-  # python_worker:
-  #   build:
-  #     context: ./python_worker
-  #     dockerfile: Dockerfile
-  #   volumes:
-  #     # - ./python_worker:/app
-  #     # - /app/node_modules
-  #     - ./python_worker/messages:/app/messages
-  #     - app_logs:/app/logs
-  #   env_file:
-  #     - ./python_worker/.env
-  #   environment:
-  #     - NODE_ENV=development
-  #   networks:
-  #     - app_network
-  #     - supabase_network_goodbyex
-  #   extra_hosts:
-  #     - "host.docker.internal:host-gateway"
-  #   depends_on:
-  #     - app
+  python_worker:
+    build:
+      context: ./python_worker
+      dockerfile: Dockerfile
+    volumes:
+      # - ./python_worker:/app
+      # - /app/node_modules
+      - ./python_worker/messages:/app/messages
+      - app_logs:/app/logs
+    env_file:
+      - ./python_worker/.env
+    environment:
+      - NODE_ENV=development
+    networks:
+      - app_network
+      - supabase_network_goodbyex
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - app
 
 networks:
   app_network:

@@ -9,7 +9,7 @@ import Footer from '@/app/_components/Footer'
 import StatsReconnexion from '@/app/_components/StatsReconnexion'
 import { useReconnectState } from '@/hooks/useReconnectState'
 import MigrateSea from '@/app/_components/MigrateSea'
-import NewsLetterConsentsUpdate from '@/app/_components/NewsLetterConsentsUpdate'
+// import NewsLetterConsentsUpdate from '@/app/_components/NewsLetterConsentsUpdate'
 
 // Nouveau composant conteneur pour gérer la logique conditionnelle
 import ReconnectContainer from '@/app/_components/reconnect/ReconnectContainer'
@@ -37,23 +37,23 @@ export default function ReconnectPage() {
     handleAutomaticReconnection,
     handleManualReconnection,
     handleStartMigration,
-    // refreshStats,
+    refreshStats,
     setAccountsToProcess
   } = useReconnectState()
 
   // // Forcer un rafraîchissement des statistiques au chargement initial
-  // useEffect(() => {
-  //   // Forcer le rechargement des données au premier rendu
-  //   const loadInitialData = async () => {
-  //     await refreshStats();
-  //   };
+  useEffect(() => {
+    // Forcer le rechargement des données au premier rendu
+    const loadInitialData = async () => {
+      await refreshStats();
+    };
     
-  //   loadInitialData();
-  // }, [refreshStats]);
+    loadInitialData();
+  }, [refreshStats]);
 
 
   // Ne bloquer que sur isLoading et stats, pas sur globalStats
-  if (isLoading || !stats) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-[#2a39a9] relative w-full  m-auto">
         <div className="container mx-auto py-12">
@@ -118,7 +118,7 @@ export default function ReconnectPage() {
             handleAutomaticReconnection={handleAutomaticReconnection}
             handleManualReconnection={handleManualReconnection}
             handleStartMigration={handleStartMigration}
-            // refreshStats={refreshStats}
+            refreshStats={refreshStats}
           />
 
           {/* Statistiques globales */}
@@ -133,9 +133,9 @@ export default function ReconnectPage() {
           </div>
          
         </div>
-        {session?.user?.have_seen_newsletter && (
+        {/* {session?.user?.have_seen_newsletter && (
           <NewsLetterConsentsUpdate userId={session.user.id} />
-        )}
+        )} */}
         <Footer />
       </div>
     </div>

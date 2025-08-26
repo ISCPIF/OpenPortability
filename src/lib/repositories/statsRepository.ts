@@ -21,38 +21,6 @@ interface PlatformMatchesCount {
 }
 
 export class StatsRepository {
-    async getFollowersCount(): Promise<PostgrestSingleResponse<CountResponse>> {
-      const response = await supabase.rpc('count_followers').single();
-      if (response.error) {
-        logError('Repository', 'StatsRepository.getFollowersCount', response.error, 'unknown');
-      }
-      return response;
-    }
-
-    async getFollowingCount(): Promise<PostgrestSingleResponse<CountResponse>> {
-      const response = await supabase.rpc('count_targets').single();
-      if (response.error) {
-        logError('Repository', 'StatsRepository.getFollowingCount', response.error, 'unknown');
-      }
-      return response;
-    }
-
-    async getSourcesCount(): Promise<{ count: number }> {
-      const { count } = await supabase
-        .from('sources')
-        .select('*', { count: 'exact', head: true });
-      
-      return { count: count ?? 0 };
-    }
-
-    async getTargetsWithHandleCount(): Promise<PostgrestSingleResponse<CountResponse>> {
-        const response = await supabase.rpc('count_targets_with_handle').single();
-        if (response.error) {
-            logError('Repository', 'StatsRepository.getTargetsWithHandleCount', response.error, 'unknown');
-        }
-        return response;
-    }
-
     async getUserCompleteStats(userId: string, has_onboard: boolean): Promise<UserCompleteStats> {
       // 1. Essayer Redis d'abord
       try {
@@ -60,9 +28,9 @@ export class StatsRepository {
         const cached = await redis.get(cacheKey);
         
         if (cached) {
-          logger.logInfo('Repository', 'StatsRepository.getUserCompleteStats', 'User stats served from Redis cache', userId, {
-            context: 'Redis cache hit'
-          });
+          // logger.logInfo('Repository', 'StatsRepository.getUserCompleteStats', 'User stats served from Redis cache', userId, {
+          //   context: 'Redis cache hit'
+          // });
           return JSON.parse(cached);
         }
       } catch (redisError) {
@@ -97,9 +65,9 @@ export class StatsRepository {
         const cacheKey = `user:stats:${userId}`;
         await redis.set(cacheKey, JSON.stringify(data), 600); // 10 minutes
         
-        logger.logInfo('Repository', 'StatsRepository.getUserCompleteStats', 'User stats cached in Redis', userId, {
-          context: 'Database result cached for 10 minutes'
-        });
+        // logger.logInfo('Repository', 'StatsRepository.getUserCompleteStats', 'User stats cached in Redis', userId, {
+          // context: 'Database result cached for 10 minutes'
+        // });
       } catch (redisError) {
         logger.logWarning('Repository', 'StatsRepository.getUserCompleteStats', 'Failed to cache in Redis', userId, {
           context: 'Redis caching failed, continuing without cache',
@@ -107,7 +75,7 @@ export class StatsRepository {
         });
       }
 
-      console.log("data from getUserCompleteStats", data);
+      // console.log("data from getUserCompleteStats", data);
       return data;
     }
 
@@ -203,10 +171,14 @@ export class StatsRepository {
             p_user_id: userId.toString() 
           })
           .single());
+
+          console.log("WRONG SIDE")
       } else {
+        
         ({ error } = await supabase.rpc('refresh_user_stats_cache', {
           p_user_id: userId
         }));
+        console.log("UPDATING USER STAT CACHE")
       }
       
       if (error) {
@@ -223,15 +195,5 @@ export class StatsRepository {
         logError('Repository', 'StatsRepository.refreshGlobalStatsCache', error, 'unknown');
         throw error;
       }
-    }
-
-    async getPlatformMatchesCount(userId: string): Promise<PostgrestSingleResponse<PlatformMatchesCount>> {
-      const response = await supabase
-        .rpc('count_platform_matches', { user_id: userId })
-        .single();
-      if (response.error) {
-        logError('Repository', 'StatsRepository.getPlatformMatchesCount', response.error, userId);
-      }
-      return response;
     }
 }

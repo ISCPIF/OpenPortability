@@ -62,14 +62,14 @@ async function handleSyncRedisMapping(
         const bluesky_username = validatedData.bluesky_username || validatedData.data?.bluesky_username;
         const bluesky_id = validatedData.bluesky_id || validatedData.data?.bluesky_id;
         
-        if (!bluesky_username || !bluesky_id) {
+        if (!bluesky_username) {
           return NextResponse.json(
-            { error: 'bluesky_username and bluesky_id are required for Bluesky platform' },
+            { error: 'bluesky_username is required for Bluesky platform' },
             { status: 400 }
           );
         }
-        // Format: "username|id"
-        redisValue = `${bluesky_username}|${bluesky_id}`;
+        // Format: username uniquement (cohérent avec batchSetSocialMappings et redis-init)
+        redisValue = bluesky_username;
 
       } else { // mastodon
         // Récupérer les données depuis le body directement ou depuis data (rétrocompatibilité)
@@ -83,8 +83,12 @@ async function handleSyncRedisMapping(
             { status: 400 }
           );
         }
-        // Format: "id|username|instance"
-        redisValue = `${mastodon_id}|${mastodon_username}|${mastodon_instance}`;
+        // Format: JSON stringifié (cohérent avec redis-init)
+        redisValue = JSON.stringify({
+          id: mastodon_id,
+          username: mastodon_username,
+          instance: mastodon_instance
+        });
       }
 
       // Stocker dans Redis (pas de TTL, cache permanent)

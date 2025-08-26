@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { plex } from '@/app/fonts/plex';
 import { motion } from 'framer-motion';
@@ -86,14 +86,7 @@ export default function SuccessAutomaticReconnexion({
     setShareMessage(message);
     setShowPreviewModal(true);
   };
-                          
-  useEffect(() => {
-    // Appeler onSuccess seulement si fourni (pour déclencher la migration automatique)
-    if (onSuccess) {
-      onSuccess();
-    }
-  }, []); // Enlever onSuccess des dépendances car on veut l'appeler qu'une fois
-
+                           
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}

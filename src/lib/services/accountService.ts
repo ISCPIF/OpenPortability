@@ -80,8 +80,8 @@ export class AccountService {
 
     // console.log(' [AccountService.verifyAndRefreshMastodonToken] Account found:', {
     //   userId,
-    //   hasAccessToken: !!account.access_token,
-    //   hasRefreshToken: !!account.refresh_token
+    //   account.access_token,
+    //   // hasRefreshToken: !!account.refresh_token
     // });
 
     // Récupérer l'instance Mastodon depuis le profil utilisateur

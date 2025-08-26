@@ -136,7 +136,7 @@ export async function createUser(
     // Vérifier si un utilisateur existe déjà avec cet ID et cette instance
     const { data: existingUser, error } = await authClient
       .from('users')
-      .select('*')
+      .select('*, twitter_id::text')
       .eq('mastodon_id', mastodonProfile.id)
       .eq('mastodon_instance', instance)
       .single()
@@ -273,7 +273,7 @@ export async function createUser(
 
     const { data: existingUser, error: existingUserError } = await authClient
       .from('users')
-      .select('*')
+      .select('*, twitter_id::text')
       .eq(providerIdField, providerId)
       .single()
 
@@ -413,7 +413,7 @@ export async function createUser(
     const { data: newUser, error: createError } = await authClient
       .from('users')
       .insert([userToCreate])
-      .select()
+      .select('*, twitter_id::text')
       .single()
 
     console.log('Auth', 'createUser', 'Database insert completed', undefined, { 
@@ -470,7 +470,7 @@ export async function createUser(
   const { data: newUser, error: createError } = await authClient
     .from('users')
     .insert([userToCreate])
-    .select()
+    .select('*, twitter_id::text')
     .single()
 
   console.log('Auth', 'createUser', 'Fallback insert completed', undefined, { 
@@ -570,7 +570,7 @@ export async function getUserByAccount({ providerAccountId, provider }): Promise
 
   const { data: user, error: userError } = await authClient
     .from('users')
-    .select('*')
+    .select('*, twitter_id::text')
     .eq(column, providerAccountId)
     .single()
 
@@ -668,18 +668,18 @@ export async function updateUser(
     updates.facebook_image = facebookData.picture?.data?.url
   }
   const { data: user, error: updateError } = await authClient
-    .from("users")
+    .from('users')
     .update(updates)
     .eq("id", userId)
-    .select()
+    .select("*, twitter_id::text")
     .single()
 
   if (updateError) {
     logger.logError('Auth', 'updateUser', 'Error updating user', userId, { providerData, error: updateError })
     // Check if user exists
     const { data: existingUser, error: checkError } = await authClient
-      .from("users")
-      .select()
+      .from('users')
+      .select("*, twitter_id::text")
       .eq("id", userId)
       .single()
     
@@ -923,7 +923,7 @@ async function unlinkAccountImpl(
   // Get current user
   const { data: user, error: userError } = await authClient
     .from('users')
-    .select('*')
+    .select('*, twitter_id::text')
     .eq('id', userId)
     .single()
 

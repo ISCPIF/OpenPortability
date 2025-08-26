@@ -70,16 +70,16 @@ export class MatchingRepository {
     pageSize: number = 1000,
     pageNumber: number = 0
   ): Promise<{ data: StoredProcedureTarget[] | null; error: any }> {
-    console.log("getFollowableTargets", userId, pageSize, pageNumber);
+    // console.log("getFollowableTargets", userId, pageSize, pageNumber);
     
     try {
       // 1. Essayer Redis-first approach
       const redisResult = await this.getFollowableTargetsFromRedis(userId, pageSize, pageNumber);
       if (redisResult.data !== null) {
-        console.log("getFollowableTargets Redis success:", {
-          dataLength: redisResult.data.length,
-          firstItem: redisResult.data.length > 0 ? redisResult.data[0] : null
-        });
+        // console.log("getFollowableTargets Redis success:", {
+        //   dataLength: redisResult.data.length,
+        //   firstItem: redisResult.data.length > 0 ? redisResult.data[0] : null
+        // });
         return redisResult;
       }
     } catch (redisError) {
@@ -89,18 +89,18 @@ export class MatchingRepository {
     }
 
     // 2. Fallback vers la fonction SQL existante
-    console.log("getFollowableTargets falling back to SQL function");
+    // console.log("getFollowableTargets falling back to SQL function");
     const result = await this.supabase.rpc('get_followable_targets', {
       user_id: userId,
       page_size: pageSize,
       page_number: pageNumber
     });
     
-    console.log("getFollowableTargets SQL result:", {
-      error: result.error,
-      dataLength: result.data?.length || 0,
-      firstItem: result.data && result.data.length > 0 ? result.data[0] : null
-    });
+    // console.log("getFollowableTargets SQL result:", {
+    //   error: result.error,
+    //   dataLength: result.data?.length || 0,
+    //   firstItem: result.data && result.data.length > 0 ? result.data[0] : null
+    // });
     
     return result;
   }
@@ -114,10 +114,24 @@ export class MatchingRepository {
     pageNumber: number
   ): Promise<{ data: StoredProcedureTarget[] | null; error: any }> {
     try {
-      // 1. Récupérer tous les sources_targets de l'utilisateur qui ne sont pas encore suivis
+      // 1. D'abord récupérer les plateformes connectées de l'utilisateur (comme PostgreSQL)
+      const { data: userPlatforms, error: userError } = await authClient
+        .from('users')
+        .select('bluesky_username, mastodon_username')
+        .eq('id', userId)
+        .single();
+
+      if (userError) {
+        throw new Error(`User platforms error: ${userError.message}`);
+      }
+
+      const hasBluesky = !!userPlatforms?.bluesky_username;
+      const hasMastodon = !!userPlatforms?.mastodon_username;
+
+      // 2. Récupérer tous les sources_targets de l'utilisateur qui ne sont pas encore suivis
       const { data: sourcesTargets, error: dbError } = await this.supabase
         .from('sources_targets')
-        .select('node_id, has_follow_bluesky, has_follow_mastodon, followed_at_bluesky, followed_at_mastodon, dismissed')
+        .select('node_id::text, has_follow_bluesky, has_follow_mastodon, followed_at_bluesky, followed_at_mastodon, dismissed') // FORCER node_id en TEXT
         .eq('source_id', userId)
         .or('has_follow_bluesky.eq.false,has_follow_mastodon.eq.false'); // Au moins une plateforme non suivie
 
@@ -129,35 +143,48 @@ export class MatchingRepository {
         return { data: [], error: null };
       }
 
-      console.log("getFollowableTargetsFromRedis sourceTargets lenght --->", sourcesTargets.length);
-
-      // 2. Récupérer les correspondances depuis Redis en batch
-      const twitterIds = sourcesTargets.map(st => st.node_id);
+      // 3. Récupérer les correspondances depuis Redis en batch
+      const twitterIds = sourcesTargets.map(st => st.node_id); // CONVERSION EN STRING
       
       // Utiliser la méthode batchGetSocialMappings au lieu de mget
       const mappings = await redis.batchGetSocialMappings(twitterIds);
 
-      console.log("getFollowableTargetsFromRedis mappings length --->", mappings.size)
-
-      // 3. Construire les résultats avec les correspondances trouvées
+      // 4. Construire les résultats avec les correspondances trouvées ET filtrage par plateformes utilisateur
       const results: StoredProcedureTarget[] = [];
       let totalCount = 0;
+      let skippedCount = 0;
+      let skippedReasons: { [key: string]: number } = {};
+      let blueskyMappings = 0;
+      let mastodonMappings = 0;
+      let bothPlatformMappings = 0;
 
       for (const sourceTarget of sourcesTargets) {
-        const twitterId = sourceTarget.node_id;
+        const twitterId = sourceTarget.node_id; // CONVERSION EN STRING
         
         // Récupérer les mappings depuis la Map retournée
         const mapping = mappings.get(twitterId);
 
-        // Si au moins une correspondance existe
-        if (mapping && (mapping.bluesky || mapping.mastodon)) {
+        // NOUVELLE LOGIQUE: Filtrer selon les plateformes connectées de l'utilisateur (comme PostgreSQL)
+        const hasBlueskyMapping = !!(mapping?.bluesky);
+        const hasMastodonMapping = !!(mapping?.mastodon);
+        
+        // Condition identique à PostgreSQL: (has_bluesky AND bluesky_mapping) OR (has_mastodon AND mastodon_mapping)
+        const shouldInclude = (hasBluesky && hasBlueskyMapping) || (hasMastodon && hasMastodonMapping);
+
+        if (shouldInclude) {
+          // Compter les plateformes SEULEMENT pour les plateformes connectées
+          if (hasBluesky && hasBlueskyMapping) blueskyMappings++;
+          if (hasMastodon && hasMastodonMapping) mastodonMappings++;
+          if (hasBluesky && hasBlueskyMapping && hasMastodon && hasMastodonMapping) bothPlatformMappings++;
+
           const result: StoredProcedureTarget = {
-            target_twitter_id: twitterId,
-            bluesky_handle: mapping.bluesky || null,
-            mastodon_handle: mapping.mastodon?.username || null,
-            mastodon_id: mapping.mastodon?.id || null,
-            mastodon_username: mapping.mastodon?.username || null,
-            mastodon_instance: mapping.mastodon?.instance || null,
+            node_id: twitterId,
+            // Retourner les données seulement pour les plateformes connectées (comme PostgreSQL)
+            bluesky_handle: (hasBluesky && mapping?.bluesky) || null,
+            mastodon_handle: (hasMastodon && mapping?.mastodon?.username) || null,
+            mastodon_id: (hasMastodon && mapping?.mastodon?.id) || null,
+            mastodon_username: (hasMastodon && mapping?.mastodon?.username) || null,
+            mastodon_instance: (hasMastodon && mapping?.mastodon?.instance) || null,
             has_follow_bluesky: sourceTarget.has_follow_bluesky || false,
             has_follow_mastodon: sourceTarget.has_follow_mastodon || false,
             followed_at_bluesky: sourceTarget.followed_at_bluesky,
@@ -168,15 +195,25 @@ export class MatchingRepository {
 
           results.push(result);
           totalCount++;
+        } else {
+          // Compter les comptes ignorés et leurs raisons
+          skippedCount++;
+          if (!mapping) {
+            skippedReasons['no_mapping'] = (skippedReasons['no_mapping'] || 0) + 1;
+          } else if (!shouldInclude) {
+            skippedReasons['platform_not_connected'] = (skippedReasons['platform_not_connected'] || 0) + 1;
+          }
         }
       }
 
-      // 4. Appliquer la pagination
+  
+
+      // 5. Appliquer la pagination
       const startIndex = pageNumber * pageSize;
       const endIndex = startIndex + pageSize;
       const paginatedResults = results.slice(startIndex, endIndex);
 
-      // 5. Ajouter le total_count à chaque résultat
+      // 6. Ajouter le total_count à chaque résultat
       paginatedResults.forEach(result => {
         result.total_count = totalCount;
       });
@@ -187,34 +224,6 @@ export class MatchingRepository {
       logError('Repository', 'MatchingRepository.getFollowableTargetsFromRedis', error, userId);
       return { data: null, error: error };
     }
-  }
-
-  /**
-   * Parser les données Redis selon le format choisi
-   * Format: "handle|id" pour Bluesky, "id|username|instance" pour Mastodon
-   */
-  private parseRedisMapping(redisValue: string | null): any {
-    if (!redisValue) return null;
-
-    const parts = redisValue.split('|');
-    
-    // Détecter le format selon le nombre de parties
-    if (parts.length === 2) {
-      // Format Bluesky: "handle|id"
-      return {
-        handle: parts[0],
-        id: parts[1]
-      };
-    } else if (parts.length === 3) {
-      // Format Mastodon: "id|username|instance"
-      return {
-        id: parts[0],
-        username: parts[1],
-        instance: parts[2]
-      };
-    }
-
-    return null;
   }
 
   async updateFollowStatus(
@@ -241,7 +250,7 @@ export class MatchingRepository {
       .from('sources_targets')
       .update(updates)
       .eq('source_id', userId)
-      .eq('node_id', parseInt(targetId));  // CORRIGÉ: target_twitter_id → node_id et conversion en BIGINT
+      .eq('node_id', targetId);  // CORRIGÉ: target_twitter_id → node_id et conversion en BIGINT
 
     if (updateError) {
       logError('Repository', 'MatchingRepository.updateFollowStatus', updateError, userId, {
@@ -277,7 +286,7 @@ export class MatchingRepository {
       .from('sources_targets')
       .update(updates)
       .eq('source_id', userId)
-      .in('node_id', targetIds.map(id => parseInt(id)));
+      .in('node_id', targetIds);
 
     if (updateError) {
       logError('Repository', 'MatchingRepository.updateFollowStatusBatch', updateError, userId, {
@@ -371,18 +380,18 @@ export class MatchingRepository {
     console.log(`🔍 [STEP 1] Starting getSourcesFromFollower for twitterId: ${twitterId}, pageSize: ${pageSize}, pageNumber: ${pageNumber}`);
     
     // DEBUG: Vérifier la conversion parseInt
-    const parsedTwitterId = BigInt(twitterId);
+    const parsedTwitterId = twitterId;
     console.log(`🔢 [DEBUG] Original twitterId: "${twitterId}" (type: ${typeof twitterId})`);
     console.log(`🔢 [DEBUG] Parsed twitterId: ${parsedTwitterId} (type: ${typeof parsedTwitterId})`);
     console.log(`🔢 [DEBUG] Expected: 1309241221039165446`);
-    console.log(`🔢 [DEBUG] Match expected: ${parsedTwitterId === BigInt(1309241221039165446)}`);
+    console.log(`🔢 [DEBUG] Match expected: ${parsedTwitterId === "1309241221039165446"}`);
     
     // ÉTAPE 1: Récupérer les UUIDs depuis sources_followers (ULTRA RAPIDE)
     const step1Start = Date.now();
     console.log(`⚡ [STEP 1] Calling get_sources_from_follower RPC...`);
     
     const uuidResult = await this.supabase.rpc('get_sources_from_follower', {
-      follower_twitter_id_param: parsedTwitterId.toString(), // CORRIGÉ: Convertir BigInt en string
+      follower_twitter_id_param: parsedTwitterId, // CORRIGÉ: Convertir BigInt en string
       page_size: pageSize,
       page_number: pageNumber
     });
@@ -471,7 +480,7 @@ export class MatchingRepository {
         .from("sources_targets")
         .update({ dismissed: true })
         .eq("source_id", userId)
-        .eq("node_id", parseInt(targetTwitterId));
+        .eq("node_id", targetTwitterId);  // CORRIGÉ: ÉVITER parseInt()
         
       console.log("Target marked as dismissed", {
         userId,
@@ -493,7 +502,7 @@ export class MatchingRepository {
         .from("sources_targets")
         .update({ dismissed: false })
         .eq("source_id", userId)
-        .eq("node_id", parseInt(targetTwitterId));
+        .eq("node_id", targetTwitterId);  // CORRIGÉ: ÉVITER parseInt()
         
       console.log("Target marked as not dismissed", {
         userId,
@@ -525,11 +534,11 @@ export class MatchingRepository {
       while (hasMore) {
         const { data, error } = await this.supabase
           .from('sources_targets')
-          .select('node_id')
+          .select('node_id::text') // FORCER node_id en TEXT
           .eq('source_id', userId)
           .eq('dismissed', false)
           .range(offset, offset + BATCH_SIZE - 1)
-          .order('node_id'); // Ordre consistant pour la pagination
+          .order('node_id::text'); // Ordre consistant pour la pagination
 
         if (error) {
           logError('Repository', 'MatchingRepository.getUserFollowing', error, userId, { 
