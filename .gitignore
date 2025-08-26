@@ -70,3 +70,4 @@ nginx.conf
 /worker/Dockerfile
 /watcher/Dockerfile
 
+src/app/_components/graph/graph-data/top_100_edges.json
