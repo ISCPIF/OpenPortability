@@ -15,6 +15,11 @@ const globalMatchesFetched = { current: false };
 // Shared promise for concurrent matching requests
 let activeMatchingPromise: Promise<any> | null = null;
 
+// Type pour la liste des followings
+interface FollowingListResponse {
+  following: MatchingTarget[]
+}
+
 export function useReconnectState() {
   const { data: session, status, update } = useSession();
   const router = useRouter();
@@ -26,7 +31,13 @@ export function useReconnectState() {
   const [showOptions, setShowOptions] = useState(true);
   const [isAutomaticReconnect, setIsAutomaticReconnect] = useState(false);
   const [invalidTokenProviders, setInvalidTokenProviders] = useState<string[]>([]);
+  
+  // NOUVEAU: État séparé pour la liste des followings seulement
+  const [followingList, setFollowingList] = useState<MatchingTarget[]>([]);
+  
+  // Garder accountsToProcess pour compatibilité (sera supprimé plus tard)
   const [accountsToProcess, setAccountsToProcess] = useState<AccountToFollow[]>([]);
+  
   const [selectedAccounts, setSelectedAccounts] = useState<Set<string>>(new Set());
   const [activeTab, setActiveTab] = useState<'mastodon' | 'bluesky'>('bluesky');
   const [showModaleResults, setShowModaleResults] = useState(false);
@@ -60,11 +71,45 @@ export function useReconnectState() {
     }
   }, [authMissingProviders]);
 
-  const fetchMatches = useCallback(async () => {
+  // NOUVEAU: Fonction pour récupérer la liste des followings
+  const fetchFollowingList = useCallback(async () => {
+    try {
+      const response = await fetch('/api/migrate/matching_found', {
+        headers: {
+          'Cache-Control': 'no-cache',
+          'X-Request-ID': `following-list-${Date.now()}`
+        }
+      });
 
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const followingData = await response.json();
+      
+      // Adapter selon la structure actuelle de l'API (sera simplifié plus tard)
+      const followingArray = followingData.matches?.following || followingData.following || [];
+      setFollowingList(followingArray);
+      
+      // Maintenir compatibilité avec l'ancien système
+      setAccountsToProcess(followingArray);
+      
+      // console.log("===== FOLLOWING LIST FETCHED =====");
+      // console.log("Following data:", JSON.stringify(followingData, null, 2));
+      // console.log("Following array length:", followingArray.length);
+      // console.log("===================================");
+      
+      return followingArray;
+    } catch (error) {
+      console.error('fetchFollowingList: Error:', error);
+      throw error;
+    }
+  }, []);
+
+  // REFACTORISÉ: fetchMatches maintenant appelle seulement fetchFollowingList (stats géré par useStats)
+  const fetchMatches = useCallback(async () => {
     // Skip if already fetched (check both local and global state)
     if (matchesFetchedRef.current || globalMatchesFetched.current) {
-
       matchesFetchedRef.current = true;
       globalMatchesFetched.current = true;
       return;
@@ -74,26 +119,15 @@ export function useReconnectState() {
     if (activeMatchingPromise) {
       return activeMatchingPromise;
     }
-      activeMatchingPromise = (async () => {
+    
+    activeMatchingPromise = (async () => {
       try {
-        const matchesResponse = await fetch('/api/migrate/matching_found', {
-          headers: {
-            'Cache-Control': 'no-cache',
-            'X-Request-ID': `matching-found-${Date.now()}` // Add unique identifier
-          }
-        });
-
-        const matchesData = await matchesResponse.json();
-
-        setAccountsToProcess(matchesData.matches.following);
+        // Appeler seulement fetchFollowingList (stats déjà géré par useStats)
+        await fetchFollowingList();
+        
         matchesFetchedRef.current = true;
         globalMatchesFetched.current = true;
-
-        if (matchesData.error) {
-          console.error('fetchMatches: Error in response:', matchesData.error);
-        }
         
-        return matchesData;
       } catch (error) {
         console.error('fetchMatches: Error:', error);
         throw error;
@@ -103,7 +137,24 @@ export function useReconnectState() {
     })();
     
     return activeMatchingPromise;
-  }, []);
+  }, [fetchFollowingList]);
+
+  // NOUVEAU: Fonction pour re-fetch les stats après un follow (le cache a déjà été mis à jour par la DB)
+  const refetchUserStatsAfterFollow = useCallback(async () => {
+    try {
+      console.log("🔄 [refetchUserStatsAfterFollow] Starting stats refresh...");
+      
+      // Attendre 5 secondes pour que le webhook PostgreSQL termine
+      console.log("⏳ [refetchUserStatsAfterFollow] Waiting 5s for cache update...");
+      await new Promise(resolve => setTimeout(resolve, 4000));
+      
+      await refreshStats();
+      
+      console.log("✅ [refetchUserStatsAfterFollow] Stats refresh completed");
+    } catch (error) {
+      console.error('❌ [refetchUserStatsAfterFollow] Error:', error);
+    }
+  }, [refreshStats]);
 
   // Reset global flags when user session changes
   useEffect(() => {
@@ -210,7 +261,7 @@ export function useReconnectState() {
     await handleAutomaticMode();
     // Démarrer la migration automatique avec tous les comptes
     const allAccountIds = accountsToProcess.map(match => 
-      'target_twitter_id' in match ? match.target_twitter_id : match.source_twitter_id
+      'node_id' in match ? match.node_id.toString() : match.source_twitter_id
     );
     handleStartMigration(allAccountIds);
   };
@@ -222,17 +273,32 @@ export function useReconnectState() {
 
   // Fonction pour démarrer la migration
   const handleStartMigration = async (selectedAccounts: string[]) => {
+    console.log(" [handleStartMigration] Called with selectedAccounts:", selectedAccounts);
+    console.log(" [handleStartMigration] selectedAccounts length:", selectedAccounts.length);
+    console.log(" [handleStartMigration] accountsToProcess length:", accountsToProcess.length);
+    
     try {
       setIsMigrating(true);
       
       // Get all selected accounts and handle both types
       const accountsToMigrate = accountsToProcess.filter(match => {
-        const twitterId = 'target_twitter_id' in match 
-          ? match.target_twitter_id 
+        const twitterId = 'node_id' in match 
+          ? match.node_id.toString()
           : match.source_twitter_id;
-        return selectedAccounts.includes(twitterId);
+        const isSelected = selectedAccounts.includes(twitterId);
+        
+        console.log(" [handleStartMigration] Checking account:", {
+          twitterId,
+          isSelected,
+          matchType: 'node_id' in match ? 'MatchingTarget' : 'MatchedFollower'
+        });
+        
+        return isSelected;
       });
 
+      console.log(" [handleStartMigration] Filtered accountsToMigrate:", accountsToMigrate.length);
+      console.log(" [handleStartMigration] accountsToMigrate details:", accountsToMigrate);
+      
       // Initialize progress tracking with total matches
       const initialResults = {
         bluesky: {
@@ -266,6 +332,10 @@ export function useReconnectState() {
       };
       setMigrationResults(initialResults);
 
+      console.log("********")
+      console.log("batchAccounts", accountsToMigrate)
+      console.log("********")
+
       // Process in batches, excluding already followed accounts
       const BATCH_SIZE = 25;
       let remainingAccounts = accountsToMigrate.filter(acc => {
@@ -278,6 +348,12 @@ export function useReconnectState() {
         return (!hasFollowedBluesky && session?.user?.bluesky_username) || 
                (!hasFollowedMastodon && session?.user?.mastodon_username);
       });
+
+      console.log("********")
+        console.log("batchAccounts", accountsToMigrate)
+        console.log("type of accounts.node_id -->", typeof accountsToMigrate[0].node_id)
+        console.log("type of accounts -->", typeof accountsToMigrate[0])
+        console.log("********")
 
       for (let i = 0; i < remainingAccounts.length; i += BATCH_SIZE) {
         const batchAccounts = remainingAccounts.slice(i, i + BATCH_SIZE);
@@ -318,25 +394,22 @@ export function useReconnectState() {
         });
       }
 
-      // Update user stats after migration is complete
-      try {
-        await fetch('/api/update/user_stats', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        });
-      } catch (error) {
-        console.error('handleStartMigration: Error updating user stats:', error);
-      }
-
       setIsReconnectionComplete(true);
       setIsMigrating(false);
-      refreshStats();
+      await refetchUserStatsAfterFollow();
       
     } catch (error) {
       console.error('handleStartMigration: Error:', error);
       setIsMigrating(false);
+      
+      // Même en cas d'erreur, essayons de rafraîchir les stats
+      // car il se peut que certains follows aient réussi
+      try {
+        console.log(" Attempting stats refresh despite error...");
+        await refetchUserStatsAfterFollow();
+      } catch (refreshError) {
+        console.error('Failed to refresh stats after error:', refreshError);
+      }
     }
   };
 
@@ -381,6 +454,8 @@ export function useReconnectState() {
     handleAutomaticReconnection,
     handleManualReconnection,
     handleStartMigration,
+    followingList,
+    refetchUserStatsAfterFollow,
     refreshStats
   };
 }

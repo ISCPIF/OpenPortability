@@ -115,7 +115,7 @@ export default function LargeFilesPage() {
     const pollStatus = async () => {
       const shouldStop = await checkStatus();
       if (!shouldStop) {
-        setTimeout(pollStatus, 2000);
+        setTimeout(pollStatus, 10000);
       }
     };
 

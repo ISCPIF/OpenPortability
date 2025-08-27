@@ -30,6 +30,8 @@ export interface CustomAdapterUser extends Omit<AdapterUser, 'image'> {
   mastodon_username?: string | null
   mastodon_image?: string | null
   mastodon_instance?: string | null
+  facebook_id?: string | null
+  facebook_image?: string | null
 }
 
 export interface TwitterData extends Profile {
@@ -60,7 +62,19 @@ export interface BlueskyProfile extends Profile {
   identifier?: string
 }
 
-export type ProviderProfile = TwitterData | MastodonProfile | BlueskyProfile
+export interface FacebookProfile extends Profile {
+  id: string;
+  name: string;
+  email?: string;  
+  picture?: {
+    data: {
+      url: string;
+    }
+  };
+}
+
+
+export type ProviderProfile = TwitterData | MastodonProfile | BlueskyProfile | FacebookProfile
 
 export class UnlinkError extends Error {
   constructor(
@@ -77,59 +91,91 @@ export class UnlinkError extends Error {
 export async function createUser(user: Partial<AdapterUser>): Promise<CustomAdapterUser>;
 export async function createUser(
   userData: Partial<AdapterUser> | (Partial<CustomAdapterUser> & {
-    provider?: 'twitter' | 'bluesky' | 'mastodon',
+    provider?: 'twitter' | 'bluesky' | 'mastodon' | 'facebook',
     profile?: ProviderProfile
   })
 ): Promise<CustomAdapterUser> {
-  // logger.logInfo('Auth', 'createUser', 'Starting user creation', undefined, { userData })
+  console.log('Auth', 'createUser', 'Starting user creation', undefined, { userData })
+  console.log('Auth', 'createUser', 'userData type check', undefined, { 
+    hasProvider: 'provider' in userData,
+    hasProfile: 'profile' in userData,
+    provider: ('provider' in userData) ? userData.provider : 'N/A'
+  })
 
-
+  // Vérification spéciale pour Mastodon
   if ('provider' in userData && 
     'profile' in userData && 
     userData.provider === 'mastodon' && 
     userData.profile) {
+    
+    console.log('Auth', 'createUser', 'Entering Mastodon-specific flow', undefined)
+    
     const mastodonProfile = userData.profile as MastodonProfile
-    const instance = new URL(mastodonProfile.url).origin
+    console.log('Auth', 'createUser', 'Mastodon profile extracted', undefined, { mastodonProfile })
+    
+    let instance: string;
+    try {
+      instance = new URL(mastodonProfile.url).origin
+      console.log('Auth', 'createUser', 'Mastodon instance parsed successfully', undefined, { 
+        originalUrl: mastodonProfile.url, 
+        parsedInstance: instance 
+      })
+    } catch (urlError) {
+      console.error('Auth', 'createUser', 'Error parsing Mastodon URL', undefined, { 
+        url: mastodonProfile.url, 
+        error: urlError 
+      })
+      throw new Error(`Invalid Mastodon URL: ${mastodonProfile.url}`)
+    }
 
-    logger.logInfo('Auth', 'createUser', 'Starting user creation with Mastodon profile', undefined, { mastodonProfile, instance })
-
+    console.log('Auth', 'createUser', 'Starting Mastodon user existence check', undefined, { 
+      mastodonId: mastodonProfile.id, 
+      instance 
+    })
 
     // Vérifier si un utilisateur existe déjà avec cet ID et cette instance
     const { data: existingUser, error } = await authClient
       .from('users')
-      .select('*')
+      .select('*, twitter_id::text')
       .eq('mastodon_id', mastodonProfile.id)
       .eq('mastodon_instance', instance)
       .single()
 
-    if (error)
-    {
+    console.log('Auth', 'createUser', 'Mastodon user existence check completed', undefined, { 
+      foundUser: !!existingUser,
+      hasError: !!error,
+      errorType: error?.code || 'none'
+    })
+
+    if (error) {
       if (error.details?.includes('The result contains 0 rows')) {
-        // Log as warning for expected "no rows" case
         logger.logWarning('Auth', 'createUser', 
           `No existing user found with Mastodon ID: ${mastodonProfile.id} and instance: ${instance}`, 
           undefined, 
           { mastodonProfile, instance }
         );
+        console.log('Auth', 'createUser', 'No existing Mastodon user found (expected)', undefined)
       } else {
-        // Log as error for unexpected errors
-        logger.logError('Auth', 'createUser', 'Error checking for existing user', undefined, { error });
+        logger.logError('Auth', 'createUser', 'Error checking for existing Mastodon user', undefined, { error });
+        console.error('Auth', 'createUser', 'Unexpected error during Mastodon user check', undefined, { error })
       }
     }
 
     if (existingUser) {
-      logger.logInfo('Auth', 'createUser', 'User already exists with Mastodon profile', undefined, { mastodonProfile, instance })
+      console.log('Auth', 'createUser', 'Returning existing Mastodon user', undefined, { 
+        userId: existingUser.id,
+        username: existingUser.mastodon_username 
+      })
+      
       return {
         id: existingUser.id,
         name: existingUser.name || null,
         email: "none",
         emailVerified: null,
-        // image: existingUser.image || null,
         has_onboarded: existingUser.has_onboarded,
         hqx_newsletter: existingUser.hqx_newsletter,
         oep_accepted: existingUser.oep_accepted,
         have_seen_newsletter: existingUser.have_seen_newsletter,
-        // have_seen_bot_newsletter: existingUser.have_seen_bot_newsletter,
         research_accepted: existingUser.research_accepted,
         automatic_reconnect: existingUser.automatic_reconnect,
         twitter_id: existingUser.twitter_id,
@@ -141,70 +187,171 @@ export async function createUser(
         mastodon_id: existingUser.mastodon_id,
         mastodon_username: existingUser.mastodon_username,
         mastodon_image: existingUser.mastodon_image,
-        mastodon_instance: existingUser.mastodon_instance
+        mastodon_instance: existingUser.mastodon_instance,
+        facebook_id: existingUser.facebook_id
       }
     }
+    
+    console.log('Auth', 'createUser', 'No existing Mastodon user found, continuing to general flow', undefined)
   }
 
+  console.log('Auth', 'createUser', 'Starting general provider flow', undefined)
+
   // Type guard for provider data
+  let provider: 'twitter' | 'bluesky' | 'mastodon' | 'facebook' | undefined = undefined;
+  let profile: ProviderProfile | undefined = undefined;
+  let providerId: string | undefined = undefined;
+  let providerIdField: keyof CustomAdapterUser | undefined = undefined;
+
   if ('provider' in userData && userData.provider && 'profile' in userData) {
-    const provider = userData.provider
-    const profile = userData.profile
+    provider = userData.provider;
+    profile = userData.profile;
+    
+    console.log('Auth', 'createUser', 'Provider and profile detected', undefined, { 
+      provider,
+      profileKeys: profile ? Object.keys(profile) : 'no profile'
+    })
 
+    providerIdField = `${provider}_id` as keyof CustomAdapterUser;
+    
+    console.log('Auth', 'createUser', 'Determining provider ID', undefined, { 
+      provider,
+      providerIdField
+    })
 
-const providerIdField = `${provider}_id` as keyof CustomAdapterUser
-    const providerId = provider === 'twitter' 
-      ? (profile as TwitterData).data.id
-      : provider === 'mastodon'
-      ? (profile as MastodonProfile).id
-      : (userData as any).bluesky_id || (userData as any).did // Try both fields
+    // Extraction de l'ID selon le provider
+    if (provider === 'twitter') {
+      providerId = (profile as TwitterData).data.id;
+      console.log('Auth', 'createUser', 'Twitter ID extracted', undefined, { 
+        providerId,
+        twitterData: (profile as TwitterData).data
+      })
+    } else if (provider === 'mastodon') {
+      providerId = (profile as MastodonProfile).id;
+      console.log('Auth', 'createUser', 'Mastodon ID extracted', undefined, { 
+        providerId,
+        mastodonProfile: profile as MastodonProfile
+      })
+    } else if (provider === 'facebook') {
+      providerId = (profile as FacebookProfile).id;
+      console.log('Auth', 'createUser', 'Facebook ID extracted', undefined, { 
+        providerId,
+        facebookProfile: profile as FacebookProfile
+      })
+    } else {
+      // Bluesky case - handle both possible data structures
+      console.log("userData from BS -->", userData)
+      providerId = (userData as any).bluesky_id || (userData as any).did || (userData as any).profile?.did;
+      console.log('Auth', 'createUser', 'Bluesky ID extracted', undefined, { 
+        providerId,
+        blueskyId: (userData as any).bluesky_id,
+        did: (userData as any).did,
+        profileDid: (userData as any).profile?.did,
+        userData: userData
+      })
+    }
 
-  
+    console.log('Auth', 'createUser', 'Final provider info', undefined, { 
+      provider, 
+      providerId, 
+      providerIdField,
+      hasValidProviderId: !!providerId
+    })
+
+    if (!providerId) {
+      console.error('Auth', 'createUser', 'No provider ID found', undefined, { 
+        provider, 
+        profile, 
+        userData 
+      })
+      throw new Error(`Could not extract provider ID for ${provider}`)
+    }
+
+    console.log('Auth', 'createUser', 'Checking for existing user with provider ID', undefined, { 
+      provider, 
+      providerId, 
+      providerIdField 
+    })
+
     const { data: existingUser, error: existingUserError } = await authClient
       .from('users')
-      .select('*')
+      .select('*, twitter_id::text')
       .eq(providerIdField, providerId)
       .single()
 
+    console.log('Auth', 'createUser', 'Provider user existence check completed', undefined, { 
+      foundUser: !!existingUser,
+      hasError: !!existingUserError,
+      errorCode: existingUserError?.code,
+      errorMessage: existingUserError?.message
+    })
+
     if (existingUser) {
-      console.log(`→ Found existing user with ${provider} ID:`, existingUser.id)
+      console.log('Auth', 'createUser', 'Returning existing provider user', undefined, { 
+        userId: existingUser.id,
+        provider
+      })
       return existingUser as CustomAdapterUser
     }
-    else if (existingUserError)
-    {
+    else if (existingUserError) {
       if (existingUserError.details?.includes('The result contains 0 rows')) {
-        // Log as warning for expected "no rows" case
         logger.logWarning('Auth', 'createUser', 
           `No existing user found with ${provider} ID: ${providerId}`, 
           undefined, 
           { provider, providerId }
         );
+        console.log('Auth', 'createUser', 'No existing provider user found (expected)', undefined)
       } else {
-        // Log as error for unexpected errors
-        logger.logError('Auth', 'createUser', 
-          'Error checking for existing user', 
-          undefined, 
-          { provider, providerId, error: existingUserError }
-        );
+        logger.logError('Auth', 'createUser', 'Error checking for existing user', undefined, { 
+          provider, 
+          providerId, 
+          error: existingUserError 
+        })
+        console.error('Auth', 'createUser', 'Unexpected error during provider user check', undefined, { 
+          existingUserError 
+        })
       }
     }
 
- // Créer les données utilisateur selon le provider
+    console.log('Auth', 'createUser', 'Creating new user data for provider', undefined, { provider })
+
+    // Créer les données utilisateur selon le provider
     const userToCreate: Partial<CustomAdapterUser> = {
-      name: provider === 'twitter' 
-        ? (profile as TwitterData).data.name
-        : provider === 'mastodon'
-        ? (profile as MastodonProfile).display_name
-        : (userData as BlueskyProfile).displayName || (userData as BlueskyProfile).name,
       has_onboarded: false,
       hqx_newsletter: false,
       oep_accepted: false,
       have_seen_newsletter: false,
-      // have_seen_bot_newsletter: false,
       research_accepted: false,
       automatic_reconnect: false,
-      email: undefined
     }
+
+    // Extraction du nom selon le provider
+    if (provider === 'twitter') {
+      userToCreate.name = (profile as TwitterData).data.name;
+      console.log('Auth', 'createUser', 'Twitter name extracted', undefined, { 
+        name: userToCreate.name 
+      })
+    } else if (provider === 'mastodon') {
+      userToCreate.name = (profile as MastodonProfile).display_name;
+      console.log('Auth', 'createUser', 'Mastodon name extracted', undefined, { 
+        name: userToCreate.name 
+      })
+    } else if (provider === 'facebook') {
+      userToCreate.name = (profile as FacebookProfile).name;
+      console.log('Auth', 'createUser', 'Facebook data extracted', undefined, { 
+        name: userToCreate.name,
+      })
+    } else {
+      // Bluesky
+      userToCreate.name = (userData as BlueskyProfile).displayName || (userData as BlueskyProfile).name;
+      console.log('Auth', 'createUser', 'Bluesky name extracted', undefined, { 
+        name: userToCreate.name,
+        displayName: (userData as BlueskyProfile).displayName,
+        fallbackName: (userData as BlueskyProfile).name
+      })
+    }
+
+    console.log('Auth', 'createUser', 'Adding provider-specific fields', undefined, { provider })
 
     // Ajouter les champs spécifiques au provider
     if (provider === 'twitter') {
@@ -214,13 +361,35 @@ const providerIdField = `${provider}_id` as keyof CustomAdapterUser
         twitter_username: twitterData.data.username,
         twitter_image: twitterData.data.profile_image_url
       })
+      console.log('Auth', 'createUser', 'Twitter fields added', undefined, { 
+        twitter_id: twitterData.data.id,
+        twitter_username: twitterData.data.username,
+        has_image: !!twitterData.data.profile_image_url
+      })
     } else if (provider === 'mastodon') {
       const mastodonData = profile as MastodonProfile
+      const mastodonInstance = mastodonData.url ? new URL(mastodonData.url).origin : null
       Object.assign(userToCreate, {
         mastodon_id: mastodonData.id,
         mastodon_username: mastodonData.username,
         mastodon_image: mastodonData.avatar,
-        mastodon_instance: mastodonData.url ? new URL(mastodonData.url).origin : null
+        mastodon_instance: mastodonInstance
+      })
+      console.log('Auth', 'createUser', 'Mastodon fields added', undefined, { 
+        mastodon_id: mastodonData.id,
+        mastodon_username: mastodonData.username,
+        mastodon_instance: mastodonInstance,
+        has_image: !!mastodonData.avatar
+      })
+    } else if (provider === 'facebook') {
+      const facebookData = profile as FacebookProfile
+      Object.assign(userToCreate, {
+        facebook_id: facebookData.id,
+        facebook_image: facebookData.picture?.data?.url
+      })
+      console.log('Auth', 'createUser', 'Facebook fields added', undefined, { 
+        facebook_id: facebookData.id,
+        has_image: !!facebookData.picture?.data?.url
       })
     } else if (provider === 'bluesky') {
       const blueskyData = profile as BlueskyProfile
@@ -229,22 +398,57 @@ const providerIdField = `${provider}_id` as keyof CustomAdapterUser
         bluesky_username: blueskyData.handle,
         bluesky_image: blueskyData.avatar
       })
+      console.log('Auth', 'createUser', 'Bluesky fields added', undefined, { 
+        bluesky_id: blueskyData.did,
+        bluesky_username: blueskyData.handle,
+        has_image: !!blueskyData.avatar
+      })
     }
+
+    console.log('Auth', 'createUser', 'Final user data to create', undefined, { 
+      userToCreate,
+      fieldsCount: Object.keys(userToCreate).length
+    })
+
+    console.log('Auth', 'createUser', 'Attempting to insert new user into database', undefined)
 
     const { data: newUser, error: createError } = await authClient
       .from('users')
       .insert([userToCreate])
-      .select()
+      .select('*, twitter_id::text')
       .single()
 
+    console.log('Auth', 'createUser', 'Database insert completed', undefined, { 
+      success: !!newUser,
+      hasError: !!createError,
+      newUserId: newUser?.id,
+      errorCode: createError?.code,
+      errorMessage: createError?.message
+    })
 
     if (createError) {
-      logger.logError('Auth', 'createUser', 'Error creating user', undefined, { provider, providerId, error: createError })
+      logger.logError('Auth', 'createUser', 'Error creating user', undefined, { 
+        provider, 
+        providerId, 
+        error: createError,
+        userToCreate
+      })
+      console.error('Auth', 'createUser', 'Database insert failed', undefined, { 
+        createError,
+        userToCreate
+      })
       throw new Error(createError.message)
     }
 
+    console.log('Auth', 'createUser', 'Successfully created new user', undefined, { 
+      userId: newUser.id,
+      provider
+    })
+
     return newUser as CustomAdapterUser
   }
+
+  console.log('Auth', 'createUser', 'Entering fallback user creation (no provider)', undefined)
 
   // Fallback pour la création d'utilisateur sans provider
   const userToCreate: Partial<CustomAdapterUser> = {
@@ -253,21 +457,47 @@ const providerIdField = `${provider}_id` as keyof CustomAdapterUser
     hqx_newsletter: false,
     oep_accepted: false,
     have_seen_newsletter: false,
-    // have_seen_bot_newsletter: false,
     research_accepted: false,
     automatic_reconnect: false,
     email: 'none'
   }
+
+  console.log('Auth', 'createUser', 'Fallback user data prepared', undefined, { 
+    userToCreate,
+    originalUserData: userData
+  })
+
+  console.log('Auth', 'createUser', 'Attempting fallback user insert', undefined)
+
   const { data: newUser, error: createError } = await authClient
     .from('users')
     .insert([userToCreate])
-    .select()
+    .select('*, twitter_id::text')
     .single()
 
+  console.log('Auth', 'createUser', 'Fallback insert completed', undefined, { 
+    success: !!newUser,
+    hasError: !!createError,
+    newUserId: newUser?.id,
+    errorCode: createError?.code,
+    errorMessage: createError?.message
+  })
+
   if (createError) {
-    logger.logError('Auth', 'createUser', 'Error creating user', undefined, { provider, providerId, error: createError })
+    logger.logError('Auth', 'createUser', 'Error creating fallback user', undefined, { 
+      error: createError,
+      userToCreate
+    })
+    console.error('Auth', 'createUser', 'Fallback insert failed', undefined, { 
+      createError,
+      userToCreate
+    })
     throw new Error(createError.message)
   }
+
+  console.log('Auth', 'createUser', 'Successfully created fallback user', undefined, { 
+    userId: newUser.id
+  })
 
   return newUser as CustomAdapterUser
 }
@@ -275,7 +505,7 @@ const providerIdField = `${provider}_id` as keyof CustomAdapterUser
 export async function getUser(id: string): Promise<CustomAdapterUser | null> {
   const { data: user, error: userError } = await authClient
     .from('users')
-    .select('*')
+    .select('*, twitter_id::text')
     .eq('id', id)
     .single()
 
@@ -286,10 +516,19 @@ export async function getUser(id: string): Promise<CustomAdapterUser | null> {
 
   if (!user) return null
 
+  // console.log("🔍 [DEBUG] Raw user data from Supabase:", {
+  //   id: user.id,
+  //   twitter_id: user.twitter_id,
+  //   twitter_id_type: typeof user.twitter_id,
+  //   twitter_id_string: String(user.twitter_id)
+  // });
+
   return {
     id: user.id,
     name: user.name,
-    twitter_id: user.twitter_id,
+    email: "none",
+    emailVerified: null,
+    twitter_id: user.twitter_id || null,
     twitter_username: user.twitter_username,
     twitter_image: user.twitter_image,
     bluesky_id: user.bluesky_id,
@@ -306,8 +545,8 @@ export async function getUser(id: string): Promise<CustomAdapterUser | null> {
     // have_seen_bot_newsletter: user.have_seen_bot_newsletter,
     research_accepted: user.research_accepted,
     automatic_reconnect: user.automatic_reconnect,
-    email: "none",
-    emailVerified: null
+    facebook_id: user.facebook_id,
+    facebook_image: user.facebook_image
   }
 }
 
@@ -325,18 +564,20 @@ export async function getUserByAccount({ providerAccountId, provider }): Promise
     return null;
   } else if (provider === 'bluesky') {
     column = 'bluesky_id'
+  } else if (provider === 'facebook') {
+    column = 'facebook_id'
   } else {
     return null
   }
 
   const { data: user, error: userError } = await authClient
     .from('users')
-    .select('*')
+    .select('*, twitter_id::text')
     .eq(column, providerAccountId)
     .single()
 
   if (userError) {
-logger.logError('Auth', 'getUserByAccount', 'Error getting user by account', undefined, { provider, providerAccountId, error: userError })
+    logger.logError('Auth', 'getUserByAccount', 'Error getting user by account', undefined, { provider, providerAccountId, error: userError })
     return null
   }
 
@@ -368,7 +609,9 @@ logger.logError('Auth', 'getUserByAccount', 'Error getting user by account', und
     research_accepted: user.research_accepted,
     automatic_reconnect: user.automatic_reconnect,
     email: "none",
-    emailVerified: null
+    emailVerified: null,
+    facebook_id: user.facebook_id,
+    facebook_image: user.facebook_image
   }
 }
 
@@ -376,14 +619,14 @@ export async function updateUser(user: Partial<AdapterUser> & Pick<AdapterUser, 
 export async function updateUser(
   userId: string,
   providerData?: {
-    provider: 'twitter' | 'bluesky' | 'mastodon',
+    provider: 'twitter' | 'bluesky' | 'mastodon' | 'facebook',
     profile: ProviderProfile
   }
 ): Promise<CustomAdapterUser>;
 export async function updateUser(
   userOrId: (Partial<AdapterUser> & Pick<AdapterUser, "id">) | string,
   providerData?: {
-    provider: 'twitter' | 'bluesky' | 'mastodon',
+    provider: 'twitter' | 'bluesky' | 'mastodon' | 'facebook',
     profile: ProviderProfile
   }
 ): Promise<CustomAdapterUser> {
@@ -420,26 +663,32 @@ export async function updateUser(
     updates.bluesky_image = blueskyData.avatar
     updates.name = blueskyData.displayName || blueskyData.name
   }
+  else if (providerData?.provider === 'facebook' && providerData.profile) {
+    const facebookData = providerData.profile as FacebookProfile
+    updates.facebook_id = facebookData.id
+    updates.name = facebookData.name
+    updates.facebook_image = facebookData.picture?.data?.url
+  }
   const { data: user, error: updateError } = await authClient
-    .from("users")
+    .from('users')
     .update(updates)
     .eq("id", userId)
-    .select()
+    .select("*, twitter_id::text")
     .single()
 
   if (updateError) {
     logger.logError('Auth', 'updateUser', 'Error updating user', userId, { providerData, error: updateError })
     // Check if user exists
     const { data: existingUser, error: checkError } = await authClient
-      .from("users")
-      .select()
+      .from('users')
+      .select("*, twitter_id::text")
       .eq("id", userId)
       .single()
     
     if (checkError) {
       logger.logError('Auth', 'updateUser', 'Error checking user existence', userId, { providerData, error: checkError })
     } else {
-      logger.logInfo('Auth', 'updateUser', 'Existing user', userId, { providerData, user: existingUser })
+      console.log('Auth', 'updateUser', 'Existing user', userId, { providerData, user: existingUser })
     }
     throw updateError
   }
@@ -465,7 +714,9 @@ export async function updateUser(
     research_accepted: user.research_accepted,
     automatic_reconnect: user.automatic_reconnect,
     email: "none",
-    emailVerified: null
+    emailVerified: null,
+    facebook_id: user.facebook_id,
+    facebook_image: user.facebook_image
   }
 }
 
@@ -485,7 +736,7 @@ export function decodeJwt(token: string): { exp: number } | null {
 }
 
 export async function linkAccount(account: AdapterAccount): Promise<void> {
-  logger.logInfo('Auth', 'linkAccount', 'Linking account', account.user_id, { account })
+  console.log('Auth', 'linkAccount', 'Linking account', account.user_id, { account })
   
   // Décoder l'access token pour obtenir l'expiration
   let expires_at = account.expires_at
@@ -571,7 +822,9 @@ export async function getSessionAndUser(sessionToken: string): Promise<{ session
       research_accepted: user.research_accepted,
       automatic_reconnect: user.automatic_reconnect,
       email: "none",
-      emailVerified: null
+      emailVerified: null,
+      facebook_id: user.facebook_id,
+      facebook_image: user.facebook_image
     }
   }
 }
@@ -648,13 +901,22 @@ export async function getAccountsByUserId(userId: string): Promise<AdapterAccoun
     }
   }
 
+  if (user.facebook_id) {
+    accounts.push({
+      provider: 'facebook',
+      type: 'oauth',
+      providerAccountId: user.facebook_id,
+      userId: user.id
+    })
+  }
+
   return accounts
 }
 
 
 async function unlinkAccountImpl(
   userId: string,
-  provider: 'twitter' | 'bluesky' | 'mastodon' | 'piaille'
+  provider: 'twitter' | 'bluesky' | 'mastodon' | 'piaille' | 'facebook'
 ): Promise<void> {
   console.log("\n=== [Adapter] Starting account unlinking ===")
   console.log("→ User ID:", userId)
@@ -663,7 +925,7 @@ async function unlinkAccountImpl(
   // Get current user
   const { data: user, error: userError } = await authClient
     .from('users')
-    .select('*')
+    .select('*, twitter_id::text')
     .eq('id', userId)
     .single()
 
@@ -689,6 +951,7 @@ async function unlinkAccountImpl(
   if (user.twitter_id) linkedAccounts++
   if (user.bluesky_id) linkedAccounts++
   if (user.mastodon_id) linkedAccounts++
+  if (user.facebook_id) linkedAccounts++
 
   // Prevent unlinking the last account
   if (linkedAccounts === 1) {
@@ -754,7 +1017,7 @@ export async function unlinkAccount(
     }
 
 
-  await unlinkAccountImpl(user.id, account.provider as 'twitter' | 'bluesky' | 'mastodon')
+  await unlinkAccountImpl(user.id, account.provider as 'twitter' | 'bluesky' | 'mastodon' | 'facebook')
 }
 
 type CustomSupabaseAdapter = Omit<Adapter, 'getUserByAccount' | 'updateUser' | 'createUser' | 'linkAccount'> & {
@@ -762,14 +1025,14 @@ type CustomSupabaseAdapter = Omit<Adapter, 'getUserByAccount' | 'updateUser' | '
   updateUser: {
     (user: Partial<AdapterUser> & Pick<AdapterUser, "id">): Promise<CustomAdapterUser>;
     (userId: string, providerData?: {
-      provider: 'twitter' | 'bluesky' | 'mastodon',
+      provider: 'twitter' | 'bluesky' | 'mastodon' | 'facebook',
       profile: ProviderProfile
     }): Promise<CustomAdapterUser>;
   };
   createUser: {
     (user: Partial<AdapterUser>): Promise<CustomAdapterUser>;
     (userData: Partial<AdapterUser> | (Partial<CustomAdapterUser> & {
-      provider?: 'twitter' | 'bluesky' | 'mastodon',
+      provider?: 'twitter' | 'bluesky' | 'mastodon' | 'facebook',
       profile?: ProviderProfile
     })): Promise<CustomAdapterUser>;
   };

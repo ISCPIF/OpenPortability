@@ -2,16 +2,19 @@
 import os
 import sys
 import logging
+import json
 from mastodon import Mastodon
 from mastodon.errors import MastodonError, MastodonAPIError, MastodonNotFoundError, MastodonRatelimitError
 from dotenv import load_dotenv
 
 load_dotenv()
 
-
-# Configure logging
-logging.basicConfig(level=logging.INFO, 
-                   format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+# Configure logging to stderr only
+logging.basicConfig(
+    level=logging.INFO, 
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    stream=sys.stderr  # All logs go to stderr
+)
 logger = logging.getLogger('test-dm-mastodon')
 
 # Get Mastodon credentials from environment
@@ -21,10 +24,12 @@ MASTODON_BOT_USERNAME = os.environ.get('MASTODON_BOT_USERNAME')
 
 # Vérifier si les variables sont définies
 if not all([MASTODON_ACCESS_TOKEN, MASTODON_API_BASE_URL, MASTODON_BOT_USERNAME]):
-    print("❌ Erreur: Variables d'environnement manquantes!")
-    print(f"MASTODON_BOT_ACCESSTOKEN est {'défini' if MASTODON_ACCESS_TOKEN else 'MANQUANT'}")
-    print(f"MASTODON_INSTANCE_URL est {'défini' if MASTODON_API_BASE_URL else 'MANQUANT'}")
-    print(f"MASTODON_BOT_USERNAME est {'défini' if MASTODON_BOT_USERNAME else 'MANQUANT'}")
+    error_msg = "❌ Erreur: Variables d'environnement manquantes!"
+    logger.error(error_msg)
+    logger.error(f"MASTODON_BOT_ACCESSTOKEN est {'défini' if MASTODON_ACCESS_TOKEN else 'MANQUANT'}")
+    logger.error(f"MASTODON_INSTANCE_URL est {'défini' if MASTODON_API_BASE_URL else 'MANQUANT'}")
+    logger.error(f"MASTODON_BOT_USERNAME est {'défini' if MASTODON_BOT_USERNAME else 'MANQUANT'}")
+    print(json.dumps({"success": False, "error": error_msg}))
     sys.exit(1)
 
 def send_direct_message(mastodon, recipient_handle, message):
@@ -32,7 +37,7 @@ def send_direct_message(mastodon, recipient_handle, message):
     try:
         # Nettoyer le handle si nécessaire
         recipient_handle = recipient_handle.replace('https://', '')
-        print(f"🔍 Envoi d'un DM à {recipient_handle}")
+        logger.info(f"🔍 Envoi d'un DM à {recipient_handle}")
         
         try:
             search_results = mastodon.account_search(recipient_handle)
@@ -82,17 +87,23 @@ def send_direct_message(mastodon, recipient_handle, message):
         except MastodonAPIError as e:
             logger.warning(f"⚠️ Impossible de supprimer le message initial: {e.response.status_code} - {e.response.text}")
         
-        print(f"✅ Message envoyé avec succès à {recipient_handle}")
+        logger.info(f"✅ Message envoyé avec succès à {recipient_handle}")
 
         # Vérifier que le message apparaît dans les conversations
-        print("\n🔍 Vérification des conversations...")
+        logger.info("🔍 Vérification des conversations...")
         try:
             conversations = mastodon.conversations()
             found = False
             for conv in conversations:
                 if any(account.id == recipient.id for account in conv['accounts']):
-                    print(f"✅ Conversation trouvée avec {recipient_handle}")
-                    print(f"Dernier message: {conv['last_status']['content']}")
+                    logger.info(f"✅ Conversation trouvée avec {recipient_handle}")
+                    
+                    # Vérifier que last_status existe avant d'accéder à son contenu
+                    if conv.get('last_status') and conv['last_status'] is not None:
+                        logger.info(f"Dernier message: {conv['last_status']['content']}")
+                    else:
+                        logger.info("Dernier message: (contenu non disponible)")
+                    
                     found = True
                     break
             
@@ -114,9 +125,9 @@ def test_dm(recipient_handle, custom_message=None):
         custom_message (str, optional): Message personnalisé à envoyer. Si non fourni, utilise le message de test par défaut.
     """
     try:
-        print(f"🚀 Démarrage du test DM pour {recipient_handle}")
-        print(f"🔑 Connexion avec l'utilisateur {MASTODON_BOT_USERNAME}")
-        print(f"Received custom_message: {custom_message!r}")
+        logger.info(f"🚀 Démarrage du test DM pour {recipient_handle}")
+        logger.info(f"🔑 Connexion avec l'utilisateur {MASTODON_BOT_USERNAME}")
+        logger.info(f"Received custom_message: {custom_message!r}")
 
         # Initialiser le client Mastodon
         mastodon = Mastodon(
@@ -130,25 +141,37 @@ def test_dm(recipient_handle, custom_message=None):
         # Envoyer le message direct
         result = send_direct_message(mastodon, recipient_handle, message)
         
-        print(f"Message envoyé avec succès à {recipient_handle}")
+        logger.info(f"Message envoyé avec succès à {recipient_handle}")
         return True
         
     except Exception as e:
         error_str = str(e)
-        print(f"Erreur lors de l'envoi du message à {recipient_handle}: {e}")
+        logger.error(f"Erreur lors de l'envoi du message à {recipient_handle}: {e}")
         raise e
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Usage: python3 testDm_mastodon.py <username@instance> [custom_message]")
-        print("Example: python3 testDm_mastodon.py user@mastodon.social")
+        error_msg = "Usage: python3 testDm_mastodon.py <username@instance> [custom_message]"
+        logger.error(error_msg)
+        logger.error("Example: python3 testDm_mastodon.py user@mastodon.social")
+        print(json.dumps({"success": False, "error": error_msg}))
         sys.exit(1)
     
     recipient_handle = sys.argv[1]
     if '@' not in recipient_handle:
-        print("❌ Erreur: Le format du handle Mastodon doit être username@instance")
-        print("Example: user@mastodon.social")
+        error_msg = "❌ Erreur: Le format du handle Mastodon doit être username@instance"
+        logger.error(error_msg)
+        logger.error("Example: user@mastodon.social")
+        print(json.dumps({"success": False, "error": error_msg}))
         sys.exit(1)
     
     custom_message = sys.argv[2] if len(sys.argv) > 2 else None
-    test_dm(recipient_handle, custom_message)
+    
+    try:
+        test_dm(recipient_handle, custom_message)
+        # Toujours imprimer un JSON valide comme seule sortie stdout
+        print(json.dumps({"success": True, "message": f"Message envoyé avec succès à {recipient_handle}"}))
+    except Exception as e:
+        # En cas d'erreur, imprimer un JSON d'erreur
+        print(json.dumps({"success": False, "error": str(e)}))
+        sys.exit(1)

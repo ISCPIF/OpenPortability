@@ -1,0 +1,16 @@
+{
+  "name": "redis-mappings-init",
+  "version": "1.0.0",
+  "description": "Script d'initialisation des mappings Redis pour OpenPortability",
+  "main": "init-redis-mappings.js",
+  "scripts": {
+    "start": "node init-redis-mappings.js"
+  },
+  "dependencies": {
+    "redis": "^4.6.0",
+    "@supabase/supabase-js": "^2.39.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

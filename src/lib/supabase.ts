@@ -12,6 +12,10 @@ if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
   throw new Error('Missing env.SUPABASE_SERVICE_ROLE_KEY')
 }
 
+if (!process.env.SUPABASE_HTTP_WORKER_KEY) {
+  throw new Error('Missing env.SUPABASE_HTTP_WORKER_KEY')
+}
+
 export const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY,
@@ -53,3 +57,22 @@ export const authClient = createClient(
     }
   }
 )
+
+// export const httpWorkerClient = createClient(
+//   process.env.NEXT_PUBLIC_SUPABASE_URL!,
+//   process.env.SUPABASE_HTTP_WORKER_KEY!,
+//   {
+//     auth: {
+//       autoRefreshToken: false,
+//       persistSession: false
+//     },
+//     global: {
+//       fetch: (url: string, options: RequestInit) => {
+//         return fetch(url, {
+//           ...options,
+//           signal: AbortSignal.timeout(60000), // 60 second timeout pour les tâches worker
+//         });
+//       },
+//     }
+//   }
+// )
