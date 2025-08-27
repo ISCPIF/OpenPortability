@@ -125,26 +125,26 @@ services:
   #     retries: 3
   #     start_period: 30s
 
-  python_worker:
-    build:
-      context: ./python_worker
-      dockerfile: Dockerfile
-    volumes:
-      # - ./python_worker:/app
-      # - /app/node_modules
-      - ./python_worker/messages:/app/messages
-      - app_logs:/app/logs
-    env_file:
-      - ./python_worker/.env
-    environment:
-      - NODE_ENV=development
-    networks:
-      - app_network
-      - supabase_network_goodbyex
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    depends_on:
-      - app
+  # python_worker:
+  #   build:
+  #     context: ./python_worker
+  #     dockerfile: Dockerfile
+  #   volumes:
+  #     # - ./python_worker:/app
+  #     # - /app/node_modules
+  #     - ./python_worker/messages:/app/messages
+  #     - app_logs:/app/logs
+  #   env_file:
+  #     - ./python_worker/.env
+  #   environment:
+  #     - NODE_ENV=development
+  #   networks:
+  #     - app_network
+  #     - supabase_network_goodbyex
+  #   extra_hosts:
+  #     - "host.docker.internal:host-gateway"
+  #   depends_on:
+  #     - app
 
 networks:
   app_network:
