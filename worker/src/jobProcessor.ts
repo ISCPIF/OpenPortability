@@ -13,8 +13,7 @@ import { JobManager } from './jobManager';
 import { convertTwitterDataToCSV, importCSVViaPsql, preloadNodesOnce } from './csvUtils';
 import { WorkerPool, WorkerPoolResult } from './workerPool';
 import { updateJobStats as updateRedisJobStats, RedisJobStats } from './redisClient';
-
-
+import type { RedisJobMeta } from './redisClient';
 
 // Charger les variables d'environnement
 dotenv.config();
@@ -168,8 +167,6 @@ interface JobMetrics {
   failedBatches: number;
   retries: number;
 }
-
-
 
 const jobMetrics: Map<string, JobMetrics> = new Map();
 
@@ -345,24 +342,47 @@ export async function processJob(job: ImportJob, workerId: string): Promise<{
       const uniqueIds = Array.from(new Set<string>([...followersIds, ...followingIds]));
       const nodesCSV = ['twitter_id', ...uniqueIds.map(id => `"${id}"`)].join('\n');
       console.log(`[Worker ${workerId}] 🔧 Preloading nodes once | Unique IDs: ${uniqueIds.length.toLocaleString()}`);
+      
+      // Enter nodes phase (Redis-only)
+      const nodesMeta: RedisJobMeta = {
+        phase: 'nodes',
+        phase_progress: 0,
+        nodes_total: uniqueIds.length,
+        nodes_processed: 0,
+        edges_total: totalRecords,
+        edges_processed: 0
+      };
+      const nodesInitStats: RedisJobStats = {
+        total: totalRecords,
+        progress: 0,
+        followers: 0,
+        following: 0,
+        processed: 0
+      };
+      await updateRedisJobStats(job.id, nodesInitStats, workerId, nodesMeta);
+      
       const preloadRes = await preloadNodesOnce(nodesCSV, workerId);
       if (!preloadRes.success) {
         throw new Error(`Preload nodes failed: ${preloadRes.error}`);
       }
       const t1 = Date.now();
       console.log(`[Worker ${workerId}] ✅ Nodes preloaded in ${t1 - t0}ms`);
+      
+      // Flip to edges phase (progress will be driven by chunk callbacks)
+      await updateRedisJobStats(job.id, {
+        total: totalRecords,
+        progress: 0,
+        followers: 0,
+        following: 0,
+        processed: 0
+      }, workerId, { phase: 'edges', phase_progress: 0, edges_total: totalRecords, edges_processed: 0 });
     }
 
     const strategy = getOptimalStrategy(totalRecords);
     console.log(`[Worker ${workerId}] 🎯 Using ${strategy} strategy`);
 
-    // let result;
-    // if (strategy === 'monolithic') {
-    //   result = await processMonolithicImport(followersData, followingData, job.user_id, workerId);
-    // } else {
     const result = await processBatchParallelImport(followersData, followingData, job.user_id, workerId, job.id);
-    // }
-
+    
     if (!result.success) {
       throw new Error(result.error || 'Import failed');
     }
@@ -374,6 +394,15 @@ export async function processJob(job: ImportJob, workerId: string): Promise<{
       workerId,
       'completed'
     );
+
+    // Mark completed in Redis
+    await updateRedisJobStats(job.id, {
+      total: totalRecords,
+      progress: 100,
+      followers: followersData.length,
+      following: followingData.length,
+      processed: totalRecords
+    }, workerId, { phase: 'completed', phase_progress: 100, edges_total: totalRecords, edges_processed: totalRecords });
 
     const executionTime = Date.now() - startTime;
     // console.log(`[Worker ${workerId}] ✅ Job ${job.id} completed in ${executionTime}ms`);
@@ -399,6 +428,11 @@ export async function processJob(job: ImportJob, workerId: string): Promise<{
       'failed',
       errorMessage
     );
+
+    // Mark failure in Redis (do not throw here)
+    try {
+      await updateRedisJobStats(job.id, { total: 0, progress: 0, followers: 0, following: 0, processed: 0 }, workerId, { phase: 'failed', phase_progress: 0 });
+    } catch {}
 
     throw error;
   } finally {
@@ -456,20 +490,21 @@ async function processBatchParallelImport(
         // Update Redis every 5 chunks
         if (completedChunks - lastRedisUpdate >= REDIS_UPDATE_INTERVAL || completedChunks === followersChunks.length) {
           lastRedisUpdate = completedChunks;
-          const processedFollowers = completedChunks * FOLLOWERS_CHUNK_SIZE;
-          const progressPercent = Math.round((processedFollowers / totalRecords) * 100);
+          const processedFollowers = Math.min(completedChunks * FOLLOWERS_CHUNK_SIZE, followersData.length);
+          const edgesProcessed = processedFollowers; // edges phase progress during followers
+          const phaseProgress = Math.round((edgesProcessed / totalRecords) * 100);
+          const progressPercent = Math.round((edgesProcessed / totalRecords) * 100);
           
           // Update Redis stats async without blocking workers
-          // const jobId = workerId.split('_')[0]; // Extract jobId from workerId
           const stats: RedisJobStats = {
             total: totalRecords,
             progress: progressPercent,
             followers: processedFollowers,
             following: 0,
-            processed: processedFollowers
+            processed: edgesProcessed
           };
-          updateRedisJobStats(jobId, stats, workerId)
-            .catch(err => console.log(`[Worker ${workerId}] ⚠️ Redis stats update failed: ${err.message}`));
+          updateRedisJobStats(jobId, stats, workerId, { phase: 'edges', phase_progress: phaseProgress, edges_total: totalRecords, edges_processed: edgesProcessed })
+             .catch(err => console.log(`[Worker ${workerId}] ⚠️ Redis stats update failed: ${err.message}`));
         // }
         }
       });
@@ -519,12 +554,12 @@ async function processBatchParallelImport(
         // Update Redis every 5 chunks
         if (completedChunks - lastRedisUpdate >= REDIS_UPDATE_INTERVAL || completedChunks === followingChunks.length) {
           lastRedisUpdate = completedChunks;
-          const processedFollowing = completedChunks * TARGETS_CHUNK_SIZE;
-          const totalProcessed = followersData.length + processedFollowing;
+          const processedFollowing = Math.min(completedChunks * TARGETS_CHUNK_SIZE, followingData.length);
+          const totalProcessed = Math.min(followersData.length + processedFollowing, totalRecords);
           const progressPercent = Math.round((totalProcessed / totalRecords) * 100);
+          const phaseProgress = Math.round((totalProcessed / totalRecords) * 100);
           
           // Update Redis stats async without blocking workers
-          const jobId = workerId.split('_')[0]; // Extract jobId from workerId
           const stats: RedisJobStats = {
             total: totalRecords,
             progress: progressPercent,
@@ -532,9 +567,8 @@ async function processBatchParallelImport(
             following: processedFollowing,
             processed: totalProcessed
           };
-
-          updateRedisJobStats(jobId, stats, workerId)
-            .catch(err => console.log(`[Worker ${workerId}] ⚠️ Redis stats update failed: ${err.message}`));
+          updateRedisJobStats(jobId, stats, workerId, { phase: 'edges', phase_progress: phaseProgress, edges_total: totalRecords, edges_processed: totalProcessed })
+             .catch(err => console.log(`[Worker ${workerId}] ⚠️ Redis stats update failed: ${err.message}`));
         }
       });
 
@@ -634,7 +668,6 @@ export {
   ensureSourceExists
 };
 
-
 export async function executePostgresCommand(sql: string, workerId: string, timeoutMs: number = 120000): Promise<{ success: boolean; error?: string }> {
   return new Promise((resolve) => {
     const env = {
@@ -724,7 +757,6 @@ export async function executePostgresCommand(sql: string, workerId: string, time
     });
   });
 }
-
 
 async function processBatchDataViaPsql(
   data: any[],

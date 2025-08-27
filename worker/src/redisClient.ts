@@ -155,11 +155,24 @@ export interface RedisJobStats {
   processed: number;
 }
 
+// Optional Redis-only metadata to drive frontend visual phases
+export type RedisJobPhase = 'pending' | 'nodes' | 'edges' | 'completed' | 'failed';
+
+export interface RedisJobMeta {
+  phase?: RedisJobPhase;
+  phase_progress?: number; // 0-100 for current phase
+  nodes_total?: number;
+  nodes_processed?: number;
+  edges_total?: number;
+  edges_processed?: number;
+}
+
 // Function to update job stats in Redis
 export async function updateJobStats(
-  jobId: string, 
+  jobId: string,
   stats: RedisJobStats,
-  workerId?: string
+  workerId?: string,
+  meta?: RedisJobMeta
 ): Promise<{ success: boolean; error?: string }> {
   try {
     await redisClient.ensureConnection();
@@ -181,6 +194,10 @@ export async function updateJobStats(
     
     // Update stats
     jobData.stats = stats;
+    // Merge optional phase/meta fields without breaking older readers
+    if (meta && typeof meta === 'object') {
+      jobData = { ...jobData, ...meta };
+    }
     jobData.updated_at = new Date().toISOString();
     
     // Save back to Redis with TTL of 24 hours
