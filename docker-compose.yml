@@ -13,15 +13,15 @@ services:
       restart: always
       networks:
         - app_network
-        - supabase_network_goodbyex
+        - supabase_network_helloquittex
       extra_hosts:
         - "host.docker.internal:host-gateway"
       ports:
         - "3000:3000"
       volumes:
         # Mount entire directory but preserve container's node_modules
-        # - ./:/app
-        # - /app/node_modules
+        - ./:/app
+        - /app/node_modules
         - shared-tmp:/app/tmp
         - app_logs:/app/logs
       depends_on:
@@ -45,7 +45,7 @@ services:
       - NODE_ENV=development
     networks:
       - app_network
-      - supabase_network_goodbyex
+      - supabase_network_helloquittex
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
@@ -96,7 +96,7 @@ services:
       - redis/.env.redis
     networks:
       - app_network
-      - supabase_network_goodbyex
+      - supabase_network_helloquittex
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
@@ -115,7 +115,7 @@ services:
   #   restart: unless-stopped
   #   networks:
   #     - app_network
-  #     - supabase_network_goodbyex
+  #     - supabase_network_helloquittex
   #   extra_hosts:
   #     - "host.docker.internal:host-gateway"
   #   healthcheck:
@@ -140,7 +140,7 @@ services:
   #     - NODE_ENV=development
   #   networks:
   #     - app_network
-  #     - supabase_network_goodbyex
+  #     - supabase_network_helloquittex
   #   extra_hosts:
   #     - "host.docker.internal:host-gateway"
   #   depends_on:
@@ -149,7 +149,7 @@ services:
 networks:
   app_network:
     driver: bridge
-  supabase_network_goodbyex:
+  supabase_network_helloquittex:
     external: true
 
 volumes:
