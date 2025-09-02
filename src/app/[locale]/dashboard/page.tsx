@@ -9,13 +9,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Footer from '@/app/_components/Footer';
 import LoadingIndicator from '@/app/_components/LoadingIndicator';
 import LoginSea from "@/app/_components/LoginSea";
-import LaunchReconnection from '@/app/_components/LaunchReconnection';
 import DashboardLoginButtons from '@/app/_components/DashboardLoginButtons';
 import { useDashboardState } from '@/hooks/useDashboardState';
 import NewsletterSection from '@/app/_components/dashboard/NewsletterSection';
 import OnboardingSection from '@/app/_components/dashboard/OnboardingSection';
 import TutorialSection from '@/app/_components/dashboard/TutorialSection';
-import NewsLetterConsentsUpdate from '@/app/_components/NewsLetterConsentsUpdate'
 
 export default function DashboardPage() {
   const {
@@ -36,8 +34,6 @@ export default function DashboardPage() {
     connectedServicesCount
   } = useDashboardState();
 
-  console.log(session)
-
   const [isNewsletterFirstSeenOpen, setIsNewsletterFirstSeenOpen] = useState(false);
   
   const t = useTranslations('dashboard');
@@ -54,6 +50,7 @@ export default function DashboardPage() {
     setIsNewsletterFirstSeenOpen(isOpen);
   };
   
+
 
   if (isLoading) {
     return (
@@ -124,9 +121,6 @@ export default function DashboardPage() {
               <TutorialSection />
             </div>
           </div>
-          {session?.user?.have_seen_newsletter && (
-            <NewsLetterConsentsUpdate userId={session.user.id} />
-          )}
         </div>
         
         <Footer />
