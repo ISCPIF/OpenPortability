@@ -289,7 +289,14 @@ async function startWorker(): Promise<void> {
           total_items: job.total_items,
           stats: job.stats || {},
           error_log: null,
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
+          phase: 'pending' as const,
+          phase_progress: 0,
+          phase_metadata: {
+            current_step: 0,
+            total_steps: 1,
+            step_name: 'pending'
+          }
         };
         
         await redisClient.getClient().set(`job:${job.id}`, JSON.stringify(processingJobData), 'EX', 3600);

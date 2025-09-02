@@ -1,4 +1,6 @@
-import { convertTwitterDataToCSV, importCSVViaPsql } from './csvUtils';
+import { convertToRelationsCSV, importCSVViaPsql } from './csvUtils';
+import { logEvent } from './log_utils';
+
 
 interface ChunkTask {
   data: any[];
@@ -75,17 +77,25 @@ export class WorkerPool {
     try {
       console.log(`[Worker ${workerName}] 🚀 Starting chunk ${task.chunkIndex + 1} (${task.data.length} records)`);
       
-      // Convert to CSV
-      const { dataContent, relationsContent } = await convertTwitterDataToCSV(
-        task.data, 
-        task.userId, 
-        task.dataType, 
+      // Unified event: task started
+      logEvent('task_started', {
+        userId: task.userId,
+        workerId: workerName,
+        dataType: task.dataType,
+        chunkIndex: task.chunkIndex,
+      }, { recordsInChunk: task.data.length });
+       
+      // Build only relations CSV (nodes were preloaded once per job)
+      const { relationsContent } = await convertToRelationsCSV(
+        task.data,
+        task.userId,
+        task.dataType,
         workerName
       );
       
       // Import via psql COPY
       const result = await importCSVViaPsql(
-        dataContent, 
+        'node_id\n', // minimal header-only CSV, ignored since skipNodesImport=true
         relationsContent, 
         task.dataType, 
         task.userId, 
@@ -109,6 +119,14 @@ export class WorkerPool {
       } else {
         console.log(`[Worker ${workerName}] ❌ Chunk ${task.chunkIndex + 1} failed | Error: ${result.error} | Time: ${duration}ms`);
       }
+      // Unified event: task finished
+      logEvent('task_finished', {
+        userId: task.userId,
+        workerId: workerName,
+        dataType: task.dataType,
+        chunkIndex: task.chunkIndex,
+      }, { success: result.success, processed: result.processed, durationMs: duration, error: result.error });
+ 
 
       this.results.push(workerResult);
       
@@ -127,7 +145,14 @@ export class WorkerPool {
         error: String(error)
       };
 
-      console.log(`[Worker ${workerName}] ❌ Chunk ${task.chunkIndex + 1} failed with exception | Error: ${error} | Time: ${duration}ms`);
+      console.log(`[Worker ${workerName}] ❌ Chunk ${task.chunkIndex + 1} failed with exception | Error: ${error} | Time: ${duration}ms`);      
+      // Unified event: task finished (failure)
+      logEvent('task_finished', {
+        userId: task.userId,
+        workerId: workerName,
+        dataType: task.dataType,
+        chunkIndex: task.chunkIndex,
+      }, { success: false, processed: 0, durationMs: duration, error: String(error) });
       this.results.push(workerResult);
       
       if (this.onTaskComplete) {
