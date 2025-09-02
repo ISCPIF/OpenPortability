@@ -141,7 +141,6 @@ async function updateJobProgress(
     if (status !== 'processing') {
       updateData.status = status;
     }
-
     if (errorMessage) {
       updateData.error_log = errorMessage;
     }
@@ -341,8 +340,7 @@ export async function processJob(job: ImportJob, workerId: string): Promise<{
       const followingIds = followingData.map((it: any) => String((it.following || it.follower).accountId));
       const uniqueIds = Array.from(new Set<string>([...followersIds, ...followingIds]));
       const nodesCSV = ['twitter_id', ...uniqueIds.map(id => `"${id}"`)].join('\n');
-      console.log(`[Worker ${workerId}] 🔧 Preloading nodes once | Unique IDs: ${uniqueIds.length.toLocaleString()}`);
-      
+      console.log(`[Worker ${workerId}] 🔧 Preloading nodes once | Unique IDs: ${uniqueIds.length.toLocaleString()}`);      
       // Enter nodes phase (Redis-only)
       const nodesMeta: RedisJobMeta = {
         phase: 'nodes',
@@ -393,6 +391,7 @@ export async function processJob(job: ImportJob, workerId: string): Promise<{
         processed: 0
       }, workerId, { phase: 'nodes', phase_progress: 100, nodes_total: uniqueIds.length, nodes_processed: uniqueIds.length, edges_total: totalRecords, edges_processed: 0 });
       
+
       // Flip to edges phase (progress will be driven by chunk callbacks)
       await updateRedisJobStats(job.id, {
         total: totalRecords,
@@ -756,3 +755,4 @@ export async function executePostgresCommand(sql: string, workerId: string, time
     });
   });
 }
+

@@ -22,6 +22,7 @@ export default function DashboardPage() {
     stats,
     globalStats,
     mastodonInstances,
+    newsletterData,
     isLoading,
     setIsLoading,
     showNewsletterModal,
@@ -49,8 +50,7 @@ export default function DashboardPage() {
   const handleNewsletterFirstSeenOpen = (isOpen: boolean) => {
     setIsNewsletterFirstSeenOpen(isOpen);
   };
-  
-
+ 
 
   if (isLoading) {
     return (
@@ -76,7 +76,12 @@ export default function DashboardPage() {
       <div className="w-full">
         <div className="flex flex-col text-center text-[#E2E4DF]">
           {/* Sea background that takes full width */}
-          <LoginSea />
+          <NodesSea 
+            // maxNodes={500}  // Afficher les 50k plus gros
+            showLogo={true}
+            showTitle={true}
+            height="h-[600px]"
+          />
         </div>
 
         <div className="relative w-full">
@@ -113,6 +118,7 @@ export default function DashboardPage() {
                   setShowModal={setShowNewsletterModal}
                   onUpdate={update}
                   haveSeenNewsletter={!!session.user.have_seen_newsletter}
+                  newsletterData={newsletterData}
                   onModalOpenChange={handleNewsletterFirstSeenOpen}
                 />
               )}

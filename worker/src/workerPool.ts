@@ -1,6 +1,7 @@
 import { convertToRelationsCSV, importCSVViaPsql } from './csvUtils';
 import { logEvent } from './log_utils';
 
+
 interface ChunkTask {
   data: any[];
   userId: string;
@@ -118,7 +119,6 @@ export class WorkerPool {
       } else {
         console.log(`[Worker ${workerName}] ❌ Chunk ${task.chunkIndex + 1} failed | Error: ${result.error} | Time: ${duration}ms`);
       }
-
       // Unified event: task finished
       logEvent('task_finished', {
         userId: task.userId,
@@ -127,6 +127,7 @@ export class WorkerPool {
         chunkIndex: task.chunkIndex,
       }, { success: result.success, processed: result.processed, durationMs: duration, error: result.error });
  
+
       this.results.push(workerResult);
       
       // Call task completion callback
@@ -144,8 +145,7 @@ export class WorkerPool {
         error: String(error)
       };
 
-      console.log(`[Worker ${workerName}] ❌ Chunk ${task.chunkIndex + 1} failed with exception | Error: ${error} | Time: ${duration}ms`);
-      
+      console.log(`[Worker ${workerName}] ❌ Chunk ${task.chunkIndex + 1} failed with exception | Error: ${error} | Time: ${duration}ms`);      
       // Unified event: task finished (failure)
       logEvent('task_finished', {
         userId: task.userId,
