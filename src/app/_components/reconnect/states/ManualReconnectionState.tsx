@@ -17,6 +17,8 @@ export default function ManualReconnectionState({
   handleStartMigration,
   handleAutomaticReconnection,
 }: ManualReconnectionStateProps) {
+
+  console.log("acounts to process from Manual Reco State ->", accountsToProcess[0])
   return (
     <motion.div
       key="manual"
