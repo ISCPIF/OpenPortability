@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Nombre de workers Python à lancer
-NUM_WORKERS=2 # Ajustez ce nombre selon vos besoins
+NUM_WORKERS=1 # Ajustez ce nombre selon vos besoins
 
 # Array pour stocker les PIDs
 declare -a PY_WORKER_PIDS=()
