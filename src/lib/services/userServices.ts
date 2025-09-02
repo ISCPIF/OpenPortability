@@ -1,4 +1,5 @@
-import { UserRepository } from '../repositories/userRepository';
+import { UserRepository } from '@/lib/repositories/userRepository';
+import { redis } from '@/lib/redis';
 import { NewsletterUpdate, ShareEvent, User } from '../types/user';
 import { isValidEmail } from '../utils';
 
@@ -257,5 +258,183 @@ export class UserService {
     }
     
     await this.repository.updateLanguagePreference(userId, language.toLowerCase());
+  }
+
+  /**
+   * Désactive complètement le support personnalisé pour un utilisateur
+   * - Supprime tous les enregistrements personalized_support_listing
+   * - Supprime les tâches Python en attente (send-reco-newsletter)
+   * - Force la désactivation des consents bluesky_dm et mastodon_dm
+   * 
+   * @param userId Identifiant de l'utilisateur
+   * @param metadata Métadonnées pour les logs
+   */
+  async disablePersonalizedSupport(userId: string, metadata: Record<string, any> = {}): Promise<void> {
+    try {
+      // 1. Supprimer tous les enregistrements personalized_support_listing
+      await this.repository.deletePersonalizedSupportListing(userId);
+
+      // 2. Supprimer les tâches Python en attente (send-reco-newsletter)
+      await this.repository.deletePendingPythonTasks(userId, undefined, 'send-reco-newsletter');
+
+      // 3. Force désactivation des consents bluesky_dm et mastodon_dm
+      await this.forceDisablePlatformConsents(userId, metadata);
+
+    } catch (error) {
+      console.error('❌ [UserService.disablePersonalizedSupport] Error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Force la désactivation des consents bluesky_dm et mastodon_dm
+   * 
+   * @param userId Identifiant de l'utilisateur
+   * @param metadata Métadonnées pour les logs
+   */
+  private async forceDisablePlatformConsents(userId: string, metadata: Record<string, any> = {}): Promise<void> {
+    const platforms = ['bluesky_dm', 'mastodon_dm'];
+    
+    for (const consentType of platforms) {
+      try {
+        // Vérifier si un consent actif existe
+        const consents = await this.repository.getUserActiveConsents(userId);
+        
+        if (consents[consentType]) {
+          // Insérer un nouveau consent désactivé
+          await this.repository.insertNewsletterConsent(userId, consentType, false, metadata);
+        }
+      } catch (error) {
+        console.error(`❌ [UserService.forceDisablePlatformConsents] Error for ${consentType}:`, error);
+        // Continue avec les autres plateformes même en cas d'erreur
+      }
+    }
+  }
+
+  /**
+   * Active le support personnalisé pour une plateforme spécifique
+   * - Insère le consent dans newsletter_consents
+   * - Crée une tâche test-dm via Redis (avec déduplication)
+   * 
+   * @param userId Identifiant de l'utilisateur
+   * @param platform Plateforme (bluesky ou mastodon)
+   * @param userHandles Handles de l'utilisateur (depuis la session)
+   * @param metadata Métadonnées pour les logs
+   */
+  async enablePersonalizedSupportForPlatform(
+    userId: string, 
+    platform: 'bluesky' | 'mastodon',
+    userHandles: { bluesky_username?: string; mastodon_username?: string; mastodon_instance?: string },
+    metadata: Record<string, any> = {}
+  ): Promise<void> {
+    try {
+      const consentType = `${platform}_dm`;
+      
+      // 1. Insérer le consent dans newsletter_consents (source unique de vérité)
+      await this.repository.insertNewsletterConsent(userId, consentType, true, metadata);
+
+      // 2. Créer tâche test-dm via Redis (avec déduplication)
+      await this.createTestDMTaskInRedis(userId, platform, userHandles);
+
+    } catch (error) {
+      console.error(`❌ [UserService.enablePersonalizedSupportForPlatform] Error for ${platform}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Désactive le support personnalisé pour une plateforme spécifique
+   * - Supprime de personalized_support_listing
+   * - Supprime les tâches Python en attente pour cette plateforme
+   * 
+   * @param userId Identifiant de l'utilisateur
+   * @param platform Plateforme (bluesky ou mastodon)
+   */
+  async disablePersonalizedSupportForPlatform(
+    userId: string, 
+    platform: 'bluesky' | 'mastodon',
+    metadata: Record<string, any> = {}
+  ): Promise<void> {
+    try {
+      const consentType = `${platform}_dm`;
+      
+      // 1. Insérer un consent désactivé dans newsletter_consents (source unique de vérité)
+      await this.repository.insertNewsletterConsent(userId, consentType, false, metadata);
+
+      // 2. Supprimer les tâches Python en attente pour cette plateforme
+      await this.repository.deletePendingPythonTasks(userId, platform, 'send-reco-newsletter');
+
+    } catch (error) {
+      console.error(`❌ [UserService.disablePersonalizedSupportForPlatform] Error for ${platform}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Crée une tâche test-dm dans Redis avec déduplication
+   * 
+   * @param userId Identifiant de l'utilisateur
+   * @param platform Plateforme (bluesky ou mastodon)
+   * @param userHandles Handles de l'utilisateur
+   */
+  private async createTestDMTaskInRedis(
+    userId: string, 
+    platform: 'bluesky' | 'mastodon',
+    userHandles: { bluesky_username?: string; mastodon_username?: string; mastodon_instance?: string }
+  ): Promise<void> {
+    try {
+      // Construire le handle selon la plateforme
+      let handle: string | null = null;
+      if (platform === 'bluesky' && userHandles.bluesky_username) {
+        handle = userHandles.bluesky_username;
+      } else if (platform === 'mastodon' && userHandles.mastodon_username && userHandles.mastodon_instance) {
+        handle = `${userHandles.mastodon_username}@${userHandles.mastodon_instance}`;
+      }
+
+      if (!handle) {
+        console.log(`[UserService.createTestDMTaskInRedis] No valid handle for ${platform}, skipping task creation`);
+        return;
+      }
+
+      // Créer la tâche avec métadonnées
+      const taskData = {
+        user_id: userId,
+        task_type: 'test-dm',
+        platform: platform,
+        handle: handle,
+        created_at: new Date().toISOString(),
+        status: 'pending'
+      };
+
+      // Clé Redis pour la queue du jour
+      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+      const queueKey = `consent_tasks:${today}`;
+      
+      // Clé de déduplication
+      const dedupeKey = `task_dedup:${userId}:${platform}:test-dm`;
+
+      console.log(`[UserService.createTestDMTaskInRedis] Creating task for ${platform} with handle ${handle}`);
+      
+      // const redis = getRedisClient();
+      
+      // Vérifier si une tâche similaire existe déjà (déduplication)
+      const existingTask = await redis.get(dedupeKey);
+      if (existingTask) {
+        console.log(`[UserService.createTestDMTaskInRedis] Task already exists for ${userId}:${platform}, skipping`);
+        return;
+      }
+      
+      // Ajouter la tâche à la queue Redis
+      await redis.lpush(queueKey, JSON.stringify(taskData));
+      
+      // Marquer comme traité pour déduplication (expire après 1 heure)
+      await redis.setex(dedupeKey, 3600, JSON.stringify(taskData));
+      
+      console.log(`[UserService.createTestDMTaskInRedis] Task queued in ${queueKey} with deduplication key ${dedupeKey}`);
+
+    } catch (error) {
+      console.error(`❌ [UserService.createTestDMTaskInRedis] Error for ${platform}:`, error);
+      // Ne pas throw - les tâches Redis sont non-critiques
+    }
   }
 }

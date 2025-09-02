@@ -101,7 +101,7 @@ export const POST = withValidation(
             if (matchingTargets.length > 0) {
               await matchingService.updateFollowStatusBatch(
                 userId,
-                matchingTargets.map(acc => acc.target_twitter_id),
+                matchingTargets.map(acc => acc.node_id),
                 'bluesky',
                 hasSuccess,
                 errorMessage
@@ -170,7 +170,7 @@ export const POST = withValidation(
             if (matchingTargets.length > 0) {
               await matchingService.updateFollowStatusBatch(
                 userId,
-                matchingTargets.map(acc => acc.target_twitter_id),
+                matchingTargets.map(acc => acc.node_id),
                 'mastodon',
                 results.mastodon.succeeded > 0,
                 results.mastodon.failures.length > 0 
