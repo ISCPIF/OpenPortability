@@ -41,7 +41,7 @@ export default function ReconnectPage() {
     setAccountsToProcess
   } = useReconnectState()
 
-  // Forcer un rafraîchissement des statistiques au chargement initial
+  // // Forcer un rafraîchissement des statistiques au chargement initial
   useEffect(() => {
     // Forcer le rechargement des données au premier rendu
     const loadInitialData = async () => {
@@ -53,7 +53,7 @@ export default function ReconnectPage() {
 
 
   // Ne bloquer que sur isLoading et stats, pas sur globalStats
-  if (isLoading || !stats) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-[#2a39a9] relative w-full  m-auto">
         <div className="container mx-auto py-12">
@@ -131,9 +131,9 @@ export default function ReconnectPage() {
           </div>
          
         </div>
-        {session?.user?.have_seen_newsletter && (
+        {/* {session?.user?.have_seen_newsletter && (
           <NewsLetterConsentsUpdate userId={session.user.id} />
-        )}
+        )} */}
         <Footer />
       </div>
     </div>
