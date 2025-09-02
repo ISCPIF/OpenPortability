@@ -6,9 +6,10 @@ import logger from '@/lib/log_utils';
 import { withValidation } from '@/lib/validation/middleware';
 import { z } from 'zod';
 import { secureFileContentExtended, type FileContentData } from '@/lib/security-utils';
-// import { detectXssPatterns } from '@/lib/security/utils';
+import { redis } from '@/lib/redis';
 
-const TEMP_UPLOAD_DIR = join(process.cwd(), 'tmp', 'uploads');
+// Répertoire temporaire pour les uploads - doit être accessible aux workers
+const TEMP_UPLOAD_DIR = process.env.TEMP_UPLOAD_DIR || '/app/tmp';
 
 // Schéma Zod pour la validation des fichiers
 // Comme les fichiers sont traités via FormData et non JSON,
@@ -244,9 +245,31 @@ async function largeFilesUploadHandler(request: Request, _validatedData: z.infer
       );
     }
 
+    // Ajouter le job à la queue Redis pour traitement immédiat
+    const redisSuccess = await redis.enqueueJob({
+      id: job.id,
+      user_id: job.user_id,
+      status: job.status,
+      total_items: job.total_items || 0,
+      job_type: job.job_type,
+      file_paths: job.file_paths || [],
+      stats: job.stats,
+      created_at: job.created_at,
+      updated_at: job.updated_at
+    });
+
+    if (!redisSuccess) {
+      // Si Redis échoue, le job reste dans Supabase et sera traité par le système de synchronisation
+      console.log('API', 'POST /api/upload/large-files', 'Failed to enqueue job to Redis, will be processed via sync', user.id, {
+        jobId: job.id,
+        context: 'Redis enqueue failed - fallback to sync'
+      });
+    }
+
     console.log('API', 'POST /api/upload/large-files', 'Files uploaded successfully', user.id, {
       jobId: job.id,
-      fileCount: savedFilePaths.length
+      fileCount: savedFilePaths.length,
+      redisEnqueued: redisSuccess
     });
 
     return NextResponse.json({ 

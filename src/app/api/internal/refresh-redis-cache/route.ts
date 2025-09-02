@@ -1,0 +1,68 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { StatsRepository } from '@/lib/repositories/statsRepository';
+import { redis } from '@/lib/redis';
+import logger from '@/lib/log_utils';
+import { withInternalValidation } from '@/lib/validation/internal-middleware';
+import { z } from 'zod';
+
+// Schéma vide pour les requêtes GET sans body
+const EmptySchema = z.object({});
+
+async function handleRefreshRedisCache(
+  request: NextRequest,
+  validatedData: z.infer<typeof EmptySchema>
+): Promise<NextResponse> {
+  try {
+    logger.logInfo('API', 'GET /api/internal/refresh-redis-cache', 'Starting Redis cache refresh', 'system', {
+      context: 'Redis cache refresh triggered via GET request'
+    });
+
+    // Lire les stats depuis global_stats_cache
+    const repository = new StatsRepository();
+    const stats = await repository.getGlobalStatsFromCache();
+
+    if (!stats) {
+      logger.logWarning('API', 'GET /api/internal/refresh-redis-cache', 'No stats found in global_stats_cache', 'system', {
+        context: 'Cache refresh failed - no data'
+      });
+      return NextResponse.json({ error: 'No stats found in cache' }, { status: 404 });
+    }
+
+    // Mettre à jour Redis avec TTL de 65 minutes (sécurité)
+    await redis.set('stats:global', JSON.stringify(stats), 3900);
+
+    logger.logInfo('API', 'GET /api/internal/refresh-redis-cache', 'Redis cache updated successfully', 'system', {
+      context: 'Global stats cached in Redis',
+      ttl: 3900,
+      statsKeys: Object.keys(stats)
+    });
+
+    return NextResponse.json({ 
+      success: true, 
+      timestamp: new Date().toISOString(),
+      ttl: 3900 
+    });
+
+  } catch (error) {
+    logger.logError('API', 'GET /api/internal/refresh-redis-cache', error, 'system', {
+      context: 'Failed to update Redis cache from GET request'
+    });
+
+    return NextResponse.json({ 
+      error: 'Failed to update Redis cache',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 });
+  }
+}
+
+// Export du handler GET avec middleware de validation interne
+export const GET = withInternalValidation(
+  EmptySchema,
+  handleRefreshRedisCache,
+  {
+    allowEmptyBody: true,       // Permet les requêtes GET sans body
+    disableInDev: false,        // Activé même en développement
+    requireSignature: true,     // Signature HMAC requise en production
+    logSecurityEvents: true     // Logs de sécurité activés
+  }
+);
