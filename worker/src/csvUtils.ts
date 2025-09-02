@@ -1,4 +1,6 @@
 import { spawn } from 'child_process';
+import { logEvent } from './log_utils';
+
 
 // CSV conversion functions for new schema
 export async function convertTwitterDataToCSV(
@@ -49,6 +51,43 @@ export async function convertTwitterDataToCSV(
   }
 }
 
+export async function convertToRelationsCSV(
+  data: any[],
+  userId: string,
+  dataType: 'followers' | 'targets',
+  workerId: string
+): Promise<{ relationsContent: string; count: number }> {
+  try {
+    const isFollowers = dataType === 'followers';
+    const itemKey = isFollowers ? 'follower' : 'following';
+
+    // Sort by twitter_id for consistent COPY performance
+    const sortedData = data.sort((a, b) => {
+      const idA = parseInt(a[itemKey].accountId);
+      const idB = parseInt(b[itemKey].accountId);
+      return idA - idB;
+    });
+
+    const relationsRows = sortedData
+      .map(item => {
+        const twitterId = item[itemKey].accountId;
+        return `"${userId}","${twitterId}"`;
+      })
+      .join('\n');
+
+    const relationsHeader = 'source_id,node_id';
+    const relationsContent = `${relationsHeader}\n${relationsRows}`;
+
+    console.log(`[Worker ${workerId}] ✅ Relations CSV created (sorted): ${sortedData.length} rows`);
+
+    return { relationsContent, count: sortedData.length };
+  } catch (error) {
+    console.log(`[Worker ${workerId}] ❌ Error creating relations CSV:`, error);
+    throw error;
+  }
+}
+
+
 export async function importCSVViaPsql(
   dataContent: string,
   relationsContent: string,
@@ -77,15 +116,18 @@ export async function importCSVViaPsql(
       );
       
       if (!isRetryable) {
+        logEvent('psql_error', { userId, workerId, dataType }, { attempt, maxRetries, reason: result.error, retryable: false });
         return result;
       }
       
       const delayMs = baseDelayMs * Math.pow(2, attempt - 1);
       console.log(`[Worker ${workerId}] 🔄 Retry attempt ${attempt}/${maxRetries} after ${delayMs}ms delay`);
+      logEvent('retry', { userId, workerId, dataType }, { attempt, maxRetries, delayMs, reason: result.error });
       await new Promise(resolve => setTimeout(resolve, delayMs));
       
     } catch (error) {
       console.log(`[Worker ${workerId}] ❌ Unexpected error in retry attempt ${attempt}:`, error);
+      logEvent('psql_error', { userId, workerId, dataType }, { attempt, maxRetries, reason: String(error), retryable: true });1
       if (attempt === maxRetries) {
         return { success: false, processed: 0, error: `Max retries exceeded: ${error}` };
       }
@@ -107,11 +149,10 @@ async function importCSVViaPsqlAttempt(
   const startTime = Date.now();
   const isFollowers = dataType === 'followers';
   
-  // Parse data to get counts
-  const dataLines = dataContent.trim().split('\n');
+  // Parse to get counts (skip nodes when preloaded once per job)
   const relationsLines = relationsContent.trim().split('\n');
-  const dataCount = Math.max(0, dataLines.length - 1);
   const relationsCount = Math.max(0, relationsLines.length - 1);
+  const dataCount = skipNodesImport ? 0 : Math.max(0, dataContent.trim().split('\n').length - 1);
 
   console.log(`[Worker ${workerId}] 🚀 Bulk import for ${dataType} | Nodes: ${dataCount} | Relations: ${relationsCount}...`);
   
@@ -151,6 +192,7 @@ async function importCSVViaPsqlAttempt(
       console.log(`[Worker ${workerId}] 🚀 Step 1: Importing nodes...`);
       const nodesResult = await executePostgresCommandWithStdin(nodesImportSql, dataContent, workerId, timeoutValue * 1000);
       if (!nodesResult.success) {
+        logEvent('psql_error', { userId, workerId, dataType }, { phase: 'nodes_import', error: nodesResult.error, timeoutSec: timeoutValue });
         throw new Error(`Nodes import failed: ${nodesResult.error}`);
       }
       console.log(`[Worker ${workerId}] ✅ Step 1 completed: Nodes imported`);
@@ -180,6 +222,7 @@ COMMIT;
     console.log(`[Worker ${workerId}] 🔍 Sending ${relationsContent.length} bytes to PostgreSQL...`);
     const relationResult = await executePostgresCommandWithStdin(relationsImportSql, relationsContent, workerId, timeoutValue * 1000);
     if (!relationResult.success) {
+      logEvent('psql_error', { userId, workerId, dataType }, { phase: 'relations_import', table: relationTableName, error: relationResult.error, timeoutSec: timeoutValue });
       throw new Error(`Relationships import failed: ${relationResult.error}`);
     }
 
@@ -191,6 +234,7 @@ COMMIT;
   } catch (error) {
     const executionTime = Date.now() - startTime;
     console.log(`[Worker ${workerId}] ❌ Bulk import failed for ${dataType} | Time: ${executionTime}ms | Error: ${error}`);
+    logEvent('psql_error', { userId, workerId, dataType }, { phase: 'attempt', error: String(error), durationMs: executionTime });
     return { success: false, processed: 0, error: String(error) };
   }
 }
@@ -211,6 +255,7 @@ export async function executePostgresCommandWithStdin(
     };
 
     console.log(`[Worker ${workerId}] 🕒 Using timeout: ${timeoutMs}ms (${Math.round(timeoutMs/1000)}s)`);
+    const psqlProcess = spawn('psql', ['-v', 'ON_ERROR_STOP=1', '-X', '-q', '-c', sql], {
     const psqlProcess = spawn('psql', ['-c', sql], {
       env: { ...process.env, ...env },
       stdio: ['pipe', 'pipe', 'pipe']
@@ -248,6 +293,10 @@ export async function executePostgresCommandWithStdin(
     // Écriture des données avec gestion d'erreur
     try {
       if (!psqlProcess.killed) {
+        const needsStdin = /COPY\s+[\s\S]*FROM\s+STDIN/i.test(sql);
+        if (needsStdin) {
+          psqlProcess.stdin.write(stdinData);
+        }
         psqlProcess.stdin.write(stdinData);
         psqlProcess.stdin.end();
       }
@@ -262,8 +311,12 @@ export async function executePostgresCommandWithStdin(
       clearTimeout(timeout);
 
       if (writeError) {
+        const stderrTrimmed = (stderr || '').trim();
         console.log(`[Worker ${workerId}] ❌ psql failed due to write error: ${writeError.message}`);
-        resolve({ success: false, error: `Write error: ${writeError.message}` });
+        if (stderrTrimmed) {
+          console.log(`[Worker ${workerId}] 🔎 psql stderr (on EPIPE): ${stderrTrimmed}`);
+        }
+        resolve({ success: false, error: `Write error: ${writeError.message}${stderrTrimmed ? ` | psql: ${stderrTrimmed}` : ''}` });
         return;
       }
 
@@ -290,7 +343,8 @@ export async function executePostgresCommandWithStdin(
 
 export async function preloadNodesOnce(
   nodesCSVContent: string,
-  workerId: string
+  workerId: string,
+  onProgress?: (processed: number, total: number) => Promise<void> | void
 ): Promise<{ success: boolean; processed: number; error?: string }> {
   const lines = nodesCSVContent.trim().split('\n');
   const header = lines[0] || 'twitter_id';
@@ -318,6 +372,8 @@ export async function preloadNodesOnce(
 BEGIN;
 SET statement_timeout TO '${timeoutValue}s';
 SET synchronous_commit TO OFF;
+SELECT count(*) FROM nodes;
+
 CREATE TEMP TABLE ${nodesTempTable} (twitter_id BIGINT);
 COPY ${nodesTempTable} FROM STDIN WITH (FORMAT csv, HEADER true);
 INSERT INTO nodes (twitter_id)
@@ -336,6 +392,12 @@ COMMIT;
       return { success: false, processed, error: `Chunk ${chunkIndex}/${totalChunks} failed: ${res.error}` };
     }
     processed += chunkCount;
+    // notify progress to caller
+    try {
+      if (onProgress) await onProgress(processed, total);
+    } catch (cbErr) {
+      console.log(`[Worker ${workerId}] ⚠️ preloadNodesOnce progress callback error: ${String(cbErr)}`);
+    }
   }
 
   return { success: true, processed };

@@ -141,7 +141,6 @@ async function updateJobProgress(
     if (status !== 'processing') {
       updateData.status = status;
     }
-
     if (errorMessage) {
       updateData.error_log = errorMessage;
     }
@@ -341,8 +340,7 @@ export async function processJob(job: ImportJob, workerId: string): Promise<{
       const followingIds = followingData.map((it: any) => String((it.following || it.follower).accountId));
       const uniqueIds = Array.from(new Set<string>([...followersIds, ...followingIds]));
       const nodesCSV = ['twitter_id', ...uniqueIds.map(id => `"${id}"`)].join('\n');
-      console.log(`[Worker ${workerId}] 🔧 Preloading nodes once | Unique IDs: ${uniqueIds.length.toLocaleString()}`);
-      
+      console.log(`[Worker ${workerId}] 🔧 Preloading nodes once | Unique IDs: ${uniqueIds.length.toLocaleString()}`);      
       // Enter nodes phase (Redis-only)
       const nodesMeta: RedisJobMeta = {
         phase: 'nodes',
@@ -361,13 +359,39 @@ export async function processJob(job: ImportJob, workerId: string): Promise<{
       };
       await updateRedisJobStats(job.id, nodesInitStats, workerId, nodesMeta);
       
-      const preloadRes = await preloadNodesOnce(nodesCSV, workerId);
+      const preloadRes = await preloadNodesOnce(nodesCSV, workerId, async (nodesProcessed, nodesTotal) => {
+        const phaseProgress = Math.round((nodesProcessed / nodesTotal) * 100);
+        await updateRedisJobStats(job.id, {
+          total: totalRecords,
+          progress: 0,
+          followers: 0,
+          following: 0,
+          processed: 0
+        }, workerId, {
+          phase: 'nodes',
+          phase_progress: phaseProgress,
+          nodes_total: nodesTotal,
+          nodes_processed: nodesProcessed,
+          edges_total: totalRecords,
+          edges_processed: 0
+        });
+      });
       if (!preloadRes.success) {
         throw new Error(`Preload nodes failed: ${preloadRes.error}`);
       }
       const t1 = Date.now();
       console.log(`[Worker ${workerId}] ✅ Nodes preloaded in ${t1 - t0}ms`);
       
+      // Mark nodes phase as completed to ensure UI can display it during polling
+      await updateRedisJobStats(job.id, {
+        total: totalRecords,
+        progress: 0,
+        followers: 0,
+        following: 0,
+        processed: 0
+      }, workerId, { phase: 'nodes', phase_progress: 100, nodes_total: uniqueIds.length, nodes_processed: uniqueIds.length, edges_total: totalRecords, edges_processed: 0 });
+      
+
       // Flip to edges phase (progress will be driven by chunk callbacks)
       await updateRedisJobStats(job.id, {
         total: totalRecords,
@@ -625,32 +649,6 @@ async function processBatchParallelImport(
   }
 }
 
-// Helper functions for trigger management
-async function disableTriggersForBatchImport(workerId: string): Promise<{ success: boolean; error?: string }> {
-  const disableSQL = `
-    SET statement_timeout TO '180s';
-    SET work_mem TO '64MB';
-    SET maintenance_work_mem TO '512MB';
-    SET temp_buffers TO '32MB';
-    
-    ALTER TABLE sources_followers DISABLE TRIGGER ALL;
-    ALTER TABLE sources_targets DISABLE TRIGGER ALL;
-  `;
-  
-  const result = await executePostgresCommand(disableSQL, workerId, 90000);
-  return result;
-}
-
-async function enableTriggersAfterBatchImport(workerId: string): Promise<{ success: boolean; error?: string }> {
-  const enableSQL = `
-    ALTER TABLE sources_followers ENABLE TRIGGER ALL;
-    ALTER TABLE sources_targets ENABLE TRIGGER ALL;
-  `;
-  
-  const result = await executePostgresCommand(enableSQL, workerId, 90000);
-  return result;
-}
-
 // Utility function to chunk arrays
 function chunkArray<T>(array: T[], chunkSize: number): T[][] {
   const chunks: T[][] = [];
@@ -758,69 +756,3 @@ export async function executePostgresCommand(sql: string, workerId: string, time
   });
 }
 
-async function processBatchDataViaPsql(
-  data: any[],
-  userId: string,
-  workerId: string,
-  dataType: 'followers' | 'targets',
-  metrics: any
-): Promise<number> {
-  
-  if (data.length === 0) {
-    console.log(`[Worker ${workerId}] No ${dataType} data to process`);
-    return 0;
-  }
-
-  console.log(`[Worker ${workerId}] 🚀 Starting ${dataType} processing via psql COPY | Total items: ${data.length}`);
-
-  try {
-    // Convert to CSV
-    const { dataContent, relationsContent } = await convertTwitterDataToCSV(data, userId, dataType, workerId);
-    
-    // Import via psql COPY
-    const result = await importCSVViaPsql(
-      dataContent, 
-      relationsContent, 
-      dataType, 
-      userId, 
-      workerId, 
-      true, // skipTriggerManagement=true
-      true  // skipNodesImport=true
-    );
-    
-    if (!result.success) {
-      throw new Error(result.error || 'Import failed');
-    }
-    
-    metrics.batchesProcessed++;
-    metrics.successfulBatches++;
-    
-    // console.log(`[Worker ${workerId}] ✅ ${dataType} processing completed via psql COPY | Processed: ${result.processed} items`);
-    
-    return result.processed;
-    
-  } catch (error) {
-    metrics.failedBatches++;
-    console.log(`[Worker ${workerId}] ❌ ${dataType} processing failed via psql COPY:`, error);
-    throw error;
-  }
-
-  
-}
-
-async function updateJobStats(jobId: string, stats: JobStats, workerId: string) {
-  try {
-    const updateData: any = {
-      stats: stats,
-      updated_at: new Date().toISOString()
-    };
-
-    await supabase
-      .from('import_jobs')
-      .update(updateData)
-      .eq('id', jobId);
-
-  } catch (error) {
-    console.log(`[Worker ${workerId}] Error updating job stats:`, error);
-  }
-}
