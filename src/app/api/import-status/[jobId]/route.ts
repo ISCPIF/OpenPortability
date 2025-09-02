@@ -42,7 +42,6 @@ async function getImportStatus(request: NextRequest, _data: z.infer<typeof Empty
           processed: 0
         };
 
-        // Normalize stats to nested shape if Redis provided flat counts
         const normalizedStats = (() => {
           const s: any = stats;
           const isFlat = typeof s?.followers === 'number' || typeof s?.following === 'number';
@@ -78,6 +77,7 @@ async function getImportStatus(request: NextRequest, _data: z.infer<typeof Empty
           stats: normalizedStats,
           phase,
           phase_progress
+
         });
 
         return NextResponse.json({
@@ -93,6 +93,10 @@ async function getImportStatus(request: NextRequest, _data: z.infer<typeof Empty
           nodes_processed,
           edges_total,
           edges_processed
+          progress: stats.processed,
+          totalItems: job.total_items || stats.total,
+          stats,
+          error: job.error_log
         });
       }
     } catch (redisError) {

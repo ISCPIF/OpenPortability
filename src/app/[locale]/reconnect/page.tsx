@@ -67,6 +67,8 @@ export default function ReconnectPage() {
     )
   }
 
+  console.log("stats from page reconnect ", stats)
+
   return (
     <div className="min-h-screen bg-[#E8E9E4]">
       <div className="relative z-40 bg-[#E8E9E4]">
