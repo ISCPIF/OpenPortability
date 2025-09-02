@@ -8,7 +8,6 @@ import NewsletterFirstSeen from '@/app/_components/NewsLetterFirstSeen';
 import notificationIcon from '../../../../public/newSVG/notif.svg';
 import { plex } from '@/app/fonts/plex';
 import { useTranslations } from 'next-intl';
-import { useNewsletter } from '@/hooks/useNewsLetter';
 
 type NewsletterSectionProps = {
   userId: string;
@@ -16,6 +15,7 @@ type NewsletterSectionProps = {
   setShowModal: (show: boolean) => void;
   onUpdate: () => void;
   haveSeenNewsletter: boolean;
+  newsletterData: any; // Données newsletter passées en props
   onModalOpenChange?: (isOpen: boolean) => void;
 };
 
@@ -25,10 +25,11 @@ export default function NewsletterSection({
   setShowModal, 
   onUpdate,
   haveSeenNewsletter,
+  newsletterData,
   onModalOpenChange
 }: NewsletterSectionProps) {
   const t = useTranslations('dashboard');
-  const { hqxNewsletter: hasNewsletterConsent } = useNewsletter();
+  const hasNewsletterConsent = newsletterData?.consents?.hqx_newsletter;
 
   // Ne rien afficher si l'utilisateur a déjà consenti
   if (hasNewsletterConsent) {
@@ -71,6 +72,7 @@ export default function NewsletterSection({
               >
               <NewsletterFirstSeen
                 userId={userId}
+                newsletterData={newsletterData}
                 onClose={() => {
                   onUpdate();
                   if (onModalOpenChange) onModalOpenChange(false);
