@@ -64,7 +64,16 @@ export default function ManualReconnexion({
   const [activeView, setActiveView] = useState<'notFollowed' | 'followed' | 'ignored'>('notFollowed');
   // const [isLoading, setIsLoading] = useState(false);
   const itemsPerPage = 50;
-  console.log(matches)
+  console.log("===== DEBUG MANUAL RECONNEXION =====")
+  console.log("Raw matches received:", matches[0])
+  console.log("Matches length:", matches?.length || 0)
+  console.log("Session user:", session?.user)
+  console.log("User has bluesky:", !!session?.user?.bluesky_username)
+  console.log("User has mastodon:", !!session?.user?.mastodon_username)
+  console.log("Bluesky username:", session?.user?.bluesky_username)
+  console.log("Mastodon username:", session?.user?.mastodon_username)
+  console.log("Active view:", activeView)
+  console.log("=====================================")
 
   // Filter matches based on user's connected accounts and active view
   const filteredMatches = matches.filter(match => {
@@ -341,8 +350,14 @@ export default function ManualReconnexion({
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={() => {
-                // Convert Set to array of strings (target_twitter_ids)
+                // Convert Set to array of strings (node_ids)
                 const selectedAccountIds = Array.from(selectedAccounts);
+                console.log(" [ManualReconnexion] Button clicked - selectedAccounts:", selectedAccounts);
+                console.log(" [ManualReconnexion] selectedAccountIds array:", selectedAccountIds);
+                console.log(" [ManualReconnexion] currentMatches on page:", currentMatches.length);
+                console.log(" [ManualReconnexion] All currentMatches IDs:", currentMatches.map(match => 
+                  isMatchingTarget(match) ? match.node_id.toString() : match.source_twitter_id
+                ));
                 onStartMigration(selectedAccountIds);
               }}
               className="bg-[#d6356f] text-white px-4 sm:px-6 py-1.5 sm:py-2 text-sm sm:text-base rounded-full font-bold hover:bg-[#FF1F59] transition-colors w-full sm:w-auto"
@@ -354,11 +369,20 @@ export default function ManualReconnexion({
 
         <div className="space-y-2">
           {currentMatches.map((match, index) => {
-            const targetTwitterId = isMatchingTarget(match) ? match.target_twitter_id : match.source_twitter_id;
+            const targetTwitterId = isMatchingTarget(match) ? match.node_id.toString() : match.source_twitter_id;
             const blueskyHandle = isMatchingTarget(match) ? match.bluesky_handle : match.bluesky_handle;
             const hasFollowBluesky = isMatchingTarget(match) ? match.has_follow_bluesky : match.has_been_followed_on_bluesky;
             const hasFollowMastodon = isMatchingTarget(match) ? match.has_follow_mastodon : match.has_been_followed_on_mastodon;
             const isDismissed = isMatchingTarget(match) && (match as MatchingTarget).dismissed;
+
+            // console.log("=== JSX RENDERING MATCH ===")
+            // console.log("Match index:", index)
+            // console.log("Match:", match)
+            // console.log("isMatchingTarget:", isMatchingTarget(match))
+            // console.log("targetTwitterId:", targetTwitterId)
+            // console.log("targetTwitterId exists:", !!targetTwitterId)
+            // console.log("Will render:", !!targetTwitterId)
+            // console.log("===========================")
             
             if (!targetTwitterId) return null;
             
