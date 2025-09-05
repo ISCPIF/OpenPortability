@@ -109,16 +109,23 @@ async function loadInitialMappingsToRedis() {
     let blueskyTotal = 0;
     let blueskyPage = 0;
     const pageSize = 1000;
+    let lastTwitterId = null; // keyset pagination cursor
 
     while (true) {
-      const { data: blueskyUsers, error: blueskyError } = await supabase
+      let blueskyQuery = supabase
         .from('twitter_bluesky_users')
-        .select('twitter_id::text, bluesky_username, bluesky_id')
+        .select('twitter_id, twitter_id::text, bluesky_username, bluesky_id')
         .not('twitter_id', 'is', null)
         .not('bluesky_username', 'is', null)
         .not('bluesky_id', 'is', null)
-        .order('twitter_id')
-        .range(blueskyPage * pageSize, (blueskyPage + 1) * pageSize - 1);
+        .order('twitter_id', { ascending: true })
+        .limit(pageSize);
+
+      if (lastTwitterId !== null) {
+        blueskyQuery = blueskyQuery.gt('twitter_id', lastTwitterId);
+      }
+
+      const { data: blueskyUsers, error: blueskyError } = await blueskyQuery;
       
       if (blueskyError) {
         throw new Error(`Failed to fetch Bluesky users: ${blueskyError.message}`);
@@ -132,15 +139,22 @@ async function loadInitialMappingsToRedis() {
       const blueskyPipeline = redisClient.multi();
       
       for (const user of blueskyUsers) {
-        if (user.twitter_id && user.bluesky_username) {
-          const key = `twitter_to_bluesky:${user.twitter_id}`;
-          blueskyPipeline.set(key, user.bluesky_username);
+        const idText = user.twitter_id_text ?? (user.twitter_id != null ? String(user.twitter_id) : null);
+        if (idText && user.bluesky_username && user.bluesky_id) {
+          const key = `twitter_to_bluesky:${idText}`;
+          // Store as JSON to mirror Mastodon format
+          const value = JSON.stringify({
+            username: user.bluesky_username,
+            id: user.bluesky_id
+          });
+          blueskyPipeline.set(key, value);
         }
       }
       
       await blueskyPipeline.exec();
       blueskyTotal += blueskyUsers.length;
       blueskyPage++;
+      lastTwitterId = blueskyUsers[blueskyUsers.length - 1].twitter_id; // advance cursor
       
       console.log(`✅ Loaded Bluesky page ${blueskyPage}: ${blueskyUsers.length} users (total: ${blueskyTotal})`);
       

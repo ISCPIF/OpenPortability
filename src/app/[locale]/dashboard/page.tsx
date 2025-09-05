@@ -76,11 +76,11 @@ export default function DashboardPage() {
       <div className="w-full">
         <div className="flex flex-col text-center text-[#E2E4DF]">
           {/* Sea background that takes full width */}
-          <NodesSea 
-            // maxNodes={500}  // Afficher les 50k plus gros
-            showLogo={true}
-            showTitle={true}
-            height="h-[600px]"
+          <LoginSea 
+            // // maxNodes={500}  // Afficher les 50k plus gros
+            // showLogo={true}
+            // showTitle={true}
+            // height="h-[600px]"
           />
         </div>
 
