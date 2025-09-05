@@ -1,7 +1,6 @@
 import { spawn } from 'child_process';
 import { logEvent } from './log_utils';
 
-
 // CSV conversion functions for new schema
 export async function convertTwitterDataToCSV(
   data: any[],
@@ -87,7 +86,6 @@ export async function convertToRelationsCSV(
   }
 }
 
-
 export async function importCSVViaPsql(
   dataContent: string,
   relationsContent: string,
@@ -127,7 +125,7 @@ export async function importCSVViaPsql(
       
     } catch (error) {
       console.log(`[Worker ${workerId}] ❌ Unexpected error in retry attempt ${attempt}:`, error);
-      logEvent('psql_error', { userId, workerId, dataType }, { attempt, maxRetries, reason: String(error), retryable: true });1
+      logEvent('psql_error', { userId, workerId, dataType }, { attempt, maxRetries, reason: String(error), retryable: true });
       if (attempt === maxRetries) {
         return { success: false, processed: 0, error: `Max retries exceeded: ${error}` };
       }
@@ -256,7 +254,6 @@ export async function executePostgresCommandWithStdin(
 
     console.log(`[Worker ${workerId}] 🕒 Using timeout: ${timeoutMs}ms (${Math.round(timeoutMs/1000)}s)`);
     const psqlProcess = spawn('psql', ['-v', 'ON_ERROR_STOP=1', '-X', '-q', '-c', sql], {
-    const psqlProcess = spawn('psql', ['-c', sql], {
       env: { ...process.env, ...env },
       stdio: ['pipe', 'pipe', 'pipe']
     });
@@ -297,7 +294,6 @@ export async function executePostgresCommandWithStdin(
         if (needsStdin) {
           psqlProcess.stdin.write(stdinData);
         }
-        psqlProcess.stdin.write(stdinData);
         psqlProcess.stdin.end();
       }
     } catch (error) {
@@ -373,7 +369,6 @@ BEGIN;
 SET statement_timeout TO '${timeoutValue}s';
 SET synchronous_commit TO OFF;
 SELECT count(*) FROM nodes;
-
 CREATE TEMP TABLE ${nodesTempTable} (twitter_id BIGINT);
 COPY ${nodesTempTable} FROM STDIN WITH (FORMAT csv, HEADER true);
 INSERT INTO nodes (twitter_id)
@@ -392,6 +387,7 @@ COMMIT;
       return { success: false, processed, error: `Chunk ${chunkIndex}/${totalChunks} failed: ${res.error}` };
     }
     processed += chunkCount;
+
     // notify progress to caller
     try {
       if (onProgress) await onProgress(processed, total);

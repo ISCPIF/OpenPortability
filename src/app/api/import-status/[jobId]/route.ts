@@ -84,7 +84,7 @@ async function getImportStatus(request: NextRequest, _data: z.infer<typeof Empty
           id: job.id,
           status: job.status,
           progress: normalizedStats.processed,
-          totalItems: job.total_items || normalizedStats.total,
+          totalItems: job.total_items || stats.total,
           stats: normalizedStats,
           error: job.error_log,
           phase,
@@ -92,11 +92,7 @@ async function getImportStatus(request: NextRequest, _data: z.infer<typeof Empty
           nodes_total,
           nodes_processed,
           edges_total,
-          edges_processed
-          progress: stats.processed,
-          totalItems: job.total_items || stats.total,
-          stats,
-          error: job.error_log
+          edges_processed,
         });
       }
     } catch (redisError) {

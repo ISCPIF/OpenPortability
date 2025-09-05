@@ -85,7 +85,9 @@ export function useReconnectState() {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
+
       const followingData = await response.json();
+      console.log("following dsata from matching found is ->", followingData)
       
       // Adapter selon la structure actuelle de l'API (sera simplifié plus tard)
       const followingArray = followingData.matches?.following || followingData.following || [];

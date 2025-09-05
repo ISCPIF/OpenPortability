@@ -348,7 +348,7 @@ export class MatchingRepository {
     const { error: updateError } = await this.supabase
       .from('sources_followers')
       .update(updates)
-      .eq('follower_id', followerTwitterId)
+      .eq('node_id', followerTwitterId)
       .in('source_id', sourceUUIDs);
 
     if (updateError) {
@@ -416,62 +416,27 @@ export class MatchingRepository {
       return { data: [], error: null };
     }
 
-    // ÉTAPE 2: Convertir UUIDs → Twitter IDs (RAPIDE)
-    const sourceUuids = uuidResult.data.map(item => item.source_id);
-    console.log(`🔄 [STEP 2] Starting UUID to Twitter ID conversion for ${sourceUuids.length} UUIDs`);
-    console.log(`🔄 [STEP 2] Sample UUIDs:`, sourceUuids.slice(0, 3));
-    
-    const step2Start = Date.now();
-    const twitterIdResult = await this.supabase.rpc('get_twitter_ids_from_source_ids', {
-      source_uuids: sourceUuids
-    });
-    
-    const step2Duration = Date.now() - step2Start;
-    console.log(`✅ [STEP 2] get_twitter_ids_from_source_ids completed in ${step2Duration}ms`);
+    // NOUVELLE LOGIQUE: utiliser directement les résultats de l'étape 1
+    const finalData = (uuidResult.data || []).map((item: any) => ({
+      source_twitter_id: item.source_twitter_id?.toString?.() ?? String(item.source_twitter_id),
+      bluesky_handle: item.bluesky_handle ?? null,
+      mastodon_id: item.mastodon_id ?? null,
+      mastodon_username: item.mastodon_username ?? null,
+      mastodon_instance: item.mastodon_instance ?? null,
+      has_been_followed_on_bluesky: item.has_been_followed_on_bluesky ?? false,
+      has_been_followed_on_mastodon: item.has_been_followed_on_mastodon ?? false,
+      total_count: item.total_count ?? 0,
+    }));
 
-    if (twitterIdResult.error) {
-      console.error(`❌ [STEP 2] Error converting UUIDs to Twitter IDs:`, twitterIdResult.error);
-      return { data: null, error: twitterIdResult.error };
-    }
-
-    console.log(`📊 [STEP 2] Retrieved ${twitterIdResult.data?.length || 0} Twitter ID mappings`);
-
-    // ÉTAPE 3: Merger les données (UUID + statuts de suivi + Twitter IDs)
-    console.log(`🔗 [STEP 3] Starting data merging and mapping...`);
-    const step3Start = Date.now();
-    
-    const twitterIdMap = new Map(
-      twitterIdResult.data?.map(item => [item.source_id, item.twitter_id]) || []
-    );
-    
-    console.log(`📋 [STEP 3] Created Twitter ID map with ${twitterIdMap.size} entries`);
-
-    const finalData = uuidResult.data
-      .map(item => {
-        const twitterId = twitterIdMap.get(item.source_id);
-        if (!twitterId) {
-          console.warn(`⚠️ [STEP 3] No Twitter ID found for UUID: ${item.source_id}`);
-          return null;
-        }
-        
-        return {
-          source_twitter_id: twitterId.toString(),
-          has_been_followed_on_bluesky: item.has_been_followed_on_bluesky,
-          has_been_followed_on_mastodon: item.has_been_followed_on_mastodon,
-          // Ajouter d'autres champs si nécessaire pour StoredProcedureTarget
-        };
-      })
-      .filter(item => item !== null); // Supprimer les null
-
-    const step3Duration = Date.now() - step3Start;
+    const step3Duration = Date.now() - step1Start;
     const totalDuration = Date.now() - step1Start;
     
     console.log(`✅ [STEP 3] Data merging completed in ${step3Duration}ms`);
     console.log(`🎉 [FINAL] getSourcesFromFollower completed successfully!`);
-    console.log(`📊 [FINAL] Stats - Input UUIDs: ${sourceUuids.length}, Mapped Twitter IDs: ${twitterIdMap.size}, Final results: ${finalData.length}`);
-    console.log(`⏱️ [FINAL] Total duration: ${totalDuration}ms (Step1: ${step1Duration}ms, Step2: ${step2Duration}ms, Step3: ${step3Duration}ms)`);
+    console.log(`📊 [FINAL] Final results: ${finalData.length}`);
+    console.log(`⏱️ [FINAL] Total duration: ${totalDuration}ms (Step1: ${step1Duration}ms)`);
     
-    return { data: finalData, error: null };
+    return { data: finalData as any, error: null };
   }
 
   async ignoreTarget(userId: string, targetTwitterId: string): Promise<void> {

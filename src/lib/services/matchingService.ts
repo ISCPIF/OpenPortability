@@ -130,56 +130,49 @@ export class MatchingService {
 
     console.log(`[MatchingService] Retrieved ${basicData.length} basic records from repository`);
 
-    // ÉTAPE 2: Enrichir avec Redis pour créer des MatchedFollower
-    const enrichedFollowers: MatchedFollower[] = [];
-    
-    for (const item of basicData) {
-      try {
-        // Cast vers any pour éviter l'erreur TypeScript - le repository retourne bien source_twitter_id
-        const followerData = item as any;
-        
-        // Récupérer les mappings Redis en parallèle
-        const [blueskyMapping, mastodonMapping] = await Promise.all([
-          this.getBlueskyMapping(followerData.source_twitter_id),
-          this.getMastodonMapping(followerData.source_twitter_id)
-        ]);
-
-        // Si on n'a aucun mapping, on ignore l'objet (comme demandé)
-        if (!blueskyMapping && !mastodonMapping) {
-          console.log(`[MatchingService] No Redis mapping found for Twitter ID: ${followerData.source_twitter_id}, skipping`);
-          continue;
+    // NOUVELLE LOGIQUE: Utiliser directement les données retournées par l'RPC
+    // et ne plus dépendre de Redis pour filtrer ou enrichir les résultats.
+    const normalizeBlueskyHandle = (value: any): string | null => {
+      if (!value) return null;
+      if (typeof value !== 'string') return null;
+      const trimmed = value.trim();
+      // Nouveau format JSON: {"username":"...","id":"..."}
+      if (trimmed.startsWith('{')) {
+        try {
+          const parsed = JSON.parse(trimmed);
+          return parsed?.username ?? null;
+        } catch {
+          return null;
         }
-
-        // Créer l'objet MatchedFollower enrichi
-        const enrichedFollower: MatchedFollower = {
-          source_twitter_id: followerData.source_twitter_id,
-          bluesky_handle: blueskyMapping?.username || null,
-          mastodon_id: mastodonMapping?.id || null,
-          mastodon_username: mastodonMapping?.username || null,
-          mastodon_instance: mastodonMapping?.instance || null,
-          has_been_followed_on_bluesky: followerData.has_been_followed_on_bluesky,
-          has_been_followed_on_mastodon: followerData.has_been_followed_on_mastodon,
-        };
-
-        enrichedFollowers.push(enrichedFollower);
-
-      } catch (redisError) {
-        console.error(`[MatchingService] Redis error for Twitter ID ${(item as any).source_twitter_id}:`, redisError);
-        // En cas d'erreur Redis, on ignore l'objet
-        continue;
       }
-    }
+      // Legacy formats: plain handle like "fondationshoah.bsky.social" or pipe "username|id"
+      if (trimmed.includes('|')) {
+        const [username] = trimmed.split('|');
+        return username || null;
+      }
+      return trimmed; // plain handle
+    };
 
-    console.log(`[MatchingService] Successfully enriched ${enrichedFollowers.length} followers out of ${basicData.length} total`);
+    const mappedFollowers: MatchedFollower[] = (basicData as any[]).map((item) => ({
+      source_twitter_id: item.source_twitter_id?.toString?.() ?? String(item.source_twitter_id),
+      bluesky_handle: normalizeBlueskyHandle(item.bluesky_handle),
+      mastodon_id: item.mastodon_id ?? null,
+      mastodon_username: item.mastodon_username ?? null,
+      mastodon_instance: item.mastodon_instance ?? null,
+      has_been_followed_on_bluesky: !!item.has_been_followed_on_bluesky,
+      has_been_followed_on_mastodon: !!item.has_been_followed_on_mastodon,
+    }));
+
+    console.log(`[MatchingService] Successfully mapped ${mappedFollowers.length} followers out of ${basicData.length} total`);
 
     // ÉTAPE 3: Retourner le résultat au format MatchingResult
     const result = {
-      following: enrichedFollowers,
+      following: mappedFollowers,
       stats: {
         total_following: basicData.length,
-        matched_following: enrichedFollowers.length,
-        bluesky_matches: enrichedFollowers.filter(f => f.bluesky_handle).length,
-        mastodon_matches: enrichedFollowers.filter(f => f.mastodon_id).length
+        matched_following: mappedFollowers.length,
+        bluesky_matches: mappedFollowers.filter(f => f.bluesky_handle).length,
+        mastodon_matches: mappedFollowers.filter(f => f.mastodon_id).length
       }
     };
     
