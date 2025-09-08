@@ -130,6 +130,60 @@ class RedisClient {
     }
   }
 
+  // ===== Set helpers =====
+  async sadd(key: string, members: string[] | string): Promise<number> {
+    try {
+      await this.ensureConnection();
+      const args = Array.isArray(members) ? members : [members];
+      return await this.client.sadd(key, ...args);
+    } catch (error) {
+      console.log('Redis', 'Failed to SADD', error, 'system', { key, membersCount: Array.isArray(members) ? members.length : 1 });
+      return 0;
+    }
+  }
+
+  async srem(key: string, members: string[] | string): Promise<number> {
+    try {
+      await this.ensureConnection();
+      const args = Array.isArray(members) ? members : [members];
+      return await this.client.srem(key, ...args);
+    } catch (error) {
+      console.log('Redis', 'Failed to SREM', error, 'system', { key, membersCount: Array.isArray(members) ? members.length : 1 });
+      return 0;
+    }
+  }
+
+  async smembers(key: string): Promise<string[]> {
+    try {
+      await this.ensureConnection();
+      return await this.client.smembers(key);
+    } catch (error) {
+      console.log('Redis', 'Failed to SMEMBERS', error, 'system', { key });
+      return [];
+    }
+  }
+
+  async scard(key: string): Promise<number> {
+    try {
+      await this.ensureConnection();
+      return await this.client.scard(key);
+    } catch (error) {
+      console.log('Redis', 'Failed to SCARD', error, 'system', { key });
+      return 0;
+    }
+  }
+
+  async sunion(keys: string[]): Promise<string[]> {
+    try {
+      await this.ensureConnection();
+      if (keys.length === 0) return [];
+      return await this.client.sunion(...keys);
+    } catch (error) {
+      console.log('Redis', 'Failed to SUNION', error, 'system', { keysCount: keys.length });
+      return [];
+    }
+  }
+
   async incr(key: string): Promise<number | null> {
     try {
       await this.ensureConnection();
@@ -377,7 +431,28 @@ class RedisClient {
         const mapping: any = {};
         
         if (blueskyResult && blueskyResult[1]) {
-          mapping.bluesky = blueskyResult[1];
+          const raw = blueskyResult[1] as string;
+          // Support formats:
+          // - JSON string: {"username":"...","id":"..."}
+          // - Pipe format: "username|id"
+          // - Legacy handle: "fondationshoah.bsky.social"
+          let normalized: string | null = null;
+          if (raw && raw.trim().startsWith('{')) {
+            try {
+              const parsed = JSON.parse(raw);
+              normalized = parsed?.username ?? null;
+            } catch {
+              normalized = null;
+            }
+          } else if (raw.includes('|')) {
+            const [username] = raw.split('|');
+            normalized = username || null;
+          } else {
+            normalized = raw || null;
+          }
+          if (normalized) {
+            mapping.bluesky = normalized;
+          }
         }
         
         if (mastodonResult && mastodonResult[1]) {
