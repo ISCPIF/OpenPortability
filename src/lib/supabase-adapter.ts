@@ -313,6 +313,43 @@ export async function createUser(
       }
     }
 
+    // If the user is already authenticated and is linking Bluesky, attach Bluesky to the current user
+    if (provider === 'bluesky') {
+      try {
+        const session = await auth();
+        const currentUserId = session?.user?.id;
+        console.log('Auth', 'createUser', 'Bluesky linking flow - session check', currentUserId, { hasSession: !!currentUserId });
+
+        if (currentUserId) {
+          // Merge Bluesky data into the existing session user instead of creating a new user
+          const blueskyData = (profile as BlueskyProfile) || (userData as any);
+          const updates: Partial<CustomAdapterUser> = {
+            bluesky_id: providerId,
+            bluesky_username: (blueskyData as any)?.handle || (blueskyData as any)?.username,
+            bluesky_image: (blueskyData as any)?.avatar,
+            name: (blueskyData as any)?.displayName || (blueskyData as any)?.name || undefined
+          };
+
+          const { data: mergedUser, error: mergeError } = await authClient
+            .from('users')
+            .update(updates)
+            .eq('id', currentUserId)
+            .select('*, twitter_id::text')
+            .single();
+
+          if (mergeError) {
+            logger.logError('Auth', 'createUser', 'Error merging Bluesky into existing user', currentUserId, { providerId, mergeError, updates });
+            throw mergeError;
+          }
+
+          console.log('Auth', 'createUser', 'Bluesky linked to existing user', currentUserId, { providerId });
+          return mergedUser as CustomAdapterUser;
+        }
+      } catch (sessionError) {
+        console.log('Auth', 'createUser', 'Bluesky linking flow - session retrieval failed, will fallback to creation', undefined, { sessionError });
+      }
+    }
+
     console.log('Auth', 'createUser', 'Creating new user data for provider', undefined, { provider })
 
     // Créer les données utilisateur selon le provider
