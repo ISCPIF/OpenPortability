@@ -286,7 +286,7 @@ export class UserRepository {
       .from('language_pref')
       .select('*')
       .eq('user_id', userId)
-      .single();
+      .maybeSingle();
     
     // if (error) {
     //   logError('Repository', 'UserRepository.getUserLanguagePreference', error, userId);
