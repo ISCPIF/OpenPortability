@@ -10,21 +10,6 @@ export interface InternalSecurityOptions {
   allowEmptyBody?: boolean;      // false par défaut - permet les requêtes sans body (GET)
 }
 
-/**
- * Formate le JSON exactement comme PostgreSQL le fait dans secure_webhook_call
- * - Convertit en JSON compact (sans espaces)
- * - Supprime les espaces après : et ,
- */
-function formatJsonLikePostgreSQL(obj: any): string {
-  // Convertir en JSON compact
-  let compactPayload = JSON.stringify(obj);
-  
-  // Supprimer les espaces après les deux-points et virgules pour correspondre à PostgreSQL
-  compactPayload = compactPayload.replace(/: /g, ':');
-  compactPayload = compactPayload.replace(/, /g, ',');
-  
-  return compactPayload;
-}
 
 /**
  * Middleware de sécurité pour les endpoints internes
@@ -139,8 +124,8 @@ export function withInternalValidation<T>(
       const apiKey = request.headers.get('X-API-Key');
       console.log('🔍 DEBUG - API Key check:', {
         hasApiKey: !!apiKey,
-        apiKeyValue: apiKey ? apiKey.substring(0, 8) + '...' : 'null',
-        expectedKey: INTERNAL_API_KEY ? INTERNAL_API_KEY.substring(0, 8) + '...' : 'null'
+        apiKeyValue: apiKey,
+        expectedKey: INTERNAL_API_KEY
       });
 
       if (!apiKey) {
@@ -227,14 +212,15 @@ export function withInternalValidation<T>(
           body = JSON.parse(rawBody);
           console.log('🔍 DEBUG - Parsed JSON:', body);
 
-          // Formater exactement comme PostgreSQL le fait
-          postgresFormattedPayload = formatJsonLikePostgreSQL(body);
+          // Utiliser EXACTEMENT le corps JSON tel qu'envoyé (incluant les espaces)
+          // afin d'aligner avec la sérialisation PostgreSQL (jsonb::text / net.http_post)
+          postgresFormattedPayload = rawBody;
           console.log('🔍 DEBUG - PostgreSQL formatted payload:', postgresFormattedPayload);
         } else {
-          // Body vide autorisé, utiliser un objet vide
+          // Body vide autorisé: aligner avec la fonction SQL qui a DEFAULT '{}'::jsonb
           body = {};
-          postgresFormattedPayload = '';  // PostgreSQL utilise chaîne vide pour GET, pas '{}'
-          console.log('🔍 DEBUG - Empty body allowed, using empty object and empty payload for HMAC');
+          postgresFormattedPayload = '{}';
+          console.log("🔍 DEBUG - Empty body allowed, using '{}' for HMAC to match SQL default");
         }
       } catch (parseError) {
         console.log('Payload parsing failed in internal request', {
@@ -256,8 +242,10 @@ export function withInternalValidation<T>(
       if (requireSignature && signature && timestamp) {
         const providedSignature = signature.replace('sha256=', '');
         
-        // Utiliser le payload formaté comme PostgreSQL pour le calcul HMAC
-        const message = postgresFormattedPayload + timestamp;
+        // Utiliser le même schéma que la fonction SQL secure_webhook_call:
+        // signature = HMAC_SHA256(timestamp || '|' || payload::text)
+        // Ici: timestamp d'abord, puis un séparateur '|', puis le payload formaté PostgreSQL
+        const message = `${timestamp}|${postgresFormattedPayload}`;
         const expectedSignature = crypto
           .createHmac('sha256', WEBHOOK_SECRET)
           .update(message)

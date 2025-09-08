@@ -13,7 +13,8 @@ async function handleRefreshRedisCache(
   validatedData: z.infer<typeof EmptySchema>
 ): Promise<NextResponse> {
   try {
-    logger.logInfo('API', 'GET /api/internal/refresh-redis-cache', 'Starting Redis cache refresh', 'system', {
+    const routeLabel = `${request.method} /api/internal/refresh-redis-cache`;
+    logger.logInfo('API', routeLabel, 'Starting Redis cache refresh', 'system', {
       context: 'Redis cache refresh triggered via GET request'
     });
 
@@ -22,7 +23,7 @@ async function handleRefreshRedisCache(
     const stats = await repository.getGlobalStatsFromCache();
 
     if (!stats) {
-      logger.logWarning('API', 'GET /api/internal/refresh-redis-cache', 'No stats found in global_stats_cache', 'system', {
+      logger.logWarning('API', routeLabel, 'No stats found in global_stats_cache', 'system', {
         context: 'Cache refresh failed - no data'
       });
       return NextResponse.json({ error: 'No stats found in cache' }, { status: 404 });
@@ -31,7 +32,7 @@ async function handleRefreshRedisCache(
     // Mettre à jour Redis avec TTL de 65 minutes (sécurité)
     await redis.set('stats:global', JSON.stringify(stats), 3900);
 
-    logger.logInfo('API', 'GET /api/internal/refresh-redis-cache', 'Redis cache updated successfully', 'system', {
+    logger.logInfo('API', routeLabel, 'Redis cache updated successfully', 'system', {
       context: 'Global stats cached in Redis',
       ttl: 3900,
       statsKeys: Object.keys(stats)
@@ -44,7 +45,8 @@ async function handleRefreshRedisCache(
     });
 
   } catch (error) {
-    logger.logError('API', 'GET /api/internal/refresh-redis-cache', error, 'system', {
+    const routeLabel = `${request.method} /api/internal/refresh-redis-cache`;
+    logger.logError('API', routeLabel, error, 'system', {
       context: 'Failed to update Redis cache from GET request'
     });
 
@@ -66,3 +68,16 @@ export const GET = withInternalValidation(
     logSecurityEvents: true     // Logs de sécurité activés
   }
 );
+
+// Export du handler POST pour supporter les appels internes via POST
+export const POST = withInternalValidation(
+  EmptySchema,
+  handleRefreshRedisCache,
+  {
+    allowEmptyBody: true,       // Permet un body vide (les appels peuvent envoyer {})
+    disableInDev: false,        // Activé même en développement
+    requireSignature: true,     // Signature HMAC requise en production
+    logSecurityEvents: true     // Logs de sécurité activés
+  }
+);
+
