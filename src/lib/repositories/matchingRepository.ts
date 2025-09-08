@@ -59,7 +59,6 @@ export type SocialGraphData = SocialGraphDataWithArchive | SocialGraphDataWithou
 export class MatchingRepository {
   private supabase;
   private authClient;
-  private FOLLOWABLE_CACHE_TTL_SECONDS = 900; // 15 minutes
 
   constructor() {
     this.supabase = supabase;
@@ -115,9 +114,6 @@ export class MatchingRepository {
     pageNumber: number
   ): Promise<{ data: StoredProcedureTarget[] | null; error: any }> {
     try {
-      // 0. Try per-user SET-based cache first
-      const keys = this.getUserTargetsSetKeys(userId);
-
       // 1. D'abord récupérer les plateformes connectées de l'utilisateur (comme PostgreSQL)
       const { data: userPlatforms, error: userError } = await authClient
         .from('users')
@@ -132,50 +128,40 @@ export class MatchingRepository {
       const hasBluesky = !!userPlatforms?.bluesky_username;
       const hasMastodon = !!userPlatforms?.mastodon_username;
 
-      // 2. Vérifier présence des sets, sinon les initialiser depuis la DB (warm-up)
-      const [hasBlueskySet, hasMastodonSet, hasDismissedSet] = await Promise.all([
-        redis.exists(keys.pendingBluesky),
-        redis.exists(keys.pendingMastodon),
-        redis.exists(keys.dismissed),
-      ]);
+      // 2. Récupérer tous les sources_targets de l'utilisateur qui ne sont pas encore suivis
+      const { data: sourcesTargets, error: dbError } = await this.supabase
+        .from('sources_targets')
+        .select('node_id::text, has_follow_bluesky, has_follow_mastodon, followed_at_bluesky, followed_at_mastodon, dismissed') // FORCER node_id en TEXT
+        .eq('source_id', userId)
+        .or('has_follow_bluesky.eq.false,has_follow_mastodon.eq.false'); // Au moins une plateforme non suivie
 
-      if (!hasBlueskySet && !hasMastodonSet && !hasDismissedSet) {
-        await this.warmUserTargetsSets(userId, keys);
+      if (dbError) {
+        throw new Error(`Database error: ${dbError.message}`);
       }
 
-      // 3. Lire les candidats depuis les sets en fonction des plateformes connectées
-      const unionKeys: string[] = [];
-      if (hasBluesky) unionKeys.push(keys.pendingBluesky);
-      if (hasMastodon) unionKeys.push(keys.pendingMastodon);
-      let candidateIds: string[] = [];
-      if (unionKeys.length > 0) {
-        candidateIds = await redis.sunion(unionKeys);
-      }
-
-      // Exclure les ignorés
-      const dismissedIds = new Set(await redis.smembers(keys.dismissed));
-      candidateIds = candidateIds.filter(id => !dismissedIds.has(id));
-
-      if (candidateIds.length === 0) {
+      if (!sourcesTargets || sourcesTargets.length === 0) {
         return { data: [], error: null };
       }
 
-      // 4. Récupérer les correspondances depuis Redis en batch
-      const mappings = await redis.batchGetSocialMappings(candidateIds);
+      // 3. Récupérer les correspondances depuis Redis en batch
+      const twitterIds = sourcesTargets.map(st => st.node_id); // CONVERSION EN STRING
+      
+      // Utiliser la méthode batchGetSocialMappings au lieu de mget
+      const mappings = await redis.batchGetSocialMappings(twitterIds);
 
       // 4. Construire les résultats avec les correspondances trouvées ET filtrage par plateformes utilisateur
       const results: StoredProcedureTarget[] = [];
       let totalCount = 0;
+      let skippedCount = 0;
+      let skippedReasons: { [key: string]: number } = {};
+      let blueskyMappings = 0;
+      let mastodonMappings = 0;
+      let bothPlatformMappings = 0;
 
-      // Pour dériver les flags has_follow_* à partir des sets pending
-      const [blueskyPending, mastodonPending] = await Promise.all([
-        hasBluesky ? redis.smembers(keys.pendingBluesky) : Promise.resolve([] as string[]),
-        hasMastodon ? redis.smembers(keys.pendingMastodon) : Promise.resolve([] as string[]),
-      ]);
-      const blueskyPendingSet = new Set(blueskyPending);
-      const mastodonPendingSet = new Set(mastodonPending);
-
-      for (const twitterId of candidateIds) {
+      for (const sourceTarget of sourcesTargets) {
+        const twitterId = sourceTarget.node_id; // CONVERSION EN STRING
+        
+        // Récupérer les mappings depuis la Map retournée
         const mapping = mappings.get(twitterId);
 
         // NOUVELLE LOGIQUE: Filtrer selon les plateformes connectées de l'utilisateur (comme PostgreSQL)
@@ -186,28 +172,41 @@ export class MatchingRepository {
         const shouldInclude = (hasBluesky && hasBlueskyMapping) || (hasMastodon && hasMastodonMapping);
 
         if (shouldInclude) {
+          // Compter les plateformes SEULEMENT pour les plateformes connectées
+          if (hasBluesky && hasBlueskyMapping) blueskyMappings++;
+          if (hasMastodon && hasMastodonMapping) mastodonMappings++;
+          if (hasBluesky && hasBlueskyMapping && hasMastodon && hasMastodonMapping) bothPlatformMappings++;
+
           const result: StoredProcedureTarget = {
-            // Type in StoredProcedureTarget expects number; Twitter IDs exceed JS safe int
-            // but we keep type compatibility here and rely on string IDs downstream where needed.
-            node_id: (twitterId as unknown as number),
+            node_id: twitterId,
             // Retourner les données seulement pour les plateformes connectées (comme PostgreSQL)
             bluesky_handle: (hasBluesky && mapping?.bluesky) || null,
             mastodon_handle: (hasMastodon && mapping?.mastodon?.username) || null,
             mastodon_id: (hasMastodon && mapping?.mastodon?.id) || null,
             mastodon_username: (hasMastodon && mapping?.mastodon?.username) || null,
             mastodon_instance: (hasMastodon && mapping?.mastodon?.instance) || null,
-            has_follow_bluesky: hasBluesky ? !blueskyPendingSet.has(twitterId) : false,
-            has_follow_mastodon: hasMastodon ? !mastodonPendingSet.has(twitterId) : false,
-            followed_at_bluesky: null,
-            followed_at_mastodon: null,
-            dismissed: false,
+            has_follow_bluesky: sourceTarget.has_follow_bluesky || false,
+            has_follow_mastodon: sourceTarget.has_follow_mastodon || false,
+            followed_at_bluesky: sourceTarget.followed_at_bluesky,
+            followed_at_mastodon: sourceTarget.followed_at_mastodon,
+            dismissed: sourceTarget.dismissed || false,
             total_count: 0 // Sera mis à jour après
           };
 
           results.push(result);
           totalCount++;
+        } else {
+          // Compter les comptes ignorés et leurs raisons
+          skippedCount++;
+          if (!mapping) {
+            skippedReasons['no_mapping'] = (skippedReasons['no_mapping'] || 0) + 1;
+          } else if (!shouldInclude) {
+            skippedReasons['platform_not_connected'] = (skippedReasons['platform_not_connected'] || 0) + 1;
+          }
         }
       }
+
+  
 
       // 5. Appliquer la pagination
       const startIndex = pageNumber * pageSize;
@@ -222,64 +221,9 @@ export class MatchingRepository {
       return { data: paginatedResults, error: null };
 
     } catch (error) {
-      logError('Repository', 'MatchingRepository.getFollowableTargetsFromRedis', error as any, userId);
+      logError('Repository', 'MatchingRepository.getFollowableTargetsFromRedis', error, userId);
       return { data: null, error: error };
     }
-  }
-
-  /**
-   * Construit la clé Redis pour le cache des followable targets par utilisateur
-   */
-  private getFollowableTargetsCacheKey(userId: string): string {
-    return `user:${userId}:followable_targets:v1`;
-  }
-
-  /**
-   * Construit les clés Redis des sets de cibles par utilisateur
-   */
-  private getUserTargetsSetKeys(userId: string): { pendingBluesky: string; pendingMastodon: string; dismissed: string } {
-    return {
-      pendingBluesky: `user:${userId}:targets:pending:bluesky`,
-      pendingMastodon: `user:${userId}:targets:pending:mastodon`,
-      dismissed: `user:${userId}:targets:dismissed`,
-    };
-  }
-
-  /**
-   * Warm-up des sets Redis à partir de la table sources_targets
-   */
-  private async warmUserTargetsSets(userId: string, keys?: { pendingBluesky: string; pendingMastodon: string; dismissed: string }): Promise<void> {
-    const k = keys || this.getUserTargetsSetKeys(userId);
-    const { data, error } = await this.supabase
-      .from('sources_targets')
-      .select('node_id::text, has_follow_bluesky, has_follow_mastodon, dismissed')
-      .eq('source_id', userId);
-
-    if (error) {
-      throw new Error(`Failed to warm user target sets: ${error.message}`);
-    }
-
-    const blueskyPending: string[] = [];
-    const mastodonPending: string[] = [];
-    const dismissed: string[] = [];
-
-    for (const row of data || []) {
-      if (row.dismissed) dismissed.push(row.node_id);
-      if (row.has_follow_bluesky === false) blueskyPending.push(row.node_id);
-      if (row.has_follow_mastodon === false) mastodonPending.push(row.node_id);
-    }
-
-    // Écrire en Redis (sets) + TTL
-    if (blueskyPending.length > 0) await redis.sadd(k.pendingBluesky, blueskyPending);
-    if (mastodonPending.length > 0) await redis.sadd(k.pendingMastodon, mastodonPending);
-    if (dismissed.length > 0) await redis.sadd(k.dismissed, dismissed);
-
-    // Toujours poser un TTL pour auto-expiration (même si vide, on pose TTL après première écriture)
-    await Promise.all([
-      redis.expire(k.pendingBluesky, this.FOLLOWABLE_CACHE_TTL_SECONDS),
-      redis.expire(k.pendingMastodon, this.FOLLOWABLE_CACHE_TTL_SECONDS),
-      redis.expire(k.dismissed, this.FOLLOWABLE_CACHE_TTL_SECONDS),
-    ]);
   }
 
   async updateFollowStatus(
@@ -316,31 +260,6 @@ export class MatchingRepository {
       });
       throw updateError;
     }
-
-    // Invalidate per-user cache so next read is fresh
-    try {
-      await redis.del(this.getFollowableTargetsCacheKey(userId));
-    } catch (e) {
-      logWarning('Repository', 'MatchingRepository.updateFollowStatus', 'Failed to invalidate cache', userId, {
-        error: e instanceof Error ? e.message : 'Unknown cache del error',
-      });
-    }
-
-    // Write-through: retirer la cible du set pending correspondant si succès
-    try {
-      if (success) {
-        const keys = this.getUserTargetsSetKeys(userId);
-        if (platform === 'bluesky') {
-          await redis.srem(keys.pendingBluesky, String(targetId));
-        } else {
-          await redis.srem(keys.pendingMastodon, String(targetId));
-        }
-      }
-    } catch (e) {
-      logWarning('Repository', 'MatchingRepository.updateFollowStatus', 'Failed to update pending set', userId, {
-        error: e instanceof Error ? e.message : 'Unknown srem error',
-      });
-    }
   }
 
   async updateFollowStatusBatch(
@@ -376,32 +295,6 @@ export class MatchingRepository {
         success
       });
       throw updateError;
-    }
-
-    // Invalidate per-user cache so next read is fresh
-    try {
-      await redis.del(this.getFollowableTargetsCacheKey(userId));
-    } catch (e) {
-      logWarning('Repository', 'MatchingRepository.updateFollowStatusBatch', 'Failed to invalidate cache', userId, {
-        error: e instanceof Error ? e.message : 'Unknown cache del error',
-      });
-    }
-
-    // Write-through: retirer les cibles du set pending correspondant si succès
-    try {
-      if (success && targetIds.length > 0) {
-        const keys = this.getUserTargetsSetKeys(userId);
-        const idsAsString = targetIds.map(id => String(id));
-        if (platform === 'bluesky') {
-          await redis.srem(keys.pendingBluesky, idsAsString);
-        } else {
-          await redis.srem(keys.pendingMastodon, idsAsString);
-        }
-      }
-    } catch (e) {
-      logWarning('Repository', 'MatchingRepository.updateFollowStatusBatch', 'Failed to update pending set', userId, {
-        error: e instanceof Error ? e.message : 'Unknown srem error',
-      });
     }
   }
 
@@ -559,25 +452,6 @@ export class MatchingRepository {
         targetTwitterId,
         context: "MatchingRepository.ignoreTarget",
       });
-
-      // Invalidate per-user cache so next read is fresh
-      try {
-        await redis.del(this.getFollowableTargetsCacheKey(userId));
-      } catch (e) {
-        logWarning('Repository', 'MatchingRepository.ignoreTarget', 'Failed to invalidate cache', userId, {
-          error: e instanceof Error ? e.message : 'Unknown cache del error',
-        });
-      }
-
-      // Write-through: ajouter la cible au set dismissed
-      try {
-        const keys = this.getUserTargetsSetKeys(userId);
-        await redis.sadd(keys.dismissed, String(targetTwitterId));
-      } catch (e) {
-        logWarning('Repository', 'MatchingRepository.ignoreTarget', 'Failed to update dismissed set', userId, {
-          error: e instanceof Error ? e.message : 'Unknown sadd error',
-        });
-      }
     } catch (error) {
       console.log("Failed to mark target as dismissed", {
         error: error instanceof Error ? error.message : String(error),
@@ -600,25 +474,6 @@ export class MatchingRepository {
         targetTwitterId,
         context: "MatchingRepository.unignoreTarget",
       });
-
-      // Invalidate per-user cache so next read is fresh
-      try {
-        await redis.del(this.getFollowableTargetsCacheKey(userId));
-      } catch (e) {
-        logWarning('Repository', 'MatchingRepository.unignoreTarget', 'Failed to invalidate cache', userId, {
-          error: e instanceof Error ? e.message : 'Unknown cache del error',
-        });
-      }
-
-      // Write-through: retirer du set dismissed
-      try {
-        const keys = this.getUserTargetsSetKeys(userId);
-        await redis.srem(keys.dismissed, String(targetTwitterId));
-      } catch (e) {
-        logWarning('Repository', 'MatchingRepository.unignoreTarget', 'Failed to update dismissed set', userId, {
-          error: e instanceof Error ? e.message : 'Unknown srem error',
-        });
-      }
     } catch (error) {
       console.log("Failed to mark target as not dismissed", {
         error: error instanceof Error ? error.message : String(error),
