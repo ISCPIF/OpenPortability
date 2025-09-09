@@ -20,8 +20,9 @@ services:
         - "3000:3000"
       volumes:
         # Mount entire directory but preserve container's node_modules
-        - ./:/app
+        - .:/app
         - /app/node_modules
+        - /app/.next
         - shared-tmp:/app/tmp
         - app_logs:/app/logs
       depends_on:
@@ -78,8 +79,8 @@ services:
       - redis_data:/data
     command: redis-server /usr/local/etc/redis/redis.conf
     # Ne pas exposer le port en production pour la sécurité
-    # ports:
-    #   - "6379:6379"
+    ports:
+      - "6379:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "-a", "votre_mot_de_passe_redis_securise_ici", "ping"]
       interval: 30s
