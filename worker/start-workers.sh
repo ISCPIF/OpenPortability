@@ -7,7 +7,7 @@ declare -a FOLLOWING_PIDS=()
 # Workers pour les followers
 export JOB_TYPES=followers
 
-for i in {1..2}; do
+for i in {1..3}; do
   export WORKER_ID=worker${i}_followers
   npx ts-node src/index.ts &
   FOLLOWER_PIDS+=($!)
@@ -17,7 +17,7 @@ done
 # Workers pour les following
 export JOB_TYPES=following
 
-for i in {1..2}; do
+for i in {1..3}; do
   export WORKER_ID=worker${i}_following
   npx ts-node src/index.ts &
   FOLLOWING_PIDS+=($!)
