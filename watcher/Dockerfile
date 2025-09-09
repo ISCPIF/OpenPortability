@@ -7,7 +7,7 @@ RUN addgroup -g 1001 appgroup && \
 # Définir le répertoire de travail
 WORKDIR /app
 
-RUN npm install -g npm@11.4.2
+RUN npm install -g npm@11.6.0
 
 # Installer les dépendances système nécessaires (en tant que root)
 RUN apk add --no-cache python3 make g++ gcc
