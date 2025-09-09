@@ -1,8 +1,16 @@
 import { useCallback, useEffect, useState, useRef } from "react";
+import { usePathname } from 'next/navigation';
 import { GlobalStats, UserCompleteStats } from "../lib/types/stats";
 
 // Module-level variable to track if stats have been fetched across component instances
 const globalDataFetched = { current: false };
+
+// Global debounce pour refreshStats - partagé entre toutes les instances
+let globalRefreshTimeout: ReturnType<typeof setTimeout> | null = null;
+const REFRESH_DEBOUNCE_DELAY = 500;
+
+// Compteur pour identifier les instances
+let instanceCounter = 0;
 
 export function useStats() {
     const [stats, setStats] = useState<UserCompleteStats | null>(null);
@@ -10,7 +18,11 @@ export function useStats() {
     const [isLoading, setIsLoading] = useState(true);
     // Initialize local ref with global state
     const dataFetchedRef = useRef(globalDataFetched.current);
-  
+    const pathname = usePathname();
+    
+    // Créer un ID unique pour cette instance
+    const instanceId = useRef(`useStats-${++instanceCounter}`);
+
     const fetchStats = useCallback(async (forceRefresh = false) => {
       // Skip fetching if data was already loaded (check both local and global state) and no force refresh is requested
       if ((dataFetchedRef.current || globalDataFetched.current) && !forceRefresh) {
@@ -21,26 +33,33 @@ export function useStats() {
       
       try {
         setIsLoading(true);
-        const [userStatsResponse, globalStatsResponse] = await Promise.all([
-          fetch('/api/stats', { 
+        const path = (pathname || '').split('?')[0];
+        const isReconnect = path.includes('/reconnect');
+        const isDashboard = path.includes('/dashboard');
+
+        // Always fetch global stats
+        const globalStatsResponse = await fetch('/api/stats/total', { 
+          headers: { 
+            'Cache-Control': 'no-cache',
+            'X-Request-ID': `stats-total-${Date.now()}` // Add unique identifier to prevent browser caching
+          } 
+        });
+        const globalStats = await globalStatsResponse.json();
+        setGlobalStats(globalStats);
+
+        // Conditionally fetch user stats only on reconnect pages and not dashboard
+        if (isReconnect && !isDashboard) {
+          const userStatsResponse = await fetch('/api/stats', { 
             headers: { 
               'Cache-Control': 'no-cache',
               'X-Request-ID': `stats-${Date.now()}` // Add unique identifier to prevent browser caching
             } 
-          }),
-          fetch('/api/stats/total', { 
-            headers: { 
-              'Cache-Control': 'no-cache',
-              'X-Request-ID': `stats-total-${Date.now()}` // Add unique identifier to prevent browser caching
-            } 
-          })
-        ]);
-  
-        const userStats = await userStatsResponse.json();
-        const globalStats = await globalStatsResponse.json();
-        
-        setStats(userStats);
-        setGlobalStats(globalStats);
+          });
+          const userStats = await userStatsResponse.json();
+          setStats(userStats);
+        } else {
+          setStats(null);
+        }
         dataFetchedRef.current = true;
         globalDataFetched.current = true;
       } catch (error) {
@@ -48,7 +67,7 @@ export function useStats() {
       } finally {
         setIsLoading(false);
       }
-    }, []);
+    }, [pathname]);
   
     useEffect(() => {
       fetchStats();
@@ -57,12 +76,25 @@ export function useStats() {
       // This helps with React Strict Mode's double-mounting behavior
     }, [fetchStats]);
   
-    // Modified refreshStats to force a refresh and reset both local and global flags
+    // Global debounced refreshStats - un seul appel même avec multiple instances
     const refreshStats = useCallback(() => {
-      dataFetchedRef.current = false;
-      globalDataFetched.current = false;
-      return fetchStats(true);
+      console.log(` [${instanceId.current}] refreshStats CALLED - Timestamp:`, Date.now());
+      console.log(` [${instanceId.current}] Stack:`, new Error().stack?.split('\n').slice(0, 3));
+      
+      // Annuler le timeout précédent s'il existe
+      if (globalRefreshTimeout) {
+        clearTimeout(globalRefreshTimeout);
+      }
+      
+      // Créer un nouveau timeout global
+      globalRefreshTimeout = setTimeout(() => {
+        console.log(` [GLOBAL] refreshStats EXECUTING after debounce`);
+        dataFetchedRef.current = false;
+        globalDataFetched.current = false;
+        fetchStats(true);
+        globalRefreshTimeout = null;
+      }, REFRESH_DEBOUNCE_DELAY);
     }, [fetchStats]);
   
     return { stats, globalStats, isLoading, refreshStats };
-  }
+}

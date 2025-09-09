@@ -57,6 +57,16 @@ export interface LogEntry {
   };
 }
 
+// Simplified context used by the unified logEvent API
+export interface LogContext {
+  userId: string;
+  workerId: string;
+  dataType?: 'followers' | 'targets';
+  chunkIndex?: number;
+  jobId?: string;
+  correlationId?: string;
+}
+
 // Cache for file streams
 const fileStreams: Record<string, fs.WriteStream> = {};
 
@@ -194,6 +204,20 @@ function log(
     const stream = getFileStream(filePath);
     stream.write(formatLogEntry(entry));
   }
+}
+
+// Unified event logger to simplify worker logging
+export function logEvent(
+  event: string,
+  context: LogContext,
+  payload?: Record<string, any>,
+  level: LogLevel = LogLevel.INFO
+) {
+  const { userId, workerId, ...rest } = context;
+  // Use existing log() with standardized fields
+  const details = { userId, event, ...rest, ...(payload || {}) };
+  // source=worker, action=event, message=event for simplicity
+  log(level, 'worker', event, event, workerId, details);
 }
 
 // Convenience logging methods

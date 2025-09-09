@@ -12,10 +12,10 @@ import { Globe } from 'lucide-react'
 import { isValidEmail } from '@/lib/utils'
 import { Switch } from '@headlessui/react'
 import Link from 'next/link'
-import { useNewsletter, ConsentType } from '@/hooks/useNewsLetter'
 
 interface NewsLetterFirstSeenProps {
   userId: string
+  newsletterData: any
   onSubscribe?: () => void
   onClose?: () => void
 }
@@ -33,8 +33,8 @@ const NewsletterLink = memo(({ href, children }: { href: string; children: React
 
 NewsletterLink.displayName = 'NewsletterLink';
 
-export default function NewsLetterFirstSeen({ userId, onSubscribe, onClose }: NewsLetterFirstSeenProps) {
-  const { updateMultipleConsents } = useNewsletter();
+export default function NewsLetterFirstSeen({ userId, newsletterData, onSubscribe, onClose }: NewsLetterFirstSeenProps) {
+  const { updateMultipleConsents } = newsletterData;
   
   const [email, setEmail] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -126,7 +126,7 @@ export default function NewsLetterFirstSeen({ userId, onSubscribe, onClose }: Ne
     window.location.href = newPath
   }
 
-  const handleLocalConsentChange = (type: ConsentType, value: boolean) => {
+  const handleLocalConsentChange = (type: string, value: boolean) => {
     setLocalConsents(prev => ({
       ...prev,
       [type]: value,
@@ -151,7 +151,7 @@ export default function NewsLetterFirstSeen({ userId, onSubscribe, onClose }: Ne
     try {
       // Préparer le tableau de tous les consentements avec leur valeur
       const consentsToUpdate = Object.entries(localConsents).map(([type, value]) => ({
-        type: type as ConsentType,
+        type: type as string,
         value
       }))
 

@@ -11,7 +11,7 @@ import { toast } from 'sonner';
 type Match = MatchingTarget | MatchedFollower;
 
 function isMatchingTarget(match: Match): match is MatchingTarget {
-  return 'target_twitter_id' in match;
+  return 'node_id' in match;
 }
 
 function isMatchedFollower(match: Match): match is MatchedFollower {
@@ -64,7 +64,16 @@ export default function ManualReconnexion({
   const [activeView, setActiveView] = useState<'notFollowed' | 'followed' | 'ignored'>('notFollowed');
   // const [isLoading, setIsLoading] = useState(false);
   const itemsPerPage = 50;
-  console.log(matches)
+  console.log("===== DEBUG MANUAL RECONNEXION =====")
+  console.log("Raw matches received:", matches[0])
+  console.log("Matches length:", matches?.length || 0)
+  console.log("Session user:", session?.user)
+  console.log("User has bluesky:", !!session?.user?.bluesky_username)
+  console.log("User has mastodon:", !!session?.user?.mastodon_username)
+  console.log("Bluesky username:", session?.user?.bluesky_username)
+  console.log("Mastodon username:", session?.user?.mastodon_username)
+  console.log("Active view:", activeView)
+  console.log("=====================================")
 
   // Filter matches based on user's connected accounts and active view
   const filteredMatches = matches.filter(match => {
@@ -75,14 +84,27 @@ export default function ManualReconnexion({
     const hasFollowMastodon = isMatchingTarget(match) ? match.has_follow_mastodon : match.has_been_followed_on_mastodon;
     const isDismissed = isMatchingTarget(match) && (match as MatchingTarget).dismissed;
 
+    // console.log("=== FILTERING MATCH ===")
+    // console.log("Match:", match)
+    // console.log("blueskyHandle:", blueskyHandle)
+    // console.log("mastodonUsername:", mastodonUsername)
+    // console.log("mastodonHandle:", mastodonHandle)
+    // console.log("hasFollowBluesky:", hasFollowBluesky)
+    // console.log("hasFollowMastodon:", hasFollowMastodon)
+    // console.log("isDismissed:", isDismissed)
+    // console.log("activeView:", activeView)
+
     // Si on est dans la vue des comptes ignorés
     if (activeView === 'ignored') {
+      // console.log("Ignored view - returning:", isDismissed)
       return isDismissed;
     }
     
     // Si on est dans la vue des comptes suivis
     if (activeView === 'followed') {
-      return (hasFollowBluesky || hasFollowMastodon) && !isDismissed;
+      const result = (hasFollowBluesky || hasFollowMastodon) && !isDismissed;
+      // console.log("Followed view - returning:", result)
+      return result;
     }
     
     // Vue par défaut: comptes non suivis
@@ -92,30 +114,49 @@ export default function ManualReconnexion({
     // If user has Mastodon connected, show accounts with Mastodon handles that aren't followed
     const showForMastodon = session.user.mastodon_username && (mastodonHandle || mastodonUsername) && !hasFollowMastodon;
 
+    // console.log("showForBluesky:", showForBluesky)
+    // console.log("showForMastodon:", showForMastodon)
+    // console.log("Final result:", (showForBluesky || showForMastodon) && !isDismissed)
+    // console.log("======================")
+
     // Show account if it matches criteria for either platform and isn't dismissed
     return (showForBluesky || showForMastodon) && !isDismissed;
   });
+  
+  console.log("===== FILTERING RESULTS =====")
+  console.log("Original matches count:", matches?.length || 0)
+  console.log("Filtered matches count:", filteredMatches?.length || 0)
+  console.log("Filtered matches:", filteredMatches)
+  console.log("==============================")
+  
   const startIndex = (currentPage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
   const currentMatches = filteredMatches.slice(startIndex, endIndex);
 
   const handleToggleAccount = (targetTwitterId: string) => {
+    console.log("🔄 [handleToggleAccount] Toggling account:", targetTwitterId);
+    console.log("🔄 [handleToggleAccount] Current selectedAccounts before toggle:", selectedAccounts);
+    
     if (!targetTwitterId) {
-      console.error('Attempted to toggle account with undefined target_twitter_id');
+      console.error('Attempted to toggle account with undefined node_id');
       return;
     }
     const newSet = new Set(selectedAccounts);
     if (newSet.has(targetTwitterId)) {
+      console.log("🔄 [handleToggleAccount] Removing from selection:", targetTwitterId);
       newSet.delete(targetTwitterId);
     } else {
+      console.log("🔄 [handleToggleAccount] Adding to selection:", targetTwitterId);
       newSet.add(targetTwitterId);
     }
-      setSelectedAccounts(newSet);
+    
+    console.log("🔄 [handleToggleAccount] New selectedAccounts after toggle:", newSet);
+    setSelectedAccounts(newSet);
   };
 
   const handleSelectAll = () => {
     const currentPageMatches = currentMatches.map(match => 
-      isMatchingTarget(match) ? match.target_twitter_id : match.source_twitter_id
+      isMatchingTarget(match) ? match.node_id.toString() : match.source_twitter_id
     ).filter(Boolean);
     setSelectedAccounts(prev => {
       const newSet = new Set(prev);
@@ -160,7 +201,7 @@ export default function ManualReconnexion({
       
       // Mettre à jour l'état local pour marquer le compte comme ignoré
       setMatches?.(matches.map(match => {
-        if (isMatchingTarget(match) && match.target_twitter_id === targetTwitterId) {
+        if (isMatchingTarget(match) && match.node_id.toString() === targetTwitterId) {
           // Marquer le compte comme ignoré
           return { ...match, dismissed: true };
         } else if (isMatchedFollower(match) && match.source_twitter_id === targetTwitterId) {
@@ -216,7 +257,7 @@ export default function ManualReconnexion({
       
       // Mettre à jour l'état local pour marquer le compte comme non ignoré
       setMatches?.(matches.map(match => {
-        if (isMatchingTarget(match) && match.target_twitter_id === targetTwitterId) {
+        if (isMatchingTarget(match) && match.node_id.toString() === targetTwitterId) {
           // Marquer le compte comme non ignoré
           return { ...match, dismissed: false };
         } else if (isMatchedFollower(match) && match.source_twitter_id === targetTwitterId) {
@@ -309,8 +350,14 @@ export default function ManualReconnexion({
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={() => {
-                // Convert Set to array of strings (target_twitter_ids)
+                // Convert Set to array of strings (node_ids)
                 const selectedAccountIds = Array.from(selectedAccounts);
+                console.log(" [ManualReconnexion] Button clicked - selectedAccounts:", selectedAccounts);
+                console.log(" [ManualReconnexion] selectedAccountIds array:", selectedAccountIds);
+                console.log(" [ManualReconnexion] currentMatches on page:", currentMatches.length);
+                console.log(" [ManualReconnexion] All currentMatches IDs:", currentMatches.map(match => 
+                  isMatchingTarget(match) ? match.node_id.toString() : match.source_twitter_id
+                ));
                 onStartMigration(selectedAccountIds);
               }}
               className="bg-[#d6356f] text-white px-4 sm:px-6 py-1.5 sm:py-2 text-sm sm:text-base rounded-full font-bold hover:bg-[#FF1F59] transition-colors w-full sm:w-auto"
@@ -322,11 +369,20 @@ export default function ManualReconnexion({
 
         <div className="space-y-2">
           {currentMatches.map((match, index) => {
-            const targetTwitterId = isMatchingTarget(match) ? match.target_twitter_id : match.source_twitter_id;
+            const targetTwitterId = isMatchingTarget(match) ? match.node_id.toString() : match.source_twitter_id;
             const blueskyHandle = isMatchingTarget(match) ? match.bluesky_handle : match.bluesky_handle;
             const hasFollowBluesky = isMatchingTarget(match) ? match.has_follow_bluesky : match.has_been_followed_on_bluesky;
             const hasFollowMastodon = isMatchingTarget(match) ? match.has_follow_mastodon : match.has_been_followed_on_mastodon;
             const isDismissed = isMatchingTarget(match) && (match as MatchingTarget).dismissed;
+
+            // console.log("=== JSX RENDERING MATCH ===")
+            // console.log("Match index:", index)
+            // console.log("Match:", match)
+            // console.log("isMatchingTarget:", isMatchingTarget(match))
+            // console.log("targetTwitterId:", targetTwitterId)
+            // console.log("targetTwitterId exists:", !!targetTwitterId)
+            // console.log("Will render:", !!targetTwitterId)
+            // console.log("===========================")
             
             if (!targetTwitterId) return null;
             
@@ -339,8 +395,8 @@ export default function ManualReconnexion({
                 mastodonUsername={isMatchingTarget(match) ? match.mastodon_username : match.mastodon_username}
                 mastodonInstance={match.mastodon_instance}
                 mastodonId={match.mastodon_id}
-                isSelected={selectedAccounts.has(isMatchingTarget(match) ? match.target_twitter_id : match.source_twitter_id)}
-                onToggle={() => handleToggleAccount(isMatchingTarget(match) ? match.target_twitter_id : match.source_twitter_id)}
+                isSelected={selectedAccounts.has(targetTwitterId)}
+                onToggle={() => handleToggleAccount(targetTwitterId)}
                 onIgnore={handleIgnoreAccount}
                 onUnignore={handleUnignoreAccount}
                 hasFollowBluesky={hasFollowBluesky}

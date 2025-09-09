@@ -2,6 +2,7 @@
 import os
 import sys
 import logging
+import json
 from atproto import Client, IdResolver, models
 
 # Configure logging
@@ -74,27 +75,34 @@ def send_direct_message(client, recipient_handle, message):
 
 def test_dm(recipient_handle, custom_message=None):
     """Test l'envoi d'un DM à un utilisateur
+    
     Args:
         recipient_handle (str): Handle de l'utilisateur destinataire
         custom_message (str, optional): Message personnalisé à envoyer. Si non fourni, utilise le message de test par défaut.
+    
+    Returns:
+        bool: True si le message a été envoyé avec succès, False sinon
     """
     try:
         print(f"🚀 Démarrage du test DM pour {recipient_handle}")
-        print(f"🔑 Connexion avec l'utilisateur {BLUESKY_USERNAME}")
         
-        # Se connecter à Bluesky
+        # Créer le client Bluesky
         client = Client()
-        profile = client.login(BLUESKY_USERNAME, BLUESKY_PASSWORD)
         
-        print(f"✅ Connecté avec succès à Bluesky en tant que {profile.handle}")
+        print(f"🔑 Connexion avec l'utilisateur {BLUESKY_USERNAME}")
+        client.login(BLUESKY_USERNAME, BLUESKY_PASSWORD)
+        print(f"✅ Connecté avec succès à Bluesky en tant que {BLUESKY_USERNAME}")
         
-        # Message à envoyer (utiliser le message personnalisé ou le message de test par défaut)
-        message = custom_message or "👋 Ceci est un message de test de HelloQittoX. Si vous recevez ce message, cela signifie que nous pouvons vous envoyer des informations par DM. Merci de faire partie de notre communauté !"
+        # Message par défaut si aucun message personnalisé n'est fourni
+        if custom_message is None:
+            custom_message = "This is an automated test message from OpenPortability to verify we can reach you via DM. No action is required."
         
         # Envoyer le message direct
-        result = send_direct_message(client, recipient_handle, message)
+        send_direct_message(client, recipient_handle, custom_message)
         
+        print(f"✅ Message envoyé avec succès à {recipient_handle}")
         print(f"Message envoyé avec succès à {recipient_handle}")
+        
         return True
         
     except Exception as e:
@@ -111,9 +119,15 @@ def test_dm(recipient_handle, custom_message=None):
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Usage: python3 testDm.py <recipient_handle> [custom_message]")
+        print(json.dumps({"success": False, "error": "Usage: python3 testDm.py <recipient_handle> [custom_message]"}))
         sys.exit(1)
     
     recipient_handle = sys.argv[1]
     custom_message = sys.argv[2] if len(sys.argv) > 2 else None
-    test_dm(recipient_handle, custom_message)
+    
+    try:
+        result = test_dm(recipient_handle, custom_message)
+        print(json.dumps({"success": True, "message": f"DM sent successfully to {recipient_handle}"}))
+    except Exception as e:
+        print(json.dumps({"success": False, "error": str(e)}))
+        sys.exit(1)

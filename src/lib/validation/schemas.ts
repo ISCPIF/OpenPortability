@@ -1,5 +1,8 @@
 import { z } from 'zod';
 
+// Schéma vide pour les endpoints GET sans paramètres
+export const EmptySchema = z.object({});
+
 // Types réutilisables
 export const EmailSchema = z.string()
   .email('Invalid email format')
@@ -69,7 +72,7 @@ export const AuthCredentialsSchema = z.object({
 // Schémas pour /api/migrate/send_follow
 export const MatchingAccountSchema = z.object({
   // Pour MatchingTarget
-  target_twitter_id: z.string().optional(),
+  node_id: z.string().optional(),
   // Pour MatchedFollower
   source_twitter_id: z.string().optional(),
   
@@ -87,7 +90,7 @@ export const MatchingAccountSchema = z.object({
   has_been_followed_on_mastodon: z.boolean().optional()
 }).refine(
   data => 
-    (data.target_twitter_id && (data.has_follow_bluesky !== undefined || data.has_follow_mastodon !== undefined)) ||
+    (data.node_id && (data.has_follow_bluesky !== undefined || data.has_follow_mastodon !== undefined)) ||
     (data.source_twitter_id && (data.has_been_followed_on_bluesky !== undefined || data.has_been_followed_on_mastodon !== undefined)),
   {
     message: "Invalid account structure: must be either MatchingTarget or MatchedFollower"

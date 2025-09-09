@@ -286,7 +286,7 @@ export class UserRepository {
       .from('language_pref')
       .select('*')
       .eq('user_id', userId)
-      .single();
+      .maybeSingle();
     
     // if (error) {
     //   logError('Repository', 'UserRepository.getUserLanguagePreference', error, userId);
@@ -312,6 +312,171 @@ export class UserRepository {
 
     if (error) {
       logError('Repository', 'UserRepository.updateLanguagePreference', error, userId);
+      throw error;
+    }
+  }
+
+  /**
+   * Supprime les tâches Python en attente pour un utilisateur
+   * 
+   * @param userId Identifiant de l'utilisateur
+   * @param platform Plateforme spécifique (optionnel)
+   * @param taskType Type de tâche spécifique (optionnel)
+   */
+  async deletePendingPythonTasks(
+    userId: string, 
+    platform?: 'bluesky' | 'mastodon',
+    taskType?: string
+  ): Promise<void> {
+    let query = supabase
+      .from('python_tasks')
+      .delete()
+      .eq('user_id', userId)
+      .in('status', ['pending', 'waiting']);
+
+    if (platform) {
+      query = query.eq('platform', platform);
+    }
+
+    if (taskType) {
+      query = query.eq('task_type', taskType);
+    }
+
+    const { error } = await query;
+    
+    if (error) {
+      logError('Repository', 'UserRepository.deletePendingPythonTasks', error, userId, { platform, taskType });
+      throw error;
+    }
+
+    // Nettoyer Redis quand on supprime des tâches
+    await this.cleanupRedisForDeletedTasks(userId, platform, taskType);
+  }
+
+  /**
+   * Nettoie Redis lors de la suppression de tâches Python
+   * Supprime les clés de déduplication et optionnellement les tâches de la queue
+   */
+  private async cleanupRedisForDeletedTasks(
+    userId: string,
+    platform?: 'bluesky' | 'mastodon', 
+    taskType?: string
+  ): Promise<void> {
+    try {
+      const { redis } = await import('@/lib/redis');
+      
+      // 1. Supprimer les clés de déduplication
+      if (platform && taskType) {
+        const dedupKey = `task_dedup:${userId}:${platform}:${taskType}`;
+        await redis.del(dedupKey);
+        console.log(`🗑️ [cleanupRedisForDeletedTasks] Deleted dedup key: ${dedupKey}`);
+      }
+      else if (platform) {
+        const pattern = `task_dedup:${userId}:${platform}:*`;
+        const keys = await redis.keys(pattern);
+        if (keys.length > 0) {
+          await redis.del(...keys);
+          console.log(`🗑️ [cleanupRedisForDeletedTasks] Deleted ${keys.length} dedup keys for platform ${platform}`);
+        }
+      }
+      else {
+        const pattern = `task_dedup:${userId}:*`;
+        const keys = await redis.keys(pattern);
+        if (keys.length > 0) {
+          await redis.del(...keys);
+          console.log(`🗑️ [cleanupRedisForDeletedTasks] Deleted ${keys.length} dedup keys for user ${userId}`);
+        }
+      }
+
+      // 2. Supprimer les tâches de la queue Redis
+      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+      const queueKey = `consent_tasks:${today}`;
+      
+      // Récupérer toutes les tâches de la queue
+      const queueTasks = await redis.lrange(queueKey, 0, -1);
+      let removedCount = 0;
+      
+      for (const taskJson of queueTasks) {
+        try {
+          const task = JSON.parse(taskJson);
+          
+          // Vérifier si cette tâche correspond aux critères de suppression
+          let shouldRemove = false;
+          
+          if (task.user_id === userId) {
+            if (platform && taskType) {
+              // Suppression spécifique : user + platform + taskType
+              shouldRemove = task.platform === platform && task.task_type === taskType;
+            } else if (platform) {
+              // Suppression par platform : user + platform
+              shouldRemove = task.platform === platform;
+            } else {
+              // Suppression générale : tous les tasks de cet user
+              shouldRemove = true;
+            }
+          }
+          
+          if (shouldRemove) {
+            // Note: Redis LREM supprime toutes les occurrences de cette valeur exacte
+            await redis.lrem(queueKey, 0, taskJson);
+            removedCount++;
+          }
+        } catch (parseError) {
+          console.warn(`⚠️ [cleanupRedisForDeletedTasks] Failed to parse task JSON: ${taskJson}`);
+        }
+      }
+      
+      if (removedCount > 0) {
+        console.log(`🗑️ [cleanupRedisForDeletedTasks] Removed ${removedCount} tasks from Redis queue ${queueKey}`);
+      }
+
+    } catch (error) {
+      console.error('❌ [cleanupRedisForDeletedTasks] Redis cleanup failed:', error);
+      // Ne pas faire échouer la suppression des tâches DB si Redis échoue
+    }
+  }
+
+  /**
+   * Insère un utilisateur dans newsletter_listing
+   * 
+   * @param userId Identifiant de l'utilisateur
+   */
+  async insertNewsletterListing(userId: string): Promise<void> {
+    // Récupérer l'email de l'utilisateur
+    const user = await this.getUser(userId);
+    if (!user || !user.email) {
+      throw new Error('User not found or email missing');
+    }
+
+    const { error } = await supabase
+      .from('newsletter_listing')
+      .insert({ 
+        user_id: userId,
+        email: user.email
+      });
+    
+    if (error) {
+      // Ignorer les erreurs de conflit (utilisateur déjà présent)
+      if (error.code !== '23505') { // unique_violation
+        logError('Repository', 'UserRepository.insertNewsletterListing', error, userId);
+        throw error;
+      }
+    }
+  }
+
+  /**
+   * Supprime un utilisateur de newsletter_listing
+   * 
+   * @param userId Identifiant de l'utilisateur
+   */
+  async deleteNewsletterListing(userId: string): Promise<void> {
+    const { error } = await supabase
+      .from('newsletter_listing')
+      .delete()
+      .eq('user_id', userId);
+    
+    if (error) {
+      logError('Repository', 'UserRepository.deleteNewsletterListing', error, userId);
       throw error;
     }
   }
