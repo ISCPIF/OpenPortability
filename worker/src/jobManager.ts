@@ -1,5 +1,5 @@
 // worker/src/jobManager.ts
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from './supabase';
 import { RedisJobQueue, ImportJob } from './redisQueue';
 import { redisClient } from './redisClient';
 import logger from './log_utils';
@@ -14,12 +14,7 @@ if (!supabaseUrl || !supabaseKey) {
   throw new Error('Missing Supabase environment variables');
 }
 
-const supabase = createClient(supabaseUrl, supabaseKey, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false
-  }
-});
+
 
 export interface JobManagerConfig {
   syncInterval: number; // Intervalle de synchronisation avec Supabase
@@ -57,6 +52,12 @@ export class JobManager {
       this.startPeriodicSync();
       
       console.log('✅ Job manager started successfully');
+      // Runtime diagnostics
+      console.log('JobManager', 'runtime', {
+        node: process.version,
+        undici: (process as any).versions?.undici,
+        supabaseJs: undefined // set via separate logger if needed
+      });
     } catch (error) {
       console.log('❌ Failed to start job manager:', error instanceof Error ? error.message : 'Unknown error');
       throw error;
@@ -233,26 +234,40 @@ export class JobManager {
         updateData.error_log = errorLog;
       }
 
-      const { error } = await supabase
+      const opId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      console.log('JobManager', 'updateJobInSupabase:request', {
+        opId,
+        jobId,
+        status,
+        hasStats: !!stats,
+        hasErrorLog: !!errorLog,
+        updateKeys: Object.keys(updateData)
+      });
+
+      const { data, error } = await supabase
         .from('import_jobs')
         .update(updateData)
         .eq('id', jobId);
 
       if (error) {
+        console.log('JobManager', 'updateJobInSupabase:response', { opId, jobId, status, dataIsNull: data == null, errorMessage: error.message });
         throw new Error(`Failed to update job ${jobId}: ${error.message}`);
       }
 
-      console.log('JobManager', 'updateJobInSupabase', 'Job updated in Supabase', {
+      console.log('JobManager', 'updateJobInSupabase:response', {
+        opId,
         jobId,
         status,
         hasStats: !!stats,
-        hasError: !!errorLog
+        hasError: !!errorLog,
+        dataIsNull: data == null
       });
     } catch (error) {
       console.log('JobManager', 'updateJobInSupabase', 'Failed to update job in Supabase', {
         jobId,
         status,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
+        stack: (error as any)?.stack
       });
       throw error;
     }
@@ -267,7 +282,14 @@ export class JobManager {
       
       if (job) {
         // Mettre à jour le statut dans Supabase
-        await this.updateJobInSupabase(job.id, 'processing');
+        console.log('JobManager', 'getNextJob:update:start', { workerId, jobId: job.id });
+        try {
+          await this.updateJobInSupabase(job.id, 'processing');
+          console.log('JobManager', 'getNextJob:update:success', { workerId, jobId: job.id });
+        } catch (e) {
+          console.log('JobManager', 'getNextJob:update:error', { workerId, jobId: job.id, error: e instanceof Error ? e.message : String(e), stack: (e as any)?.stack });
+          throw e;
+        }
       }
       
       return job;

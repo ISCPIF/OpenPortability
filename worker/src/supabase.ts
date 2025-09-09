@@ -21,14 +21,6 @@ export const supabase = createClient(
       persistSession: true,
       detectSessionInUrl: true
     },
-    global: {
-      fetch: (input: RequestInfo | URL, init?: RequestInit) => {
-        return fetch(input, {
-          ...init,
-          signal: AbortSignal.timeout(30000), // 30 second timeout
-        });
-      },
-    }
   }
 )
 
@@ -42,14 +34,6 @@ export const authClient = createClient(
     },
     db: {
       schema: "next-auth"
-    },
-    global: {
-      fetch: (input: RequestInfo | URL, init?: RequestInit) => {
-        return fetch(input, {
-          ...init,
-          signal: AbortSignal.timeout(15000), // 15 second timeout
-        });
-      },
     }
   }
 )
