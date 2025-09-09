@@ -1,5 +1,5 @@
 // worker/src/jobProcessor.ts
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from './supabase';
 import * as dotenv from 'dotenv';
 import { readFile, unlink, rm } from 'fs/promises';
 import { join, dirname } from 'path';
@@ -132,7 +132,6 @@ async function updateJobProgress(
     };
 
     const updateData: any = {
-      processed_items: processedItems.followers + processedItems.following,
       total_items: totalItems.followers + totalItems.following,
       stats: stats,
       updated_at: new Date().toISOString()
@@ -145,13 +144,23 @@ async function updateJobProgress(
       updateData.error_log = errorMessage;
     }
 
-    await supabase
+    const opId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    console.log('JobProcessor', 'updateJobProgress:request', { opId, jobId, workerId, status, hasErrorMessage: !!errorMessage, updateKeys: Object.keys(updateData) });
+
+    const { data, error } = await supabase
       .from('import_jobs')
       .update(updateData)
       .eq('id', jobId);
 
+    if (error) {
+      console.log('JobProcessor', 'updateJobProgress:response', { opId, jobId, workerId, status, dataIsNull: data == null, errorMessage: error.message });
+      throw error;
+    }
+    console.log('JobProcessor', 'updateJobProgress:response', { opId, jobId, workerId, status, dataIsNull: data == null });
+
   } catch (error) {
     console.log(`[Worker ${workerId}] Error updating job progress:`, error);
+    console.log('JobProcessor', 'updateJobProgress:error', { workerId, jobId, status, error: (error as any)?.message, stack: (error as any)?.stack });
   }
 }
 
@@ -169,31 +178,7 @@ interface JobMetrics {
 
 const jobMetrics: Map<string, JobMetrics> = new Map();
 
-const supabase = createClient(supabaseUrl, supabaseKey, 
-  {
-    global: {
-      fetch: (input: RequestInfo | URL, init?: RequestInit) => {
-        const timeout = 30000;
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), timeout);
-        
-        return fetch(input, { ...init, signal: controller.signal })
-          .finally(() => clearTimeout(timeoutId));
-      }
-    }
-  });
 
-const supabaseAuth = createClient(supabaseUrl, supabaseKey, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false
-  },
-  global: {
-    headers: {
-      'Cache-Control': 'no-cache'
-    }
-  }
-});
 
 function validateTwitterData(content: string, type: 'following' | 'follower'): string | null {
   const prefix = `window.YTD.${type}.part0 = `;
