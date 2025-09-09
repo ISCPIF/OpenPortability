@@ -7,7 +7,7 @@ RUN addgroup -g 1001 appgroup && \
 # Installation de bash et postgresql-client (pour psql)
 RUN apk add --no-cache bash postgresql-client
 
-RUN npm install -g npm@11.4.2
+RUN npm install -g npm@11.6.0
 
 # Définir le répertoire de travail
 WORKDIR /app
