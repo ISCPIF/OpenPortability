@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState, useRef } from "react";
+import { usePathname } from 'next/navigation';
 import { GlobalStats, UserCompleteStats } from "../lib/types/stats";
 
 // Module-level variable to track if stats have been fetched across component instances
 const globalDataFetched = { current: false };
 
 // Global debounce pour refreshStats - partagé entre toutes les instances
-let globalRefreshTimeout: NodeJS.Timeout | null = null;
+let globalRefreshTimeout: ReturnType<typeof setTimeout> | null = null;
 const REFRESH_DEBOUNCE_DELAY = 500;
 
 // Compteur pour identifier les instances
@@ -17,6 +18,7 @@ export function useStats() {
     const [isLoading, setIsLoading] = useState(true);
     // Initialize local ref with global state
     const dataFetchedRef = useRef(globalDataFetched.current);
+    const pathname = usePathname();
     
     // Créer un ID unique pour cette instance
     const instanceId = useRef(`useStats-${++instanceCounter}`);
@@ -31,26 +33,33 @@ export function useStats() {
       
       try {
         setIsLoading(true);
-        const [userStatsResponse, globalStatsResponse] = await Promise.all([
-          fetch('/api/stats', { 
+        const path = (pathname || '').split('?')[0];
+        const isReconnect = path.includes('/reconnect');
+        const isDashboard = path.includes('/dashboard');
+
+        // Always fetch global stats
+        const globalStatsResponse = await fetch('/api/stats/total', { 
+          headers: { 
+            'Cache-Control': 'no-cache',
+            'X-Request-ID': `stats-total-${Date.now()}` // Add unique identifier to prevent browser caching
+          } 
+        });
+        const globalStats = await globalStatsResponse.json();
+        setGlobalStats(globalStats);
+
+        // Conditionally fetch user stats only on reconnect pages and not dashboard
+        if (isReconnect && !isDashboard) {
+          const userStatsResponse = await fetch('/api/stats', { 
             headers: { 
               'Cache-Control': 'no-cache',
               'X-Request-ID': `stats-${Date.now()}` // Add unique identifier to prevent browser caching
             } 
-          }),
-          fetch('/api/stats/total', { 
-            headers: { 
-              'Cache-Control': 'no-cache',
-              'X-Request-ID': `stats-total-${Date.now()}` // Add unique identifier to prevent browser caching
-            } 
-          })
-        ]);
-  
-        const userStats = await userStatsResponse.json();
-        const globalStats = await globalStatsResponse.json();
-        
-        setStats(userStats);
-        setGlobalStats(globalStats);
+          });
+          const userStats = await userStatsResponse.json();
+          setStats(userStats);
+        } else {
+          setStats(null);
+        }
         dataFetchedRef.current = true;
         globalDataFetched.current = true;
       } catch (error) {
@@ -58,7 +67,7 @@ export function useStats() {
       } finally {
         setIsLoading(false);
       }
-    }, []);
+    }, [pathname]);
   
     useEffect(() => {
       fetchStats();
