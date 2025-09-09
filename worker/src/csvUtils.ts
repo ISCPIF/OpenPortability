@@ -204,12 +204,15 @@ async function importCSVViaPsqlAttempt(
 
     const disableTriggersSQL = skipTriggerManagement ? '' : `\nALTER TABLE ${relationTableName} DISABLE TRIGGER ALL;\n`;
     const enableTriggersSQL = skipTriggerManagement ? '' : `\nALTER TABLE ${relationTableName} ENABLE TRIGGER ALL;\n`;
+    //moins de ram pcq pas operation de tri / hash only du copy
     
     const relationsImportSql = `
 BEGIN;
 
-SET statement_timeout TO '${timeoutValue}s';
-SET synchronous_commit TO OFF;
+SET LOCAL statement_timeout TO '${timeoutValue}s';
+SET LOCAL synchronous_commit TO OFF;
+SET LOCAL work_mem = '128MB';
+
 ${disableTriggersSQL}
 COPY ${relationTableName} (source_id, node_id) FROM STDIN WITH (FORMAT csv, HEADER true);
 ${enableTriggersSQL}
@@ -363,19 +366,19 @@ export async function preloadNodesOnce(
     const maxTimeout = 1800; // 30min hard cap per chunk
     const timeoutValue = Math.max(baseTimeout, Math.min(maxTimeout, baseTimeout + Math.floor(chunkCount / 1000) * scalingFactor));
 
+    //big work_mem pour on conflict do nothing et le nombre ++ de doublons
     const nodesTempTable = `temp_nodes_${Date.now()}_${i}`;
     const sql = `
 BEGIN;
-SET statement_timeout TO '${timeoutValue}s';
-SET synchronous_commit TO OFF;
-SELECT count(*) FROM nodes;
-CREATE TEMP TABLE ${nodesTempTable} (twitter_id BIGINT);
+SET LOCAL statement_timeout TO '${timeoutValue}s';
+SET LOCAL synchronous_commit TO OFF;
+SET LOCAL work_mem = '512MB';
+CREATE TEMP TABLE ${nodesTempTable} (twitter_id BIGINT) ON COMMIT DROP;
 COPY ${nodesTempTable} FROM STDIN WITH (FORMAT csv, HEADER true);
 INSERT INTO nodes (twitter_id)
 SELECT twitter_id FROM ${nodesTempTable}
 ORDER BY twitter_id
 ON CONFLICT (twitter_id) DO NOTHING;
-DROP TABLE ${nodesTempTable};
 COMMIT;
 `;
 
