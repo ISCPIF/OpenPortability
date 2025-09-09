@@ -39,12 +39,7 @@ export const GET = withValidation(
       const statsService = new StatsService(repository);
       
       const stats = await statsService.getUserStats(session.user.id, session.user.has_onboarded, limit);
-      
-      console.log('API', 'GET /api/stats', `Retrieved stats for user ${session.user.id}`, session.user.id, {
-        context: 'User stats retrieved',
-        limit
-      });
-      
+            
       return NextResponse.json(stats);
     } catch (error) {
       console.log('API', 'GET /api/stats', error, session?.user?.id || 'anonymous', {

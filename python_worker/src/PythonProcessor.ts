@@ -4,7 +4,8 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import path from 'path';
 import * as dotenv from 'dotenv';
-import logger from './log_utils';
+// import logger from './log_utils';
+import redis from './redisClient';
 
 // Promisify exec pour utiliser async/await
 const execPromise = promisify(exec);
@@ -28,6 +29,17 @@ const supabase = createClient(supabaseUrl, supabaseKey, {
     autoRefreshToken: false,
     persistSession: false
   }
+});
+
+const authClient = createClient(supabaseUrl, supabaseKey, {
+  // {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    },
+    db: {
+      schema: "next-auth"
+    },
 });
 
 // Types de tâches supportés
@@ -74,191 +86,159 @@ async function updateTaskStatus(
     const { error } = await supabase
       .from('python_tasks')
       .update({
-        status: status as string, // Cast en string pour éviter les guillemets
+        status,
         result,
         error_log: errorLog,
-        worker_id: status === 'pending' ? null : undefined, // Réinitialiser worker_id si pending
         updated_at: new Date().toISOString()
       })
-      .match({ id: taskId });
-    
-    if (error) {
-      console.log('PythonProcessor', 'updateTaskStatus', `Error updating task status: ${error.message}`, undefined, { taskId, status });
-      throw error;
-    }
+      .eq('id', taskId);
+
+    if (error) throw error;
   } catch (error) {
-    console.log('PythonProcessor', 'updateTaskStatus', error instanceof Error ? error : String(error), undefined, { taskId });
+    console.log('PythonProcessor', 'updateTaskStatus', `Failed to update task status`, taskId, { status, error });
     throw error;
   }
 }
 
 /**
- * Met à jour le statut de support personnalisé pour un utilisateur
+ * Programme manuellement une tâche newsletter (remplace scheduleNextNewsletter)
  */
-async function updatePersonalizedSupportStatus(
-  userId: string,
-  platform: 'bluesky' | 'mastodon',
-  isActive: boolean
-): Promise<void> {
+async function scheduleNewsletterTask(testDmTask: PythonTask): Promise<void> {
   try {
-    // Vérifier si une entrée existe déjà
-    const { data, error: selectError } = await supabase
-      .from('personalized_support_listing')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('platform', platform)
+    const nextWeek = new Date();
+    nextWeek.setDate(nextWeek.getDate() + 7);
+    
+    // Vérifier le statut d'onboarding pour déterminer le statut initial
+    const { data: user, error: userError } = await authClient
+      .from('users')
+      .select('has_onboarded')
+      .eq('id', testDmTask.user_id)
       .single();
-
-    const now = new Date().toISOString();
-
-    if (selectError && selectError.code !== 'PGRST116') { // PGRST116 = not found
-      throw selectError;
-    }
-
-    if (data) {
-      // Mettre à jour l'entrée existante
-      const { error } = await supabase
-        .from('personalized_support_listing')
-        .update({
-          is_active: isActive,
-          updated_at: now
-        })
-        .eq('user_id', userId)
-        .eq('platform', platform);
-
-      if (error) throw error;
-    } else {
-      // Créer une nouvelle entrée
-      const { error } = await supabase
-        .from('personalized_support_listing')
-        .insert({
-          user_id: userId,
-          platform,
-          is_active: isActive,
-          created_at: now,
-          updated_at: now
-        });
-
-      if (error) throw error;
-    }
-
-    console.log('PythonProcessor', 'updatePersonalizedSupportStatus', `Updated support status for user ${userId}`, userId, { platform, isActive });
-  } catch (error) {
-    console.log('PythonProcessor', 'updatePersonalizedSupportStatus', error instanceof Error ? error : String(error), userId, { platform, isActive });
-    throw error;
-  }
-}
-
-/**
- * Exécute l'envoi d'un DM via le script Python
- */
-async function executeDm(task: PythonTask, workerId: string, customMessage?: string): Promise<Record<string, any>> {
-  const endTimer = logger.startPerformanceTimer('PythonProcessor', 'executeDm', task.user_id, { taskId: task.id }, undefined, undefined, workerId);
-
-  try {
-    // Vérifier que le payload contient un handle
-    if (!task.payload.handle) {
-      throw new Error('Missing handle in task payload');
+    
+    if (userError) {
+      console.warn(`⚠️ Could not fetch user onboarding status for ${testDmTask.user_id}, defaulting to 'waiting'`);
     }
     
-    // Chemin vers le script Python selon la plateforme
-    const scriptPath = path.resolve(process.cwd(), 
-      task.platform === 'bluesky' ? './testDm_bluesky.py' : './testDm_mastodon.py'
-    );
+    const status = user?.has_onboarded ? 'pending' : 'waiting';
     
-    // Préparer les arguments pour le script Python
-    const args = [task.payload.handle];
-    if (customMessage) {
-      args.push(customMessage);
-    }
-
-    console.log('PythonProcessor', 'executeDm', `Executing ${task.platform} DM script`, task.user_id, { 
-      taskId: task.id
-    }, undefined, undefined, workerId);    
-    
-    // Exécuter le script Python avec les arguments en utilisant l'environnement virtuel
-    const pythonExecutable = process.env.VIRTUAL_ENV ? `${process.env.VIRTUAL_ENV}/bin/python` : 'python3';
-    // console.log(`Sending custom message: ${customMessage}`);
-    
-    // Utiliser des guillemets doubles pour entourer les arguments et échapper les caractères spéciaux
-    const escapedArgs = args.map(arg => `"${arg.replace(/"/g, '\\"')}"`);
-    // console.log(`Command: ${pythonExecutable} ${scriptPath} ${escapedArgs.join(' ')}`);
-    
-    const { stdout, stderr } = await execPromise(`${pythonExecutable} ${scriptPath} ${escapedArgs.join(' ')}`);
-    
-    // console.log(`🐍 [Python Worker ${workerId}] DM script output:`, stdout);
-    endTimer();
-    if (stderr && !stdout.includes('Successfully sent DM') && !stdout.includes('Message envoyé avec succès')) {
-      // console.error(`❌ [Python Worker ${workerId}] DM script error:`, stderr);
-      
-      // Déterminer si l'utilisateur doit suivre la plateforme
-      if (stderr.includes('recipient requires incoming messages to come from someone they follow') ||
-          stdout.includes('recipient requires incoming messages to come from someone they follow') ||
-          stderr.includes('recipient has disabled incoming messages') ||
-          stdout.includes('recipient has disabled incoming messages')) {
-        return {
-          success: false,
-          error: 'DM failed: User needs to follow the platform',
-          needs_follow: true
-        };
-      }
-      
-      return {
-        success: false,
-        error: stderr
-      };
-    }
-    
-    // Vérifier si le DM a été envoyé avec succès
-    if (stdout.includes('Successfully sent DM') || stdout.includes('Message envoyé avec succès')) {
-      return {
-        success: true
-      };
-    }
-    
-    // Retourner une erreur générique dans les autres cas
-    return {
-      success: false,
-      error: 'Unknown error sending DM'
-    };
-    
-  } catch (error) {
-    console.error(`❌ [Python Worker ${workerId}] Error in executeDm:`, error);
-    throw error;
-  }
-}
-
-/**
- * Crée une nouvelle tâche newsletter programmée pour la semaine suivante
- */
-async function scheduleNextNewsletter(task: PythonTask): Promise<void> {
-  try {
-    // Utiliser la date actuelle si pas de scheduled_for
-    const currentDate = task.scheduled_for ? new Date(task.scheduled_for) : new Date();
-    const nextScheduledDate = new Date(currentDate);
-    nextScheduledDate.setDate(nextScheduledDate.getDate() + 7); // Ajoute 7 jours
-
     const { error } = await supabase
       .from('python_tasks')
       .insert({
-        user_id: task.user_id,
-        status: 'pending',
+        user_id: testDmTask.user_id,
+        status: status,
         task_type: 'send-reco-newsletter',
-        platform: task.platform,
-        scheduled_for: nextScheduledDate.toISOString(),
-        payload: task.payload, // Garder le même payload
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        platform: testDmTask.platform,
+        payload: testDmTask.payload,
+        scheduled_for: nextWeek.toISOString()
       });
 
     if (error) throw error;
-    console.log('PythonProcessor', 'scheduleNextNewsletter', `Scheduled next newsletter for ${nextScheduledDate.toISOString()}`, task.user_id, {
-      taskId: task.id,
-      platform: task.platform
+    
+    console.log(`📅 [PythonProcessor] Scheduled newsletter task for user ${testDmTask.user_id} (status: ${status})`);
+    
+  } catch (error) {
+    console.log('PythonProcessor', 'scheduleNewsletterTask', error instanceof Error ? error : String(error), testDmTask.user_id);
+    throw error;
+  }
+}
+
+/**
+ * Exécute l'envoi d'un DM via le script Python approprié
+ */
+async function executeDm(task: PythonTask, workerId: string, customMessage?: string): Promise<Record<string, any>> {
+  
+  try {
+    const handle = task.payload.handle;
+    if (!handle) {
+      throw new Error('Missing handle in task payload');
+    }
+
+    let scriptPath: string;
+    let scriptArgs: string[] = [];
+
+    // Choisir le script selon le type de tâche ET la plateforme
+    if (task.task_type === 'test-dm') {
+      // Scripts de test DM
+      if (task.platform === 'bluesky') {
+        scriptPath = path.join(__dirname, '..', 'testDm_bluesky.py');
+        scriptArgs = [handle];
+      } else if (task.platform === 'mastodon') {
+        scriptPath = path.join(__dirname, '..', 'testDm_mastodon.py');
+        scriptArgs = [handle];
+      } else {
+        throw new Error(`Unsupported platform: ${task.platform}`);
+      }
+
+      if (customMessage) {
+        scriptArgs.push(customMessage);
+      }
+    } else if (task.task_type === 'send-reco-newsletter') {
+      // Pour les newsletters, on utilise aussi les scripts de test DM avec le message personnalisé
+      if (task.platform === 'bluesky') {
+        scriptPath = path.join(__dirname, '..', 'testDm_bluesky.py');
+        scriptArgs = [handle];
+      } else if (task.platform === 'mastodon') {
+        scriptPath = path.join(__dirname, '..', 'testDm_mastodon.py');
+        scriptArgs = [handle];
+      } else {
+        throw new Error(`Unsupported platform: ${task.platform}`);
+      }
+
+      if (customMessage) {
+        scriptArgs.push(customMessage);
+      }
+    } else {
+      throw new Error(`Unsupported task type: ${task.task_type}`);
+    }
+
+    const command = `python3 "${scriptPath}" ${scriptArgs.map(arg => `"${arg}"`).join(' ')}`;
+    console.log(`🐍 [PythonProcessor] Executing: ${command}`);
+
+    const timeout = task.task_type === 'send-reco-newsletter' ? 60000 : 30000; // Newsletter plus long
+    const { stdout, stderr } = await execPromise(command, {
+      timeout,
+      env: { ...process.env }
     });
-    } catch (error) {
-      console.log('PythonProcessor', 'scheduleNextNewsletter', error instanceof Error ? error : String(error), task.user_id, { taskId: task.id });
-      throw error;
+
+    if (stderr && stderr.trim()) {
+      console.warn(`⚠️ [PythonProcessor] Python script stderr: ${stderr}`);
+    }
+
+    let result;
+    try {
+      // Extract JSON from stdout - look for the last line that looks like JSON
+      const lines = stdout.trim().split('\n');
+      let jsonLine = '';
+      
+      // Find the last line that starts with '{' and ends with '}'
+      for (let i = lines.length - 1; i >= 0; i--) {
+        const line = lines[i].trim();
+        if (line.startsWith('{') && line.endsWith('}')) {
+          jsonLine = line;
+          break;
+        }
+      }
+      
+      if (!jsonLine) {
+        throw new Error(`No JSON found in script output: ${stdout}`);
+      }
+      
+      result = JSON.parse(jsonLine);
+    } catch (parseError) {
+      // Si le parsing JSON échoue, considérer la sortie comme un message d'erreur
+      throw new Error(`Script output is not valid JSON: ${stdout}`);
+    }
+
+    if (result.success) {
+      console.log(`✅ [PythonProcessor] ${task.task_type} sent successfully to ${handle} on ${task.platform}`);
+    } else {
+      throw new Error(result.error || 'Unknown error from Python script');
+    }
+    return result;
+
+  } catch (error) {
+    console.log('PythonProcessor', 'executeDm', error instanceof Error ? error : String(error), task.user_id, { platform: task.platform, handle: task.payload.handle }, undefined, undefined, workerId);
+    throw error;
   }
 }
 
@@ -266,70 +246,87 @@ async function scheduleNextNewsletter(task: PythonTask): Promise<void> {
  * Vérifie si une tâche programmée doit être exécutée maintenant
  */
 function shouldExecuteScheduledTask(task: PythonTask): boolean {
-  if (task.task_type === 'test-dm') return true;
+  if (!task.scheduled_for) {
+    return true; // Pas de programmation, exécuter immédiatement
+  }
+
+  const scheduledTime = new Date(task.scheduled_for);
+  const now = new Date();
   
-  if (task.task_type === 'send-reco-newsletter') {
-    if (!task.scheduled_for) return false;
-    
-    const scheduledTime = new Date(task.scheduled_for);
-    const now = new Date();
-    
-    // Exécuter si l'heure programmée est passée
-    return scheduledTime <= now;
+  const shouldExecute = now >= scheduledTime;
+  
+  if (!shouldExecute) {
+    console.log(`⏰ [PythonProcessor] Task ${task.id} scheduled for ${scheduledTime.toISOString()}, current time: ${now.toISOString()}`);
   }
   
-  return false;
+  return shouldExecute;
 }
 
 /**
- * Récupère les statistiques des utilisateurs qui ne nous suivent pas encore
+ * Version worker de getFollowableTargetsFromRedis pour les stats
  */
-async function getUnfollowedStats(userId: string): Promise<{ bluesky: number, mastodon: number }> {
-  const endTimer = logger.startPerformanceTimer('PythonProcessor', 'getUnfollowedStats', userId);
-  console.log('PythonProcessor', 'getUnfollowedStats', 'Fetching unfollowed stats', userId);
+async function getUnfollowedStatsFromRedis(userId: string): Promise<{ bluesky: number, mastodon: number }> {
+  
+  try {
+    // 1. Récupérer les sources_targets non suivis
+    const { data: sourcesTargets, error } = await supabase
+      .from('sources_targets')
+      .select('target_twitter_id, has_follow_bluesky, has_follow_mastodon, dismissed')
+      .eq('source_id', userId)
+      .or('has_follow_bluesky.eq.false,has_follow_mastodon.eq.false')
+      .eq('dismissed', false); // Seulement les non-ignorés
 
-  const PAGE_SIZE = 1000;
-  let page = 0;
-  let stats = { bluesky: 0, mastodon: 0 };
-  let hasMore = true;
-
-  while (hasMore) {
-    const { data, error } = await supabase.rpc('get_followable_targets', {
-      user_id: userId,
-      page_size: PAGE_SIZE,
-      page_number: page
-    });
-
-    if (error) {
-      console.log('PythonProcessor', 'getUnfollowedStats', `Failed to get unfollowed stats: ${error.message}`, userId);
-      endTimer();
-      break;
+    if (error || !sourcesTargets) {
+      console.warn(`⚠️ [PythonProcessor] Could not fetch sources_targets for user ${userId}: ${error?.message}`);
+      return { bluesky: 0, mastodon: 0 };
     }
 
-    if (!data || data.length === 0) {
-      hasMore = false;
-      console.log('PythonProcessor', 'getUnfollowedStats', `End of unfollowed stats`, userId);
-      endTimer();
-      break;
+    if (sourcesTargets.length === 0) {
+      console.log(`📊 [PythonProcessor] No unfollowed targets found for user ${userId}`);
+      return { bluesky: 0, mastodon: 0 };
     }
 
-    // Compter les utilisateurs non suivis et non ignorés sur chaque plateforme
-    data.forEach((target: any) => {
-      // Ne compter que les comptes qui ne sont pas ignorés (dismissed = false)
-      if (!target.dismissed) {
-        if (target.bluesky_handle && !target.has_follow_bluesky) {
+    console.log("data retrieved sources_targets retrieved from db :", sourcesTargets.length);
+
+    // 2. Récupérer les mappings depuis Redis
+    const twitterIds = sourcesTargets.map(st => st.target_twitter_id);
+
+    console.log("twitterIds", twitterIds.length)
+    const mappings = await redis.batchGetSocialMappings(twitterIds);
+
+    console.log("mappings", mappings.size)
+    
+
+    // 3. Compter les correspondances non suivies
+    let stats = { bluesky: 0, mastodon: 0 };
+
+    for (const sourceTarget of sourcesTargets) {
+      const mapping = mappings.get(sourceTarget.target_twitter_id);
+      
+      if (mapping) {
+        console.log("we have a mapping for", sourceTarget.target_twitter_id)
+        console.log(sourceTarget)
+        console.log(mapping)
+        // Compter Bluesky si correspondance existe et pas encore suivi
+        if (mapping.bluesky) {
           stats.bluesky++;
         }
-        if (target.mastodon_username && !target.has_follow_mastodon) {
+        
+        // Compter Mastodon si correspondance existe et pas encore suivi
+        if (mapping.mastodon) {
+          console.log("mastodon stats = ", stats.mastodon)
           stats.mastodon++;
         }
       }
-    });
+    }
 
-    page++;
+    console.log(`📊 [PythonProcessor] Unfollowed stats for user ${userId}: ${stats.bluesky} Bluesky, ${stats.mastodon} Mastodon`);
+    return stats;
+    
+  } catch (error) {
+    console.log('PythonProcessor', 'getUnfollowedStatsFromRedis', error instanceof Error ? error : String(error), userId);
+    return { bluesky: 0, mastodon: 0 };
   }
-
-  return stats;
 }
 
 /**
@@ -338,26 +335,20 @@ async function getUnfollowedStats(userId: string): Promise<{ bluesky: number, ma
 async function getUserLanguagePref(userId: string): Promise<string> {
   try {
     const { data, error } = await supabase
-      .from('language_pref')
-      .select('language')
-      .eq('user_id', userId)
-      .single(); // Assumes one preference per user
+      .from('users')
+      .select('language_preference')
+      .eq('id', userId)
+      .single();
 
-    if (error && error.code !== 'PGRST116') { // PGRST116 = not found
-      console.log('PythonProcessor', 'getUserLanguagePref', `Failed to get language preference: ${error.message}`, userId);
-      return 'en'; // Default to English on error
+    if (error || !data) {
+      console.warn(`⚠️ [PythonProcessor] Could not fetch language preference for user ${userId}, defaulting to 'en'`);
+      return 'en';
     }
 
-    if (data) {
-      // console.log(`🌐 User ${userId} language preference found: ${data.language}`);
-      return data.language;
-    } else {
-      console.log('PythonProcessor', 'getUserLanguagePref', 'No language preference found, using default', userId);
-      return 'en'; // Default to English if no preference found
-    }
+    return data.language_preference || 'en';
   } catch (error) {
     console.log('PythonProcessor', 'getUserLanguagePref', error instanceof Error ? error : String(error), userId);
-    return 'en'; // Default to English on exception
+    return 'en';
   }
 }
 
@@ -367,76 +358,66 @@ async function getUserLanguagePref(userId: string): Promise<string> {
 export async function processPythonTask(
   task: PythonTask, 
   workerId: string, 
-  allMessages: AllMessages // Ajout du paramètre allMessages
+  allMessages: AllMessages
 ): Promise<void> {
-  const taskTimer = logger.startPerformanceTimer('PythonProcessor', 'processPythonTask', task.user_id, { taskId: task.id }, undefined, undefined, workerId);
-  console.log('PythonProcessor', 'processPythonTask', `Processing task ${task.id} (type: ${task.task_type})`, task.user_id, {
-    platform: task.platform,
-    workerId
-  });  
-  if (task.scheduled_for && !shouldExecuteScheduledTask(task)) {
-    console.log('PythonProcessor', 'processPythonTask', `Task ${task.id} is scheduled for later`, task.user_id, {
-      scheduledFor: task.scheduled_for,
-      workerId
-    });
-    
-    // Remettre la tâche en pending pour qu'elle puisse être reprise plus tard
-    await updateTaskStatus(task.id, 'pending', null, null);
-    taskTimer();
-    return;
-  }
+  
   try {
+    console.log(`🔄 [PythonProcessor] Processing task ${task.id} (type: ${task.task_type}, platform: ${task.platform})`);
 
-    let result: Record<string, any>;
-    
-    // Récupérer la langue préférée de l'utilisateur au début
-    const userLang = await getUserLanguagePref(task.user_id);
-    console.log('PythonProcessor', 'processPythonTask', `Processing with language: ${userLang}`, task.user_id, { workerId });
-
-    // Obtenir les messages pour la langue (avec fallback sur 'en')
-    const messages = allMessages[userLang] || allMessages['en'];
-    if (!messages) {
-        // Ceci ne devrait pas arriver si loadAllMessages dans index.ts garantit un fallback
-        console.log('PythonProcessor', 'processPythonTask', `Critical: No messages found for lang ${userLang} or fallback 'en'`, task.user_id, { workerId });
-        // Gérer l'erreur - peut-être utiliser un message codé en dur ici aussi
-        throw new Error(`Missing messages for language ${userLang}`);
+    // Vérifier si la tâche doit être exécutée maintenant (pour les tâches programmées)
+    if (!shouldExecuteScheduledTask(task)) {
+      console.log(`⏰ [PythonProcessor] Task ${task.id} is scheduled for later, skipping`);
+      // Remettre la tâche en pending pour qu'elle soit récupérée plus tard
+      await updateTaskStatus(task.id, 'pending');
+      return;
     }
 
-    // Exécuter la fonction appropriée selon le type de tâche
-    switch (task.task_type) {
-      case 'test-dm': { // Use block scope for clarity
-        // Utiliser le message de test DM depuis le fichier JSON
-        const testMessage = messages.testDm;
-        console.log('PythonProcessor', 'processPythonTask', 'Executing test DM task', task.user_id, { platform: task.platform, workerId });
+    let result: Record<string, any>;
 
-        result = await executeDm(task, workerId, testMessage);
-        await updatePersonalizedSupportStatus(task.user_id, task.platform, result.success);
-        break;
+    if (task.task_type === 'test-dm') {
+      // Traiter le test DM
+      console.log(`🧪 [PythonProcessor] Processing test DM for ${task.payload.handle} on ${task.platform}`);
+      
+      // Récupérer le message de test dans la langue de l'utilisateur
+      const userLang = await getUserLanguagePref(task.user_id);
+      const testMessage = allMessages[userLang]?.testDm || allMessages['en']?.testDm || 'Test message';
+      
+      result = await executeDm(task, workerId, testMessage);
+      
+      // Si succès, programmer manuellement la tâche newsletter
+      if (result.success) {
+        await scheduleNewsletterTask(task);
+        console.log(`✅ [PythonProcessor] Test DM successful, newsletter scheduled for user ${task.user_id}`);
       }
+      
+    } else if (task.task_type === 'send-reco-newsletter') {
+      // Traiter l'envoi de newsletter
+      console.log(`📧 [PythonProcessor] Processing newsletter for ${task.payload.handle} on ${task.platform}`);
+      
+      // Récupérer les stats des utilisateurs non suivis
+      const stats = await getUnfollowedStatsFromRedis(task.user_id);
+      const platformStats = task.platform === 'bluesky' ? stats.bluesky : stats.mastodon;
+      
+      // Ne pas envoyer de message s'il n'y a pas de targets à suivre
+      if (platformStats === 0) {
+        console.log('PythonProcessor', 'processPythonTask', 'Skipping newsletter task - no targets to follow', task.user_id, {
+          platform: task.platform,
+          platformStats,
+          workerId
+        });
         
-      case 'send-reco-newsletter': { // Use block scope for clarity
-        // Récupérer les stats des utilisateurs non suivis
-        const stats = await getUnfollowedStats(task.user_id);
-        const platformStats = task.platform === 'bluesky' ? stats.bluesky : stats.mastodon;
+        // Marquer la tâche comme complétée sans envoyer de message
+        result = { 
+          success: true, 
+          info: 'Skipped - no targets to follow'
+        };
         
-        // Ne pas envoyer de message s'il n'y a pas de targets à suivre
-        if (platformStats === 0) {
-          console.log('PythonProcessor', 'processPythonTask', 'Skipping newsletter task - no targets to follow', task.user_id, {
-            platform: task.platform,
-            platformStats,
-            workerId
-          });
-          
-          // Marquer la tâche comme complétée sans envoyer de message
-          result = { 
-            success: true, 
-            info: 'Skipped - no targets to follow'
-          };
-          
-          // Programmer la prochaine newsletter même si on n'a pas envoyé celle-ci
-          await scheduleNextNewsletter(task);
-          break;
-        }
+        // Programmer la prochaine newsletter même si on n'a pas envoyé celle-ci
+        await scheduleNewsletterTask(task);
+      } else {
+        // Récupérer la langue de l'utilisateur
+        const userLang = await getUserLanguagePref(task.user_id);
+        const messages = allMessages[userLang] || allMessages['en'];
         
         // Créer le message personnalisé basé sur la langue et les stats
         const platformName = task.platform === 'bluesky' ? 'Bluesky' : 'Mastodon';
@@ -460,19 +441,15 @@ export async function processPythonTask(
         });
         
         result = await executeDm(task, workerId, message);
-        await updatePersonalizedSupportStatus(task.user_id, task.platform, result.success);
         
         if (result.success) {
-          await scheduleNextNewsletter(task);
+          await scheduleNewsletterTask(task);
         }
-        break;
       }
-        
-      default:
-        console.log('PythonProcessor', 'processPythonTask', `Unsupported task type: ${task.task_type}`, task.user_id, { workerId });
-        throw new Error(`Unsupported task type: ${task.task_type}`);
+    } else {
+      throw new Error(`Unknown task type: ${task.task_type}`);
     }
-    
+
     // Mettre à jour le statut de la tâche
     await updateTaskStatus(
       task.id, 
@@ -480,30 +457,14 @@ export async function processPythonTask(
       result,
       result.success ? null : result.error
     );
-    
-    console.log('PythonProcessor', 'processPythonTask', `Task ${result.success ? 'completed' : 'failed'}`, task.user_id, {
-      taskId: task.id,
-      success: result.success,
-      workerId
-    });
-    
-    taskTimer();
+
 
   } catch (error) {
-    console.log('PythonProcessor', 'processPythonTask', error instanceof Error ? error : String(error), task.user_id, {
-      taskId: task.id,
-      workerId
-    });
-
-    // Mettre à jour le statut de support personnalisé en cas d'erreur
-    try {
-      await updatePersonalizedSupportStatus(task.user_id, task.platform, false);
-    } catch (supportError) {
-    console.log('PythonProcessor', 'processPythonTask', `Failed to update support status: ${String(supportError)}`, task.user_id, {
-        taskId: task.id,
-        workerId
-      });
-    }
+    console.log('PythonProcessor', 'processPythonTask', error instanceof Error ? error : String(error), task.user_id, { 
+      taskId: task.id, 
+      taskType: task.task_type, 
+      platform: task.platform 
+    }, undefined, undefined, workerId);
     
     // Mettre à jour le statut en cas d'erreur
     try {
@@ -514,12 +475,7 @@ export async function processPythonTask(
         error instanceof Error ? error.message : String(error)
       );
     } catch (updateError) {
-      console.log('PythonProcessor', 'processPythonTask', `Failed to update task status: ${String(updateError)}`, task.user_id, {
-        taskId: task.id,
-        workerId
-      });
+      console.error(`❌ [PythonProcessor] Failed to update task status: ${updateError}`);
     }
-    taskTimer();
-
   }
 }
