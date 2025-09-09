@@ -23,18 +23,19 @@ const nextConfig = {
     
     // Optimise les imports de packages pour de meilleures performances
     optimizePackageImports: ['lucide-react', '@heroicons/react', 'react-icons'],
-    
-    // Active Turbopack pour des compilations plus rapides (expérimental mais stable)
-    turbo: process.env.NODE_ENV === 'development' ? {
-      // Optimisations spécifiques Turbopack
+  },
+  
+  // Nouvelle configuration Turbopack (remplace experimental.turbo)
+  ...(process.env.NODE_ENV === 'development' && {
+    turbopack: {
       resolveAlias: {
         // Évite les résolutions multiples
         'react': 'react',
         'react-dom': 'react-dom'
       }
-    } : undefined,
-  },
-  
+    }
+  }),
+
   // Optimisations spécifiques pour Docker + développement
   ...(process.env.NODE_ENV === 'development' && {
     // Active les logs pour diagnostiquer les lenteurs
