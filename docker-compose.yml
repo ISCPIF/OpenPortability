@@ -20,8 +20,8 @@ services:
         - "3000:3000"
       volumes:
         # Mount entire directory but preserve container's node_modules
-        - ./:/app
-        - /app/node_modules
+        # - ./:/app
+        # - /app/node_modules
         - shared-tmp:/app/tmp
         - app_logs:/app/logs
       depends_on:
