@@ -9,13 +9,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Footer from '@/app/_components/Footer';
 import LoadingIndicator from '@/app/_components/LoadingIndicator';
 import LoginSea from "@/app/_components/LoginSea";
-import LaunchReconnection from '@/app/_components/LaunchReconnection';
 import DashboardLoginButtons from '@/app/_components/DashboardLoginButtons';
 import { useDashboardState } from '@/hooks/useDashboardState';
 import NewsletterSection from '@/app/_components/dashboard/NewsletterSection';
 import OnboardingSection from '@/app/_components/dashboard/OnboardingSection';
 import TutorialSection from '@/app/_components/dashboard/TutorialSection';
-import NewsLetterConsentsUpdate from '@/app/_components/NewsLetterConsentsUpdate'
 
 export default function DashboardPage() {
   const {
@@ -24,6 +22,7 @@ export default function DashboardPage() {
     stats,
     globalStats,
     mastodonInstances,
+    newsletterData,
     isLoading,
     setIsLoading,
     showNewsletterModal,
@@ -35,8 +34,6 @@ export default function DashboardPage() {
     hasOnboarded,
     connectedServicesCount
   } = useDashboardState();
-
-  console.log(session)
 
   const [isNewsletterFirstSeenOpen, setIsNewsletterFirstSeenOpen] = useState(false);
   
@@ -53,7 +50,7 @@ export default function DashboardPage() {
   const handleNewsletterFirstSeenOpen = (isOpen: boolean) => {
     setIsNewsletterFirstSeenOpen(isOpen);
   };
-  
+ 
 
   if (isLoading) {
     return (
@@ -79,7 +76,12 @@ export default function DashboardPage() {
       <div className="w-full">
         <div className="flex flex-col text-center text-[#E2E4DF]">
           {/* Sea background that takes full width */}
-          <LoginSea />
+          <LoginSea 
+            // // maxNodes={500}  // Afficher les 50k plus gros
+            // showLogo={true}
+            // showTitle={true}
+            // height="h-[600px]"
+          />
         </div>
 
         <div className="relative w-full">
@@ -116,6 +118,7 @@ export default function DashboardPage() {
                   setShowModal={setShowNewsletterModal}
                   onUpdate={update}
                   haveSeenNewsletter={!!session.user.have_seen_newsletter}
+                  newsletterData={newsletterData}
                   onModalOpenChange={handleNewsletterFirstSeenOpen}
                 />
               )}
@@ -124,9 +127,6 @@ export default function DashboardPage() {
               <TutorialSection />
             </div>
           </div>
-          {session?.user?.have_seen_newsletter && (
-            <NewsLetterConsentsUpdate userId={session.user.id} />
-          )}
         </div>
         
         <Footer />

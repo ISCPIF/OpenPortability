@@ -1,5 +1,5 @@
 import validator from 'validator';
-import escapeHtml from 'escape-html';
+// import escapeHtml from 'escape-html';
 import sanitizeHtml from 'sanitize-html';
 // import logger from '@/lib/log_utils';
 
@@ -804,10 +804,10 @@ export function secureFileContentExtended(
   }
   
   // 2. Vérification de la taille du fichier (max 100MB)
-  const MAX_FILE_SIZE = 1000 * 1024 * 1024; // 1GB
+  const MAX_FILE_SIZE = 1000 * 1024 * 1024;
   if (fileData.fileSize && fileData.fileSize > MAX_FILE_SIZE) {
     securityReport.isValid = false;
-    securityReport.errors.push(`File too large: ${fileData.fileSize} bytes (max 500MB)`);
+    securityReport.errors.push(`File too large: ${fileData.fileSize} bytes (max 100MB)`);
     securityReport.fileTooLarge = true;
     securityReport.securityLevel = 'suspicious';
     return { isSecure: false, securityReport };

@@ -227,33 +227,22 @@ export default function SwitchSettingsSection({
         (value) => onConsentChange('research_participation', value)
       )}
 
-      {/* Personalized Support */}
+      {/* Bluesky DM - maintenant au niveau principal */}
       {renderSwitch(
-        'personalized_support',
-        t('notifications.personalizedSupport.title'),
-        t('notifications.personalizedSupport.description'),
-        consents?.personalized_support ?? false,
-        (value) => onConsentChange('personalized_support', value)
+        'bluesky_dm',
+        t('notifications.blueskyDm.title'),
+        t('notifications.blueskyDm.description'),
+        consents?.bluesky_dm ?? false,
+        (value) => handleDMConsentChange('bluesky', value)
       )}
 
-      {/* Sub-switches for personalized support */}
-      {consents?.personalized_support && (
-        <div className="ml-6 space-y-4 border-l-2 border-white/20 pl-6">
-          {renderSwitch(
-            'bluesky_dm',
-            t('notifications.blueskyDm.title'),
-            t('notifications.blueskyDm.description'),
-            consents?.bluesky_dm ?? false,
-            (value) => handleDMConsentChange('bluesky', value)
-          )}
-          {renderSwitch(
-            'mastodon_dm',
-            t('notifications.mastodonDm.title'),
-            t('notifications.mastodonDm.description'),
-            consents?.mastodon_dm ?? false,
-            (value) => handleDMConsentChange('mastodon', value)
-          )}
-        </div>
+      {/* Mastodon DM - maintenant au niveau principal */}
+      {renderSwitch(
+        'mastodon_dm',
+        t('notifications.mastodonDm.title'),
+        t('notifications.mastodonDm.description'),
+        consents?.mastodon_dm ?? false,
+        (value) => handleDMConsentChange('mastodon', value)
       )}
     </div>
   );

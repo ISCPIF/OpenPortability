@@ -1,5 +1,5 @@
 export interface MatchingTarget {
-  target_twitter_id: string | null;
+  node_id: string;
   bluesky_handle: string | null;
   mastodon_handle: string | null;
   mastodon_username: string | null;
@@ -12,7 +12,7 @@ export interface MatchingTarget {
 }
 
 export interface StoredProcedureTarget {
-  target_twitter_id: string;
+  node_id: number;
   bluesky_handle: string | null;
   mastodon_handle: string | null;
   mastodon_username: string | null;
