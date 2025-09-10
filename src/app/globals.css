@@ -1,4 +1,7 @@
 @import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 @font-face {
   font-family: 'SyneTactile';
@@ -10,9 +13,9 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
-  --foreground-rgb: 255, 255, 255;
-  --background-start-rgb: 0, 0, 0;
-  --background-end-rgb: 0, 0, 0;
+  --foreground-rgb: 0, 0, 0;
+  --background-start-rgb: 214, 219, 220;
+  --background-end-rgb: 255, 255, 255;
   --font-space-grotesk: 'Space Grotesk', sans-serif;
 }
 
@@ -20,12 +23,20 @@
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
+    --foreground-rgb: 255, 255, 255;
+    --background-start-rgb: 0, 0, 0;
+    --background-end-rgb: 0, 0, 0;
   }
 }
 
 body {
-  color: var(--foreground);
-  background: var(--background);
+  color: rgb(var(--foreground-rgb));
+  background: linear-gradient(
+      to bottom,
+      transparent,
+      rgb(var(--background-end-rgb))
+    )
+    rgb(var(--background-start-rgb));
   font-family: Arial, Helvetica, sans-serif;
 }
 
@@ -75,4 +86,506 @@ body {
 
 .highlight-animation {
   animation: highlight-pulse 1s ease-in-out 3;
+}
+
+/* ===== STYLES SIGMA.JS COMPLETS ===== */
+
+/* Styles de base pour Sigma.js - remplace l'import qui ne marche pas */
+.sigma-container {
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 400px !important;
+  position: relative;
+  overflow: hidden;
+  background: #fafafa;
+  display: block;
+}
+
+.sigma-container canvas {
+  display: block !important;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100% !important;
+  height: 100% !important;
+  border-radius: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+/* Fix pour le problème de hauteur */
+.sigma-graph-container {
+  width: 100% !important;
+  height: 600px !important;
+  min-height: 600px !important;
+  max-height: 600px !important;
+  position: relative;
+  display: block;
+}
+
+/* Styles pour les interactions */
+.sigma-mouse {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+  background: transparent;
+  z-index: 1;
+}
+
+.sigma-mouse:active {
+  cursor: grabbing;
+}
+
+/* Styles pour les nœuds */
+.sigma-node {
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.sigma-node:hover {
+  stroke: rgba(0, 0, 0, 0.8);
+  stroke-width: 2px;
+  filter: brightness(1.1);
+}
+
+/* Styles pour les arêtes */
+.sigma-edge {
+  opacity: 0.7;
+  transition: opacity 0.15s ease;
+}
+
+.sigma-edge:hover {
+  opacity: 1;
+}
+
+/* Conteneur hover effect */
+.sigma-container:hover canvas {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Styles pour les labels */
+.sigma-labels {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  font-family: var(--font-space-grotesk, Arial, sans-serif);
+  font-weight: 600;
+  font-size: 12px;
+  color: #000;
+  z-index: 2;
+}
+
+/* Styles pour l'état de chargement */
+.sigma-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(250, 250, 250, 0.9);
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10;
+  border-radius: 0.5rem;
+  min-height: 400px;
+}
+
+/* Animation pour les nœuds sélectionnés */
+.sigma-node.selected {
+  stroke: #3b82f6;
+  stroke-width: 3px;
+  filter: brightness(1.2) drop-shadow(0 0 8px rgba(59, 130, 246, 0.5));
+}
+
+/* Responsive pour mobile */
+@media (max-width: 768px) {
+  .sigma-container {
+    min-width: 100% !important;
+    border-radius: 0.25rem;
+    min-height: 400px !important;
+  }
+  
+  .sigma-graph-container {
+    height: 400px !important;
+    min-height: 400px !important;
+    max-height: 400px !important;
+  }
+  
+  .sigma-labels {
+    font-size: 10px;
+  }
+}
+
+/* Classes utilitaires pour forcer les dimensions */
+.graph-container-fixed {
+  width: 100% !important;
+  height: 600px !important;
+  min-height: 600px !important;
+  display: block !important;
+  position: relative !important;
+  background: white;
+  border: 2px solid #e5e7eb;
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+@media (max-width: 768px) {
+  .graph-container-fixed {
+    height: 400px !important;
+    min-height: 400px !important;
+  }
+}
+
+/* Styles pour le graphe - Version améliorée pour la lisibilité */
+.graph-container {
+  position: relative;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 
+    0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  transition: all 0.3s ease;
+}
+
+.graph-container:hover {
+  box-shadow: 
+    0 25px 50px -12px rgba(0, 0, 0, 0.25),
+    0 0 0 1px rgba(59, 130, 246, 0.1);
+}
+
+/* Canvas avec overlay pour les interactions */
+.graph-canvas {
+  cursor: grab;
+  transition: filter 0.2s ease;
+}
+
+.graph-canvas:active {
+  cursor: grabbing;
+}
+
+/* Overlay pour les informations */
+.graph-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* Indicateurs de communauté */
+.community-indicator {
+  position: absolute;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #374151;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  opacity: 0;
+  transform: translateY(10px);
+  transition: all 0.3s ease;
+  pointer-events: auto;
+}
+
+.community-indicator.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Loader amélioré */
+.graph-loader {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  z-index: 20;
+}
+
+.graph-loader .spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid #e5e7eb;
+  border-top: 4px solid #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 16px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Contrôles flottants */
+.graph-controls {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 15;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.graph-control-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.95);
+  border: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(8px);
+}
+
+.graph-control-btn:hover {
+  background: rgba(255, 255, 255, 1);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+.graph-control-btn:active {
+  transform: translateY(0);
+}
+
+/* Tooltip pour les nœuds */
+.node-tooltip {
+  position: absolute;
+  background: rgba(0, 0, 0, 0.9);
+  color: white;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  max-width: 200px;
+  z-index: 30;
+  pointer-events: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(8px);
+  opacity: 0;
+  transform: translateY(10px);
+  transition: all 0.2s ease;
+}
+
+.node-tooltip.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.node-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: rgba(0, 0, 0, 0.9);
+}
+
+/* Styles pour les contrôles avancés */
+.advanced-controls {
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
+  box-shadow: 
+    0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  transition: all 0.3s ease;
+}
+
+.advanced-controls:hover {
+  box-shadow: 
+    0 25px 50px -12px rgba(0, 0, 0, 0.25);
+}
+
+/* Animations pour les éléments du graphe */
+.graph-node {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.graph-node:hover {
+  filter: brightness(1.1) saturate(1.2);
+  transform: scale(1.05);
+}
+
+.graph-edge {
+  transition: all 0.2s ease;
+}
+
+.graph-edge:hover {
+  opacity: 0.8;
+  filter: brightness(1.1);
+}
+
+/* Styles pour les labels avec contraste amélioré */
+.graph-label {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-weight: 600;
+  font-size: 11px;
+  text-shadow: 
+    0 0 4px rgba(255, 255, 255, 0.9),
+    0 1px 2px rgba(0, 0, 0, 0.2);
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .graph-container {
+    border-radius: 12px;
+  }
+  
+  .graph-controls {
+    top: 12px;
+    right: 12px;
+  }
+  
+  .graph-control-btn {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .advanced-controls {
+    border-radius: 12px;
+  }
+  
+  .community-indicator {
+    font-size: 11px;
+    padding: 4px 8px;
+  }
+}
+
+/* Styles pour les sliders customisés */
+.custom-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #e5e7eb 0%, #3b82f6 100%);
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.custom-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #3b82f6;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s ease;
+}
+
+.custom-slider::-webkit-slider-thumb:hover {
+  background: #2563eb;
+  transform: scale(1.1);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.custom-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #3b82f6;
+  cursor: pointer;
+  border: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s ease;
+}
+
+.custom-slider::-moz-range-thumb:hover {
+  background: #2563eb;
+  transform: scale(1.1);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* Animations d'entrée pour les éléments */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in-up {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+/* Styles pour les boutons de preset */
+.preset-button {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-weight: 600;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.preset-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.6);
+}
+
+.preset-button.secondary {
+  background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+  color: #8b5a2b;
+  box-shadow: 0 4px 12px rgba(252, 182, 159, 0.4);
+}
+
+.preset-button.secondary:hover {
+  box-shadow: 0 8px 20px rgba(252, 182, 159, 0.6);
+}
+
+/* Amélioration des tooltips */
+.tooltip {
+  position: relative;
+  display: inline-block;
+}
+
+.tooltip::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 125%;
+  left: 50%;
+  margin-left: -60px;
+  width: 120px;
+  background-color: rgba(0, 0, 0, 0.8);
+  color: white;
+  text-align: center;
+  padding: 5px;
+  border-radius: 6px;
+  opacity: 0;
+  transition: opacity 0.3s;
+  font-size: 12px;
+  pointer-events: none;
+}
+
+.tooltip:hover::after {
+  opacity: 1;
 }

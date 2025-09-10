@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/app/auth"
 import { supabase, authClient } from '@/lib/supabase'
+import { redis } from '@/lib/redis'
 import logger from '@/lib/log_utils'
 import { withValidation } from "@/lib/validation/middleware"
 import { z } from "zod"
@@ -48,6 +49,27 @@ async function deleteHandler(_request: Request, _validatedData: {}, session: any
       logger.logInfo('API', 'DELETE /api/delete', 'Successfully updated has_onboarded to false', userId)
     }
 
+    // 2. Nettoyer Redis - Supprimer toutes les clés liées à l'utilisateur
+    try {
+      logger.logInfo('API', 'DELETE /api/delete', 'Cleaning up Redis cache for user', userId)
+      
+      // Supprimer les stats utilisateur
+      const userStatsKey = `user:stats:${userId}`;
+      await redis.del(userStatsKey);
+      
+      // Optionnel : Supprimer d'autres clés liées à l'utilisateur si elles existent
+      // Par exemple : user:preferences:${userId}, user:cache:${userId}, etc.
+      
+      logger.logInfo('API', 'DELETE /api/delete', 'Successfully cleaned up Redis cache', userId)
+    } catch (redisError) {
+      // Ne pas faire échouer la suppression si Redis échoue
+      logger.logWarning('API', 'DELETE /api/delete', 'Failed to clean Redis cache (non-critical)', userId, {
+        context: 'Redis cleanup failed but continuing with user deletion',
+        error: redisError instanceof Error ? redisError.message : 'Unknown Redis error'
+      })
+    }
+
+    // 3. Supprimer l'utilisateur de next-auth
     const { error: deleteError } = await authClient
       .from('users')
       .delete()
