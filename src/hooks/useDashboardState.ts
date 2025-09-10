@@ -12,7 +12,7 @@ export function useDashboardState() {
   const router = useRouter();
   const { stats, globalStats, isLoading: statsLoading } = useStats();
   const mastodonInstances = useMastodonInstances();
-  const { consents: apiPreferences, isLoading: preferencesLoading } = useNewsletter();
+  const newsletterData = useNewsletter(); // Exposer toutes les données newsletter
   const hasRefreshed = useRef(false);
   
   const [isLoading, setIsLoading] = useState(true);
@@ -66,12 +66,12 @@ export function useDashboardState() {
   
   // Vérifier si l'utilisateur a activé le support personnalisé et a un compte Bluesky lié
   useEffect(() => {
-    if (apiPreferences?.personalized_support && session?.user?.bluesky_username) {
+    if (newsletterData?.consents?.personalized_support && session?.user?.bluesky_username) {
       setShowBlueSkyDMNotification(true);
     } else {
       setShowBlueSkyDMNotification(false);
     }
-  }, [apiPreferences, session]);
+  }, [newsletterData, session]);
   
   return {
     session,
@@ -79,6 +79,7 @@ export function useDashboardState() {
     stats: stats || null,
     globalStats: globalStats || null,
     mastodonInstances,
+    newsletterData, // Exposer les données newsletter
     isLoading,
     setIsLoading,
     showNewsletterModal,
@@ -91,8 +92,6 @@ export function useDashboardState() {
     hasBluesky,
     hasTwitter,
     hasOnboarded,
-    connectedServicesCount,
-    apiPreferences,
-    showBlueSkyDMNotification
+    connectedServicesCount
   };
 }

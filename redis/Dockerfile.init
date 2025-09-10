@@ -1,0 +1,28 @@
+FROM node:24-alpine
+
+# Installer les dépendances système nécessaires
+RUN apk add --no-cache \
+    curl
+
+# Créer le répertoire de travail
+WORKDIR /app
+
+# Copier les fichiers de configuration
+COPY init-package.json package.json
+COPY init-redis-mappings.js .
+
+# Installer les dépendances Node.js
+RUN npm install --production
+
+# Rendre le script exécutable
+RUN chmod +x init-redis-mappings.js
+
+# Créer un utilisateur non-root pour la sécurité
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nextjs -u 1001 -G nodejs
+
+# Changer vers l'utilisateur non-root
+USER nextjs
+
+# Commande par défaut
+CMD ["node", "init-redis-mappings.js"]

@@ -9,7 +9,7 @@ import { NextResponse } from 'next/server';
 // - Endpoints de lecture purs: pas de limite (skipRateLimit)
 
 // Environment variable for debug mode (defaults to false)
-const DEBUG_RATE_LIMIT = 'false';
+const DEBUG_RATE_LIMIT = 'true';
 
 // Configuration par endpoint
 export interface RateLimitConfig {
@@ -78,6 +78,12 @@ export const RATE_LIMIT_CONFIGS: Record<string, RateLimitConfig> = {
     maxRequests: 100,
     identifier: 'userId',
     message: 'Too many ignore requests. Please wait before sending more.'
+  },
+  '/api/connections/graph/user-network': {
+    windowMs: 5 * 60 * 1000,  // 5 minutes
+    maxRequests: 20,          // 20 requêtes par 5 minutes
+    identifier: 'userId',
+    message: 'Too many network requests. Please wait before fetching your network again.'
   },
   
   // Configuration par défaut

@@ -25,16 +25,47 @@ async function matchingFoundHandler(_request: Request, _data: z.infer<typeof Emp
           { status: 400 }
         );
       }
-      result = await matchingService.getSourcesFromFollower(session.user.twitter_id);
+      // CORRIGÉ: Convertir en string pour éviter la perte de précision JavaScript
+      const twitterIdString = session.user.twitter_id.toString();
+      // console.log(`[API] Converting Twitter ID: ${session.user.twitter_id} (${typeof session.user.twitter_id}) → "${twitterIdString}" (${typeof twitterIdString})`);
+      result = await matchingService.getSourcesFromFollower(twitterIdString);
     } else {
       result = await matchingService.getFollowableTargets(session.user.id);
     }
     
-    console.log('API', 'GET /api/migrate/matching_found', 'Matches retrieved successfully', session.user.id, {
-      matchCount: result?.length || 0
-    });
+    // console.log("********")
+    // console.log(result)
+    // console.log('API', 'GET /api/migrate/matching_found', 'Matches retrieved successfully', session.user.id, {
+    //   matchCount: result?.following?.length || result?.length || 0
+    // });
     
-    return NextResponse.json({ matches: result });
+    // Adapter le format de réponse selon le type de résultat
+    const responseData = result?.following ? {
+      // Si result a une propriété 'following', on retourne la structure complète
+      matches: result
+    } : {
+      // Si result est un tableau direct, on l'encapsule dans un objet avec 'following'
+      matches: {
+        following: result || [],
+        stats: {
+          total_following: result?.length || 0,
+          matched_following: result?.length || 0,
+          bluesky_matches: 0,
+          mastodon_matches: 0
+        }
+      }
+    };
+    
+
+    // console.log("===== DEBUG API RESPONSE =====")
+    // console.log("Original result:", JSON.stringify(result, null, 2))
+    // console.log("result?.following exists:", !!result?.following)
+    // console.log("result?.following length:", result?.following?.length || 'N/A')
+    // console.log("Final responseData:", JSON.stringify(responseData, null, 2))
+    // console.log("responseData.matches.following length:", responseData?.matches?.following?.length || 'N/A')
+    // console.log("===============================")
+    
+    return NextResponse.json(responseData);
 
   } catch (error) {
     const userId = session?.user?.id || 'unknown';

@@ -29,7 +29,7 @@ async function createMastodonApp(instance: string){
       // TODO: limiter au strict nécessaire
       // https://docs.joinmastodon.org/api/oauth-scopes/#granular
       "scopes": "read write:follows",
-      "website": "https://openportability.org"
+      "website": "https://app.beta.v2.helloquitx.com/"
     };
     
     try {
@@ -162,3 +162,7 @@ export function isMastodonProfile(profile: Profile): profile is MastodonProfile 
 export function isBlueskyProfile(profile: Profile): profile is BlueskyProfile {
     return profile && 'handle' in profile;
 }
+
+// export function isFacebookProfile(profile: Profile): profile is FacebookProfile {
+//   return profile && 'id' in profile && 'name' in profile;
+// }

@@ -4,10 +4,10 @@ FROM node:24-alpine
 RUN addgroup -g 1001 appgroup && \
     adduser -u 1001 -G appgroup -s /bin/sh -D appuser
 
-# Installation de bash
-RUN apk add --no-cache bash
+# Installation de bash et postgresql-client (pour psql)
+RUN apk add --no-cache bash postgresql-client
 
-RUN npm install -g npm@11.4.2
+RUN npm install -g npm@11.6.0
 
 # Définir le répertoire de travail
 WORKDIR /app
@@ -21,7 +21,6 @@ RUN chown -R appuser:appgroup /app
 
 # Passer à l'utilisateur non-root pour l'installation et le build
 USER appuser
-
 
 RUN npm install
 RUN npm run build
