@@ -176,6 +176,20 @@ export default function LargeFilesPage() {
     return 0;
   })();
 
+  // Combined progress: 0–50% nodes, 50–100% edges. Lock to 100% on completion.
+  const combinedTargetPct = (() => {
+    if (!jobStatus) return 0;
+    if (jobStatus.status === 'completed') return 100;
+    if (phase === 'nodes' || phase === 'pending') {
+      return Math.round(Math.max(0, Math.min(100, nodesProgressPct)) * 0.5);
+    }
+    if (phase === 'edges') {
+      return 50 + Math.round(Math.max(0, Math.min(100, edgesProgressPct)) * 0.5);
+    }
+    // Fallback
+    return Math.max(0, Math.min(100, Math.round(totalProgress)));
+  })();
+
   // Redirection automatique après 10 secondes quand le job est terminé
   useEffect(() => {
     if (jobStatus?.status === 'completed') {
@@ -189,11 +203,11 @@ export default function LargeFilesPage() {
           return prevCount - 1;
         });
       }, 1000);
-      
+
       // Redirection après 10 secondes
       const redirectTimeout = setTimeout(() => {
         const locale = params.locale as string || 'fr';
-        router.push(`/${locale}/reconnect`);
+        // router.push(`/${locale}/reconnect`);
       }, 10000); // 10 secondes
 
       return () => {
@@ -226,13 +240,13 @@ export default function LargeFilesPage() {
     }
   }, []);
 
-  // Smoothly ease displayProgress toward totalProgress
+  // Smoothly ease displayProgress toward combinedTargetPct
   useEffect(() => {
     let raf: number;
     let running = true;
     const start = performance.now();
     const from = displayProgress;
-    const to = Math.max(0, Math.min(100, totalProgress));
+    const to = Math.max(0, Math.min(100, combinedTargetPct));
     const duration = reducedMotion ? 120 : 400; // ms
 
     const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
@@ -254,7 +268,7 @@ export default function LargeFilesPage() {
 
     raf = requestAnimationFrame(tick);
     return () => { running = false; if (raf) cancelAnimationFrame(raf); };
-  }, [totalProgress, reducedMotion]);
+  }, [combinedTargetPct, reducedMotion]);
 
   // Stepper progress (derive from backend stats when available)
   const followingStats = jobStatus?.stats?.following;
@@ -311,39 +325,26 @@ export default function LargeFilesPage() {
                   <div className="text-center mb-6 px-4 py-3 bg-white/10 rounded-lg">
                     <p className="text-white">{t('downloadingContacts')}</p>
                   </div>
-                  
-                  {/* Two Progress Bars: Nodes and Edges */}
-                  <div className="mb-6 space-y-4">
-                    {/* Nodes Preload Progress */}
-                    <div>
-                      <div className="mb-2 flex items-center justify-between">
-                        <span className="font-semibold">{t('phase.nodes')}</span>
-                        <span className="text-xs text-white/80">{nodesProgressPct}%</span>
-                      </div>
-                      <div className="w-full bg-white/15 rounded-full h-3 relative overflow-hidden">
-                        <motion.div
-                          initial={{ width: 0 }}
-                          animate={{ width: `${nodesProgressPct}%` }}
-                          transition={{ duration: animationDuration, ease: animationEase }}
-                          className="absolute left-0 top-0 bottom-0 bg-gradient-to-r from-blue-400 to-indigo-500 rounded-full"
-                        />
-                      </div>
-                    </div>
 
-                    {/* Edges Import Progress */}
-                    <div>
-                      <div className="mb-2 flex items-center justify-between">
-                        <span className="font-semibold">{t('phase.edges')}</span>
-                        <span className="text-xs text-white/80">{edgesProgressPct}%</span>
-                      </div>
-                      <div className="w-full bg-white/15 rounded-full h-3 relative overflow-hidden">
-                        <motion.div
-                          initial={{ width: 0 }}
-                          animate={{ width: `${edgesProgressPct}%` }}
-                          transition={{ duration: animationDuration, ease: animationEase }}
-                          className="absolute left-0 top-0 bottom-0 bg-gradient-to-r from-pink-500 to-purple-500 rounded-full"
-                        />
-                      </div>
+                  {/* Single Combined Progress Bar: 0–50% nodes, 50–100% edges */}
+                  <div className="mb-6">
+                    <div className="mb-2 flex items-center justify-between">
+                      <span className="font-semibold">{phaseLabel}</span>
+                      <span className="text-xs text-white/80">{Math.round(displayProgress)}%</span>
+                    </div>
+                    <div className="w-full bg-white/15 rounded-full h-3 relative overflow-hidden">
+                      <motion.div
+                        initial={false}
+                        animate={{ width: `${Math.round(displayProgress)}%` }}
+                        transition={{ duration: jobStatus?.status === 'completed' ? 0.2 : animationDuration, ease: animationEase }}
+                        className="absolute left-0 top-0 bottom-0 bg-gradient-to-r from-blue-400 via-indigo-500 to-purple-500 rounded-full"
+                      />
+                      {/* 50% split marker */}
+                      <div className="absolute left-1/2 top-0 bottom-0 w-px bg-white/20" />
+                    </div>
+                    <div className="mt-2 text-xs text-white/70 flex justify-between">
+                      <span>{t('phase.nodes')} 0–50%</span>
+                      <span>{t('phase.edges')} 50–100%</span>
                     </div>
                   </div>
 
@@ -351,7 +352,7 @@ export default function LargeFilesPage() {
                   <div className="mt-8">
                     <div className="flex justify-between items-center mb-4">
                       <span className="font-semibold">{t('status.title')}</span>
-                      <span className={`px-3 py-1 rounded-full text-sm 
+                      <span className={`px-3 py-1 rounded-full text-sm
                         ${jobStatus.status === 'completed' ? 'bg-green-500/20 text-green-300' :
                           jobStatus.status === 'processing' ? 'bg-blue-500/20 text-blue-300' :
                             jobStatus.status === 'failed' ? 'bg-red-500/20 text-red-300' :
@@ -396,13 +397,14 @@ export default function LargeFilesPage() {
                           const locale = params.locale as string || 'fr';
                           router.push(`/${locale}/upload`);
                         }}
-                        className="w-full mt-6 bg-white text-gray-800 py-3 px-4 rounded-xl 
-                        hover:bg-gray-50 transition-all duration-200 
+                        className="w-full mt-6 bg-white text-gray-800 py-3 px-4 rounded-xl
+                        hover:bg-gray-50 transition-all duration-200
                         flex items-center justify-center space-x-2"
                       >
                         <span className={plex.className}>{t('button.retryUpload', { default: 'Back to upload' })}</span>
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
+                          <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414
+L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
                         </svg>
                       </motion.button>
                     )}
@@ -421,13 +423,14 @@ export default function LargeFilesPage() {
                           const locale = params.locale as string || 'fr';
                           router.push(`/${locale}/reconnect`);
                         }}
-                        className="w-full mt-6 bg-white text-gray-800 py-3 px-4 rounded-xl 
-                        hover:bg-gray-50 transition-all duration-200 
+                        className="w-full mt-6 bg-white text-gray-800 py-3 px-4 rounded-xl
+                        hover:bg-gray-50 transition-all duration-200
                         flex items-center justify-center space-x-2"
                       >
                         <span className={plex.className}>{t('button.dashboard')}</span>
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
+                          <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414
+L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
                         </svg>
                       </motion.button>
                     )} */}
