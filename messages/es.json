@@ -170,44 +170,30 @@
             "mastodon": "Conectar con Mastodon"
         }
     },
-    "largeFiles": {
-        "progress": {
-            "following": {
-                "title": "Seguidos",
-                "processed": "{processed} / {total}"
-            },
-            "followers": {
-                "title": "Seguidores",
-                "processed": "{processed} / {total}"
-            },
-            "total": {
-                "title": "Progreso total",
-                "processed": "{processed} / {total}"
-            }
-        },
-        "status": {
-            "pending": "Pendiente",
-            "completed": "Completo",
-            "failed": "Fallido",
-            "processing": "En curso",
-            "title": "Estado"
-        },
-        "logo": {
-            "alt": "Logo de OpenPortability"
-        },
-        "stats": {
-            "following": "Seguidos",
-            "followers": "Seguidores"
-        },
-        "button": {
-            "dashboard": "Volver al panel de control"
-        },
-        "logoCNRS": {
-            "alt": "CNRS, Centro Nacional por la Investigación Científica, Francia"
-        },
-        "downloadingContacts": "Tus contactos se están descargando. A continuación deberás validar la reconexión.",
-        "redirecting": "Redirección automática en"
-    },
+"largeFiles": {
+  "logo": { "alt": "Logo de OpenPortability" },
+  "logoCNRS": { "alt": "CNRS, Centro Nacional por la Investigación Científica, Francia" },
+  "downloadingContacts": "Tus contactos se están descargando. A continuación deberás validar la reconexión.",
+  "phase": {
+    "pending": "Preparando",
+    "nodes": "Reconstruyendo tu red",
+    "edges": "Reconstruyendo tus conexiones",
+    "completed": "Completo",
+    "failed": "Fallido"
+  },
+  "status": {
+    "title": "Estado",
+    "pending": "Pendiente",
+    "processing": "En curso",
+    "completed": "Completo",
+    "failed": "Fallido"
+  },
+  "button": {
+    "dashboard": "Volver al panel de control",
+    "retryUpload": "Volver a la subida"
+  },
+  "redirecting": "Redirección automática en"
+},
     "dashboard": {
         "migrationStep": {
             "nextSteps": "¡Completa los siguientes pasos para descubrir nuevos horizontes!",
