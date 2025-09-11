@@ -292,44 +292,30 @@
       "invalidCombination": "Ladda upp antingen en ZIP-fil, following.js + follower.js, eller deras delade versioner (following-part*.js/follower-part*.js)"
     }
   },
-  "largeFiles": {
-    "logo": {
-      "alt": "OpenPortability Logotyp"
-    },
-    "logoCNRS": {
-      "alt": "CNRS, Franska nationella forskningscentret"
-    },
-    "progress": {
-      "total": {
-        "title": "Total framsteg",
-        "processed": "{processed} / {total}"
-      },
-      "followers": {
-        "title": "Följare",
-        "processed": "{processed} / {total}"
-      },
-      "following": {
-        "title": "Följer",
-        "processed": "{processed} / {total}"
-      }
-    },
-    "status": {
-      "title": "Status",
-      "pending": "Väntar",
-      "processing": "Bearbetar",
-      "completed": "Slutförd",
-      "failed": "Misslyckades"
-    },
-    "stats": {
-      "followers": "Följare",
-      "following": "Följer"
-    },
-    "button": {
-      "dashboard": "Tillbaka till instrumentpanelen"
-    },
-    "downloadingContacts": "Dina kontakter laddas ner. Du behöver sedan validera återanslutningen.",
-    "redirecting": "Automatisk omdirigering om"
+"largeFiles": {
+  "logo": { "alt": "OpenPortability Logotyp" },
+  "logoCNRS": { "alt": "CNRS, Franska nationella forskningscentret" },
+  "downloadingContacts": "Dina kontakter laddas ner. Du behöver sedan validera återanslutningen.",
+  "phase": {
+    "pending": "Förbereder",
+    "nodes": "Återskapar ditt nätverk",
+    "edges": "Återskapar dina anslutningar",
+    "completed": "Slutförd",
+    "failed": "Misslyckades"
   },
+  "status": {
+    "title": "Status",
+    "pending": "Väntar",
+    "processing": "Bearbetar",
+    "completed": "Slutförd",
+    "failed": "Misslyckades"
+  },
+  "button": {
+    "dashboard": "Tillbaka till instrumentpanelen",
+    "retryUpload": "Tillbaka till uppladdning"
+  },
+  "redirecting": "Automatisk omdirigering om"
+},
   "profile": {
     "unlinkConfirmation": "Är du säker på att du vill koppla bort ditt {provider}-konto?",
     "unlinkSuccess": "Ditt {provider}-konto har kopplats bort",
