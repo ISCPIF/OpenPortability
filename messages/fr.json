@@ -289,44 +289,30 @@
       "fetchStats": "Impossible de récupérer les statistiques totales"
     }
   },
-  "largeFiles": {
-    "logo": {
-      "alt": "OpenPortability Logo"
-    },
-    "logoCNRS": {
-      "alt": "CNRS, Centre national de la recherche scientifique"
-    },
-    "downloadingContacts": "Vos contacts sont en train d'être téléchargés. Il vous faudra ensuite valider la reconnexion.",
-    "progress": {
-      "total": {
-        "title": "Progression totale",
-        "processed": "{processed} / {total}"
-      },
-      "followers": {
-        "title": "Abonnés",
-        "processed": "{processed} / {total}"
-      },
-      "following": {
-        "title": "Abonnements",
-        "processed": "{processed} / {total}"
-      }
-    },
-    "status": {
-      "title": "Statut",
-      "pending": "En attente",
-      "processing": "En cours",
-      "completed": "Terminé",
-      "failed": "Échec"
-    },
-    "stats": {
-      "followers": "Abonnés",
-      "following": "Abonnements"
-    },
-    "button": {
-      "dashboard": "Aller à la reconnexion"
-    },
-    "redirecting": "Redirection automatique dans"
+"largeFiles": {
+  "logo": { "alt": "OpenPortability Logo" },
+  "logoCNRS": { "alt": "CNRS, Centre national de la recherche scientifique" },
+  "downloadingContacts": "Vos contacts sont en train d'être téléchargés. Il vous faudra ensuite valider la reconnexion.",
+  "phase": {
+    "pending": "Préparation",
+    "nodes": "Recréation de votre réseau",
+    "edges": "Recréation de vos connexions",
+    "completed": "Terminé",
+    "failed": "Échec"
   },
+  "status": {
+    "title": "Statut",
+    "pending": "En attente",
+    "processing": "En cours",
+    "completed": "Terminé",
+    "failed": "Échec"
+  },
+  "button": {
+    "dashboard": "Aller à la reconnexion",
+    "retryUpload": "Retour à l'import"
+  },
+  "redirecting": "Redirection automatique dans"
+},
   "profile": {
     "unlinkConfirmation": "Êtes-vous sûr de vouloir délier votre compte {provider} ?",
     "unlinkSuccess": "Votre compte {provider} a été délié avec succès",

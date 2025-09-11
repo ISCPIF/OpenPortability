@@ -293,48 +293,30 @@
       "invalidCombination": "Please upload either a ZIP file, following.js + follower.js, or their split versions (following-part*.js/follower-part*.js)"
     }
   },
-  "largeFiles": {
-    "logo": {
-      "alt": "OpenPortability Logo"
-    },
-    "logoCNRS": {
-      "alt": "CNRS, French National Centre for Scientific Research"
-    },
-    "downloadingContacts": "Your contacts are being downloaded. You will then need to validate the reconnection.",
-    "progress": {
-      "total": {
-        "title": "Total Progress",
-        "processed": "{processed} / {total}"
-      },
-      "followers": {
-        "title": "Followers",
-        "processed": "{processed} / {total}"
-      },
-      "following": {
-        "title": "Following",
-        "processed": "{processed} / {total}"
-      }
-    },
-    "status": {
-      "title": "Status",
-      "pending": "Pending",
-      "processing": "Processing",
-      "completed": "Completed",
-      "failed": "Failed"
-    },
-    "stats": {
-      "followers": "Followers",
-      "following": "Following"
-    },
-    "button": {
-      "dashboard": "Return to dashboard"
-    },
-    "redirecting": "Automatic redirection in",
-    "phases": {
-      "nodes" : "Recreating your network",
-      "edges" : "Recreating your connections"
-    }
+"largeFiles": {
+  "logo": { "alt": "OpenPortability Logo" },
+  "logoCNRS": { "alt": "CNRS, French National Centre for Scientific Research" },
+  "downloadingContacts": "Your contacts are being downloaded. You will then need to validate the reconnection.",
+  "phase": {
+    "pending": "Preparing",
+    "nodes": "Recreating your network",
+    "edges": "Recreating your connections",
+    "completed": "Completed",
+    "failed": "Failed"
   },
+  "status": {
+    "title": "Status",
+    "pending": "Pending",
+    "processing": "Processing",
+    "completed": "Completed",
+    "failed": "Failed"
+  },
+  "button": {
+    "dashboard": "Return to dashboard",
+    "retryUpload": "Back to upload"
+  },
+  "redirecting": "Automatic redirection in"
+},
   "profile": {
     "unlinkConfirmation": "Are you sure you want to unlink your {provider} account?",
     "unlinkSuccess": "Your {provider} account has been successfully unlinked",
