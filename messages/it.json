@@ -293,44 +293,30 @@
             "invalidCombination": "Carica un file ZIP, following.js + follower.js, o le loro versioni divise (following-part*.js/follower-part*.js)"
         }
     },
-    "largeFiles": {
-        "logo": {
-            "alt": "Logo di OpenPortability"
-        },
-        "logoCNRS": {
-            "alt": "CNRS, Centro Nazionale Francese per la Ricerca Scientifica"
-        },
-        "progress": {
-            "total": {
-                "title": "Progresso totale",
-                "processed": "{processed} / {total} | {processed} / {total}"
-            },
-            "followers": {
-                "title": "Follower",
-                "processed": "{processed} / {total} | {processed} / {total}"
-            },
-            "following": {
-                "title": "Seguiti",
-                "processed": "{processed} / {total} | {processed} / {total}"
-            }
-        },
-        "status": {
-            "title": "Stato",
-            "pending": "In attesa",
-            "processing": "In elaborazione",
-            "completed": "Completato",
-            "failed": "Fallito"
-        },
-        "stats": {
-            "followers": "Follower",
-            "following": "Seguiti"
-        },
-        "button": {
-            "dashboard": "Ritorna al pannello di controllo"
-        },
-        "downloadingContacts": "I tuoi contatti sono in fase di download. Dovrai poi convalidare la riconnessione.",
-        "redirecting": "Reindirizzamento automatico tra"
-    },
+"largeFiles": {
+  "logo": { "alt": "Logo di OpenPortability" },
+  "logoCNRS": { "alt": "CNRS, Centro Nazionale Francese per la Ricerca Scientifica" },
+  "downloadingContacts": "I tuoi contatti sono in fase di download. Dovrai poi convalidare la riconnessione.",
+  "phase": {
+    "pending": "Preparazione",
+    "nodes": "Ricreazione della tua rete",
+    "edges": "Ricreazione delle connessioni",
+    "completed": "Completato",
+    "failed": "Fallito"
+  },
+  "status": {
+    "title": "Stato",
+    "pending": "In attesa",
+    "processing": "In elaborazione",
+    "completed": "Completato",
+    "failed": "Fallito"
+  },
+  "button": {
+    "dashboard": "Ritorna al pannello di controllo",
+    "retryUpload": "Torna al caricamento"
+  },
+  "redirecting": "Reindirizzamento automatico tra"
+},
     "profile": {
         "unlinkConfirmation": "Sei sicuro di voler disconnettere il tuo account {provider}?",
         "unlinkSuccess": "Il tuo account {provider} è stato disconnesso con successo",
