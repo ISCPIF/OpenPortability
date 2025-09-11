@@ -349,7 +349,7 @@ export async function preloadNodesOnce(
   const header = lines[0] || 'twitter_id';
   const ids = lines.slice(1);
   const total = ids.length;
-  const chunkSize = 100_000; // process in ~100k rows per transaction
+  const chunkSize = 50_000; // process in ~100k rows per transaction
   const totalChunks = Math.max(1, Math.ceil(total / chunkSize));
   let processed = 0;
 
