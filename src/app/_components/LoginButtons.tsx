@@ -5,7 +5,6 @@ import { useState } from "react"
 import TwitterLoginButton from "./TwitterLoginButton"
 import MastodonLoginButton from "./MastodonLoginButton"
 import BlueSkyLoginButton from "./BlueSkyLoginButton"
-import FacebookLoginButton from "./FacebookLoginButton"
 import BlueSkyLogin from "./BlueSkyLogin"
 import TwitterRateLimit from "./TwitterRateLimit"
 import { plex } from "@/app/fonts/plex"
@@ -24,7 +23,7 @@ const containerVariants = {
   }
 }
 
-type ActiveService = 'bluesky' | 'mastodon' | 'twitter' | 'facebook' | null;
+type ActiveService = 'bluesky' | 'mastodon' | 'twitter' | null;
 
 interface LoginButtonsProps {
   onLoadingChange: (isLoading: boolean) => void;
@@ -87,13 +86,6 @@ export default function LoginButtons({ onLoadingChange, onError }: LoginButtonsP
               isSelected={activeService === 'mastodon'}
               instances={mastodonInstances}
               onClick={() => handleServiceSelect('mastodon')}
-            />
-            
-            <FacebookLoginButton 
-              onLoadingChange={onLoadingChange} 
-              className={plex.className}
-              isSelected={activeService === 'facebook'}
-              onClick={null} 
             />
           </>
         )}
