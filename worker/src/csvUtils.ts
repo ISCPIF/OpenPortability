@@ -349,7 +349,7 @@ export async function preloadNodesOnce(
   const header = lines[0] || 'twitter_id';
   const ids = lines.slice(1);
   const total = ids.length;
-  const chunkSize = 100_000; // process in ~100k rows per transaction
+  const chunkSize = 50_000; // process in ~50k rows per transaction
   const totalChunks = Math.max(1, Math.ceil(total / chunkSize));
   let processed = 0;
 
@@ -366,25 +366,43 @@ export async function preloadNodesOnce(
     const maxTimeout = 1800; // 30min hard cap per chunk
     const timeoutValue = Math.max(baseTimeout, Math.min(maxTimeout, baseTimeout + Math.floor(chunkCount / 1000) * scalingFactor));
 
-    //big work_mem pour on conflict do nothing et le nombre ++ de doublons
+    // Optimisé pour grosse table avec pré-filtrage
     const nodesTempTable = `temp_nodes_${Date.now()}_${i}`;
+    const newNodesTempTable = `new_nodes_${Date.now()}_${i}`;
+    
     const sql = `
 BEGIN;
 SET LOCAL statement_timeout TO '${timeoutValue}s';
 SET LOCAL synchronous_commit TO OFF;
-SET LOCAL work_mem = '512MB';
+SET LOCAL work_mem = '2GB';
+SET LOCAL enable_partitionwise_join = on;
+SET LOCAL enable_partitionwise_aggregate = on;
+
+-- Créer la table temporaire pour les données brutes
 CREATE TEMP TABLE ${nodesTempTable} (twitter_id BIGINT) ON COMMIT DROP;
+
+-- Charger les données
 COPY ${nodesTempTable} FROM STDIN WITH (FORMAT csv, HEADER true);
+
+-- Pré-filtrage : garder seulement les IDs qui n'existent pas déjà
+CREATE TEMP TABLE ${newNodesTempTable} AS
+SELECT DISTINCT t.twitter_id 
+FROM ${nodesTempTable} t
+WHERE NOT EXISTS (
+    SELECT 1 FROM nodes n 
+    WHERE n.twitter_id = t.twitter_id
+);
+
+-- Insert simple sans conflits (beaucoup plus rapide)
 INSERT INTO nodes (twitter_id)
-SELECT twitter_id FROM ${nodesTempTable}
-ORDER BY twitter_id
-ON CONFLICT (twitter_id) DO NOTHING;
+SELECT twitter_id FROM ${newNodesTempTable};
+
 COMMIT;
 `;
 
     const chunkCSV = `${header}\n${chunk.join('\n')}`;
     const chunkIndex = Math.floor(i / chunkSize) + 1;
-    console.log(`[Worker ${workerId}] 🔧 Preload chunk ${chunkIndex}/${totalChunks} | rows=${chunkCount} | timeout=${timeoutValue}s`);
+    console.log(`[Worker ${workerId}] 🚀 Preload chunk ${chunkIndex}/${totalChunks} | rows=${chunkCount} | timeout=${timeoutValue}s | OPTIMIZED`);
     const res = await executePostgresCommandWithStdin(sql, chunkCSV, workerId, timeoutValue * 1000);
     if (!res.success) {
       return { success: false, processed, error: `Chunk ${chunkIndex}/${totalChunks} failed: ${res.error}` };
