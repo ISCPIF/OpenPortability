@@ -11,6 +11,8 @@ const blueskyRepository = new BlueskyRepository();
 const blueskyService = new BlueskyService(blueskyRepository);
 
 export async function GET(request: NextRequest) {
+  // Make userPayload available outside the try/catch for the final signIn call
+  let userPayload: any | undefined;
   try {
     const client = await createBlueskyOAuthClient();
     const searchParams = request.nextUrl.searchParams;
@@ -207,7 +209,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Prepare user payload
-    const userPayload = {
+    userPayload = {
       id: userId!,
       provider: 'bluesky',
       profile: {
@@ -230,16 +232,21 @@ export async function GET(request: NextRequest) {
       emailVerified: null,
     };
 
-    console.log('[Bluesky OAuth] Signing in user');
-    return await signIn("bluesky", {
-      ...userPayload,
-      redirectTo: request.nextUrl.origin,
-    });
-
   } catch (err: any) {
+    // Pre-signIn error handling only. Let framework redirects bubble up elsewhere.
     console.error('[Bluesky OAuth] Error:', err.message);
     return NextResponse.json({ 
       error: err?.message || "Failed to complete Bluesky OAuth" 
     }, { status: 500 });
   }
+
+  // Perform NextAuth sign-in outside the try/catch so NEXT_REDIRECT can bubble to the framework
+  console.log('[Bluesky OAuth] Signing in user');
+  if (!userPayload) {
+    return NextResponse.json({ error: 'Missing user payload after OAuth callback' }, { status: 500 });
+  }
+  return await signIn("bluesky", {
+    ...userPayload,
+    redirectTo: request.nextUrl.origin,
+  });
 }

@@ -1,11 +1,10 @@
 'use client';
 
 import { useState, useCallback, useRef } from 'react';
-import { useRouter, redirect } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { BskyAgent } from '@atproto/api';
-import { signIn } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Loader2, AlertCircle, User, Lock } from 'lucide-react';
+import { Loader2, AlertCircle, User } from 'lucide-react';
 import { plex } from '@/app/fonts/plex';
 import { SiBluesky } from "react-icons/si";
 import { useTranslations, useLocale } from 'next-intl';
@@ -22,6 +21,7 @@ export default function BlueSkyLogin({ onLoginComplete }: BlueSkyLoginProps) {
   const locale = useLocale();
 
   const identifierRef = useRef<HTMLInputElement>(null);
+  // Password no longer needed for OAuth flow
   const passwordRef = useRef<HTMLInputElement>(null);
 
   const clearSensitiveData = useCallback(() => {
@@ -40,44 +40,15 @@ export default function BlueSkyLogin({ onLoginComplete }: BlueSkyLoginProps) {
       if (identifier?.[0] === "@") {
         identifier = identifier.slice(1);
       }
-      const password = passwordRef.current?.value;
 
-      if (!identifier || !password) {
+      if (!identifier) {
         throw new Error(t('form.errors.missingFields'));
       }
-      const response = await fetch('/api/auth/bluesky', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ identifier, password }),
-      });
 
-      const data = await response.json();
-
-      if (!data.success) {
-        setError(data.error);
-        return;
-      }
-      const redirectPath = window.location.pathname.includes('/reconnect') 
-      ? `/${locale}/reconnect`
-      : `/${locale}/dashboard`;
-
-      const result = await signIn('bluesky', {
-        ...data.user,
-        redirect: true,
-        callbackUrl: redirectPath
-
-      });
-
-      if (result?.error) {
-        throw new Error(result.error);
-      }
-
-      // if (result?.ok) {
-      //   const redirectPath = window.location.pathname.includes('/reconnect') 
-      //     ? `/${locale}/reconnect`
-      //     : `/${locale}/dashboard`;
-      //   redirect(redirectPath);
-      // }
+      // Kick off OAuth flow: redirect to our authorize endpoint with the handle and state
+      const state = window.location.pathname; // preserve current path (e.g., to return after auth)
+      const url = `/api/auth/bluesky/oauth?handle=${encodeURIComponent(identifier)}&state=${encodeURIComponent(state)}`;
+      window.location.href = url;
 
     } catch (err) {
       setError(err instanceof Error ? err.message : t('form.errors.default'));
@@ -135,43 +106,9 @@ export default function BlueSkyLogin({ onLoginComplete }: BlueSkyLoginProps) {
                            placeholder-gray-400 text-black transition-all duration-200`}
               disabled={isLoading}
             />
-            {/* </motion.div> */}
           </div>
 
-          <div>
-            <label htmlFor="password" className={`${plex.className} block text-sm font-medium text-gray-800 mb-2`}>
-              {t('form.password.label')}
-            </label>
-            <motion.div
-              className="relative"
-              variants={inputVariants}
-              whileFocus="focus"
-              initial="blur"
-            >
-              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                ref={passwordRef}
-                type="password"
-                id="password"
-                placeholder={t('form.password.placeholder')}
-                className={`${plex.className} w-full pl-11 pr-4 py-3 bg-white/10 border-2 border-gray-300/20 rounded-xl
-                           focus:ring-2 focus:ring-sky-400 focus:border-transparent
-                           placeholder-gray-400 text-black transition-all duration-200`}
-                disabled={isLoading}
-              />
-            </motion.div>
-            <p className={`${plex.className} mt-2 text-xs text-gray-600`}>
-              {t('form.password.help')}{' '}
-              <a
-                href="https://bsky.app/settings/app-passwords"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sky-400 hover:text-sky-300 underline decoration-dotted"
-              >
-                bsky.app/settings/app-passwords
-              </a>
-            </p>
-          </div>
+          {/* Password field removed for OAuth flow */}
         </div>
 
         <AnimatePresence>

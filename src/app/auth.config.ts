@@ -119,25 +119,41 @@ export const authConfig = {
         
         // Si on essaie de lier un compte Bluesky
         if (session?.user?.id && account.provider === 'bluesky') {
-          console.log('Auth', 'signIn', 'Linking Bluesky account', session.user.id, {
-            providerAccountId: account.providerAccountId
-          });
-          
-          await supabaseAdapter.linkAccount({
-            userId: session.user.id,
-            type: account.type as AdapterAccountType,
-            provider: account.provider,
-            providerAccountId: account.providerAccountId,
-            refresh_token: account.refresh_token,
-            access_token: account.access_token,
-            expires_at: account.expires_at,
-            token_type: account.token_type,
-            scope: account.scope,
-            id_token: account.id_token,
-            session_state: account.session_state
-          });
-          
-          console.log('Auth', 'signIn', 'Successfully linked Bluesky account', session.user.id);
+          // With our setup, Bluesky uses a credentials provider to finalize sign-in.
+          // The actual account linking is already handled in our API route/callbacks.
+          // To avoid creating a wrong "credentials" account entry with providerAccountId = userId,
+          // we only link when it's a real OAuth account AND the providerAccountId looks like a DID.
+          const isCredentials = account.type === 'credentials'
+          const isDid = typeof account.providerAccountId === 'string' && account.providerAccountId.startsWith('did:')
+
+          if (isCredentials) {
+            console.log('Auth', 'signIn', 'Skip linking Bluesky account for credentials provider', session.user.id, {
+              providerAccountId: account.providerAccountId
+            });
+          } else if (isDid) {
+            console.log('Auth', 'signIn', 'Linking Bluesky account', session.user.id, {
+              providerAccountId: account.providerAccountId
+            });
+            await supabaseAdapter.linkAccount({
+              userId: session.user.id,
+              type: account.type as AdapterAccountType,
+              provider: account.provider,
+              providerAccountId: account.providerAccountId,
+              refresh_token: account.refresh_token,
+              access_token: account.access_token,
+              expires_at: account.expires_at,
+              token_type: account.token_type,
+              scope: account.scope,
+              id_token: account.id_token,
+              session_state: account.session_state
+            });
+            console.log('Auth', 'signIn', 'Successfully linked Bluesky account', session.user.id);
+          } else {
+            console.log('Auth', 'signIn', 'Skip linking Bluesky account (not credentials but invalid providerAccountId)', session.user.id, {
+              providerAccountId: account.providerAccountId,
+              accountType: account.type
+            });
+          }
         }
 
         // Autoriser la connexion dans tous les cas
