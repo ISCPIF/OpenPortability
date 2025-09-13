@@ -431,13 +431,13 @@ export async function createUser(
     } else if (provider === 'bluesky') {
       const blueskyData = profile as BlueskyProfile
       Object.assign(userToCreate, {
-        bluesky_id: blueskyData.did,
-        bluesky_username: blueskyData.handle,
+        bluesky_id: blueskyData.did || blueskyData.id,
+        bluesky_username: blueskyData.handle || blueskyData.username,
         bluesky_image: blueskyData.avatar
       })
       console.log('Auth', 'createUser', 'Bluesky fields added', undefined, { 
-        bluesky_id: blueskyData.did,
-        bluesky_username: blueskyData.handle,
+        bluesky_id: blueskyData.did || blueskyData.id,
+        bluesky_username: blueskyData.handle || blueskyData.username,
         has_image: !!blueskyData.avatar
       })
     }
@@ -773,7 +773,7 @@ export function decodeJwt(token: string): { exp: number } | null {
 }
 
 export async function linkAccount(account: AdapterAccount): Promise<void> {
-  console.log('Auth', 'linkAccount', 'Linking account', account.user_id, { account })
+  console.log('Auth', 'linkAccount', 'Linking account', account.userId, { account })
   
   // Décoder l'access token pour obtenir l'expiration
   let expires_at = account.expires_at
@@ -803,7 +803,7 @@ export async function linkAccount(account: AdapterAccount): Promise<void> {
     })
 
   if (error) {
-    logger.logError('Auth', 'linkAccount', 'Error linking account', account.user_id, { account, error })
+    logger.logError('Auth', 'linkAccount', 'Error linking account', account.userId, { account, error })
     throw error
   }
 }
