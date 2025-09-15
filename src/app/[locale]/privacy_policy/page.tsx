@@ -2,7 +2,7 @@
 
 import { useTranslations } from 'next-intl';
 import { plex } from '@/app/fonts/plex';
-import Footer from '@/app/_components/Footer';
+import Footer from '@/app/_components/layouts/Footer';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 

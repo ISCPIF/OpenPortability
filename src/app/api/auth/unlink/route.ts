@@ -1,11 +1,11 @@
-import { NextResponse } from "next/server"
-import logger from '@/lib/log_utils'
-import { withValidation } from "@/lib/validation/middleware"
-import { z } from "zod"
-import { authClient } from "@/lib/supabase"
+ import { NextResponse } from "next/server"
+ import logger from '@/lib/log_utils'
+ import { withValidation } from "@/lib/validation/middleware"
+ import { z } from "zod"
+ import { authClient } from "@/lib/supabase"
 
-// Classe d'erreur pour la déliaison de compte
-export class UnlinkError extends Error {
+ // Classe d'erreur pour la déliaison de compte (interne au module)
+ class UnlinkError extends Error {
   constructor(
     message: string,
     public code: 'LAST_ACCOUNT' | 'NOT_FOUND' | 'NOT_LINKED' | 'DATABASE_ERROR',
