@@ -7,12 +7,12 @@ import { useEffect, useState } from "react"
 import { useRouter, useSearchParams, useParams } from "next/navigation"
 import { plex } from "@/app/fonts/plex"
 import Link from "next/link"
-import LoginButtons from "@/app/_components/LoginButtons"
-import LoadingIndicator from "@/app/_components/LoadingIndicator"
-import LoginSea from "@/app/_components/LoginSea"
-import Footer from "@/app/_components/Footer";
+import LoginButtons from "@/app/_components/logins/LoginButtons"
+import LoadingIndicator from "@/app/_components/layouts/LoadingIndicator"
+import LoginSea from "@/app/_components/layouts/LoginSea"
+import Footer from "@/app/_components/layouts/Footer";
 import { useTranslations } from 'next-intl'
-import Header from "@/app/_components/Header"
+import Header from "@/app/_components/layouts/Header"
 
 export default function SignIn() {
   const { data: session, status } = useSession()

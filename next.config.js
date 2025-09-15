@@ -4,7 +4,7 @@ const withNextIntl = require('next-intl/plugin')('./src/i18n/request.ts');
 const nextConfig = {
   typescript: {
     // ⚠️ Dangereux: Ignore les erreurs TypeScript pendant la production build
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
   images: {
     domains: ['pbs.twimg.com', 'abs.twimg.com', 'cdn.bsky.app']

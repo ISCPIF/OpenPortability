@@ -4,17 +4,17 @@ import { useState, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter, useSearchParams, useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import Header from '../../../_components/Header';
-import ErrorModal from "../../../_components/ErrorModal";
+import Header from '../../../_components/layouts/Header';
+import ErrorModal from "../../../_components/modales/ErrorModal";
 import Image from 'next/image';
 import seaBackground from '../../../../public/sea.svg';
 import { plex } from '../../../fonts/plex';
 import { motion, AnimatePresence } from 'framer-motion';
 import boat1 from '../../../../../public/boats/boat-1.svg';
 import { Loader2 } from 'lucide-react';
-import Footer from "@/app/_components/Footer";
+import Footer from "@/app/_components/layouts/Footer";
 import logo from '../../../../../public/logo/logo-openport-blanc.svg';
-import LoadingIndicator from '@/app/_components/LoadingIndicator';
+import LoadingIndicator from '@/app/_components/layouts/LoadingIndicator';
 
 interface JobStatus {
   status: 'pending' | 'processing' | 'completed' | 'failed';

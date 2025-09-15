@@ -5,15 +5,14 @@ import { useTranslations } from 'next-intl';
 import { plex } from '@/app/fonts/plex';
 import { useNewsletter } from '@/hooks/useNewsLetter';
 import { isValidEmail } from '@/lib/utils';
-import Header from '@/app/_components/Header';
-import Footer from '@/app/_components/Footer';
-import LoadingIndicator from '@/app/_components/LoadingIndicator';
-import SwitchSettingsSection from '@/app/_components/settings/SwitchSettingsSection';
-import LoginSea from '@/app/_components/LoginSea';
-import ConnectedAccounts from '@/app/_components/ConnectedAccounts';
+import Header from '@/app/_components/layouts/Header';
+import Footer from '@/app/_components/layouts/Footer';
+import LoadingIndicator from '@/app/_components/layouts/LoadingIndicator';
+import SwitchSettingsSection from '@/app/_components/sections/settings/SwitchSettingsSection';
+import LoginSea from '@/app/_components/layouts/LoginSea';
+import ConnectedAccounts from '@/app/_components/layouts/ConnectedAccounts';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-// import PersonalizedSupportFlowSection from '@/app/_components/settings/PersonalizedSupportFlowSection';
 import { Trash2 } from 'lucide-react';
 import { Dialog, Transition } from '@headlessui/react';
 import { Fragment } from 'react';
@@ -34,10 +33,6 @@ export default function SettingsPage() {
     updateEmailWithNewsletter
   } = useNewsletter();
 
-  // Wrapper pour updateConsent qui retourne void
-  const handleDMConsentChange = async (type: 'bluesky_dm', value: boolean) => {
-    await updateConsent(type, value);
-  };
 
   // Email form state
   const [showEmailForm, setShowEmailForm] = useState(false);
@@ -131,20 +126,9 @@ export default function SettingsPage() {
               {t('notificationOptions')}
             </h2>
             
-            {/* Composant de flux pour le support personnalisé
-            <PersonalizedSupportFlowSection
-              userId={session?.user?.id || ''}
-              blueskyHandle={session?.user?.bluesky_username || ''}
-              mastodonHandle={session?.user?.mastodon_username || ''}
-              hasPersonalizedSupport={consents?.personalized_support ?? false}
-              hasBlueskyDM={consents?.bluesky_dm ?? false}
-              hasMastodonDM={consents?.mastodon_dm ?? false}
-              onDMConsentChange={handleDMConsentChange}
-            />
-             */}
             <SwitchSettingsSection
               consents={consents}
-              onConsentChange={updateConsent}
+              onConsentChange={async (type, value) => { await updateConsent(type, value); }}
               showEmailForm={showEmailForm}
               setShowEmailForm={setShowEmailForm}
               email={email}

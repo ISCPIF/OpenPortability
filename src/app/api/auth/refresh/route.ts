@@ -65,7 +65,8 @@ async function refreshHandler(_request: Request, _data: z.infer<typeof EmptySche
     })
   } catch (error) {
     const userId = session?.user?.id || 'unknown'
-    logger.logError('API', 'POST /api/auth/refresh', error, userId)
+    const err = error instanceof Error ? error : new Error(String(error))
+    logger.logError('API', 'POST /api/auth/refresh', err, userId)
     
     return NextResponse.json(
       { error: 'Failed to refresh tokens' },
