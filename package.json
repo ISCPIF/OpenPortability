@@ -10,7 +10,10 @@
     "dev:turbo": "next dev --turbo",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "lint:all": "eslint . --ext .js,.jsx,.ts,.tsx --no-error-on-unmatched-pattern",
+    "lint:watch": "eslint . --ext .js,.jsx,.ts,.tsx --watch --no-error-on-unmatched-pattern",
+    "lint:fix": "eslint . --ext .js,.jsx,.ts,.tsx --fix --no-error-on-unmatched-pattern"
   },
   "dependencies": {
     "@atproto/api": "^0.15.16",
