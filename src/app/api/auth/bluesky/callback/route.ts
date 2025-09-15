@@ -4,13 +4,34 @@ import { createBlueskyOAuthClient } from "@/lib/services/blueskyOAuthClient";
 import { BlueskyRepository } from "@/lib/repositories/blueskyRepository";
 import { BlueskyService } from "@/lib/services/blueskyServices";
 import { supabaseAdapter } from "@/lib/supabase-adapter";
+import { withPublicValidation } from "@/lib/validation/middleware";
+import { z } from "zod";
 
 export const runtime = 'nodejs';
 
 const blueskyRepository = new BlueskyRepository();
 const blueskyService = new BlueskyService(blueskyRepository);
 
-export async function GET(request: NextRequest) {
+// Conservative schema for known OAuth callback params (all optional, length-limited)
+const CallbackQuerySchema = z.object({
+  code: z.string().max(2048).optional(),
+  state: z.string().max(512).optional(),
+  iss: z.string().max(256).optional(),
+  client_id: z.string().max(512).optional(),
+  request_uri: z.string().max(512).optional(),
+}).passthrough();
+
+// Local helper to detect Next.js redirect errors (NEXT_REDIRECT)
+function isNextRedirect(err: unknown): boolean {
+  try {
+    const digest = (err as any)?.digest;
+    return typeof digest === 'string' && digest.startsWith('NEXT_REDIRECT');
+  } catch {
+    return false;
+  }
+}
+
+async function callbackHandler(request: NextRequest) {
   // Make userPayload available outside the try/catch for the final signIn call
   let userPayload: any | undefined;
   try {
@@ -233,6 +254,10 @@ export async function GET(request: NextRequest) {
     };
 
   } catch (err: any) {
+    // Let framework-level redirects (e.g., NextAuth signIn) bubble up
+    if (isNextRedirect(err)) {
+      throw err;
+    }
     // Pre-signIn error handling only. Let framework redirects bubble up elsewhere.
     console.error('[Bluesky OAuth] Error:', err.message);
     return NextResponse.json({ 
@@ -250,3 +275,15 @@ export async function GET(request: NextRequest) {
     redirectTo: request.nextUrl.origin,
   });
 }
+
+// Wrap the handler with validation middleware with minimal impact
+export const GET = withPublicValidation(
+  z.object({}).passthrough(),
+  async (request: NextRequest) => callbackHandler(request),
+  {
+    validateQueryParams: true,
+    queryParamsSchema: CallbackQuerySchema,
+    applySecurityChecks: true,
+    customRateLimit: { identifier: 'ip', windowMs: 60_000, maxRequests: 120 },
+  }
+);
