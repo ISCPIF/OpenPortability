@@ -33,6 +33,46 @@ const NewsletterLink = memo(({ href, children }: { href: string; children: React
 
 NewsletterLink.displayName = 'NewsletterLink';
 
+// Shared helper to ensure a single in-flight language fetch across components
+const ensureLanguagePreference = async (userId: string | undefined, currentLocale: string) => {
+  if (!userId) return;
+
+  const storageKey = `user_language_${userId}`;
+  const existing = typeof window !== 'undefined' ? localStorage.getItem(storageKey) : null;
+  if (existing) return existing;
+
+  const w = typeof window !== 'undefined' ? (window as any) : {};
+
+  if (!w.__languageFetchPromise) {
+    w.__languageFetchPromise = (async () => {
+      try {
+        const response = await fetch('/api/users/language');
+        const data = await response.json();
+        const languageToStore = data.language || currentLocale;
+
+        if (!data.language) {
+          await fetch('/api/users/language', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ language: currentLocale }),
+          });
+        }
+
+        return languageToStore as string;
+      } catch (err) {
+        console.error('Error checking/saving language preference:', err);
+        return currentLocale;
+      }
+    })();
+  }
+
+  const lang = await w.__languageFetchPromise;
+  try {
+    localStorage.setItem(storageKey, lang);
+  } catch {}
+  return lang as string;
+};
+
 export default function NewsLetterFirstSeen({ userId, newsletterData, onSubscribe, onClose }: NewsLetterFirstSeenProps) {
   const { updateMultipleConsents } = newsletterData;
   
@@ -40,7 +80,6 @@ export default function NewsLetterFirstSeen({ userId, newsletterData, onSubscrib
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [isLanguageOpen, setIsLanguageOpen] = useState(false)
-  const [currentLanguage, setCurrentLanguage] = useState('')
   
   // États locaux pour les consentements
   const [localConsents, setLocalConsents] = useState({
@@ -69,39 +108,8 @@ export default function NewsLetterFirstSeen({ userId, newsletterData, onSubscrib
 
   // Vérifier et sauvegarder la langue à la connexion
   useEffect(() => {
-    const checkAndSaveLanguage = async () => {
-      // Vérifier si on a déjà une langue stockée pour cet utilisateur
-      const storedLanguage = localStorage.getItem(`user_language_${userId}`);
-      
-      if (userId && !storedLanguage) {
-        try {
-          // Vérifier si une préférence existe déjà
-          const response = await fetch('/api/users/language');
-          const data = await response.json();
-          
-          const languageToStore = data.language || currentLocale;
-          
-          // Si pas de préférence, sauvegarder la langue actuelle
-          if (!data.language) {
-            await fetch('/api/users/language', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({ language: currentLocale }),
-            });
-          }
-          
-          // Stocker la langue pour cet utilisateur
-          localStorage.setItem(`user_language_${userId}`, languageToStore);
-        } catch (error) {
-          console.error('Error checking/saving language preference:', error);
-        }
-      }
-    };
-
-    checkAndSaveLanguage();
-  }, [userId, currentLocale]);
+    ensureLanguagePreference(userId, currentLocale);
+   }, [userId, currentLocale]);
 
   const switchLanguage = async (locale: string) => {
     const newPath = pathname.replace(`/${currentLocale}`, `/${locale}`)

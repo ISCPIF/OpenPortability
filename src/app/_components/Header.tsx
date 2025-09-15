@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useSession, signIn, signOut } from "next-auth/react";
 import Link from 'next/link';
 import Image from 'next/image';
@@ -10,6 +10,46 @@ import { useTranslations } from 'next-intl';
 import { usePathname } from 'next/navigation';
 import { plex } from '@/app/fonts/plex';
 import { useDashboardState } from '@/hooks/useDashboardState';
+
+// Shared helper to ensure a single in-flight language fetch across components
+const ensureLanguagePreference = async (userId: string | undefined, currentLocale: string) => {
+  if (!userId) return;
+
+  const storageKey = `user_language_${userId}`;
+  const existing = typeof window !== 'undefined' ? localStorage.getItem(storageKey) : null;
+  if (existing) return existing;
+
+  const w = typeof window !== 'undefined' ? (window as any) : {};
+
+  if (!w.__languageFetchPromise) {
+    w.__languageFetchPromise = (async () => {
+      try {
+        const response = await fetch('/api/users/language');
+        const data = await response.json();
+        const languageToStore = data.language || currentLocale;
+
+        if (!data.language) {
+          await fetch('/api/users/language', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ language: currentLocale }),
+          });
+        }
+
+        return languageToStore as string;
+      } catch (err) {
+        console.error('Error checking/saving language preference:', err);
+        return currentLocale;
+      }
+    })();
+  }
+
+  const lang = await w.__languageFetchPromise;
+  try {
+    localStorage.setItem(storageKey, lang);
+  } catch {}
+  return lang as string;
+};
 
 const UnauthenticatedHeader = () => {
   const t = useTranslations('header');
@@ -89,7 +129,7 @@ const AuthenticatedHeader = () => {
   const [isLanguageOpen, setIsLanguageOpen] = useState(false);
   const t = useTranslations('header');
   const pathname = usePathname();
-  const hasCheckedLanguage = useRef(false);
+  const currentLocale = pathname.split('/')[1];
 
   const languages = [
     { code: 'fr', name: 'FR'},
@@ -101,42 +141,8 @@ const AuthenticatedHeader = () => {
     { code: 'pt', name: 'PT'},
   ];
 
-  const currentLocale = pathname.split('/')[1];
-
-  // Vérifier et sauvegarder la langue à la connexion
   useEffect(() => {
-    const checkAndSaveLanguage = async () => {
-      // Vérifier si on a déjà une langue stockée pour cet utilisateur
-      const storedLanguage = localStorage.getItem(`user_language_${session?.user?.id}`);
-      
-      if (session?.user?.id && !storedLanguage) {
-        try {
-          // Vérifier si une préférence existe déjà
-          const response = await fetch('/api/users/language');
-          const data = await response.json();
-          
-          const languageToStore = data.language || currentLocale;
-          
-          // Si pas de préférence, sauvegarder la langue actuelle
-          if (!data.language) {
-            await fetch('/api/users/language', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({ language: currentLocale }),
-            });
-          }
-          
-          // Stocker la langue pour cet utilisateur
-          localStorage.setItem(`user_language_${session.user.id}`, languageToStore);
-        } catch (error) {
-          console.error('Error checking/saving language preference:', error);
-        }
-      }
-    };
-
-    checkAndSaveLanguage();
+    ensureLanguagePreference(session?.user?.id, currentLocale);
   }, [session?.user?.id, currentLocale]);
 
   const switchLanguage = async (locale: string) => {
