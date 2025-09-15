@@ -18,6 +18,19 @@ import {
 import { detectXssPayload } from '@/lib/security/xss-detection';
 import { detectSqlInjectionPayload } from '@/lib/security/sql-detection';
 
+// Safe detector for Next.js redirect errors (e.g., NEXT_REDIRECT from NextAuth signIn)
+function isNextRedirect(err: unknown): boolean {
+  try {
+    const digest = (err as any)?.digest;
+    if (typeof digest === 'string' && digest.startsWith('NEXT_REDIRECT')) {
+      return true;
+    }
+    return !!(err && typeof err === 'object' && 'digest' in (err as any) && (err as any).digest === 'NEXT_REDIRECT');
+  } catch {
+    return false;
+  }
+}
+
 export interface ValidationOptions {
   requireAuth?: boolean;
   applySecurityChecks?: boolean;
@@ -572,17 +585,22 @@ export function withValidation<T>(
       return response;
       
     } catch (error) {
-      // logger.logError('API', `${method} ${endpoint}`, error instanceof Error ? error.message : 'Unknown error', {
-      //   context: 'Validation middleware error'
-      // });
-      
-      return NextResponse.json(
-        { error: 'Internal server error' },
-        { status: 500 }
-      );
-    }
-  };
-}
+      // Allow Next.js framework redirects (e.g., from NextAuth signIn) to bubble through
+      if (isNextRedirect(error)) {
+    
+        throw error;
+      }
+       // logger.logError('API', `${method} ${endpoint}`, error instanceof Error ? error.message : 'Unknown error', {
+       //   context: 'Validation middleware error'
+       // });
+       
+       return NextResponse.json(
+         { error: 'Internal server error' },
+         { status: 500 }
+       );
+     }
+   };
+ }
 
 /**
  * Version simplifiée pour les endpoints publics
