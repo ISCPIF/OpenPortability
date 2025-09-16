@@ -40,21 +40,12 @@ async function callbackHandler(request: NextRequest) {
 
     // Complete OAuth flow and get session
     const { session, state } = await client.callback(searchParams);
-
-    console.log('[Bluesky OAuth Callback] Session:', session);
-    console.log('[Bluesky OAuth Callback] typeof Session:', typeof (session as any).dpopFetch)
-    console.log('[Bluesky OAuth Callback] typeof Session:', typeof (session as any)?.dpopFetch)
-    console.log('[Bluesky OAuth Callback] token_type:', session?.tokenSet?.token_type)
-    console.log('[Bluesky OAuth Callback] scope:', session?.tokenSet?.scope)
     
     const did = (session as any)?.sub;
     if (!did) {
       console.error('[Bluesky OAuth Callback] Missing DID in session');
       return NextResponse.json({ error: "Invalid Bluesky session from callback" }, { status: 400 });
     }
-
-    console.log('[Bluesky OAuth Callback] DID extracted:', did);
-
     // Extract tokens from Redis directly since we can see the structure
     let accessToken: string | undefined;
     let refreshToken: string | undefined;
@@ -70,12 +61,6 @@ async function callbackHandler(request: NextRequest) {
       
       if (redisData) {
         const sessionData = JSON.parse(redisData);
-        console.log('[Token Extraction] Session data structure:', {
-          hasAuthMethod: !!sessionData.authMethod,
-          hasTokenSet: !!sessionData.tokenSet,
-          hasDpopJwk: !!sessionData.dpopJwk,
-          tokenType: sessionData.tokenSet?.token_type
-        });
         
         // Extract tokens from the correct location
         const tokenSet = sessionData.tokenSet;
@@ -84,14 +69,6 @@ async function callbackHandler(request: NextRequest) {
           refreshToken = tokenSet.refresh_token;
           tokenType = tokenSet.token_type;
           scope = tokenSet.scope;
-          
-          console.log('[Token Extraction] Tokens extracted from Redis:', {
-            hasAccessToken: !!accessToken,
-            hasRefreshToken: !!refreshToken,
-            tokenType,
-            scope,
-            accessTokenPreview: accessToken ? `${accessToken.substring(0, 30)}...` : 'none'
-          });
         }
       } else {
         console.warn('[Token Extraction] No session data in Redis for:', redisKey);
@@ -116,20 +93,10 @@ async function callbackHandler(request: NextRequest) {
         const origin = 'https://bsky.social';
         const url = new URL('/xrpc/app.bsky.actor.getProfile', origin);
         url.searchParams.set('actor', did);
-        
-        console.log('[dpopFetch] Fetching profile with DPoP authentication');
         const resp = await dpopFetch(url.toString());
-        
-        console.log('[dpopFetch] Response status:', resp.status, resp.statusText);
-        
+                
         if (resp.ok) {
-          const profileData = await resp.json();
-          console.log('[dpopFetch] Profile fetched successfully:', {
-            handle: profileData.handle,
-            displayName: profileData.displayName,
-            hasAvatar: !!profileData.avatar
-          });
-          
+          const profileData = await resp.json();          
           profile = {
             did: profileData.did || did,
             handle: profileData.handle,
@@ -154,7 +121,6 @@ async function callbackHandler(request: NextRequest) {
     // Fallback to public profile fetch if dpopFetch failed
     if (!profileFetched) {
       try {
-        console.log('[Profile Fallback] Trying public API');
         const publicResponse = await fetch(`https://public.api.bsky.app/xrpc/app.bsky.actor.getProfile?actor=${did}`);
         
         if (publicResponse.ok) {
@@ -166,15 +132,11 @@ async function callbackHandler(request: NextRequest) {
             avatar: profileData.avatar,
           };
           handle = profileData.handle;
-          console.log('[Profile Fallback] Public profile fetched:', profile.handle);
         }
       } catch (fallbackError: any) {
         console.warn('[Profile Fallback] Failed:', fallbackError.message);
       }
     }
-
-    console.log('[Bluesky OAuth] Final profile data:', profile);
-
     // Continue with user account linking
     const currentSession = await auth();
     let userId = currentSession?.user?.id || undefined;
@@ -193,7 +155,6 @@ async function callbackHandler(request: NextRequest) {
           scope,
           token_type: tokenType,
         });
-        console.log('[Account Link] Updated existing user with tokens');
       } else {
         console.warn('[Account Link] No tokens available for existing user');
       }
@@ -209,7 +170,6 @@ async function callbackHandler(request: NextRequest) {
           scope,
           token_type: tokenType,
         });
-        console.log('[Account Link] Linked to current user with tokens');
       } else {
         console.warn('[Account Link] No tokens available for current user');
       }
@@ -234,7 +194,6 @@ async function callbackHandler(request: NextRequest) {
           scope,
           token_type: tokenType,
         });
-        console.log('[Account Link] Created new user with tokens');
       } else {
         console.warn('[Account Link] No tokens available for new user');
       }
@@ -277,7 +236,6 @@ async function callbackHandler(request: NextRequest) {
   }
 
   // Perform NextAuth sign-in outside the try/catch so NEXT_REDIRECT can bubble to the framework
-  console.log('[Bluesky OAuth] Signing in user');
   if (!userPayload) {
     return NextResponse.json({ error: 'Missing user payload after OAuth callback' }, { status: 500 });
   }
