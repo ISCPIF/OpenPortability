@@ -87,7 +87,9 @@ async function deleteHandler(_request: Request, _validatedData: {}, session: any
     )
   } catch (error) {
     const userId = session?.user?.id || 'unknown'
-    logger.logError('API', 'DELETE /api/delete', error, userId, { context: 'Account deletion process' })
+    const err = error instanceof Error ? error : new Error(String(error))
+
+    logger.logError('API', 'DELETE /api/delete', err, userId, { context: 'Account deletion process' })
     return NextResponse.json(
       { error: 'Failed to delete account' },
       { status: 500 }
