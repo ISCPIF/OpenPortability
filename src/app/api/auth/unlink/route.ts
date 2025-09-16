@@ -110,11 +110,11 @@ async function unlinkHandler(_req: Request, data: UnlinkRequest, session: any) {
     return NextResponse.json({ success: true })
   } catch (error) {
     const userId = session?.user?.id || 'unknown'
-    logger.logError('API', 'POST /api/auth/unlink', error, userId, {
-      name: error.name,
-      message: error.message
+    const err = error instanceof Error ? error : new Error(String(error))
+    logger.logError('API', 'POST /api/auth/unlink', err, userId, {
+      name: err.name,
+      message: err.message
     })
-    
     if (error instanceof UnlinkError) {
       return NextResponse.json(
         { error: error.message, code: error.code },
