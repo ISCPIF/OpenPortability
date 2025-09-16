@@ -163,7 +163,6 @@ export const authConfig = {
         token.research_accepted = !!user.research_accepted
         token.have_seen_newsletter = !!user.have_seen_newsletter
         token.automatic_reconnect = !!user.automatic_reconnect
-        token.have_seen_bot_newsletter = !!user.have_seen_bot_newsletter
         
         console.log('Auth', 'jwt', 'User token initialization', user.id, {
           hasOnboarded: !!user.has_onboarded,
@@ -247,7 +246,6 @@ export const authConfig = {
               oep_accepted: !!user.oep_accepted,
               research_accepted: !!user.research_accepted,
               have_seen_newsletter: !!user.have_seen_newsletter,
-              have_seen_bot_newsletter: !!user.have_seen_bot_newsletter,
               automatic_reconnect: !!user.automatic_reconnect,
               name: token.name || user.name,
               
@@ -339,7 +337,6 @@ export const authConfig = {
           hqx_newsletter: false,
           oep_accepted: false,
           have_seen_newsletter: false,
-          have_seen_bot_newsletter : false,
           research_accepted: false,
           automatic_reconnect: false
         }
@@ -365,7 +362,6 @@ export const authConfig = {
           hqx_newsletter: false,
           oep_accepted: false,
           have_seen_newsletter: false,
-          have_seen_bot_newsletter : false,
           research_accepted: false,
           automatic_reconnect: false
         }
