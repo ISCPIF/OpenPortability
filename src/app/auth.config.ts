@@ -69,18 +69,7 @@ export const authConfig = {
     }
   },
   callbacks: {
-    async signIn({ user, account, profile, error }) {
-      console.log('Auth', 'signIn', 'SignIn callback initiated', user?.id, { 
-        provider: account?.provider,
-        errorExists: !!error,
-        profileExists: !!profile
-      });
-
-      
-      if (error) {
-        console.log('Auth', 'signIn', error, user?.id, { provider: account?.provider });
-      }
-
+    async signIn({ user, account, profile }) {
       if (!account) {
         console.log('Auth', 'signIn', 'No account provided during sign in', user?.id);
         return false;
@@ -119,25 +108,41 @@ export const authConfig = {
         
         // Si on essaie de lier un compte Bluesky
         if (session?.user?.id && account.provider === 'bluesky') {
-          console.log('Auth', 'signIn', 'Linking Bluesky account', session.user.id, {
-            providerAccountId: account.providerAccountId
-          });
-          
-          await supabaseAdapter.linkAccount({
-            userId: session.user.id,
-            type: account.type as AdapterAccountType,
-            provider: account.provider,
-            providerAccountId: account.providerAccountId,
-            refresh_token: account.refresh_token,
-            access_token: account.access_token,
-            expires_at: account.expires_at,
-            token_type: account.token_type,
-            scope: account.scope,
-            id_token: account.id_token,
-            session_state: account.session_state
-          });
-          
-          console.log('Auth', 'signIn', 'Successfully linked Bluesky account', session.user.id);
+          // With our setup, Bluesky uses a credentials provider to finalize sign-in.
+          // The actual account linking is already handled in our API route/callbacks.
+          // To avoid creating a wrong "credentials" account entry with providerAccountId = userId,
+          // we only link when it's a real OAuth account AND the providerAccountId looks like a DID.
+          const isCredentials = account.type === 'credentials'
+          const isDid = typeof account.providerAccountId === 'string' && account.providerAccountId.startsWith('did:')
+
+          if (isCredentials) {
+            console.log('Auth', 'signIn', 'Skip linking Bluesky account for credentials provider', session.user.id, {
+              providerAccountId: account.providerAccountId
+            });
+          } else if (isDid) {
+            console.log('Auth', 'signIn', 'Linking Bluesky account', session.user.id, {
+              providerAccountId: account.providerAccountId
+            });
+            await supabaseAdapter.linkAccount({
+              userId: session.user.id,
+              type: account.type as AdapterAccountType,
+              provider: account.provider,
+              providerAccountId: account.providerAccountId,
+              refresh_token: account.refresh_token,
+              access_token: account.access_token,
+              expires_at: account.expires_at,
+              token_type: account.token_type,
+              scope: account.scope,
+              id_token: account.id_token,
+              session_state: account.session_state
+            });
+            console.log('Auth', 'signIn', 'Successfully linked Bluesky account', session.user.id);
+          } else {
+            console.log('Auth', 'signIn', 'Skip linking Bluesky account (not credentials but invalid providerAccountId)', session.user.id, {
+              providerAccountId: account.providerAccountId,
+              accountType: account.type
+            });
+          }
         }
 
         // Autoriser la connexion dans tous les cas
@@ -158,7 +163,6 @@ export const authConfig = {
         token.research_accepted = !!user.research_accepted
         token.have_seen_newsletter = !!user.have_seen_newsletter
         token.automatic_reconnect = !!user.automatic_reconnect
-        token.have_seen_bot_newsletter = !!user.have_seen_bot_newsletter
         
         console.log('Auth', 'jwt', 'User token initialization', user.id, {
           hasOnboarded: !!user.has_onboarded,
@@ -242,7 +246,6 @@ export const authConfig = {
               oep_accepted: !!user.oep_accepted,
               research_accepted: !!user.research_accepted,
               have_seen_newsletter: !!user.have_seen_newsletter,
-              have_seen_bot_newsletter: !!user.have_seen_bot_newsletter,
               automatic_reconnect: !!user.automatic_reconnect,
               name: token.name || user.name,
               
@@ -304,74 +307,6 @@ export const authConfig = {
         }
       }
     },
-    // {
-    //   id: "bluesky",
-    //   name: "Bluesky",
-    //   type: "oauth",
-    //   clientId: process.env.BLUESKY_CLIENT_ID,
-    //   issuer: "https://bsky.social",
-    //   authorization: {
-    //     url: "https://app.beta.v2.helloquitx.com/api/auth/bluesky",
-    //     params: { 
-    //       response_type: "code",
-    //       scope: "openid profile email"
-    //     }
-    //   },
-    //   token: {
-    //     url: "https://app.beta.v2.helloquitx.com/api/auth/bluesky",
-    //     async request({ params }) {
-    //       const response = await fetch("/api/auth/bluesky", {
-    //         method: "POST",
-    //         headers: { "Content-Type": "application/json" },
-    //         body: JSON.stringify({
-    //           identifier: params.username,
-    //           password: params.password
-    //         })
-    //       });
-          
-    //       const data = await response.json();
-    //       if (!response.ok) {
-    //         throw new Error(data.error || "Authentication failed");
-    //       }
-          
-    //       return {
-    //         tokens: {
-    //           access_token: data.accessJwt,
-    //           refresh_token: data.refreshJwt,
-    //           did: data.did,
-    //           handle: data.handle
-    //         }
-    //       };
-    //     }
-    //   },
-    //   userinfo: {
-    //     url: "https://app.beta.v2.helloquitx.com/api/auth/bluesky/userinfo",
-    //     async request({ tokens }) {
-    //       const agent = new BskyAgent({ service: 'https://bsky.social' });
-    //       await agent.resumeSession({
-    //         accessJwt: tokens.access_token,
-    //         refreshJwt: tokens.refresh_token,
-    //         did: tokens.did,
-    //         handle: tokens.handle,
-    //         active: true
-    //       });
-          
-    //       const profile = await agent.getProfile({ actor: tokens.did });
-    //       return profile.data;
-    //     }
-    //   },
-    //   profile(profile) {
-    //     return {
-    //       id: profile.did,
-    //       name: profile.displayName || profile.handle,
-    //       email: null,
-    //       image: profile.avatar,
-    //       has_onboarded: false,
-    //       hqx_newsletter: false,
-    //       oep_accepted: false
-    //     }
-    //   }
-    // },
     TwitterProvider({
       clientId: process.env.TWITTER_CLIENT_ID!,
       clientSecret: process.env.TWITTER_CLIENT_SECRET!,
@@ -402,15 +337,10 @@ export const authConfig = {
           hqx_newsletter: false,
           oep_accepted: false,
           have_seen_newsletter: false,
-          have_seen_bot_newsletter : false,
           research_accepted: false,
           automatic_reconnect: false
         }
       },
-      // userinfo: {
-      //   url: "https://api.twitter.com/2/users/me",
-      //   params: { "user.fields": "profile_image_url,description" }
-      // }
     }),
     MastodonProvider({
       id: "mastodon",
@@ -432,7 +362,6 @@ export const authConfig = {
           hqx_newsletter: false,
           oep_accepted: false,
           have_seen_newsletter: false,
-          have_seen_bot_newsletter : false,
           research_accepted: false,
           automatic_reconnect: false
         }

@@ -3,20 +3,20 @@
 import { Suspense, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 
-import Header from '@/app/_components/Header'
-import LoadingIndicator from '@/app/_components/LoadingIndicator'
-import Footer from '@/app/_components/Footer'
-import StatsReconnexion from '@/app/_components/StatsReconnexion'
+import Header from '@/app/_components/layouts/Header'
+import LoadingIndicator from '@/app/_components/layouts/LoadingIndicator'
+import Footer from '@/app/_components/layouts/Footer'
+import StatsReconnexion from '@/app/_components/reconnection/StatsReconnexion'
 import { useReconnectState } from '@/hooks/useReconnectState'
-import MigrateSea from '@/app/_components/MigrateSea'
+import MigrateSea from '@/app/_components/layouts/MigrateSea'
 // import NewsLetterConsentsUpdate from '@/app/_components/NewsLetterConsentsUpdate'
 
 // Nouveau composant conteneur pour gérer la logique conditionnelle
-import ReconnectContainer from '@/app/_components/reconnect/ReconnectContainer'
+import ReconnectContainer from '@/app/_components/sections/reconnect/ReconnectContainer'
 
 // Dynamic imports for heavy components
 
-const MigrateStats = dynamic(() => import('@/app/_components/MigrateStats'), {
+const MigrateStats = dynamic(() => import('@/app/_components/layouts/MigrateStats'), {
   loading: () => <div className="animate-pulse bg-blue-900/50 h-24" />
 })
 

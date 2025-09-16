@@ -177,97 +177,7 @@ export class MatchingService {
     };
     
     console.log('[MatchingService] Final results:', result.stats);
-    return result;
-  }
-
-  // Helper pour récupérer le mapping Bluesky depuis Redis
-  private async getBlueskyMapping(twitterId: string): Promise<{ username: string; id: string } | null> {
-    try {
-      const redisKey = `twitter_to_bluesky:${twitterId}`;
-      const redisValue = await redis.get(redisKey);
-      
-      if (!redisValue) {
-        return null;
-      }
-
-      // Supporter les deux formats Redis:
-      // Format nouveau: "username|id" 
-      // Format existant: "username.bsky.social" (juste le handle)
-      if (redisValue.includes('|')) {
-        // Format pipe-delimited: "username|id"
-        const [username, id] = redisValue.split('|');
-        
-        if (!username || !id) {
-          console.warn(`[MatchingService] Invalid Bluesky Redis pipe format for ${twitterId}: ${redisValue}`);
-          return null;
-        }
-
-        return { username, id };
-      } else {
-        // Format legacy: juste le handle Bluesky
-        // Ex: "fondationshoah.bsky.social"
-        if (redisValue.includes('.bsky.social')) {
-          return { 
-            username: redisValue, // Le handle complet
-            id: '' // Pas d'ID disponible dans le format legacy
-          };
-        } else {
-          console.warn(`[MatchingService] Unknown Bluesky Redis format for ${twitterId}: ${redisValue}`);
-          return null;
-        }
-      }
-    } catch (error) {
-      console.error(`[MatchingService] Error getting Bluesky mapping for ${twitterId}:`, error);
-      return null;
-    }
-  }
-
-  // Helper pour récupérer le mapping Mastodon depuis Redis
-  private async getMastodonMapping(twitterId: string): Promise<{ id: string; username: string; instance: string } | null> {
-    try {
-      const redisKey = `twitter_to_mastodon:${twitterId}`;
-      const redisValue = await redis.get(redisKey);
-      
-      if (!redisValue) {
-        return null;
-      }
-
-      // Supporter les deux formats Redis:
-      // Format nouveau: "id|username|instance"
-      // Format existant: JSON object
-      if (redisValue.includes('|')) {
-        // Format pipe-delimited: "id|username|instance"
-        const [id, username, instance] = redisValue.split('|');
-        
-        if (!id || !username || !instance) {
-          console.warn(`[MatchingService] Invalid Mastodon Redis pipe format for ${twitterId}: ${redisValue}`);
-          return null;
-        }
-
-        return { id, username, instance };
-      } else {
-        // Format legacy: JSON object
-        try {
-          const parsed = JSON.parse(redisValue);
-          if (parsed.id && parsed.username && parsed.instance) {
-            return {
-              id: parsed.id,
-              username: parsed.username,
-              instance: parsed.instance
-            };
-          } else {
-            console.warn(`[MatchingService] Missing fields in Mastodon JSON for ${twitterId}: ${redisValue}`);
-            return null;
-          }
-        } catch (parseError) {
-          console.warn(`[MatchingService] Invalid Mastodon JSON format for ${twitterId}: ${redisValue}`);
-          return null;
-        }
-      }
-    } catch (error) {
-      console.error(`[MatchingService] Error getting Mastodon mapping for ${twitterId}:`, error);
-      return null;
-    }
+    return result as unknown as MatchingResult;
   }
 
   async updateFollowStatus(action: FollowAction): Promise<void> {
@@ -287,7 +197,7 @@ export class MatchingService {
 
   async updateFollowStatusBatch(
     userId: string,
-    targetIds: number[],
+    targetIds: string[],
     platform: 'bluesky' | 'mastodon',
     success: boolean,
     error?: string
@@ -320,19 +230,6 @@ export class MatchingService {
     } catch (error) {
       console.error('[MatchingService.updateFollowStatusBatch] Failed to update follow status batch:', error);
       throw new Error('Failed to update follow status batch');
-    }
-  }
-
-  async getBatchFollowTargets(
-    userId: string,
-    platform: 'bluesky' | 'mastodon',
-    limit: number = 50
-  ): Promise<MatchingTarget[]> {
-    try {
-      return await this.repository.getUnprocessedFollowTargets(userId, platform, limit);
-    } catch (error) {
-      console.error('Failed to get batch follow targets:', error);
-      throw new Error('Failed to get batch follow targets');
     }
   }
 
@@ -384,22 +281,5 @@ export class MatchingService {
     } else {
       return this.repository.unignoreTarget(userId, targetTwitterId);
     }
-  }
-
-  /**
-   * Récupère uniquement les listes des twitter_id du réseau utilisateur
-   * @param userId UUID de l'utilisateur
-   * @returns Objet avec following et followers (sans stats)
-   */
-  async getUserNetworkIds(userId: string): Promise<{
-    following: string[];
-    followers: string[];
-  }> {
-    const userNetwork = await this.repository.getUserNetwork(userId);
-    
-    return {
-      following: userNetwork.following,
-      followers: userNetwork.followers
-    };
   }
 }

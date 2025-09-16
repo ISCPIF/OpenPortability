@@ -249,6 +249,10 @@ export const extractTargetFiles = async (file: File): Promise<ExtractedFile[]> =
   const reader = new zip.ZipReader(new zip.BlobReader(file));
   const entries = await reader.getEntries();
   
+  // Type guard: ensure entry exposes getData (i.e., it's a file entry, not a directory entry)
+  const isFileEntry = (entry: any): entry is typeof entries[number] & { getData: (writer: any) => Promise<Uint8Array> } =>
+    entry && typeof entry.getData === 'function';
+  
   const targetFiles = entries.filter(entry => {
     const normalizedPath = normalizeFilePath(entry.filename);
     return TARGET_FILES.some(target => normalizedPath.endsWith(normalizeFilePath(target)));
@@ -260,7 +264,10 @@ export const extractTargetFiles = async (file: File): Promise<ExtractedFile[]> =
 
   const extractedFiles: ExtractedFile[] = await Promise.all(
     targetFiles.map(async entry => {
-      const content = await entry.getData!(new zip.Uint8ArrayWriter());
+      if (!isFileEntry(entry)) {
+        throw new Error(`Invalid ZIP entry (not a file): ${entry?.filename || 'unknown'}`);
+      }
+      const content = await entry.getData(new zip.Uint8ArrayWriter());
       const name = entry.filename.split('/').pop() || '';
       return { name, content };
     })

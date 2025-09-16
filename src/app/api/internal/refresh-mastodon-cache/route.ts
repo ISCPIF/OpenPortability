@@ -48,7 +48,8 @@ async function handleRefreshMastodonCache(
     });
 
   } catch (error) {
-    logger.logError('API', 'GET /api/internal/refresh-mastodon-cache', error, 'system', {
+    const err = error instanceof Error ? error : new Error(String(error))
+    logger.logError('API', 'GET /api/internal/refresh-mastodon-cache', err, 'system', {
       context: 'Failed to update Mastodon cache from GET request'
     });
 

@@ -82,7 +82,7 @@ export class MastodonService implements IMastodonService {
           };
         }
 
-        const accounts = await searchResponse.json();
+        const accounts: MastodonAccount[] = await searchResponse.json();
         console.log(' [MastodonService.followAccount] Number of accounts found:', accounts.length);
 
         const accountToFollow = accounts.find(acc =>

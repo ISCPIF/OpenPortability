@@ -221,7 +221,8 @@ export class MatchingRepository {
       return { data: paginatedResults, error: null };
 
     } catch (error) {
-      logError('Repository', 'MatchingRepository.getFollowableTargetsFromRedis', error, userId);
+      const err = error instanceof Error ? error : new Error(String(error));
+      logError('Repository', 'MatchingRepository.getFollowableTargetsFromRedis', err, userId);
       return { data: null, error: error };
     }
   }
@@ -708,76 +709,5 @@ export class MatchingRepository {
 
     return count || 0;
   }
-
-  /**
-   * Récupère le réseau complet de l'utilisateur (following + followers)
-   * @param userId UUID de l'utilisateur
-   * @param limit Nombre maximum de résultats par type (0 = pas de limite, récupère tout, max 1M pour performance)
-   * @returns Objet avec following, followers et stats (avec vrais totaux)
-   */
-  async getUserNetwork(userId: string, limit: number = 100000): Promise<{
-    following: string[];
-    followers: string[];
-    // stats: {
-    //   followingCount: number;
-    //   followersCount: number;
-    //   isLimited: boolean;
-    // };
-  }> {
-    console.log("userOd ----> ", userId)
-    console.log("limit ----> ", limit)
-    
-    // Limite de sécurité pour les très gros comptes (1 million max par type)
-    const MAX_CONNECTIONS_PER_TYPE = 1000000;
-    const effectiveLimit = limit === 0 ? MAX_CONNECTIONS_PER_TYPE : Math.min(limit, MAX_CONNECTIONS_PER_TYPE);
-    
-    // Récupérer les données ET les vrais totaux en parallèle
-    const [following, followers] = await Promise.all([
-      this.getUserFollowing(userId, effectiveLimit),
-      this.getUserFollowers(userId, effectiveLimit),
-      // this.
-    ]);
-
-    return {
-      following,
-      followers,
-      // stats
-    };
-  }
-
-/**
- * Récupère les données du graphe social avec les connexions retrouvées
- * @param inputId - UUID (source_id) ou Twitter ID
- * @returns Données du graphe social selon la stratégie détectée
- */
-async getSocialGraphData(inputId: string): Promise<{ data: SocialGraphData | null; error: any }> {
-  console.log('MatchingRepository', 'getSocialGraphData', `Fetching social graph data for input: ${inputId}`);
-
-  try {
-    const result = await this.supabase.rpc('get_social_graph_data', {
-      input_id: inputId
-    });
-
-    if (result.error) {
-      logError('MatchingRepository', 'getSocialGraphData', 'Error calling get_social_graph_data', result.error);
-      return { data: null, error: result.error };
-    }
-
-    if (!result.data) {
-      logWarning('MatchingRepository', 'getSocialGraphData', 'No data returned from get_social_graph_data');
-      return { data: null, error: null };
-    }
-
-    console.log('MatchingRepository', 'getSocialGraphData', `Successfully fetched social graph data`, {
-      strategy: result.data.strategy,
-      inputId
-    });
-
-    return { data: result.data as SocialGraphData, error: null };
-  } catch (error) {
-    logError('MatchingRepository', 'getSocialGraphData', 'Exception in getSocialGraphData', error);
-    return { data: null, error };
-  }
-}
 
 }

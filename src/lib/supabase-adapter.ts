@@ -17,7 +17,6 @@ export interface CustomAdapterUser extends Omit<AdapterUser, 'image'> {
   hqx_newsletter: boolean
   oep_accepted: boolean
   have_seen_newsletter: boolean
-  // have_seen_bot_newsletter: boolean
   research_accepted: boolean
   automatic_reconnect: boolean
   twitter_id?: string | null
@@ -431,13 +430,13 @@ export async function createUser(
     } else if (provider === 'bluesky') {
       const blueskyData = profile as BlueskyProfile
       Object.assign(userToCreate, {
-        bluesky_id: blueskyData.did,
-        bluesky_username: blueskyData.handle,
+        bluesky_id: blueskyData.did || blueskyData.id,
+        bluesky_username: blueskyData.handle || blueskyData.username,
         bluesky_image: blueskyData.avatar
       })
       console.log('Auth', 'createUser', 'Bluesky fields added', undefined, { 
-        bluesky_id: blueskyData.did,
-        bluesky_username: blueskyData.handle,
+        bluesky_id: blueskyData.did || blueskyData.id,
+        bluesky_username: blueskyData.handle || blueskyData.username,
         has_image: !!blueskyData.avatar
       })
     }
@@ -579,7 +578,6 @@ export async function getUser(id: string): Promise<CustomAdapterUser | null> {
     hqx_newsletter: user.hqx_newsletter,
     oep_accepted: user.oep_accepted,
     have_seen_newsletter: user.have_seen_newsletter,
-    // have_seen_bot_newsletter: user.have_seen_bot_newsletter,
     research_accepted: user.research_accepted,
     automatic_reconnect: user.automatic_reconnect,
     facebook_id: user.facebook_id,
@@ -591,7 +589,9 @@ export async function getUserByEmail(email: string): Promise<CustomAdapterUser |
   return null
 }
 
-export async function getUserByAccount({ providerAccountId, provider }): Promise<CustomAdapterUser | null> {
+export async function getUserByAccount(
+  { providerAccountId, provider }: { providerAccountId: string; provider: 'twitter' | 'bluesky' | 'mastodon' | 'piaille' | 'facebook' }
+): Promise<CustomAdapterUser | null> {
 
   let column: string
   if (provider === 'twitter') {
@@ -620,11 +620,6 @@ export async function getUserByAccount({ providerAccountId, provider }): Promise
 
   if (!user) return null
 
-  // For Piaille accounts, we need to verify the instance
-  if (provider === 'piaille' && user.mastodon_instance !== 'piaille.fr') {
-    return null
-  }
-
   return {
     id: user.id,
     name: user.name,
@@ -642,7 +637,6 @@ export async function getUserByAccount({ providerAccountId, provider }): Promise
     hqx_newsletter: user.hqx_newsletter,
     oep_accepted: user.oep_accepted,
     have_seen_newsletter: user.have_seen_newsletter,
-    // have_seen_bot_newsletter: user.have_seen_bot_newsletter,
     research_accepted: user.research_accepted,
     automatic_reconnect: user.automatic_reconnect,
     email: "none",
@@ -747,7 +741,6 @@ export async function updateUser(
     hqx_newsletter: user.hqx_newsletter,
     oep_accepted: user.oep_accepted,
     have_seen_newsletter: user.have_seen_newsletter,
-    // have_seen_bot_newsletter: user.have_seen_bot_newsletter,
     research_accepted: user.research_accepted,
     automatic_reconnect: user.automatic_reconnect,
     email: "none",
@@ -773,7 +766,7 @@ export function decodeJwt(token: string): { exp: number } | null {
 }
 
 export async function linkAccount(account: AdapterAccount): Promise<void> {
-  console.log('Auth', 'linkAccount', 'Linking account', account.user_id, { account })
+  console.log('Auth', 'linkAccount', 'Linking account', account.userId, { account })
   
   // Décoder l'access token pour obtenir l'expiration
   let expires_at = account.expires_at
@@ -803,7 +796,7 @@ export async function linkAccount(account: AdapterAccount): Promise<void> {
     })
 
   if (error) {
-    logger.logError('Auth', 'linkAccount', 'Error linking account', account.user_id, { account, error })
+    logger.logError('Auth', 'linkAccount', 'Error linking account', account.userId, { account, error })
     throw error
   }
 }
@@ -855,7 +848,6 @@ export async function getSessionAndUser(sessionToken: string): Promise<{ session
       hqx_newsletter: user.hqx_newsletter,
       oep_accepted: user.oep_accepted,
       have_seen_newsletter: user.have_seen_newsletter,
-      // have_seen_bot_newsletter: user.have_seen_bot_newsletter,
       research_accepted: user.research_accepted,
       automatic_reconnect: user.automatic_reconnect,
       email: "none",
