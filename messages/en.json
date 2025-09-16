@@ -329,7 +329,11 @@
     "button": {
       "dashboard": "Return to dashboard"
     },
-    "redirecting": "Automatic redirection in"
+    "redirecting": "Automatic redirection in",
+    "phases": {
+      "nodes" : "Recreating your network",
+      "edges" : "Recreating your connections"
+    }
   },
   "profile": {
     "unlinkConfirmation": "Are you sure you want to unlink your {provider} account?",
