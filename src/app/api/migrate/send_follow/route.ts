@@ -7,7 +7,6 @@ import { BlueskyRepository } from '@/lib/repositories/blueskyRepository'
 import { MatchingService } from '@/lib/services/matchingService'
 import { supabase } from '@/lib/supabase'
 import { MatchingTarget, MatchedFollower } from '@/lib/types/matching'
-import { decrypt } from '@/lib/encryption'
 import logger from '@/lib/log_utils'
 import { withValidation } from '@/lib/validation/middleware'
 import { SendFollowRequestSchema } from '@/lib/validation/schemas'
@@ -59,20 +58,33 @@ export const POST = withValidation(
         
         if (blueskyAccounts.length > 0) {
           try {
-            await blueskyService.resumeSession({
-              accessJwt: decrypt(blueskyAccount.access_token),
-              refreshJwt: decrypt(blueskyAccount.refresh_token),
-              handle: blueskyAccount.username,
-              did: blueskyAccount.provider_account_id
-            });
+            const blueskyHandles = blueskyAccounts.map(acc => acc.bluesky_handle!)
 
-            const blueskyHandles = blueskyAccounts.map(acc => acc.bluesky_handle!)        
-            results.bluesky = await blueskyService.batchFollow(blueskyHandles)
+            const isOAuth = (blueskyAccount.token_type && String(blueskyAccount.token_type).toUpperCase() === 'DPOP')
+              || (typeof blueskyAccount.scope === 'string' && blueskyAccount.scope.includes('atproto'))
+
+            if (isOAuth) {
+              // Use OAuth flow via dpopFetch
+              results.bluesky = await blueskyService.batchFollowOAuth(
+                blueskyAccount.provider_account_id,
+                blueskyHandles
+              )
+            } else {
+              // Use app-password session via BskyAgent
+              await blueskyService.resumeSession({
+                accessJwt: blueskyAccount.access_token,
+                refreshJwt: blueskyAccount.refresh_token,
+                handle: blueskyAccount.username,
+                did: blueskyAccount.provider_account_id,
+              });
+
+              results.bluesky = await blueskyService.batchFollow(blueskyHandles)
+            }
 
             if (results.bluesky.failures.length > 0) {
               console.log('API', 'POST /api/migrate/send_follow', 'Some Bluesky follows failed', userId, {
                 failureCount: results.bluesky.failures.length,
-                errors: results.bluesky.failures.map(f => f.error)
+                errors: results.bluesky.failures.map((f: any) => f.error)
               });
             }
 
@@ -83,7 +95,7 @@ export const POST = withValidation(
             // Determine if there was any success
             const hasSuccess = results.bluesky.succeeded > 0;
             const errorMessage = results.bluesky.failures.length > 0 
-              ? results.bluesky.failures.map(f => f.error).join('; ') 
+              ? results.bluesky.failures.map((f: any) => f.error).join('; ') 
               : undefined;
 
             // Update sources_followers table for MatchedFollower type
@@ -111,7 +123,8 @@ export const POST = withValidation(
             console.log('API', 'POST /api/migrate/send_follow', blueskyError, userId, {
               context: 'Bluesky follow operation'
             });
-            results.bluesky = { succeeded: 0, failures: [{ error: 'Failed to follow on Bluesky' }] };
+            const errMsg = (blueskyError instanceof Error && blueskyError.message) ? blueskyError.message : 'Failed to follow on Bluesky';
+            results.bluesky = { succeeded: 0, failures: [{ error: errMsg }] };
           }
         }
       }
@@ -145,7 +158,7 @@ export const POST = withValidation(
             if (results.mastodon.failures.length > 0) {
               console.log('API', 'POST /api/migrate/send_follow', 'Some Mastodon follows failed', userId, {
                 failureCount: results.mastodon.failures.length,
-                errors: results.mastodon.failures.map(f => f.error)
+                errors: results.mastodon.failures.map((f: any) => f.error)
               });
             }
 
@@ -161,7 +174,7 @@ export const POST = withValidation(
                 'mastodon',
                 results.mastodon.succeeded > 0,
                 results.mastodon.failures.length > 0 
-                  ? results.mastodon.failures.map(f => f.error).join('; ') 
+                  ? results.mastodon.failures.map((f: any) => f.error).join('; ') 
                   : undefined
               );
             }
@@ -174,7 +187,7 @@ export const POST = withValidation(
                 'mastodon',
                 results.mastodon.succeeded > 0,
                 results.mastodon.failures.length > 0 
-                  ? results.mastodon.failures.map(f => f.error).join('; ') 
+                  ? results.mastodon.failures.map((f: any) => f.error).join('; ') 
                   : undefined
               );
             }

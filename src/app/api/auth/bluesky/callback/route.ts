@@ -40,6 +40,12 @@ async function callbackHandler(request: NextRequest) {
 
     // Complete OAuth flow and get session
     const { session, state } = await client.callback(searchParams);
+
+    console.log('[Bluesky OAuth Callback] Session:', session);
+    console.log('[Bluesky OAuth Callback] typeof Session:', typeof (session as any).dpopFetch)
+    console.log('[Bluesky OAuth Callback] typeof Session:', typeof (session as any)?.dpopFetch)
+    console.log('[Bluesky OAuth Callback] token_type:', session?.tokenSet?.token_type)
+    console.log('[Bluesky OAuth Callback] scope:', session?.tokenSet?.scope)
     
     const did = (session as any)?.sub;
     if (!did) {
@@ -50,8 +56,10 @@ async function callbackHandler(request: NextRequest) {
     console.log('[Bluesky OAuth Callback] DID extracted:', did);
 
     // Extract tokens from Redis directly since we can see the structure
-    let accessJwt: string | undefined;
-    let refreshJwt: string | undefined;
+    let accessToken: string | undefined;
+    let refreshToken: string | undefined;
+    let tokenType: string | undefined;
+    let scope: string | undefined;
     let handle: string | undefined;
 
     try {
@@ -72,14 +80,17 @@ async function callbackHandler(request: NextRequest) {
         // Extract tokens from the correct location
         const tokenSet = sessionData.tokenSet;
         if (tokenSet) {
-          accessJwt = tokenSet.access_token;  // Note: it's access_token, not accessJwt
-          refreshJwt = tokenSet.refresh_token; // Note: it's refresh_token, not refreshJwt
+          accessToken = tokenSet.access_token;
+          refreshToken = tokenSet.refresh_token;
+          tokenType = tokenSet.token_type;
+          scope = tokenSet.scope;
           
           console.log('[Token Extraction] Tokens extracted from Redis:', {
-            hasAccessToken: !!accessJwt,
-            hasRefreshToken: !!refreshJwt,
-            tokenType: tokenSet.token_type,
-            accessTokenPreview: accessJwt ? `${accessJwt.substring(0, 30)}...` : 'none'
+            hasAccessToken: !!accessToken,
+            hasRefreshToken: !!refreshToken,
+            tokenType,
+            scope,
+            accessTokenPreview: accessToken ? `${accessToken.substring(0, 30)}...` : 'none'
           });
         }
       } else {
@@ -164,12 +175,6 @@ async function callbackHandler(request: NextRequest) {
 
     console.log('[Bluesky OAuth] Final profile data:', profile);
 
-    // Store tokens in your format (accessJwt/refreshJwt instead of access_token/refresh_token)
-    const tokensForStorage = {
-      accessJwt: accessJwt,     // Convert to your expected format
-      refreshJwt: refreshJwt,   // Convert to your expected format
-    };
-
     // Continue with user account linking
     const currentSession = await auth();
     let userId = currentSession?.user?.id || undefined;
@@ -179,12 +184,14 @@ async function callbackHandler(request: NextRequest) {
       userId = existingUser.id;
       await blueskyRepository.updateBlueskyProfile(userId, profile);
       
-      if (accessJwt && refreshJwt) {
+      if (accessToken && refreshToken) {
         await blueskyRepository.linkBlueskyAccount(userId, { 
           did, 
           handle: profile.handle, 
-          accessJwt, 
-          refreshJwt 
+          accessJwt: accessToken, 
+          refreshJwt: refreshToken,
+          scope,
+          token_type: tokenType,
         });
         console.log('[Account Link] Updated existing user with tokens');
       } else {
@@ -193,12 +200,14 @@ async function callbackHandler(request: NextRequest) {
     } else if (userId) {
       await blueskyRepository.updateBlueskyProfile(userId, profile);
       
-      if (accessJwt && refreshJwt) {
+      if (accessToken && refreshToken) {
         await blueskyRepository.linkBlueskyAccount(userId, { 
           did, 
           handle: profile.handle, 
-          accessJwt, 
-          refreshJwt 
+          accessJwt: accessToken, 
+          refreshJwt: refreshToken,
+          scope,
+          token_type: tokenType,
         });
         console.log('[Account Link] Linked to current user with tokens');
       } else {
@@ -216,12 +225,14 @@ async function callbackHandler(request: NextRequest) {
       });
       userId = user.id;
       
-      if (accessJwt && refreshJwt) {
+      if (accessToken && refreshToken) {
         await blueskyRepository.linkBlueskyAccount(userId, { 
           did, 
           handle: profile.handle, 
-          accessJwt, 
-          refreshJwt 
+          accessJwt: accessToken, 
+          refreshJwt: refreshToken,
+          scope,
+          token_type: tokenType,
         });
         console.log('[Account Link] Created new user with tokens');
       } else {

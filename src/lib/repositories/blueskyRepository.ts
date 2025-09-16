@@ -29,9 +29,9 @@ export class BlueskyRepository implements IBlueskyRepository {
         providerAccountId: blueskyData.did,
         access_token: encrypt(blueskyData.accessJwt),
         refresh_token: encrypt(blueskyData.refreshJwt),
-        token_type: 'bearer',
+        token_type: blueskyData.token_type || 'bearer',
         userId,
-        scope: undefined
+        scope: blueskyData.scope
       })
     } catch (error) {
       logError('Repository', 'BlueskyRepository.linkBlueskyAccount', error, userId, { 
