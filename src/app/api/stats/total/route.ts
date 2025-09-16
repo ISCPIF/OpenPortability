@@ -27,7 +27,9 @@ export const GET = withValidation(
       
       return NextResponse.json(stats);
     } catch (error) {
-      logger.logError('API', 'GET /api/stats/total', error, session?.user?.id || 'anonymous', {
+      const err = error instanceof Error ? error : new Error(String(error))
+
+      logger.logError('API', 'GET /api/stats/total', err, session?.user?.id || 'anonymous', {
         context: 'Failed to retrieve global stats'
       });
       
