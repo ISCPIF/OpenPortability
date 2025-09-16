@@ -133,7 +133,7 @@ export class StatsRepository {
           throw error;
         }
 
-        return data;
+        return data as GlobalStats;
       }
     }
 
