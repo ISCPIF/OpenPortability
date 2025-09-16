@@ -114,8 +114,8 @@ export const POST = withValidation(
             // Update sources_targets table for MatchingTarget type
             if (matchingTargets.length > 0) {
               const targetIds = matchingTargets
-                .map(acc => Number((acc as any).node_id))
-                .filter((id): id is number => Number.isFinite(id));
+                .map(acc => String((acc as any).node_id))
+                .filter((id): id is string => !!id && id.trim().length > 0);
               if (targetIds.length > 0) {
                 await matchingService.updateFollowStatusBatch(
                   userId,
@@ -189,8 +189,8 @@ export const POST = withValidation(
             // Update sources_targets table for MatchingTarget type
             if (matchingTargets.length > 0) {
               const targetIds = matchingTargets
-                .map(acc => Number((acc as any).node_id))
-                .filter((id): id is number => Number.isFinite(id));
+                .map(acc => String((acc as any).node_id))
+                .filter((id): id is string => !!id && id.trim().length > 0);
               if (targetIds.length > 0) {
                 await matchingService.updateFollowStatusBatch(
                   userId,
