@@ -17,7 +17,6 @@ export interface CustomAdapterUser extends Omit<AdapterUser, 'image'> {
   hqx_newsletter: boolean
   oep_accepted: boolean
   have_seen_newsletter: boolean
-  // have_seen_bot_newsletter: boolean
   research_accepted: boolean
   automatic_reconnect: boolean
   twitter_id?: string | null
@@ -579,7 +578,6 @@ export async function getUser(id: string): Promise<CustomAdapterUser | null> {
     hqx_newsletter: user.hqx_newsletter,
     oep_accepted: user.oep_accepted,
     have_seen_newsletter: user.have_seen_newsletter,
-    // have_seen_bot_newsletter: user.have_seen_bot_newsletter,
     research_accepted: user.research_accepted,
     automatic_reconnect: user.automatic_reconnect,
     facebook_id: user.facebook_id,
@@ -642,7 +640,6 @@ export async function getUserByAccount({ providerAccountId, provider }): Promise
     hqx_newsletter: user.hqx_newsletter,
     oep_accepted: user.oep_accepted,
     have_seen_newsletter: user.have_seen_newsletter,
-    // have_seen_bot_newsletter: user.have_seen_bot_newsletter,
     research_accepted: user.research_accepted,
     automatic_reconnect: user.automatic_reconnect,
     email: "none",
@@ -747,7 +744,6 @@ export async function updateUser(
     hqx_newsletter: user.hqx_newsletter,
     oep_accepted: user.oep_accepted,
     have_seen_newsletter: user.have_seen_newsletter,
-    // have_seen_bot_newsletter: user.have_seen_bot_newsletter,
     research_accepted: user.research_accepted,
     automatic_reconnect: user.automatic_reconnect,
     email: "none",
@@ -855,7 +851,6 @@ export async function getSessionAndUser(sessionToken: string): Promise<{ session
       hqx_newsletter: user.hqx_newsletter,
       oep_accepted: user.oep_accepted,
       have_seen_newsletter: user.have_seen_newsletter,
-      // have_seen_bot_newsletter: user.have_seen_bot_newsletter,
       research_accepted: user.research_accepted,
       automatic_reconnect: user.automatic_reconnect,
       email: "none",

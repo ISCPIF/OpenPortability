@@ -12,7 +12,6 @@ declare module "next-auth" {
       research_accepted : boolean
       have_seen_newsletter: boolean
       automatic_reconnect: boolean
-      have_seen_bot_newsletter: boolean
       twitter_id?: string | null
       twitter_username?: string | null
       twitter_image?: string | null
@@ -33,7 +32,6 @@ declare module "next-auth" {
     oep_accepted: boolean
     research_accepted : boolean
     have_seen_newsletter: boolean
-    have_seen_bot_newsletter : boolean
     automatic_reconnect: boolean
     twitter_id?: string | null
     twitter_username?: string | null
@@ -56,7 +54,6 @@ declare module "next-auth/jwt" {
     oep_accepted: boolean
     research_accepted : boolean
     have_seen_newsletter: boolean
-    have_seen_bot_newsletter : boolean
     automatic_reconnect: boolean
     twitter_id?: string
     twitter_username?: string
