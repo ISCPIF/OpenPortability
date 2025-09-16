@@ -25,6 +25,42 @@ export interface NewsletterData {
 }
 
 /**
+ * Updates multiple newsletter consents in a single request
+ */
+export const updateNewsletterConsents = async (
+  consents: Consent[],
+  email?: string | null
+): Promise<boolean> => {
+  try {
+    const payload: any = {
+      consents
+    };
+
+    // Optionally include a valid email
+    if (email && typeof email === 'string' && email.trim() && email.includes('@')) {
+      payload.email = email.trim();
+    }
+
+    const response = await fetch('/api/newsletter/request', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to update newsletter consents');
+    }
+
+    await response.json();
+    return true;
+  } catch (error) {
+    console.error('Error updating newsletter consents:', error);
+    return false;
+  }
+};
+
+
+/**
  * Fetches all newsletter data
  */
 export const fetchNewsletterData = async (): Promise<RawNewsletterResponse> => {
