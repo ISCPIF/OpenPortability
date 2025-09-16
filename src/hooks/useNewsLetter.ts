@@ -3,6 +3,7 @@ import { useSession } from 'next-auth/react';
 import {
   fetchNewsletterData,
   updateNewsletterConsent,
+  updateNewsletterConsents,
   ConsentType,
   NewsletterData,
   RawNewsletterResponse
@@ -135,7 +136,7 @@ export function useNewsletter() {
         }
       }));
 
-      const success = await updateNewsletterConsent({ consents, email });
+      const success = await updateNewsletterConsents(consents, email);
 
       if (!success) {
         // Revert on failure

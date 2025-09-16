@@ -4,7 +4,7 @@ import { auth } from '@/app/auth';
 import logger from '@/lib/log_utils';
 import { secureSupportContentExtended, type SupportFormData } from '@/lib/security-utils';
 import { withValidation } from '@/lib/validation/middleware';
-import { SupportRequestSchema, type SupportRequestSchema as SupportInput } from '@/lib/validation/schemas';
+import { SupportRequestSchema, type SupportRequest } from '@/lib/validation/schemas';
 
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
@@ -19,7 +19,7 @@ const transporter = nodemailer.createTransport({
 // Handler avec le nouveau middleware
 export const POST = withValidation(
   SupportRequestSchema,
-  async (request: NextRequest, data: SupportInput) => {
+  async (request: NextRequest, data: SupportRequest) => {
 
 
     console.log('API', 'POST /api/support', data);

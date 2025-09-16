@@ -6,23 +6,23 @@ import dynamic from 'next/dynamic';
 import { useRouter, useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import seaBackground from '../../../../public/sea-wave.svg';
-import ErrorModal from "../../_components/ErrorModal";
-import ConsentModal from "../../_components/ConsentModal";
-import Header from '../../_components/Header';
+import ErrorModal from "../../_components/modales/ErrorModal";
+import ConsentModal from "../../_components/modales/ConsentModal";
+import Header from '../../_components/layouts/Header';
 import * as zip from '@zip.js/zip.js';
-import { validateTwitterData, extractTargetFiles } from '../../_components/UploadButton';
+import { validateTwitterData, extractTargetFiles } from '../../_components/uploads/UploadButton';
 import Image from 'next/image';
 // import seaBackground from '../../../public/sea.svg'
 import { plex } from '../../fonts/plex';
 import { motion } from 'framer-motion';
 import { AlertCircle, Play } from 'lucide-react';
 import boat1 from '../../../public/boats/boat-1.svg'
-import Footer from "@/app/_components/Footer";
-import LoadingIndicator from '@/app/_components/LoadingIndicator';
-import SupportModal from '../../_components/SupportModale';
+import Footer from "@/app/_components/layouts/Footer";
+import LoadingIndicator from '@/app/_components/layouts/LoadingIndicator';
+import SupportModal from '../../_components/modales/SupportModale';
 import logo from '../../../../public/logo/logo-openport-blanc.svg';
 
-const UploadButton = dynamic(() => import('../../_components/UploadButton'), {
+const UploadButton = dynamic(() => import('../../_components/uploads/UploadButton'), {
   loading: () => <div className="animate-pulse bg-gray-200 h-12 w-48 rounded-lg"></div>,
   ssr: false
 });
@@ -289,7 +289,14 @@ export default function UploadPage() {
           throw new Error(`Invalid follower data: ${validationError}`);
         }
 
-        formData.append('files', new Blob([content], { type: 'application/javascript' }), 'follower.js');
+        formData.append(
+          'files',
+          new Blob(
+            [content.buffer.slice(content.byteOffset, content.byteOffset + content.byteLength) as ArrayBuffer],
+            { type: 'application/javascript' }
+          ),
+          'follower.js'
+        );
         fileCounts.follower = count;
       } else {
         // Chercher le fichier follower.js standard
@@ -300,8 +307,12 @@ export default function UploadPage() {
           if (validationError) {
             throw new Error(`Invalid follower data: ${validationError}`);
           }
-          formData.append('files', new Blob([followerFile.content], { type: 'application/javascript' }), 'follower.js');
-          fileCounts.follower = (textContent.match(/"follower"\s*:/g) || []).length;
+          const ab = followerFile.content.buffer.slice(
+            followerFile.content.byteOffset,
+            followerFile.content.byteOffset + followerFile.content.byteLength
+          ) as ArrayBuffer;
+          
+          formData.append('files', new Blob([ab], { type: 'application/javascript' }), 'follower.js');          fileCounts.follower = (textContent.match(/"follower"\s*:/g) || []).length;
         }
       }
 
@@ -316,8 +327,12 @@ export default function UploadPage() {
           throw new Error(`Invalid following data: ${validationError}`);
         }
 
-        formData.append('files', new Blob([content], { type: 'application/javascript' }), 'following.js');
-        fileCounts.following = count;
+        const ab = content.buffer.slice(
+          content.byteOffset,
+          content.byteOffset + content.byteLength
+        ) as ArrayBuffer;
+        
+        formData.append('files', new Blob([ab], { type: 'application/javascript' }), 'following.js');        fileCounts.following = count;
       } else {
         const followingFile = processedFiles.find(f => f.name.toLowerCase() === 'following.js');
         if (followingFile) {
@@ -326,8 +341,12 @@ export default function UploadPage() {
           if (validationError) {
             throw new Error(`Invalid following data: ${validationError}`);
           }
-          formData.append('files', new Blob([followingFile.content], { type: 'application/javascript' }), 'following.js');
-          fileCounts.following = (textContent.match(/"following"\s*:/g) || []).length;
+          const ab2 = followingFile.content.buffer.slice(
+            followingFile.content.byteOffset,
+            followingFile.content.byteOffset + followingFile.content.byteLength
+          ) as ArrayBuffer;
+          
+          formData.append('files', new Blob([ab2], { type: 'application/javascript' }), 'following.js');          fileCounts.following = (textContent.match(/"following"\s*:/g) || []).length;
         }
       }
 
@@ -512,7 +531,11 @@ export default function UploadPage() {
 
               {!isUploading && (
                 <div className="space-y-4">
-                  <UploadButton onFilesSelected={handleFilesSelected} onError={handleUploadError} />
+                  <UploadButton
+                    onFilesSelected={handleFilesSelected}
+                    onError={handleUploadError}
+                    onUploadComplete={() => {}}
+                  />
                 </div>
               )}
 
