@@ -69,18 +69,7 @@ export const authConfig = {
     }
   },
   callbacks: {
-    async signIn({ user, account, profile, error }) {
-      console.log('Auth', 'signIn', 'SignIn callback initiated', user?.id, { 
-        provider: account?.provider,
-        errorExists: !!error,
-        profileExists: !!profile
-      });
-
-      
-      if (error) {
-        console.log('Auth', 'signIn', error, user?.id, { provider: account?.provider });
-      }
-
+    async signIn({ user, account, profile }) {
       if (!account) {
         console.log('Auth', 'signIn', 'No account provided during sign in', user?.id);
         return false;
@@ -320,74 +309,6 @@ export const authConfig = {
         }
       }
     },
-    // {
-    //   id: "bluesky",
-    //   name: "Bluesky",
-    //   type: "oauth",
-    //   clientId: process.env.BLUESKY_CLIENT_ID,
-    //   issuer: "https://bsky.social",
-    //   authorization: {
-    //     url: "https://app.beta.v2.helloquitx.com/api/auth/bluesky",
-    //     params: { 
-    //       response_type: "code",
-    //       scope: "openid profile email"
-    //     }
-    //   },
-    //   token: {
-    //     url: "https://app.beta.v2.helloquitx.com/api/auth/bluesky",
-    //     async request({ params }) {
-    //       const response = await fetch("/api/auth/bluesky", {
-    //         method: "POST",
-    //         headers: { "Content-Type": "application/json" },
-    //         body: JSON.stringify({
-    //           identifier: params.username,
-    //           password: params.password
-    //         })
-    //       });
-          
-    //       const data = await response.json();
-    //       if (!response.ok) {
-    //         throw new Error(data.error || "Authentication failed");
-    //       }
-          
-    //       return {
-    //         tokens: {
-    //           access_token: data.accessJwt,
-    //           refresh_token: data.refreshJwt,
-    //           did: data.did,
-    //           handle: data.handle
-    //         }
-    //       };
-    //     }
-    //   },
-    //   userinfo: {
-    //     url: "https://app.beta.v2.helloquitx.com/api/auth/bluesky/userinfo",
-    //     async request({ tokens }) {
-    //       const agent = new BskyAgent({ service: 'https://bsky.social' });
-    //       await agent.resumeSession({
-    //         accessJwt: tokens.access_token,
-    //         refreshJwt: tokens.refresh_token,
-    //         did: tokens.did,
-    //         handle: tokens.handle,
-    //         active: true
-    //       });
-          
-    //       const profile = await agent.getProfile({ actor: tokens.did });
-    //       return profile.data;
-    //     }
-    //   },
-    //   profile(profile) {
-    //     return {
-    //       id: profile.did,
-    //       name: profile.displayName || profile.handle,
-    //       email: null,
-    //       image: profile.avatar,
-    //       has_onboarded: false,
-    //       hqx_newsletter: false,
-    //       oep_accepted: false
-    //     }
-    //   }
-    // },
     TwitterProvider({
       clientId: process.env.TWITTER_CLIENT_ID!,
       clientSecret: process.env.TWITTER_CLIENT_SECRET!,
@@ -423,10 +344,6 @@ export const authConfig = {
           automatic_reconnect: false
         }
       },
-      // userinfo: {
-      //   url: "https://api.twitter.com/2/users/me",
-      //   params: { "user.fields": "profile_image_url,description" }
-      // }
     }),
     MastodonProvider({
       id: "mastodon",
