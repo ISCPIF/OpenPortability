@@ -16,7 +16,8 @@ export class BlueskyRepository implements IBlueskyRepository {
         providerAccountId: did
       })
     } catch (error) {
-      logError('Repository', 'BlueskyRepository.getUserByBlueskyId', error, 'unknown', { did });
+      const err = error instanceof Error ? error : new Error(String(error));
+      logError('Repository', 'BlueskyRepository.getUserByBlueskyId', err, 'unknown', { did });
       return null;
     }
   }
@@ -29,12 +30,13 @@ export class BlueskyRepository implements IBlueskyRepository {
         providerAccountId: blueskyData.did,
         access_token: encrypt(blueskyData.accessJwt),
         refresh_token: encrypt(blueskyData.refreshJwt),
-        token_type: blueskyData.token_type || 'bearer',
+        token_type: ((blueskyData.token_type || 'bearer') as string).toLowerCase() as Lowercase<string>,
         userId,
         scope: blueskyData.scope
       })
     } catch (error) {
-      logError('Repository', 'BlueskyRepository.linkBlueskyAccount', error, userId, { 
+      const err = error instanceof Error ? error : new Error(String(error));
+      logError('Repository', 'BlueskyRepository.linkBlueskyAccount', err, userId, { 
         did: blueskyData.did,
         context: 'Linking Bluesky account'
       });
@@ -54,7 +56,8 @@ export class BlueskyRepository implements IBlueskyRepository {
         }
       })
     } catch (error) {
-      logError('Repository', 'BlueskyRepository.updateBlueskyProfile', error, userId, { 
+      const err = error instanceof Error ? error : new Error(String(error));
+      logError('Repository', 'BlueskyRepository.updateBlueskyProfile', err, userId, { 
         did: profile.did,
         handle: profile.handle,
         context: 'Updating Bluesky profile'
