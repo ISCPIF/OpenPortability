@@ -44,7 +44,8 @@ async function largeFilesUploadHandler(request: Request, _validatedData: z.infer
       .in('status', ['pending', 'processing']);
 
     if (jobCheckError) {
-      console.log('API', 'POST /api/upload/large-files', jobCheckError as string, user.id, {
+      const err = jobCheckError instanceof Error ? jobCheckError : new Error(String(jobCheckError));
+      console.log('API', 'POST /api/upload/large-files', err, user.id, {
         context: 'Checking existing jobs'
       });
       return NextResponse.json(
@@ -163,7 +164,8 @@ async function largeFilesUploadHandler(request: Request, _validatedData: z.infer
           );
         }
       } catch (securityError) {
-        console.log('Security', 'Error analyzing file content', securityError as string, user.id, {
+        const err = securityError instanceof Error ? securityError : new Error(String(securityError));
+        console.log('Security', 'Error analyzing file content', err, user.id, {
           context: 'File upload security check',
           fileName: file.name
         });
@@ -201,7 +203,8 @@ async function largeFilesUploadHandler(request: Request, _validatedData: z.infer
           fileSize: file.size
         });
       } catch (error) {
-        console.log('API', 'POST /api/upload/large-files', error as string, user.id, {
+        const err = error instanceof Error ? error : new Error(String(error));
+        console.log('API', 'POST /api/upload/large-files', err, user.id, {
           context: `Saving file ${(fileEntry as File).name}`
         });
         
@@ -236,7 +239,8 @@ async function largeFilesUploadHandler(request: Request, _validatedData: z.infer
       .single();
 
     if (jobError) {
-      console.log('API', 'POST /api/upload/large-files', jobError as string, user.id, {
+      const err = jobError instanceof Error ? jobError : new Error(String(jobError));
+      console.log('API', 'POST /api/upload/large-files', err, user.id, {
         context: 'Creating import job'
       });
       return NextResponse.json(
@@ -280,7 +284,8 @@ async function largeFilesUploadHandler(request: Request, _validatedData: z.infer
   } catch (error) {
     // En cas d'erreur, essayer de récupérer l'ID utilisateur si possible
     const userId = session?.user?.id || 'unknown';
-    console.log('API', 'POST /api/upload/large-files', error as string, userId, {
+    const err = error instanceof Error ? error : new Error(String(error));
+    console.log('API', 'POST /api/upload/large-files', err, userId, {
       context: 'Processing upload'
     });
     return NextResponse.json(
