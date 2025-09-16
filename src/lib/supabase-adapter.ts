@@ -589,7 +589,9 @@ export async function getUserByEmail(email: string): Promise<CustomAdapterUser |
   return null
 }
 
-export async function getUserByAccount({ providerAccountId, provider }): Promise<CustomAdapterUser | null> {
+export async function getUserByAccount(
+  { providerAccountId, provider }: { providerAccountId: string; provider: 'twitter' | 'bluesky' | 'mastodon' | 'piaille' | 'facebook' }
+): Promise<CustomAdapterUser | null> {
 
   let column: string
   if (provider === 'twitter') {
@@ -617,11 +619,6 @@ export async function getUserByAccount({ providerAccountId, provider }): Promise
   }
 
   if (!user) return null
-
-  // For Piaille accounts, we need to verify the instance
-  if (provider === 'piaille' && user.mastodon_instance !== 'piaille.fr') {
-    return null
-  }
 
   return {
     id: user.id,
