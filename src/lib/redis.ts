@@ -18,13 +18,14 @@ const redisConfig = {
   
   // Pool de connexions optimisé
   family: 4,
-  keepAlive: true,
+  // Enable TCP keep-alive with an initial delay (ms)
+  keepAlive: 10000,
   
   // Timeouts plus longs pour éviter les déconnexions
   maxLoadingTimeout: 10000, // 10s au lieu de 5s
   
   // Nouvelles options pour stabilité
-  reconnectOnError: (err) => {
+  reconnectOnError: (err: Error) => {
     const targetError = 'READONLY';
     return err.message.includes(targetError);
   },
