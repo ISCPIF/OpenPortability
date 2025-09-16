@@ -29,7 +29,7 @@ interface LoginButtonsProps {
 }
 
 export default function LoginButtons({ onLoadingChange, onError }: LoginButtonsProps) {
-  const [showAlternatives, setShowAlternatives] = useState(false)
+  const [showAlternatives, setShowAlternatives] = useState(true)
   const [activeService, setActiveService] = useState<ActiveService>(null)
   const [error, setError] = useState<string | null>(null)
   const mastodonInstances = useMastodonInstances()
