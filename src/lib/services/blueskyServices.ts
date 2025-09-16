@@ -272,7 +272,7 @@ export class BlueskyService implements IBlueskyService {
 
       const response = await agent.api.com.atproto.repo.applyWrites({
         repo: userDid,
-        writes,
+        writes: writes as any,
         validate: true,
       });
 
@@ -324,7 +324,7 @@ export class BlueskyService implements IBlueskyService {
       
       const response = await this.agent.api.com.atproto.repo.applyWrites({
         repo: this.agent.session?.did!,
-        writes,
+        writes: writes as any,
         validate: true
       });
 
