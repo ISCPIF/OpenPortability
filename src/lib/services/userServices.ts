@@ -260,56 +260,6 @@ export class UserService {
     await this.repository.updateLanguagePreference(userId, language.toLowerCase());
   }
 
-  /**
-   * Désactive complètement le support personnalisé pour un utilisateur
-   * - Supprime tous les enregistrements personalized_support_listing
-   * - Supprime les tâches Python en attente (send-reco-newsletter)
-   * - Force la désactivation des consents bluesky_dm et mastodon_dm
-   * 
-   * @param userId Identifiant de l'utilisateur
-   * @param metadata Métadonnées pour les logs
-   */
-  async disablePersonalizedSupport(userId: string, metadata: Record<string, any> = {}): Promise<void> {
-    try {
-      // 1. Supprimer tous les enregistrements personalized_support_listing
-      await this.repository.deletePersonalizedSupportListing(userId);
-
-      // 2. Supprimer les tâches Python en attente (send-reco-newsletter)
-      await this.repository.deletePendingPythonTasks(userId, undefined, 'send-reco-newsletter');
-
-      // 3. Force désactivation des consents bluesky_dm et mastodon_dm
-      await this.forceDisablePlatformConsents(userId, metadata);
-
-    } catch (error) {
-      console.error('❌ [UserService.disablePersonalizedSupport] Error:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Force la désactivation des consents bluesky_dm et mastodon_dm
-   * 
-   * @param userId Identifiant de l'utilisateur
-   * @param metadata Métadonnées pour les logs
-   */
-  private async forceDisablePlatformConsents(userId: string, metadata: Record<string, any> = {}): Promise<void> {
-    const platforms = ['bluesky_dm', 'mastodon_dm'];
-    
-    for (const consentType of platforms) {
-      try {
-        // Vérifier si un consent actif existe
-        const consents = await this.repository.getUserActiveConsents(userId);
-        
-        if (consents[consentType]) {
-          // Insérer un nouveau consent désactivé
-          await this.repository.insertNewsletterConsent(userId, consentType, false, metadata);
-        }
-      } catch (error) {
-        console.error(`❌ [UserService.forceDisablePlatformConsents] Error for ${consentType}:`, error);
-        // Continue avec les autres plateformes même en cas d'erreur
-      }
-    }
-  }
 
   /**
    * Active le support personnalisé pour une plateforme spécifique
@@ -342,33 +292,6 @@ export class UserService {
     }
   }
 
-  /**
-   * Désactive le support personnalisé pour une plateforme spécifique
-   * - Supprime de personalized_support_listing
-   * - Supprime les tâches Python en attente pour cette plateforme
-   * 
-   * @param userId Identifiant de l'utilisateur
-   * @param platform Plateforme (bluesky ou mastodon)
-   */
-  async disablePersonalizedSupportForPlatform(
-    userId: string, 
-    platform: 'bluesky' | 'mastodon',
-    metadata: Record<string, any> = {}
-  ): Promise<void> {
-    try {
-      const consentType = `${platform}_dm`;
-      
-      // 1. Insérer un consent désactivé dans newsletter_consents (source unique de vérité)
-      await this.repository.insertNewsletterConsent(userId, consentType, false, metadata);
-
-      // 2. Supprimer les tâches Python en attente pour cette plateforme
-      await this.repository.deletePendingPythonTasks(userId, platform, 'send-reco-newsletter');
-
-    } catch (error) {
-      console.error(`❌ [UserService.disablePersonalizedSupportForPlatform] Error for ${platform}:`, error);
-      throw error;
-    }
-  }
 
   /**
    * Crée une tâche test-dm dans Redis avec déduplication
