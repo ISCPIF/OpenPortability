@@ -115,6 +115,13 @@ export async function createBlueskyOAuthClient() {
           const key = `bsky:session:${sub}`;
           await redis.set(key, JSON.stringify(session), 'EX', 60 * 60 * 24 * 30); // 30 days
           console.log('[BlueskyOAuthClient] sessionStore.set()', { key, hasSession: !!session });
+          console.log('[BlueskyOAuthClient] sessionStore.set() summary', {
+            sub,
+            hasTokenSet: !!session?.tokenSet,
+            tokenType: session?.tokenSet?.token_type,
+            scope: session?.tokenSet?.scope,
+            hasDpopJwk: !!session?.dpopJwk,
+          });
         } catch (e: any) {
           console.warn('[BlueskyOAuthClient] sessionStore.set() failed; proceeding without persistence', { message: e?.message });
         }
@@ -127,7 +134,22 @@ export async function createBlueskyOAuthClient() {
           const raw = await redis.get(key);
           const exists = !!raw;
           console.log('[BlueskyOAuthClient] sessionStore.get()', { key, exists });
-          return raw ? JSON.parse(raw) : undefined;
+          if (!raw) return undefined;
+          try {
+            const parsed = JSON.parse(raw);
+            const tokenSet = parsed?.tokenSet || {};
+            console.log('[BlueskyOAuthClient] sessionStore.get() summary', {
+              sub,
+              hasTokenSet: !!parsed?.tokenSet,
+              tokenType: tokenSet?.token_type,
+              scope: tokenSet?.scope,
+              hasDpopJwk: !!parsed?.dpopJwk,
+            });
+            return parsed;
+          } catch (e: any) {
+            console.warn('[BlueskyOAuthClient] sessionStore.get() parse failed', { message: e?.message });
+            return undefined;
+          }
         } catch (e: any) {
           console.warn('[BlueskyOAuthClient] sessionStore.get() failed; proceeding without persistence', { message: e?.message });
           return undefined;
@@ -146,6 +168,11 @@ export async function createBlueskyOAuthClient() {
       },
     },
   });
+  console.log('[BlueskyOAuthClient] client summary', {
+    hasSessionGetter: !!(client as any)?.sessionGetter,
+    sessionGetterHasGet: typeof (client as any)?.sessionGetter?.get === 'function',
+  });
+  console.log("[BlueskyOAuthClient] Client created", client);
 
   return client;
 }
