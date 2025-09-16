@@ -10,6 +10,8 @@ export interface BlueskySessionData {
   refreshJwt: string
   handle: string
   did: string
+  scope?: string
+  token_type?: string
 }
 
 export interface BlueskyAuthResult {
