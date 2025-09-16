@@ -500,7 +500,7 @@ export function withValidation<Out, In = Out>(
                           path: e.path.join('.'),
                           message: e.message
                         }))
-                      : [{ path: '', message: `Invalid JSON format: ${jsonError.message}` }]
+                      : [{ path: '', message: `Invalid JSON format: ${jsonError instanceof Error ? jsonError.message : String(jsonError)}` }]
                   },
                   { status: 400 }
                 );
@@ -512,7 +512,7 @@ export function withValidation<Out, In = Out>(
               return NextResponse.json(
                 {
                   error: 'Validation failed',
-                  details: [{ path: '', message: `Invalid JSON format: ${jsonError.message}` }]
+                  details: [{ path: '', message: `Invalid JSON format: ${jsonError instanceof Error ? jsonError.message : String(jsonError)}` }]
                 },
                 { status: 400 }
               );
