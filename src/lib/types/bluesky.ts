@@ -1,3 +1,5 @@
+import { User } from "next-auth"
+
 export interface BlueskyProfile {
   did: string
   handle: string
