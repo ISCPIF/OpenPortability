@@ -9,13 +9,15 @@ import { supabase } from '@/lib/supabase'
 import { MatchingTarget, MatchedFollower } from '@/lib/types/matching'
 import logger from '@/lib/log_utils'
 import { withValidation } from '@/lib/validation/middleware'
-import { SendFollowRequestSchema } from '@/lib/validation/schemas'
+import { SendFollowRequestSchema, MatchingAccountSchema } from '@/lib/validation/schemas'
 import { z } from 'zod'
 
-type AccountToFollow = MatchingTarget | MatchedFollower;
+// Use the schema-inferred type to match the incoming payload shape
+type AccountToFollow = z.infer<typeof MatchingAccountSchema>;
 
+// Type guard: treat as MatchedFollower when a string source_twitter_id is present
 function isMatchedFollower(account: AccountToFollow): account is MatchedFollower {
-  return 'source_twitter_id' in account;
+  return typeof (account as any).source_twitter_id === 'string' && (account as any).source_twitter_id.length > 0;
 }
 
 /**
@@ -111,13 +113,18 @@ export const POST = withValidation(
 
             // Update sources_targets table for MatchingTarget type
             if (matchingTargets.length > 0) {
-              await matchingService.updateFollowStatusBatch(
-                userId,
-                matchingTargets.map(acc => acc.node_id),
-                'bluesky',
-                hasSuccess,
-                errorMessage
-              );
+              const targetIds = matchingTargets
+                .map(acc => Number((acc as any).node_id))
+                .filter((id): id is number => Number.isFinite(id));
+              if (targetIds.length > 0) {
+                await matchingService.updateFollowStatusBatch(
+                  userId,
+                  targetIds,
+                  'bluesky',
+                  hasSuccess,
+                  errorMessage
+                );
+              }
             }
           } catch (blueskyError) {
             console.log('API', 'POST /api/migrate/send_follow', blueskyError, userId, {
@@ -181,15 +188,20 @@ export const POST = withValidation(
 
             // Update sources_targets table for MatchingTarget type
             if (matchingTargets.length > 0) {
-              await matchingService.updateFollowStatusBatch(
-                userId,
-                matchingTargets.map(acc => acc.node_id),
-                'mastodon',
-                results.mastodon.succeeded > 0,
-                results.mastodon.failures.length > 0 
-                  ? results.mastodon.failures.map((f: any) => f.error).join('; ') 
-                  : undefined
-              );
+              const targetIds = matchingTargets
+                .map(acc => Number((acc as any).node_id))
+                .filter((id): id is number => Number.isFinite(id));
+              if (targetIds.length > 0) {
+                await matchingService.updateFollowStatusBatch(
+                  userId,
+                  targetIds,
+                  'mastodon',
+                  results.mastodon.succeeded > 0,
+                  results.mastodon.failures.length > 0 
+                    ? results.mastodon.failures.map((f: any) => f.error).join('; ') 
+                    : undefined
+                );
+              }
             }
           } catch (mastodonError) {
             console.log('API', 'POST /api/migrate/send_follow', mastodonError, userId, {
