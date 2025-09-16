@@ -207,7 +207,7 @@ export default function LargeFilesPage() {
       // Redirection après 10 secondes
       const redirectTimeout = setTimeout(() => {
         const locale = params.locale as string || 'fr';
-        // router.push(`/${locale}/reconnect`);
+        router.push(`/${locale}/reconnect`);
       }, 10000); // 10 secondes
 
       return () => {
