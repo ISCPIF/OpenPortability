@@ -96,7 +96,8 @@ function getLogFileStream(level: LogLevel): fs.WriteStream | null {
     
     return stream;
   } catch (error) {
-    console.error(`Erreur lors de la création du dossier de logs ou du stream: ${error.message}`);
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error(`Erreur lors de la création du dossier de logs ou du stream: ${msg}`);
     return null;
   }
 }
@@ -122,7 +123,8 @@ function getErrorWarningStream(): fs.WriteStream | null {
     
     return stream;
   } catch (error) {
-    console.error(`Erreur lors de la création du stream pour erreurs et warnings: ${error.message}`);
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error(`Erreur lors de la création du stream pour erreurs et warnings: ${msg}`);
     return null;
   }
 }
@@ -380,7 +382,8 @@ export function withLogging(handler: Function) {
       endTimer();
       
       // Enregistrer l'erreur
-      logError('API', req.nextUrl.pathname, error, userId, {
+      const err = error instanceof Error ? error : new Error(String(error));
+      logError('API', req.nextUrl.pathname, err, userId, {
         method: req.method,
         url: req.url
       }, undefined, requestId);
