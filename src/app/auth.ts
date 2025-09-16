@@ -120,23 +120,34 @@ export const { auth, signIn, signOut, handlers } = NextAuth(async req => {
     
     if (mastodonProvider) {     
       const issuer = `https://${instance}`;
-      mastodonProvider.issuer = issuer;
-      mastodonProvider.clientId = res.client_id;
-      mastodonProvider.clientSecret = res.client_secret;
+      // Narrow to an OAuth-like provider before mutation to satisfy TypeScript
+      const oauthProv = (mastodonProvider as unknown) as {
+        id: string;
+        type?: string;
+        issuer?: string;
+        clientId?: string;
+        clientSecret?: string;
+        authorization?: string | { url: string; params?: Record<string, any> };
+        token?: string | { url: string };
+        userinfo?: string | { url: string };
+      };
+      oauthProv.issuer = issuer;
+      oauthProv.clientId = res.client_id;
+      oauthProv.clientSecret = res.client_secret;
       const authParams = new URLSearchParams({
         scope: "read write:follows",
         force_login: "true",
       });
-      mastodonProvider.authorization = `${issuer}/oauth/authorize?${authParams.toString()}`;
-      mastodonProvider.token = `${issuer}/oauth/token`;
-      mastodonProvider.userinfo = `${issuer}/api/v1/accounts/verify_credentials`;
+      oauthProv.authorization = `${issuer}/oauth/authorize?${authParams.toString()}`;
+      oauthProv.token = `${issuer}/oauth/token`;
+      oauthProv.userinfo = `${issuer}/api/v1/accounts/verify_credentials`;
       
       logger.logInfo('Auth', 'mastodonSignIn', 
         `Configuration du provider Mastodon pour l'instance ${instance}`,
         undefined, 
         { 
           instance,
-          authorization: mastodonProvider.authorization
+          authorization: oauthProv.authorization
         }
       );
     } else {
