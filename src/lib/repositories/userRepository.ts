@@ -375,7 +375,7 @@ export class UserRepository {
         const pattern = `task_dedup:${userId}:${platform}:*`;
         const keys = await redis.keys(pattern);
         if (keys.length > 0) {
-          await redis.del(...keys);
+          await redis.redisClient.del(...keys);
           console.log(`🗑️ [cleanupRedisForDeletedTasks] Deleted ${keys.length} dedup keys for platform ${platform}`);
         }
       }
@@ -383,7 +383,7 @@ export class UserRepository {
         const pattern = `task_dedup:${userId}:*`;
         const keys = await redis.keys(pattern);
         if (keys.length > 0) {
-          await redis.del(...keys);
+          await redis.redisClient.del(...keys);
           console.log(`🗑️ [cleanupRedisForDeletedTasks] Deleted ${keys.length} dedup keys for user ${userId}`);
         }
       }
