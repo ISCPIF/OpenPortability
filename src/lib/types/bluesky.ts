@@ -1,3 +1,5 @@
+import { User } from "next-auth"
+
 export interface BlueskyProfile {
   did: string
   handle: string
@@ -10,6 +12,8 @@ export interface BlueskySessionData {
   refreshJwt: string
   handle: string
   did: string
+  scope?: string
+  token_type?: string
 }
 
 export interface BlueskyAuthResult {

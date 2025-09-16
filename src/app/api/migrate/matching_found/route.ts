@@ -40,16 +40,16 @@ async function matchingFoundHandler(_request: Request, _data: z.infer<typeof Emp
     // });
     
     // Adapter le format de réponse selon le type de résultat
-    const responseData = result?.following ? {
+    const responseData = (result && (result as any).following) ? {
       // Si result a une propriété 'following', on retourne la structure complète
       matches: result
     } : {
       // Si result est un tableau direct, on l'encapsule dans un objet avec 'following'
       matches: {
-        following: result || [],
+        following: Array.isArray(result) ? result : [],
         stats: {
-          total_following: result?.length || 0,
-          matched_following: result?.length || 0,
+          total_following: Array.isArray(result) ? result.length : 0,
+          matched_following: Array.isArray(result) ? result.length : 0,
           bluesky_matches: 0,
           mastodon_matches: 0
         }

@@ -1,11 +1,11 @@
-import { NextResponse } from "next/server"
-import logger from '@/lib/log_utils'
-import { withValidation } from "@/lib/validation/middleware"
-import { z } from "zod"
-import { authClient } from "@/lib/supabase"
+ import { NextResponse } from "next/server"
+ import logger from '@/lib/log_utils'
+ import { withValidation } from "@/lib/validation/middleware"
+ import { z } from "zod"
+ import { authClient } from "@/lib/supabase"
 
-// Classe d'erreur pour la déliaison de compte
-export class UnlinkError extends Error {
+ // Classe d'erreur pour la déliaison de compte (interne au module)
+ class UnlinkError extends Error {
   constructor(
     message: string,
     public code: 'LAST_ACCOUNT' | 'NOT_FOUND' | 'NOT_LINKED' | 'DATABASE_ERROR',
@@ -110,11 +110,11 @@ async function unlinkHandler(_req: Request, data: UnlinkRequest, session: any) {
     return NextResponse.json({ success: true })
   } catch (error) {
     const userId = session?.user?.id || 'unknown'
-    logger.logError('API', 'POST /api/auth/unlink', error, userId, {
-      name: error.name,
-      message: error.message
+    const err = error instanceof Error ? error : new Error(String(error))
+    logger.logError('API', 'POST /api/auth/unlink', err, userId, {
+      name: err.name,
+      message: err.message
     })
-    
     if (error instanceof UnlinkError) {
       return NextResponse.json(
         { error: error.message, code: error.code },

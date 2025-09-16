@@ -40,8 +40,9 @@ async function automaticReconnectHandler(
 
   } catch (error) {
     const userId = session?.user?.id || 'unknown';
+    const err = error instanceof Error ? error : new Error(String(error))
     
-    logger.logError('API', 'POST /api/users/automatic-reconnect', error, userId, {
+    logger.logError('API', 'POST /api/users/automatic-reconnect', err, userId, {
       context: 'Processing automatic reconnect request'
     });
     

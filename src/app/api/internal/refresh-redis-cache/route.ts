@@ -46,7 +46,8 @@ async function handleRefreshRedisCache(
 
   } catch (error) {
     const routeLabel = `${request.method} /api/internal/refresh-redis-cache`;
-    logger.logError('API', routeLabel, error, 'system', {
+    const err = error instanceof Error ? error : new Error(String(error))
+    logger.logError('API', routeLabel, err, 'system', {
       context: 'Failed to update Redis cache from GET request'
     });
 

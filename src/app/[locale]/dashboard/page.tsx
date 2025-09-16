@@ -2,18 +2,18 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import Header from '@/app/_components/Header';
+import Header from '@/app/_components/layouts/Header';
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { motion, AnimatePresence } from 'framer-motion';
-import Footer from '@/app/_components/Footer';
-import LoadingIndicator from '@/app/_components/LoadingIndicator';
-import LoginSea from "@/app/_components/LoginSea";
-import DashboardLoginButtons from '@/app/_components/DashboardLoginButtons';
+import Footer from '@/app/_components/layouts/Footer';
+import LoadingIndicator from '@/app/_components/layouts/LoadingIndicator';
+import LoginSea from "@/app/_components/layouts/LoginSea";
+import DashboardLoginButtons from '@/app/_components/logins/DashboardLoginButtons';
 import { useDashboardState } from '@/hooks/useDashboardState';
-import NewsletterSection from '@/app/_components/dashboard/NewsletterSection';
-import OnboardingSection from '@/app/_components/dashboard/OnboardingSection';
-import TutorialSection from '@/app/_components/dashboard/TutorialSection';
+import NewsletterSection from '@/app/_components/sections/dashboard/NewsletterSection';
+import OnboardingSection from '@/app/_components/sections/dashboard/OnboardingSection';
+import TutorialSection from '@/app/_components/sections/dashboard/TutorialSection';
 
 export default function DashboardPage() {
   const {

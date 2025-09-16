@@ -60,7 +60,8 @@ async function handleRefreshUserStatsCache(
     });
 
   } catch (error) {
-    logger.logError('WEBHOOK', 'POST /api/internal/refresh-user-stats-cache', error, 'system', {
+    const err = error instanceof Error ? error : new Error(String(error))
+    logger.logError('WEBHOOK', 'POST /api/internal/refresh-user-stats-cache', err, 'system', {
       context: 'Failed to update user stats cache from webhook'
     });
 

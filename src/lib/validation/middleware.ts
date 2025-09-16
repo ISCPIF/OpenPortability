@@ -18,6 +18,19 @@ import {
 import { detectXssPayload } from '@/lib/security/xss-detection';
 import { detectSqlInjectionPayload } from '@/lib/security/sql-detection';
 
+// Safe detector for Next.js redirect errors (e.g., NEXT_REDIRECT from NextAuth signIn)
+function isNextRedirect(err: unknown): boolean {
+  try {
+    const digest = (err as any)?.digest;
+    if (typeof digest === 'string' && digest.startsWith('NEXT_REDIRECT')) {
+      return true;
+    }
+    return !!(err && typeof err === 'object' && 'digest' in (err as any) && (err as any).digest === 'NEXT_REDIRECT');
+  } catch {
+    return false;
+  }
+}
+
 export interface ValidationOptions {
   requireAuth?: boolean;
   applySecurityChecks?: boolean;
@@ -282,9 +295,9 @@ function validateQueryParameters(
 /**
  * Wrapper de validation principal
  */
-export function withValidation<T>(
-  schema: z.ZodSchema<T>,
-  handler: (request: NextRequest, validatedData: T, session?: any) => Promise<NextResponse>,
+export function withValidation<Out, In = Out>(
+  schema: z.ZodType<Out, z.ZodTypeDef, In>,
+  handler: (request: NextRequest, validatedData: Out, session?: any) => Promise<NextResponse>,
   options: ValidationOptions = {}
 ) {
   return async (request: NextRequest): Promise<NextResponse> => {
@@ -412,7 +425,7 @@ export function withValidation<T>(
       }
       
       // 4. Parsing et validation Zod
-      let data: T;
+      let data: Out;
       try {
         // Ne parser le body que pour les méthodes qui en ont un
         if (['POST', 'PUT', 'PATCH'].includes(method)) {
@@ -487,7 +500,7 @@ export function withValidation<T>(
                           path: e.path.join('.'),
                           message: e.message
                         }))
-                      : [{ path: '', message: `Invalid JSON format: ${jsonError.message}` }]
+                      : [{ path: '', message: `Invalid JSON format: ${jsonError instanceof Error ? jsonError.message : String(jsonError)}` }]
                   },
                   { status: 400 }
                 );
@@ -499,7 +512,7 @@ export function withValidation<T>(
               return NextResponse.json(
                 {
                   error: 'Validation failed',
-                  details: [{ path: '', message: `Invalid JSON format: ${jsonError.message}` }]
+                  details: [{ path: '', message: `Invalid JSON format: ${jsonError instanceof Error ? jsonError.message : String(jsonError)}` }]
                 },
                 { status: 400 }
               );
@@ -572,17 +585,22 @@ export function withValidation<T>(
       return response;
       
     } catch (error) {
-      // logger.logError('API', `${method} ${endpoint}`, error instanceof Error ? error.message : 'Unknown error', {
-      //   context: 'Validation middleware error'
-      // });
-      
-      return NextResponse.json(
-        { error: 'Internal server error' },
-        { status: 500 }
-      );
-    }
-  };
-}
+      // Allow Next.js framework redirects (e.g., from NextAuth signIn) to bubble through
+      if (isNextRedirect(error)) {
+    
+        throw error;
+      }
+       // logger.logError('API', `${method} ${endpoint}`, error instanceof Error ? error.message : 'Unknown error', {
+       //   context: 'Validation middleware error'
+       // });
+       
+       return NextResponse.json(
+         { error: 'Internal server error' },
+         { status: 500 }
+       );
+     }
+   };
+ }
 
 /**
  * Version simplifiée pour les endpoints publics

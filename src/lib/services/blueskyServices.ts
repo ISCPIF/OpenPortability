@@ -1,4 +1,4 @@
-import { BskyAgent } from '@atproto/api'
+import { BskyAgent, Agent } from '@atproto/api'
 import { 
   IBlueskyService, 
   BlueskyAuthResult, 
@@ -65,6 +65,16 @@ export class BlueskyService implements IBlueskyService {
   }
 
   async resumeSession(sessionData: BlueskySessionData): Promise<void> {
+    // If the provided tokens come from OAuth (DPoP), they are not compatible with BskyAgent.
+    const isOAuth = (sessionData.token_type?.toUpperCase() === 'DPOP') ||
+                    (typeof sessionData.scope === 'string' && sessionData.scope.includes('atproto'))
+    if (isOAuth) {
+      throw new Error(
+        'Your Bluesky connection is OAuth-based (DPoP). This endpoint uses ATProto app-password sessions and cannot operate with OAuth tokens. ' +
+        'Please connect Bluesky using an app password to perform follow operations.'
+      )
+    }
+
     await this.agent.resumeSession({
       accessJwt: sessionData.accessJwt,
       refreshJwt: sessionData.refreshJwt,
@@ -102,6 +112,183 @@ export class BlueskyService implements IBlueskyService {
     return await this.batchFollowWithDetails(handles);
   }
 
+  // ===== OAuth (DPoP) support via dpopFetch =====
+  private async getOAuthSession(did: string): Promise<{ dpopFetch: any; scope?: string; token_type?: string } | null> {
+    try {
+      // Preferred: rehydrate a live session via the OAuth client restore() API (provides dpopFetch)
+      const { createBlueskyOAuthClient } = await import('../services/blueskyOAuthClient');
+      const client = await createBlueskyOAuthClient();
+      const canRestore = typeof (client as any)?.restore === 'function';
+      console.log('[BlueskyService.getOAuthSession] restore available:', { did, canRestore });
+      if (canRestore) {
+        const liveSession: any = await (client as any).restore(did);
+        console.log('[BlueskyService.getOAuthSession] restore result:', {
+          did,
+          hasLiveSession: !!liveSession,
+          hasDpopFetch: typeof liveSession?.dpopFetch === 'function',
+          tokenType: liveSession?.tokenSet?.token_type,
+          scope: liveSession?.tokenSet?.scope,
+        });
+        if (liveSession) {
+          // If the restored session has no tokenSet details, merge from Redis snapshot to get scope/token_type
+          let scope: string | undefined = liveSession?.tokenSet?.scope;
+          let token_type: string | undefined = liveSession?.tokenSet?.token_type;
+          if (!scope || !token_type) {
+            try {
+              const { getRedis } = await import('../services/redisClient');
+              const redis = getRedis();
+              const key = `bsky:session:${did}`;
+              const raw = await redis.get(key);
+              if (raw) {
+                const snap = JSON.parse(raw);
+                scope = scope ?? snap?.tokenSet?.scope;
+                token_type = token_type ?? snap?.tokenSet?.token_type;
+                console.log('[BlueskyService.getOAuthSession] merged tokenSet from Redis snapshot', {
+                  did,
+                  scope,
+                  token_type,
+                });
+              }
+            } catch {}
+          }
+          return {
+            dpopFetch: liveSession.dpopFetch,
+            scope,
+            token_type,
+          };
+        }
+      }
+
+      // Fallback: read raw JSON from Redis. Note: dpopFetch is not serializable; will be missing here.
+      const { getRedis } = await import('../services/redisClient');
+      const redis = getRedis();
+      const key = `bsky:session:${did}`;
+      const raw = await redis.get(key);
+      if (!raw) return null;
+      const sessionData = JSON.parse(raw);
+      const tokenSet = sessionData?.tokenSet || {};
+      console.log('[BlueskyService.getOAuthSession] Redis fallback summary:', {
+        did,
+        tokenType: tokenSet?.token_type,
+        scope: tokenSet?.scope,
+        hasDpopJwk: !!sessionData?.dpopJwk,
+      });
+      return {
+        dpopFetch: undefined,
+        scope: tokenSet.scope,
+        token_type: tokenSet.token_type,
+      };
+    } catch (e: any) {
+      console.warn('[BlueskyService.getOAuthSession] Failed to load OAuth session', { did, message: e?.message });
+      return null;
+    }
+  }
+
+  private async dpopGetProfile(dpopFetch: any, actor: string): Promise<BlueskyProfile> {
+    const origin = 'https://bsky.social';
+    const url = new URL('/xrpc/app.bsky.actor.getProfile', origin);
+    url.searchParams.set('actor', actor);
+    const resp = await dpopFetch(url.toString());
+    if (!resp.ok) {
+      const txt = await resp.text();
+      throw new Error(`OAuth getProfile failed (${resp.status}): ${txt}`);
+    }
+    const data = await resp.json();
+    return {
+      did: data.did,
+      handle: data.handle,
+      displayName: data.displayName,
+      avatar: data.avatar,
+    };
+  }
+
+  async batchFollowOAuth(userDid: string, handles: string[]): Promise<BatchFollowResult> {
+    // Rehydrate a live OAuth session and use an OAuth-bound Agent (correct PDS and DPoP signing)
+    const { createBlueskyOAuthClient } = await import('../services/blueskyOAuthClient');
+    const client = await createBlueskyOAuthClient();
+    const liveSession: any = await (client as any).restore?.(userDid);
+    if (!liveSession) {
+      throw new Error('Missing OAuth session (DPoP) to perform follow operations');
+    }
+
+    // Determine scope/token_type (may be absent on restored session; merge from Redis snapshot)
+    let scope: string | undefined = liveSession?.tokenSet?.scope;
+    let token_type: string | undefined = liveSession?.tokenSet?.token_type;
+    if (!scope || !token_type) {
+      try {
+        const { getRedis } = await import('../services/redisClient');
+        const redis = getRedis();
+        const key = `bsky:session:${userDid}`;
+        const raw = await redis.get(key);
+        if (raw) {
+          const snap = JSON.parse(raw);
+          scope = scope ?? snap?.tokenSet?.scope;
+          token_type = token_type ?? snap?.tokenSet?.token_type;
+          console.log('[BlueskyService.batchFollowOAuth] merged tokenSet from Redis snapshot', {
+            userDid,
+            scope,
+            token_type,
+          });
+        }
+      } catch {}
+    }
+    if (scope && !scope.includes('atproto')) {
+      throw new Error(`Bad token scope for OAuth follows: expected atproto, got ${scope}`);
+    }
+
+    const agent = new Agent(liveSession);
+
+    const result: MigrationFollowResult = {
+      attempted: handles.length,
+      succeeded: 0,
+      failures: [],
+      successfulHandles: []
+    };
+
+    try {
+      // Resolve DIDs for all handles using OAuth Agent
+      const didResults = await Promise.all(handles.map(async (handle) => {
+        try {
+          const profile = await agent.getProfile({ actor: handle });
+          if (!profile.success) throw new Error(`Failed to get profile for ${handle}`);
+          return { ok: true as const, did: profile.data.did, handle };
+        } catch (e: any) {
+          return { ok: false as const, handle, error: this.formatError(e) };
+        }
+      }));
+
+      const successes = didResults.filter((r): r is { ok: true; did: string; handle: string } => r.ok);
+      const failures = didResults.filter((r): r is { ok: false; handle: string; error: string } => !r.ok);
+
+      failures.forEach(f => result.failures.push({ handle: f.handle, error: f.error }));
+      if (successes.length === 0) return result;
+
+      // Build applyWrites payload
+      const writes = successes.map(s => ({
+        $type: 'com.atproto.repo.applyWrites#create',
+        collection: 'app.bsky.graph.follow',
+        value: { subject: s.did, createdAt: new Date().toISOString() }
+      }));
+
+      const response = await agent.api.com.atproto.repo.applyWrites({
+        repo: userDid,
+        writes: writes as any,
+        validate: true,
+      });
+
+      if (!response.success) {
+        throw new Error('OAuth applyWrites failed');
+      }
+
+      result.succeeded += successes.length;
+      result.successfulHandles.push(...successes.map(s => s.handle));
+      return result;
+    } catch (e: any) {
+      handles.forEach(h => result.failures.push({ handle: h, error: this.formatError(e) }));
+      return result;
+    }
+  }
+
   private async batchApplyWrites(
     handles: string[],
     dids: string[]
@@ -137,7 +324,7 @@ export class BlueskyService implements IBlueskyService {
       
       const response = await this.agent.api.com.atproto.repo.applyWrites({
         repo: this.agent.session?.did!,
-        writes,
+        writes: writes as any,
         validate: true
       });
 
@@ -293,10 +480,14 @@ export class BlueskyService implements IBlueskyService {
   }
 
   private formatError(error: any): string {
-    if (error.message.includes('Invalid identifier or password')) {
-      return 'Invalid identifier or password'
-    } else if (error.message.includes('Network Error')) {
-      return 'Unable to connect to Bluesky. Please check your internet connection.'
+    if (typeof error?.message === 'string') {
+      if (error.message.includes('Invalid identifier or password')) {
+        return 'Invalid identifier or password'
+      } else if (error.message.includes('Network Error')) {
+        return 'Unable to connect to Bluesky. Please check your internet connection.'
+      } else if (error.message.includes('OAuth') || error.message.includes('app password')) {
+        return error.message
+      }
     }
     return error.message || 'An unexpected error occurred'
   }

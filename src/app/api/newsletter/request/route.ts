@@ -63,8 +63,15 @@ async function updateConsentHandler(
     const userService = new UserService();
     
     // Récupérer les métadonnées de la requête
+    // NextRequest n'expose pas request.ip : on dérive l'IP depuis les en-têtes standards
+    const xff = request.headers.get('x-forwarded-for') || '';
+    const firstForwardedIp = xff.split(',')[0]?.trim();
+    const ip = firstForwardedIp
+      || request.headers.get('x-real-ip')
+      || request.headers.get('cf-connecting-ip')
+      || '';
     const metadata = {
-      ip_address: request.headers.get('x-forwarded-for') || request.ip || '',
+      ip_address: ip,
       user_agent: request.headers.get('user-agent') || ''
     };
 

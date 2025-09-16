@@ -30,15 +30,11 @@ export const GET = withValidation(
           });
         }
       }
-
-      // Récupérer les paramètres d'URL validés
-      const url = new URL(request.url);
-      const limit = url.searchParams.get('limit') ? Number(url.searchParams.get('limit')) : undefined;
       
       const repository = new StatsRepository();
       const statsService = new StatsService(repository);
       
-      const stats = await statsService.getUserStats(session.user.id, session.user.has_onboarded, limit);
+      const stats = await statsService.getUserStats(session.user.id, session.user.has_onboarded);
             
       return NextResponse.json(stats);
     } catch (error) {

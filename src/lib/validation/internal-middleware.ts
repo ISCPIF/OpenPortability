@@ -48,7 +48,7 @@ export function withInternalValidation<T>(
         
         // Parser et valider le payload même en dev
         let body: any;
-        let rawBody: string;
+        let rawBody: string = '';
         
         try {
           rawBody = await request.text();
@@ -186,7 +186,7 @@ export function withInternalValidation<T>(
 
       // 4. Lire et parser le payload
       let body: any;
-      let rawBody: string;
+      let rawBody: string = '';
       let postgresFormattedPayload: string;
       
       try {

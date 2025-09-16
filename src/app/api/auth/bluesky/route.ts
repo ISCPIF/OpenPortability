@@ -6,7 +6,6 @@ import { supabaseAdapter } from "@/lib/supabase-adapter"
 import logger, { withLogging } from '@/lib/log_utils'
 import { withPublicValidation, withValidation } from '@/lib/validation/middleware'
 import { AuthCredentialsSchema, type AuthCredentials } from '@/lib/validation/schemas'
-import { cookies } from 'next/headers'
 import { z } from 'zod'
 
 const blueskyRepository = new BlueskyRepository()
@@ -164,12 +163,7 @@ const blueskyDeleteHandler = withValidation(
       // Delete the session from the database
       await supabaseAdapter.deleteSession(userId);
 
-      const cookieStore = cookies();
-      
-      // Clear session cookies
-      cookieStore.delete('next-auth.session-token');
-      cookieStore.delete('next-auth.csrf-token');
-      cookieStore.delete('next-auth.callback-url');
+      // Clear cookies via response headers below
 
       console.log('[Bluesky DELETE] Logout successful');
       return NextResponse.json(

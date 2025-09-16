@@ -9,28 +9,21 @@ export const fetchCache = 'force-no-store';
 export default async function Home() {
   // console.log("🏠 [Home] Starting home page render...");
   
-  try {
-    const session = await auth();
-    // console.log("🔑 [Home] Session:", session ? "Found" : "Not found");
-    
-    const locale = await getLocale();
-    // console.log("🌍 [Home] Current locale:", locale);
-    
-    if (!session) {
-      // console.log("➡️ [Home] Redirecting to signin page...");
-      redirect(`/${locale}/auth/signin`);
-    }
-    
-    if (!session.user.has_onboarded){
+  const session = await auth();
+  // console.log("🔑 [Home] Session:", session ? "Found" : "Not found");
+  
+  const locale = await getLocale();
+  // console.log("🌍 [Home] Current locale:", locale);
+  
+  if (!session) {
+    // console.log("➡️ [Home] Redirecting to signin page...");
+    redirect(`/${locale}/auth/signin`);
+  }
+  
+  if (!session.user.has_onboarded){
     // console.log("➡️ [Home] Redirecting to dashboard...");
     redirect(`/${locale}/dashboard`);
-    }
-    else
-    {
-      redirect(`/${locale}/reconnect`);
-    }
-  } catch (error) {
-    console.error("❌ [Home] Error:", error);
-    throw error;
+  } else {
+    redirect(`/${locale}/reconnect`);
   }
 }

@@ -1,5 +1,24 @@
 {
   "extends": ["next/core-web-vitals"],
+  "ignorePatterns": [
+    "**/.next/**",
+    "**/dist/**",
+    "**/build/**",
+    "**/coverage/**",
+    "**/node_modules/**"
+  ],
+  "overrides": [
+    {
+      "files": [
+        "*.config.js",
+        "*.config.cjs",
+        "*.config.mjs",
+        "*.config.ts",
+        "next.config.js"
+      ],
+      "env": { "node": true }
+    }
+  ],
   "rules": {
     "react/no-unescaped-entities": "off",
     "react-hooks/exhaustive-deps": "off"

@@ -152,7 +152,8 @@ async function getImportStatus(request: NextRequest, _data: z.infer<typeof Empty
 
   } catch (error) {
     const userId = session?.user?.id || 'unknown';
-    logger.logError('API', 'GET /api/import-status/[jobId]', error, userId, { 
+    const err = error instanceof Error ? error : new Error(String(error))
+    logger.logError('API', 'GET /api/import-status/[jobId]', err, userId, { 
       context: 'Unexpected error in import status check'
     });
     return NextResponse.json(
