@@ -21,21 +21,28 @@ function resolveBaseUrl() {
 }
 
 function getClientMetadata(baseUrl: string) {
+  const redirect_uris: [string, ...string[]] = [
+    `${baseUrl}/api/auth/bluesky/callback`
+  ];
+  const response_types: ["code"] = ["code"];
+  const grant_types: ["authorization_code", "refresh_token"] = [
+    "authorization_code",
+    "refresh_token"
+  ];
+
   const metadata = {
     client_id: `${baseUrl}/client-metadata.json`,
-    application_type: "web",
+    application_type: 'web' as 'web',
     client_name: "OpenPortability",
-    redirect_uris: [
-      `${baseUrl}/api/auth/bluesky/callback`
-    ],
-    grant_types: ["authorization_code", "refresh_token"],
-    response_types: ["code"],
+    redirect_uris,
+    grant_types,
+    response_types,
     scope: "atproto transition:generic",
     dpop_bound_access_tokens: true,
-    token_endpoint_auth_method: "private_key_jwt",
+    token_endpoint_auth_method: 'private_key_jwt' as 'private_key_jwt',
     jwks_uri: `${baseUrl}/jwks.json`,
     token_endpoint_auth_signing_alg: "ES256",
-  } as const;
+  };
   // Log metadata summary (safe)
   console.log('[BlueskyOAuthClient] Client metadata prepared', {
     client_id: metadata.client_id,
@@ -77,7 +84,7 @@ export async function createBlueskyOAuthClient() {
   const client = new NodeOAuthClient({
     clientMetadata: getClientMetadata(baseUrl),
     // The library will import keys internally. Provide importable JWK(s).
-    keyset: await getKeyset(),
+    keyset: await getKeyset() as any,
     stateStore: {
       async set(key: string, internalState: any): Promise<void> {
         const name = `oauth_state_${key}`;
