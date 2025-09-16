@@ -351,11 +351,7 @@ export function useReconnectState() {
                (!hasFollowedMastodon && session?.user?.mastodon_username);
       });
 
-      console.log("********")
-        console.log("batchAccounts", accountsToMigrate)
-        console.log("type of accounts.node_id -->", typeof accountsToMigrate[0].node_id)
-        console.log("type of accounts -->", typeof accountsToMigrate[0])
-        console.log("********")
+
 
       for (let i = 0; i < remainingAccounts.length; i += BATCH_SIZE) {
         const batchAccounts = remainingAccounts.slice(i, i + BATCH_SIZE);
@@ -368,9 +364,15 @@ export function useReconnectState() {
           body: JSON.stringify({ accounts: batchAccounts }),
         });
         
-        if (response.status === 500 && response.error === 'InvalidToken') {
-          setInvalidTokenProviders(['bluesky']);
-          return;
+        if (response.status === 500) {
+          let errorBody: any = null;
+          try {
+            errorBody = await response.clone().json();
+          } catch {}
+          if (errorBody && errorBody.error === 'InvalidToken') {
+            setInvalidTokenProviders(['bluesky']);
+            return;
+          }
         }
 
         if (!response.ok) {
