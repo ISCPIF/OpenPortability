@@ -31,7 +31,7 @@ export class StatsRepository {
           // logger.logInfo('Repository', 'StatsRepository.getUserCompleteStats', 'User stats served from Redis cache', userId, {
           //   context: 'Redis cache hit'
           // });
-          return JSON.parse(cached);
+          return JSON.parse(cached) as UserCompleteStats;
         }
       } catch (redisError) {
         logger.logWarning('Repository', 'StatsRepository.getUserCompleteStats', 'Redis unavailable, fallback to DB', userId, {
@@ -41,7 +41,7 @@ export class StatsRepository {
       }
 
       // 2. Fallback vers DB (logique existante)
-      let data, error;
+      let data: unknown, error: unknown;
 
       if (!has_onboard) {
         ({ data, error } = await supabase
@@ -76,7 +76,7 @@ export class StatsRepository {
       }
 
       // console.log("data from getUserCompleteStats", data);
-      return data;
+      return data as UserCompleteStats;
     }
 
     async getGlobalStats(): Promise<GlobalStats> {
@@ -87,7 +87,7 @@ export class StatsRepository {
           logger.logInfo('Repository', 'StatsRepository.getGlobalStats', 'Global stats served from Redis cache', 'system', {
             context: 'Redis cache hit for global stats'
           });
-          return JSON.parse(cached);
+          return JSON.parse(cached) as GlobalStats;
         }
 
         // 2. Cache miss - récupérer depuis la DB
@@ -113,7 +113,7 @@ export class StatsRepository {
           context: 'Database fallback successful, data cached in Redis'
         });
 
-        return data;
+        return data as GlobalStats;
 
       } catch (redisError) {
         // 4. Si Redis complètement indisponible, aller directement en DB
@@ -155,7 +155,8 @@ export class StatsRepository {
 
         return data.stats as GlobalStats;
       } catch (error) {
-        logger.logError('Repository', 'StatsRepository.getGlobalStatsFromCache', error, 'system', {
+        const err = error instanceof Error ? error : new Error(String(error));
+        logger.logError('Repository', 'StatsRepository.getGlobalStatsFromCache', err, 'system', {
           context: 'Failed to read from global_stats_cache table'
         });
         return null;
