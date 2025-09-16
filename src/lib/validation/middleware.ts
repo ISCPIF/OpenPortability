@@ -295,9 +295,9 @@ function validateQueryParameters(
 /**
  * Wrapper de validation principal
  */
-export function withValidation<T>(
-  schema: z.ZodSchema<T>,
-  handler: (request: NextRequest, validatedData: T, session?: any) => Promise<NextResponse>,
+export function withValidation<Out, In = Out>(
+  schema: z.ZodType<Out, z.ZodTypeDef, In>,
+  handler: (request: NextRequest, validatedData: Out, session?: any) => Promise<NextResponse>,
   options: ValidationOptions = {}
 ) {
   return async (request: NextRequest): Promise<NextResponse> => {
@@ -425,7 +425,7 @@ export function withValidation<T>(
       }
       
       // 4. Parsing et validation Zod
-      let data: T;
+      let data: Out;
       try {
         // Ne parser le body que pour les méthodes qui en ont un
         if (['POST', 'PUT', 'PATCH'].includes(method)) {
