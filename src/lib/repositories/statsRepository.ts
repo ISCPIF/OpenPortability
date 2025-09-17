@@ -28,10 +28,6 @@ export class StatsRepository {
         const cached = await redis.get(cacheKey);
         
         if (cached) {
-          // logger.logInfo('Repository', 'StatsRepository.getUserCompleteStats', 'User stats served from Redis cache', userId, {
-          //   context: 'Redis cache hit'
-          // });
-          console.log("USING CACHEEEEE")
           return JSON.parse(cached) as UserCompleteStats;
         }
       } catch (redisError) {
@@ -56,10 +52,10 @@ export class StatsRepository {
           .single());
       }
 
-      console.log("stats are ->", data)
 
       if (error) {
-        console.log('Repository', 'StatsRepository.getUserCompleteStats', error, userId, { has_onboard });
+        const errorString = error instanceof Error ? error.message : String(error);
+        logger.logError('Repository', 'StatsRepository.getUserCompleteStats', errorString, userId, { has_onboard });
         throw error;
       }
 
@@ -77,8 +73,6 @@ export class StatsRepository {
           error: redisError instanceof Error ? redisError.message : 'Unknown Redis error'
         });
       }
-
-      // console.log("data from getUserCompleteStats", data);
       return data as UserCompleteStats;
     }
 
@@ -175,14 +169,11 @@ export class StatsRepository {
             p_user_id: userId.toString() 
           })
           .single());
-
-          console.log("WRONG SIDE")
       } else {
         
         ({ error } = await supabase.rpc('refresh_user_stats_cache', {
           p_user_id: userId
         }));
-        console.log("UPDATING USER STAT CACHE")
       }
       
       if (error) {

@@ -28,13 +28,12 @@ async function getLanguageHandler(
     const userId = session.user.id;
     
     const languagePref = await userService.getLanguagePreference(userId);
-    
-    console.log('API', 'GET /api/users/language', 'Language preference retrieved', userId);
     return NextResponse.json(languagePref);
   } catch (error) {
     const userId = session?.user?.id || 'unknown';
+    const err = error instanceof Error ? error : new Error(String(error))
     
-    console.log('API', 'GET /api/users/language', error, userId, {
+    logger.logError('API', 'GET /api/users/language', err, userId, {
       context: 'Getting language preference'
     });
     
@@ -56,16 +55,15 @@ async function updateLanguageHandler(
     const { language } = data;
     
     await userService.updateLanguagePreference(userId, language);
-    
-    console.log('API', 'POST /api/users/language', 'Language preference updated', userId, {
-      language
-    });
+
     
     return NextResponse.json({ success: true });
   } catch (error) {
     const userId = session?.user?.id || 'unknown';
     
-    console.log('API', 'POST /api/users/language', error, userId, {
+    const err = error instanceof Error ? error : new Error(String(error))
+    
+    logger.logError('API', 'POST /api/users/language', err, userId, {
       context: 'Updating language preference'
     });
     

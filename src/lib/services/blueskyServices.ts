@@ -7,6 +7,7 @@ import {
   BatchFollowResult,
   IBlueskyRepository
 } from '../types/bluesky'
+import logger from '../log_utils';
 
 export interface MigrationFollowResult extends BatchFollowResult {
   successfulHandles: string[];  // Pour pouvoir mettre à jour sources_targets
@@ -108,7 +109,6 @@ export class BlueskyService implements IBlueskyService {
   }
 
   async batchFollow(handles: string[]): Promise<BatchFollowResult> {
-    console.log('[BlueskyService.batchFollow] Starting batch follow for handles:', handles);
     return await this.batchFollowWithDetails(handles);
   }
 
@@ -119,16 +119,8 @@ export class BlueskyService implements IBlueskyService {
       const { createBlueskyOAuthClient } = await import('../services/blueskyOAuthClient');
       const client = await createBlueskyOAuthClient();
       const canRestore = typeof (client as any)?.restore === 'function';
-      console.log('[BlueskyService.getOAuthSession] restore available:', { did, canRestore });
       if (canRestore) {
         const liveSession: any = await (client as any).restore(did);
-        console.log('[BlueskyService.getOAuthSession] restore result:', {
-          did,
-          hasLiveSession: !!liveSession,
-          hasDpopFetch: typeof liveSession?.dpopFetch === 'function',
-          tokenType: liveSession?.tokenSet?.token_type,
-          scope: liveSession?.tokenSet?.scope,
-        });
         if (liveSession) {
           // If the restored session has no tokenSet details, merge from Redis snapshot to get scope/token_type
           let scope: string | undefined = liveSession?.tokenSet?.scope;
@@ -143,11 +135,6 @@ export class BlueskyService implements IBlueskyService {
                 const snap = JSON.parse(raw);
                 scope = scope ?? snap?.tokenSet?.scope;
                 token_type = token_type ?? snap?.tokenSet?.token_type;
-                console.log('[BlueskyService.getOAuthSession] merged tokenSet from Redis snapshot', {
-                  did,
-                  scope,
-                  token_type,
-                });
               }
             } catch {}
           }
@@ -167,19 +154,14 @@ export class BlueskyService implements IBlueskyService {
       if (!raw) return null;
       const sessionData = JSON.parse(raw);
       const tokenSet = sessionData?.tokenSet || {};
-      console.log('[BlueskyService.getOAuthSession] Redis fallback summary:', {
-        did,
-        tokenType: tokenSet?.token_type,
-        scope: tokenSet?.scope,
-        hasDpopJwk: !!sessionData?.dpopJwk,
-      });
       return {
         dpopFetch: undefined,
         scope: tokenSet.scope,
         token_type: tokenSet.token_type,
       };
     } catch (e: any) {
-      console.warn('[BlueskyService.getOAuthSession] Failed to load OAuth session', { did, message: e?.message });
+      const errorString = e instanceof Error ? e.message : String(e);
+      logger.logError('[BlueskyService.getOAuthSession] Failed to load OAuth session', errorString, "system");
       return null;
     }
   }
@@ -224,11 +206,6 @@ export class BlueskyService implements IBlueskyService {
           const snap = JSON.parse(raw);
           scope = scope ?? snap?.tokenSet?.scope;
           token_type = token_type ?? snap?.tokenSet?.token_type;
-          console.log('[BlueskyService.batchFollowOAuth] merged tokenSet from Redis snapshot', {
-            userDid,
-            scope,
-            token_type,
-          });
         }
       } catch {}
     }
@@ -293,12 +270,6 @@ export class BlueskyService implements IBlueskyService {
     handles: string[],
     dids: string[]
   ): Promise<MigrationFollowResult> {
-    console.log('[BlueskyService.batchApplyWrites] Starting batch apply writes:', {
-      handlesCount: handles.length,
-      didsCount: dids.length,
-      handles,
-      dids
-    });
 
     const result: MigrationFollowResult = {
       attempted: handles.length,
@@ -317,10 +288,8 @@ export class BlueskyService implements IBlueskyService {
       }
     }));
 
-    console.log('[BlueskyService.batchApplyWrites] Prepared writes:', writes);
 
     try {
-      console.log('[BlueskyService.batchApplyWrites] Sending applyWrites request for user:', this.agent.session?.did);
       
       const response = await this.agent.api.com.atproto.repo.applyWrites({
         repo: this.agent.session?.did!,
@@ -328,22 +297,14 @@ export class BlueskyService implements IBlueskyService {
         validate: true
       });
 
-      console.log('[BlueskyService.batchApplyWrites] ApplyWrites response:', response);
-
       // Si la requête réussit, tous les follows ont réussi
       if (response.success) {
         result.succeeded = handles.length;
         result.successfulHandles = [...handles];
-        console.log('[BlueskyService.batchApplyWrites] All follows succeeded:', {
-          succeeded: result.succeeded,
-          successfulHandles: result.successfulHandles
-        });
       }
     } catch (error: any) {
-      console.error('[BlueskyService.batchApplyWrites] Batch follow error:', {
-        error,
-        formattedError: this.formatError(error)
-      });
+      const errorString = error instanceof Error ? error.message : String(error);
+      logger.logError('[BlueskyService.batchApplyWrites] Batch follow error:', errorString, "system");
       
       // En cas d'erreur, on considère que tous les follows ont échoué
       handles.forEach(handle => {
@@ -353,8 +314,6 @@ export class BlueskyService implements IBlueskyService {
         });
       });
     }
-
-    console.log('[BlueskyService.batchApplyWrites] Final result:', result);
     return result;
   }
 

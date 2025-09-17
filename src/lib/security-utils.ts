@@ -1,7 +1,5 @@
 import validator from 'validator';
-// import escapeHtml from 'escape-html';
 import sanitizeHtml from 'sanitize-html';
-// import logger from '@/lib/log_utils';
 
 // Configuration de sanitisation HTML stricte
 const SANITIZE_CONFIG = {
@@ -220,7 +218,8 @@ export function sanitizeHtmlContent(content: string): string {
   try {
     return sanitizeHtml(content, SANITIZE_CONFIG);
   } catch (error) {
-    console.log('Security', 'HTML Sanitization', error, 'system', {
+    const errorString = error instanceof Error ? error.message : String(error);
+    console.error('Security', 'HTML Sanitization', errorString, 'system', {
       context: 'Failed to sanitize HTML content'
     });
     // Fallback: échappement complet
@@ -252,7 +251,8 @@ export function secureSupportContent(data: SupportFormData, userId?: string): {
   
   // Log des tentatives suspectes/dangereuses
   if (validation.securityLevel !== 'safe') {
-    console.log('Security', 'Suspicious Support Form', new Error('Security validation failed'), userId || 'anonymous', {
+    
+    console.error('Security', 'Suspicious Support Form', new Error('Security validation failed'), userId || 'anonymous', {
       context: 'Support form security validation',
       securityLevel: validation.securityLevel,
       errors: validation.errors,
@@ -658,7 +658,7 @@ export function validateEmail(email: any): { isValid: boolean; error?: string } 
   
   // Vérifier les tentatives d'injection SQL
   if (detectSqlInjectionPatterns(decodedEmail)) {
-    console.log('Security', 'SQL Injection attempt', 'Blocked SQL injection in email field', 'anonymous', {
+    console.error('Security', 'SQL Injection attempt', 'Blocked SQL injection in email field', 'anonymous', {
       context: 'Newsletter subscription',
       email: email.substring(0, 10) + '...' // Ne pas logger l'email complet
     });
