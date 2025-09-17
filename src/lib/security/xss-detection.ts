@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { logger } from '../log_utils';
+import logger from '../log_utils';
 
 // Fonction pour charger les exemples XSS depuis le fichier
 function loadXssExamples(): string[] {
@@ -12,7 +12,7 @@ function loadXssExamples(): string[] {
       .map((line: string) => line.trim());
   } catch (error) {
     const errorString = error instanceof Error ? error.message : String(error);
-    logger.logError('Security', 'Could not load XSS examples file', 'system', {
+    logger.logError('Security', 'Could not load XSS examples file', errorString, 'system', {
       error: errorString
     });
     return [];
@@ -146,7 +146,7 @@ export function detectXssPayload(input: string): XssDetectionResult {
   
   // Journalisation si vulnérable
   if (result.isVulnerable) {
-    logger.logError('Security', 'XSS attack detected', 'system', {
+    logger.logError('Security', 'XSS attack detected', 'XSS attack detected', 'system', {
       detectedPatterns: result.detectedPatterns.slice(0, 5), // Limiter pour éviter un log trop volumineux
       riskLevel: result.riskLevel,
       inputPreview: decodedInput.substring(0, 100) // Limiter la taille du log
