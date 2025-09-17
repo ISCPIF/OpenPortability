@@ -88,9 +88,7 @@ export const updateNewsletterConsent = async (
     const payload: any = {
       consents: [consent]
     };
-    
-    console.log("payload ---->", payload)
-    
+        
     // N'ajouter email que s'il est défini, non null, et a un format valide
     if (email && typeof email === 'string' && email.trim() && email.includes('@')) {
       payload.email = email.trim();

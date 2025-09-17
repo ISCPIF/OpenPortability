@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createBlueskyOAuthClient } from "@/lib/services/blueskyOAuthClient";
 import { withPublicValidation } from "@/lib/validation/middleware";
 import { z } from "zod";
+import logger from "@/lib/log_utils";
 
 export const runtime = 'nodejs';
 
@@ -27,15 +28,12 @@ export const GET = withPublicValidation(
     const state = request.nextUrl.searchParams.get("state") || undefined;
 
     try {
-      console.log('[Bluesky OAuth] Start authorize()', { handle, state });
       const client = await createBlueskyOAuthClient();
       const url = await client.authorize(handle, { state });
-      console.log('[Bluesky OAuth] authorize() redirect URL', { url: String(url) });
       return NextResponse.redirect(url);
     } catch (err: any) {
-      console.error('[Bluesky OAuth] authorize() failed', {
-        message: err?.message,
-        stack: err?.stack,
+      logger.logError('API', 'GET /api/auth/bluesky/oauth', err?.message, 'system', { 
+        message: 'Logout failed' 
       });
       return NextResponse.json({ error: err?.message || "Failed to initiate Bluesky OAuth" }, { status: 500 });
     }

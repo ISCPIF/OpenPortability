@@ -16,9 +16,6 @@ export default function NoConnectedServicesState({
   setIsLoading,
 }: NoConnectedServicesStateProps) {
   const t = useTranslations('migrate');
-
-
-  console.log("stats from NoConnectedServices ->", stats);
     
   // Calculer le nombre total de comptes non suivis
   const totalNotFollowedCount = 

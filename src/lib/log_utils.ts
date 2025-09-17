@@ -11,7 +11,8 @@ export enum LogLevel {
   WARNING = 'WARNING',
   ERROR = 'ERROR',
   REQUEST = 'REQUEST',
-  PERFORMANCE = 'PERFORMANCE'
+  PERFORMANCE = 'PERFORMANCE',
+  ALERT = 'ALERT'
 }
 
 // Configuration
@@ -63,7 +64,8 @@ function getLogLevelValue(level: LogLevel): number {
     WARNING: 2,
     ERROR: 3,
     REQUEST: 1,
-    PERFORMANCE: 1
+    PERFORMANCE: 1,
+    ALERT: 4
   };
   return levels[level] || 0;
 }
@@ -253,6 +255,27 @@ export function logError(source: string, action: string, error: Error | string, 
   writeLog(entry);
 }
 
+export function logAlert(source: string, action: string, error: Error | string, userId?: string, details?: any, correlationId?: string, requestId?: string) {
+  // Alerts are always logged, regardless of min level, because they are critical
+  const message = error instanceof Error ? error.message : error;
+  const stack = error instanceof Error ? error.stack : undefined;
+
+  const entry: LogEntry = {
+    timestamp: new Date().toISOString(),
+    level: LogLevel.ALERT,
+    userId,
+    source,
+    action,
+    message,
+    details,
+    correlationId,
+    requestId,
+    stack
+  };
+
+  writeLog(entry);
+}
+
 export function logWarning(source: string, action: string, message: string, userId?: string, details?: any, correlationId?: string, requestId?: string) {
   if (!shouldLog(LogLevel.WARNING)) return;
   
@@ -410,6 +433,7 @@ const logger = {
   logDebug,
   logRequest,
   logPerformance,
+  logAlert,
   startPerformanceTimer,
   withLogging
 };

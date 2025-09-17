@@ -30,7 +30,7 @@ export const POST = withValidation(
   async (request: NextRequest, data: z.infer<typeof SendFollowRequestSchema>, session) => {
     try {
       if (!session?.user?.id) {
-        console.log('API', 'POST /api/migrate/send_follow', 'Unauthorized access attempt');
+        logger.logError('API', 'POST /api/migrate/send_follow', 'Unauthorized access attempt');
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
       }
 
@@ -52,7 +52,7 @@ export const POST = withValidation(
       }
 
       if (blueskyAccount) {
-        const blueskyAccounts = accounts.filter(acc => {
+        const blueskyAccounts = accounts.filter((acc: any) => {
           if (isMatchedFollower(acc)) {
             return acc.bluesky_handle && !acc.has_been_followed_on_bluesky;
           }
@@ -61,7 +61,7 @@ export const POST = withValidation(
         
         if (blueskyAccounts.length > 0) {
           try {
-            const blueskyHandles = blueskyAccounts.map(acc => acc.bluesky_handle!)
+            const blueskyHandles = blueskyAccounts.map((acc: any) => acc.bluesky_handle!)
 
             const isOAuth = (blueskyAccount.token_type && String(blueskyAccount.token_type).toUpperCase() === 'DPOP')
               || (typeof blueskyAccount.scope === 'string' && blueskyAccount.scope.includes('atproto'))
@@ -85,7 +85,7 @@ export const POST = withValidation(
             }
 
             if (results.bluesky.failures.length > 0) {
-              console.log('API', 'POST /api/migrate/send_follow', 'Some Bluesky follows failed', userId, {
+              logger.logError('API', 'POST /api/migrate/send_follow', 'Some Bluesky follows failed', userId, {
                 failureCount: results.bluesky.failures.length,
                 errors: results.bluesky.failures.map((f: any) => f.error)
               });
@@ -93,7 +93,7 @@ export const POST = withValidation(
 
             // Group accounts by type
             const matchedFollowers = blueskyAccounts.filter(isMatchedFollower);
-            const matchingTargets = blueskyAccounts.filter(acc => !isMatchedFollower(acc));
+            const matchingTargets = blueskyAccounts.filter((acc: any) => !isMatchedFollower(acc));
 
             // Determine if there was any success
             const hasSuccess = results.bluesky.succeeded > 0;
@@ -105,7 +105,7 @@ export const POST = withValidation(
             if (matchedFollowers.length > 0) {
               await matchingService.updateSourcesFollowersStatusBatch(
                 session.user.twitter_id!,
-                matchedFollowers.map(acc => acc.source_twitter_id),
+                matchedFollowers.map((acc: any) => acc.source_twitter_id),
                 'bluesky',
                 hasSuccess,
                 errorMessage
@@ -115,8 +115,8 @@ export const POST = withValidation(
             // Update sources_targets table for MatchingTarget type
             if (matchingTargets.length > 0) {
               const targetIds = matchingTargets
-                .map(acc => String((acc as any).node_id))
-                .filter((id): id is string => !!id && id.trim().length > 0);
+                .map((acc: any) => String((acc as any).node_id))
+                .filter((id: any): id is string => !!id && id.trim().length > 0);
               if (targetIds.length > 0) {
                 await matchingService.updateFollowStatusBatch(
                   userId,
@@ -128,7 +128,8 @@ export const POST = withValidation(
               }
             }
           } catch (blueskyError) {
-            console.log('API', 'POST /api/migrate/send_follow', blueskyError, userId, {
+            const err = blueskyError instanceof Error ? blueskyError : new Error(String(blueskyError))
+            logger.logError('API', 'POST /api/migrate/send_follow', err, userId, {
               context: 'Bluesky follow operation'
             });
             const errMsg = (blueskyError instanceof Error && blueskyError.message) ? blueskyError.message : 'Failed to follow on Bluesky';
@@ -138,7 +139,7 @@ export const POST = withValidation(
       }
 
       if (mastodonAccount && session.user.mastodon_instance) {
-        const mastodonAccounts = accounts.filter(acc => {
+        const mastodonAccounts = accounts.filter((acc: any) => {
           if (isMatchedFollower(acc)) {
             return acc.mastodon_username && 
                    acc.mastodon_instance && 
@@ -151,7 +152,7 @@ export const POST = withValidation(
 
         if (mastodonAccounts.length > 0) {
           try {
-            const mastodonTargets = mastodonAccounts.map(acc => ({
+            const mastodonTargets = mastodonAccounts.map((acc: any) => ({
               username: acc.mastodon_username!,
               instance: acc.mastodon_instance!,
               id: acc.mastodon_id!
@@ -164,7 +165,7 @@ export const POST = withValidation(
             )
 
             if (results.mastodon.failures.length > 0) {
-              console.log('API', 'POST /api/migrate/send_follow', 'Some Mastodon follows failed', userId, {
+              logger.logError('API', 'POST /api/migrate/send_follow', 'Some Mastodon follows failed', userId, {
                 failureCount: results.mastodon.failures.length,
                 errors: results.mastodon.failures.map((f: any) => f.error)
               });
@@ -172,13 +173,13 @@ export const POST = withValidation(
 
             // Group accounts by type
             const matchedFollowers = mastodonAccounts.filter(isMatchedFollower);
-            const matchingTargets = mastodonAccounts.filter(acc => !isMatchedFollower(acc));
+            const matchingTargets = mastodonAccounts.filter((acc: any) => !isMatchedFollower(acc));
 
             // Update sources_followers table for MatchedFollower type
             if (matchedFollowers.length > 0) {
               await matchingService.updateSourcesFollowersStatusBatch(
                 session.user.twitter_id!,
-                matchedFollowers.map(acc => acc.source_twitter_id),
+                matchedFollowers.map((acc: any) => acc.source_twitter_id),
                 'mastodon',
                 results.mastodon.succeeded > 0,
                 results.mastodon.failures.length > 0 
@@ -190,8 +191,8 @@ export const POST = withValidation(
             // Update sources_targets table for MatchingTarget type
             if (matchingTargets.length > 0) {
               const targetIds = matchingTargets
-                .map(acc => String((acc as any).node_id))
-                .filter((id): id is string => !!id && id.trim().length > 0);
+                .map((acc: any) => String((acc as any).node_id))
+                .filter((id: any): id is string => !!id && id.trim().length > 0);
               if (targetIds.length > 0) {
                 await matchingService.updateFollowStatusBatch(
                   userId,
@@ -205,7 +206,8 @@ export const POST = withValidation(
               }
             }
           } catch (mastodonError) {
-            console.log('API', 'POST /api/migrate/send_follow', mastodonError, userId, {
+            const err = mastodonError instanceof Error ? mastodonError : new Error(String(mastodonError))
+            logger.logError('API', 'POST /api/migrate/send_follow', err, userId, {
               context: 'Mastodon follow operation'
             });
             results.mastodon = { succeeded: 0, failures: [{ error: 'Failed to follow on Mastodon' }] };
@@ -221,7 +223,7 @@ export const POST = withValidation(
         }
       } catch (statsErr) {
         const errMsg = statsErr instanceof Error ? statsErr.message : String(statsErr)
-        console.log('API', 'POST /api/migrate/send_follow', errMsg, userId, {
+        logger.logError('API', 'POST /api/migrate/send_follow', errMsg, userId, {
           context: 'Optional refreshUserStatsCache for non-onboarded user'
         })
       }
@@ -229,7 +231,8 @@ export const POST = withValidation(
       return NextResponse.json(results)
     } catch (error) {
       const userId = session?.user?.id || 'unknown';
-      console.log('API', 'POST /api/migrate/send_follow', error, userId, {
+      const err = error instanceof Error ? error : new Error(String(error))
+      logger.logError('API', 'POST /api/migrate/send_follow', err, userId, {
         context: 'Error in send_follow route'
       });
       return NextResponse.json(

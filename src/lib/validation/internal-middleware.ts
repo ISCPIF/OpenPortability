@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z, ZodError } from 'zod';
 import crypto from 'crypto';
+import logger from '../log_utils';
 
 export interface InternalSecurityOptions {
   disableInDev?: boolean;        // true par défaut - désactive en développement
@@ -33,35 +34,18 @@ export function withInternalValidation<T>(
     const endpoint = request.nextUrl.pathname;
     const method = request.method;
 
-    // console.log(`🚀 [MIDDLEWARE START] ${method} ${endpoint} - ${new Date().toISOString()}`);
-
     try {
       // Désactiver en développement si configuré
       if (disableInDev && process.env.NODE_ENV === 'development') {
-        if (logSecurityEvents) {
-          console.log('Internal security disabled in development', {
-            endpoint,
-            method,
-            environment: process.env.NODE_ENV
-          });
-        }
-        
         // Parser et valider le payload même en dev
         let body: any;
         let rawBody: string = '';
         
         try {
           rawBody = await request.text();
-          // console.log('🔍 DEBUG - Raw body received:', {
-          //   endpoint,
-          //   bodyLength: rawBody.length,
-          //   bodyPreview: rawBody.substring(0, 200),
-          //   isEmpty: rawBody.length === 0,
-          //   contentType: request.headers.get('content-type')
-          // });
+
 
           if (rawBody.length === 0 && !allowEmptyBody) {
-            // console.log('Empty payload received in internal request', { endpoint });
             return NextResponse.json(
               { error: 'Empty payload - body required' },
               { status: 400 }
@@ -70,15 +54,9 @@ export function withInternalValidation<T>(
 
           // Parse JSON payload
           body = JSON.parse(rawBody);
-          // console.log('🔍 DEBUG - Parsed JSON:', body);
         } catch (parseError) {
-          console.log('Payload parsing failed in internal request', {
-            endpoint,
-            rawBodyLength: rawBody?.length || 0,
-            rawBodyPreview: rawBody?.substring(0, 100) || 'undefined',
-            contentType: request.headers.get('content-type'),
-            error: parseError instanceof Error ? parseError.message : 'Unknown error'
-          });
+          const errorString = parseError instanceof Error ? parseError.message : String(parseError);
+          logger.logError('Payload parsing failed in internal request',errorString, "system");
           return NextResponse.json(
             { error: 'Invalid payload format', details: parseError instanceof Error ? parseError.message : 'Unknown error' },
             { status: 400 }
@@ -94,42 +72,14 @@ export function withInternalValidation<T>(
       const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET;
 
       if (!INTERNAL_API_KEY || !WEBHOOK_SECRET) {
-        // console.log('Missing internal security environment variables', {
-        //   endpoint,
-        //   hasApiKey: !!INTERNAL_API_KEY,
-        //   hasWebhookSecret: !!WEBHOOK_SECRET
-        // });
         return NextResponse.json(
           { error: 'Missing keys for internal security' },
           { status: 401 }
         );
       }
-
-      // if (logSecurityEvents) {
-      //   console.log('Starting internal security validation', {
-      //     endpoint,
-      //     method,
-      //     requireSignature,
-      //     maxTimestampAge
-      //   });
-      // }
-
-      // DEBUG: Log tous les headers reçus
-      // console.log('🔍 DEBUG - All request headers:', {
-      //   endpoint,
-      //   headers: Object.fromEntries(request.headers.entries())
-      // });
-
       // 1. Vérifier l'API Key
       const apiKey = request.headers.get('X-API-Key');
-      // console.log('🔍 DEBUG - API Key check:', {
-      //   hasApiKey: !!apiKey,
-      //   apiKeyValue: apiKey,
-      //   expectedKey: INTERNAL_API_KEY
-      // });
-
       if (!apiKey) {
-        // console.log('Missing API key in internal request', { endpoint });
         return NextResponse.json(
           { error: 'Missing X-API-Key header' },
           { status: 401 }
@@ -137,10 +87,6 @@ export function withInternalValidation<T>(
       }
 
       if (apiKey !== INTERNAL_API_KEY) {
-        // console.log('Invalid API key in internal request', {
-        //   endpoint,
-        //   providedKey: apiKey.substring(0, 8) + '...' // Log partiel pour sécurité
-        // });
         return NextResponse.json(
           { error: 'Invalid API key' },
           { status: 401 }
@@ -152,11 +98,6 @@ export function withInternalValidation<T>(
       const timestamp = request.headers.get('X-Timestamp');
 
       if (requireSignature && (!signature || !timestamp)) {
-        // console.log('Missing security headers in internal request', {
-        //   endpoint,
-        //   hasSignature: !!signature,
-        //   hasTimestamp: !!timestamp
-        // });
         return NextResponse.json(
           { error: 'Missing security headers (X-Signature, X-Timestamp)' },
           { status: 400 }
@@ -170,13 +111,6 @@ export function withInternalValidation<T>(
         const age = currentTime - requestTime;
 
         if (isNaN(requestTime) || age > maxTimestampAge) {
-          // console.log('Invalid or expired timestamp in internal request', {
-          //   endpoint,
-          //   timestamp: requestTime,
-          //   currentTime,
-          //   age,
-          //   maxAge: maxTimestampAge
-          // });
           return NextResponse.json(
             { error: 'Invalid or expired timestamp' },
             { status: 400 }
@@ -191,16 +125,8 @@ export function withInternalValidation<T>(
       
       try {
         rawBody = await request.text();
-        // console.log('🔍 DEBUG - Raw body received:', {
-        //   endpoint,
-        //   bodyLength: rawBody.length,
-        //   bodyPreview: rawBody.substring(0, 200),
-        //   isEmpty: rawBody.length === 0,
-        //   contentType: request.headers.get('content-type')
-        // });
 
         if (rawBody.length === 0 && !allowEmptyBody) {
-          console.log('Empty payload received in internal request', { endpoint });
           return NextResponse.json(
             { error: 'Empty payload - body required' },
             { status: 400 }
@@ -210,26 +136,17 @@ export function withInternalValidation<T>(
         // Parse JSON payload seulement si on a un body
         if (rawBody.length > 0) {
           body = JSON.parse(rawBody);
-          // console.log('🔍 DEBUG - Parsed JSON:', body);
 
           // Utiliser EXACTEMENT le corps JSON tel qu'envoyé (incluant les espaces)
           // afin d'aligner avec la sérialisation PostgreSQL (jsonb::text / net.http_post)
           postgresFormattedPayload = rawBody;
-          // console.log('🔍 DEBUG - PostgreSQL formatted payload:', postgresFormattedPayload);
         } else {
           // Body vide autorisé: aligner avec la fonction SQL qui a DEFAULT '{}'::jsonb
           body = {};
           postgresFormattedPayload = '{}';
-          // console.log("🔍 DEBUG - Empty body allowed, using '{}' for HMAC to match SQL default");
         }
       } catch (parseError) {
-        // console.log('Payload parsing failed in internal request', {
-        //   endpoint,
-        //   rawBodyLength: rawBody?.length || 0,
-        //   rawBodyPreview: rawBody?.substring(0, 100) || 'undefined',
-        //   contentType: request.headers.get('content-type'),
-        //   error: parseError instanceof Error ? parseError.message : 'Unknown error'
-        // });
+
         return NextResponse.json(
           { error: 'Invalid payload format', details: parseError instanceof Error ? parseError.message : 'Unknown error' },
           { status: 400 }
@@ -251,44 +168,17 @@ export function withInternalValidation<T>(
           .update(message)
           .digest('hex');
 
-        // console.log('🔍 DEBUG - HMAC validation:', {
-        //   endpoint,
-        //   postgresPayload: postgresFormattedPayload.substring(0, 100) + '...',
-        //   message: message.substring(0, 100) + '...',
-        //   timestamp,
-        //   expectedSig: expectedSignature.substring(0, 20) + '...',
-        //   providedSig: providedSignature.substring(0, 20) + '...'
-        // });
-
         if (!crypto.timingSafeEqual(
           Buffer.from(expectedSignature, 'hex'),
           Buffer.from(providedSignature, 'hex')
         )) {
-          console.log('Invalid HMAC signature in internal request', {
-            endpoint,
-            expectedLength: expectedSignature.length,
-            providedLength: providedSignature.length,
-            payloadSize: postgresFormattedPayload.length,
-            rawPayloadPreview: rawBody.substring(0, 50),
-            postgresPayloadPreview: postgresFormattedPayload.substring(0, 50)
-          });
+
           return NextResponse.json(
             { error: 'Invalid signature' },
             { status: 401 }
           );
         }
 
-        // console.log('✅ HMAC signature validated successfully');
-      }
-
-      if (logSecurityEvents) {
-        const validationTime = Date.now() - startTime;
-        // console.log('Internal security validation successful', {
-        //   endpoint,
-        //   method,
-        //   validationTime: `${validationTime}ms`,
-        //   payloadSize: postgresFormattedPayload.length
-        // });
       }
 
       // 6. Appeler le handler avec les données validées
@@ -298,27 +188,24 @@ export function withInternalValidation<T>(
       const validationTime = Date.now() - startTime;
 
       if (error instanceof ZodError) {
-        console.log('Invalid payload schema in internal request', {
-          endpoint,
-          method,
-          validationTime: `${validationTime}ms`,
-          errors: error.errors
+        const errorString = error instanceof Error ? error.message : String(error);
+        logger.logError('API', endpoint, errorString, 'system', { 
+          message: 'Invalid payload schema' 
         });
+        
         return NextResponse.json(
           { 
             error: 'Invalid payload schema',
-            details: error.errors 
+            details: errorString 
           },
           { status: 400 }
         );
       }
 
       if (error instanceof SyntaxError) {
-        console.log('Invalid JSON payload in internal request', {
-          endpoint,
-          method,
-          validationTime: `${validationTime}ms`,
-          error: error.message
+        const errorString = error instanceof Error ? error.message : String(error);
+        logger.logError('API', endpoint, errorString, 'system', { 
+          message: 'Invalid JSON payload' 
         });
         return NextResponse.json(
           { error: 'Invalid JSON payload' },
@@ -326,11 +213,9 @@ export function withInternalValidation<T>(
         );
       }
 
-      console.log('Internal security validation failed', {
-        endpoint,
-        method,
-        validationTime: `${validationTime}ms`,
-        error: error instanceof Error ? error.message : 'Unknown error'
+      const errorString = error instanceof Error ? error.message : String(error);
+      logger.logError('API', endpoint, errorString, 'system', { 
+        message: 'Internal security validation failed' 
       });
 
       return NextResponse.json(

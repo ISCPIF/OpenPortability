@@ -4,6 +4,7 @@ import { Provider, RefreshResult, TokenData, TokenUpdate } from '../types/accoun
 import { supabaseAdapter } from '../supabase-adapter';
 import { supabase } from '../supabase';
 import { decrypt } from '../encryption';
+import logger from '../log_utils';
 
 export class AccountService {
   private repository: AccountRepository;
@@ -14,18 +15,15 @@ export class AccountService {
 
 
   async verifyAndRefreshBlueskyToken(userId: string): Promise<RefreshResult> {
-    // console.log(' [AccountService.verifyAndRefreshBlueskyToken] Starting token verification for user:', userId);
     const account = await this.repository.getProviderAccount(userId, 'bluesky');
-
-    console.log("account ->", account)
     if (!account) {
-      console.warn(' [AccountService.verifyAndRefreshBlueskyToken] No Bluesky account found for user:', userId);
+      logger.logError('Security', 'No Bluesky account found for user:', userId);
       return { success: false, error: 'No Bluesky account found', requiresReauth: true };
     }
 
     // Tokens in repository.getProviderAccount() are already decrypted. Do NOT decrypt again.
     if (!account.access_token || !account.refresh_token) {
-      console.warn(' [AccountService.verifyAndRefreshBlueskyToken] Missing tokens for user:', userId);
+      logger.logWarning('Security', 'Missing tokens for user:', userId);
       return { success: false, error: 'Missing tokens', requiresReauth: true };
     }
 
@@ -92,12 +90,9 @@ export class AccountService {
           };
         }
       }
-
-      // If we reach here, the stored OAuth session exists and scope is acceptable
-      console.log(' [AccountService.verifyAndRefreshBlueskyToken] OAuth session present with scope', { scope, tokenType });
       return { success: true };
     } catch (error: any) {
-      console.error(' [AccountService.verifyAndRefreshBlueskyToken] Token refresh failed:', error.message);
+      logger.logError('Security', 'Token refresh failed:', error.message);
       return { 
         success: false, 
         error: error.message,
@@ -109,12 +104,12 @@ export class AccountService {
   async verifyAndRefreshMastodonToken(userId: string): Promise<RefreshResult> {
     const account = await this.repository.getProviderAccount(userId, 'mastodon');
     if (!account) {
-      console.warn(' [AccountService.verifyAndRefreshMastodonToken] No Mastodon account found for user:', userId);
+      logger.logWarning('Security', 'No Mastodon account found for user:', userId);
       return { success: false, error: 'No Mastodon account found', requiresReauth: true };
     }
 
     if (!account.scope?.includes('follow')) {
-      console.warn(' [AccountService.verifyAndRefreshMastodonToken] Account scope does not include "follow" permission:', userId);
+      logger.logWarning('Security', 'Account scope does not include "follow" permission:', userId);
       
       // Supprimer le compte de la table accounts uniquement
       // await this.repository.deleteAccount(userId, 'mastodon');
@@ -122,11 +117,6 @@ export class AccountService {
       return { success: false, error: 'Missing follow permission', requiresReauth: true };
     }
 
-    // console.log(' [AccountService.verifyAndRefreshMastodonToken] Account found:', {
-    //   userId,
-    //   account.access_token,
-    //   // hasRefreshToken: !!account.refresh_token
-    // });
 
     // Récupérer l'instance Mastodon depuis le profil utilisateur
     if (!supabaseAdapter?.getUser) {
@@ -139,11 +129,7 @@ export class AccountService {
       console.warn(' [AccountService.verifyAndRefreshMastodonToken] No Mastodon instance found for user:', userId);
       return { success: false, error: 'No Mastodon instance found', requiresReauth: true };
     }
-
-    // console.log(' [AccountService.verifyAndRefreshMastodonToken] Using Mastodon instance:', user.mastodon_instance);
-
     try {
-    //   console.log(' [AccountService.verifyAndRefreshMastodonToken] Verifying credentials with Mastodon API');
       const response = await fetch(`${user.mastodon_instance}/api/v1/accounts/verify_credentials`, {
         headers: {
           'Authorization': `Bearer ${account.access_token}`
@@ -155,7 +141,6 @@ export class AccountService {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-    //   console.log(' [AccountService.verifyAndRefreshMastodonToken] Token is valid');
       return { success: true };
     } catch (error: any) {
       console.error(' [AccountService.verifyAndRefreshMastodonToken] Token validation failed:', error.message);
@@ -177,14 +162,9 @@ export class AccountService {
   }
 
   isTokenValid(tokenData: TokenData): boolean {
-    // console.log(' [AccountService.isTokenValid] Checking token validity:', {
-    //   hasExpiryDate: !!tokenData.expires_at,
-    //   expiryDate: tokenData.expires_at
-    // });
     if (!tokenData.expires_at) return true;
     const expiryDate = new Date(tokenData.expires_at);
     const isValid = expiryDate > new Date();
-    // console.log(`${isValid ? '' : ''} [AccountService.isTokenValid] Token is ${isValid ? 'valid' : 'expired'}`);
     return isValid;
   }
 }
