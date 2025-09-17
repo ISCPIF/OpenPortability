@@ -27,12 +27,12 @@ async function largeFilesUploadHandler(request: Request, _validatedData: z.infer
     // Le middleware withValidation a déjà vérifié l'authentification
     const user = session.user;
     if (!user) {
-      console.log('API', 'POST /api/upload/large-files', 'Unauthorized access attempt', 'unknown');
+      logger.logError( 'API', 'POST /api/upload/large-files', 'Unauthorized access attempt', 'unknown');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     if (user.has_onboarded) {
-      console.log('API', 'POST /api/upload/large-files', 'User already onboarded', user.id);
+      logger.logError('API', 'POST /api/upload/large-files', 'User already onboarded', user.id);
       return NextResponse.json({ error: 'Operation not allowed for onboarded users' }, { status: 403 });
     }
 
@@ -45,7 +45,7 @@ async function largeFilesUploadHandler(request: Request, _validatedData: z.infer
 
     if (jobCheckError) {
       const err = jobCheckError instanceof Error ? jobCheckError : new Error(String(jobCheckError));
-      console.log('API', 'POST /api/upload/large-files', err, user.id, {
+      logger.logError('API', 'POST /api/upload/large-files', err, user.id, {
         context: 'Checking existing jobs'
       });
       return NextResponse.json(
@@ -55,7 +55,7 @@ async function largeFilesUploadHandler(request: Request, _validatedData: z.infer
     }
 
     if (existingJobs && existingJobs.length > 0) {
-      console.log('API', 'POST /api/upload/large-files', 'User has pending or processing jobs', user.id);
+      logger.logError('API', 'POST /api/upload/large-files', 'User has pending or processing jobs', user.id);
       return NextResponse.json(
         { error: 'You already have a file upload in progress' },
         { status: 400 }
@@ -65,7 +65,7 @@ async function largeFilesUploadHandler(request: Request, _validatedData: z.infer
     const formData = await request.formData();
     if (!formData)
     {
-      console.log('API', 'POST /api/upload/large-files', 'No form data provided in request', user.id);
+      logger.logError('API', 'POST /api/upload/large-files', 'No form data provided in request', user.id);
       return NextResponse.json(
         { error: 'No form data provided' },
         { status: 400 }
@@ -74,7 +74,7 @@ async function largeFilesUploadHandler(request: Request, _validatedData: z.infer
     const files = formData.getAll('files');
 
     if (!files.length) {
-      console.log('API', 'POST /api/upload/large-files', 'No files provided in request', user.id);
+      logger.logError('API', 'POST /api/upload/large-files', 'No files provided in request', user.id);
       return NextResponse.json(
         { error: 'No files provided' },
         { status: 400 }
@@ -85,7 +85,7 @@ async function largeFilesUploadHandler(request: Request, _validatedData: z.infer
     for (const fileEntry of files) {
       // Vérifier que l'entrée est bien un objet File
       if (!(fileEntry instanceof File)) {
-        console.log('API', 'POST /api/upload/large-files', 'Invalid file object', user.id);
+        logger.logError('API', 'POST /api/upload/large-files', 'Invalid file object', user.id);
         return NextResponse.json(
           { error: 'Invalid file format' },
           { status: 400 }
@@ -98,25 +98,6 @@ async function largeFilesUploadHandler(request: Request, _validatedData: z.infer
       try {
         const fileContent = await file.text();
         
-        // Vérification supplémentaire pour les patterns XSS dans les noms de fichiers
-        // const fileNameXssResult = detectXssPatterns(file.name);
-        // if (fileNameXssResult.detected) {
-        //   console.log('Security', 'XSS pattern detected in filename', user.id, {
-        //     fileName: file.name,
-        //     patterns: fileNameXssResult.patterns
-        //   });
-          
-        //   return NextResponse.json(
-        //     { 
-        //       error: 'Potentially malicious content detected in filename',
-        //       securityReport: {
-        //         securityLevel: 'high',
-        //         suspiciousPatterns: fileNameXssResult.patterns
-        //       }
-        //     },
-        //     { status: 400 }
-        //   );
-        // }
         
         // Utiliser la fonction secureFileContentExtended pour toutes les vérifications
         const fileData: FileContentData = {
@@ -145,7 +126,7 @@ async function largeFilesUploadHandler(request: Request, _validatedData: z.infer
             errorMessage = 'File tampering detected';
           }
           
-          console.log('Security', errorMessage, user.id, {
+          logger.logError('Security', 'File security check failed', errorMessage, user.id, {
             fileName: file.name,
             fileType: file.type,
             fileSize: file.size,
@@ -165,7 +146,7 @@ async function largeFilesUploadHandler(request: Request, _validatedData: z.infer
         }
       } catch (securityError) {
         const err = securityError instanceof Error ? securityError : new Error(String(securityError));
-        console.log('Security', 'Error analyzing file content', err, user.id, {
+        logger.logError('Security', 'Error analyzing file content', err, user.id, {
           context: 'File upload security check',
           fileName: file.name
         });
@@ -190,21 +171,17 @@ async function largeFilesUploadHandler(request: Request, _validatedData: z.infer
         
         // Vérifier si le fichier a la méthode arrayBuffer
         if (typeof file.arrayBuffer !== 'function') {
-          console.log('API', 'POST /api/upload/large-files', `Invalid file object for ${fileName}`, user.id);
+            logger.logError('API', 'POST /api/upload/large-files', `Invalid file object for ${fileName}`, user.id);
           continue;
         }
 
         const buffer = Buffer.from(await file.arrayBuffer());
         await writeFile(filePath, buffer);
         savedFilePaths.push(filePath);
-        
-        console.log('API', 'POST /api/upload/large-files', `File saved: ${fileName}`, user.id, {
-          filePath,
-          fileSize: file.size
-        });
+
       } catch (error) {
         const err = error instanceof Error ? error : new Error(String(error));
-        console.log('API', 'POST /api/upload/large-files', err, user.id, {
+        logger.logError('API', 'POST /api/upload/large-files', err, user.id, {
           context: `Saving file ${(fileEntry as File).name}`
         });
         
@@ -217,7 +194,7 @@ async function largeFilesUploadHandler(request: Request, _validatedData: z.infer
 
     // Vérifier que nous avons bien sauvegardé des fichiers
     if (savedFilePaths.length === 0) {
-      console.log('API', 'POST /api/upload/large-files', 'No files were successfully saved', user.id);
+      logger.logError('API', 'POST /api/upload/large-files', 'No files were successfully saved', user.id);
       return NextResponse.json(
         { error: 'Failed to save any uploaded files' },
         { status: 500 }
@@ -240,7 +217,7 @@ async function largeFilesUploadHandler(request: Request, _validatedData: z.infer
 
     if (jobError) {
       const err = jobError instanceof Error ? jobError : new Error(String(jobError));
-      console.log('API', 'POST /api/upload/large-files', err, user.id, {
+      logger.logError('API', 'POST /api/upload/large-files', err, user.id, {
         context: 'Creating import job'
       });
       return NextResponse.json(
@@ -264,17 +241,11 @@ async function largeFilesUploadHandler(request: Request, _validatedData: z.infer
 
     if (!redisSuccess) {
       // Si Redis échoue, le job reste dans Supabase et sera traité par le système de synchronisation
-      console.log('API', 'POST /api/upload/large-files', 'Failed to enqueue job to Redis, will be processed via sync', user.id, {
+      logger.logError('API', 'POST /api/upload/large-files', 'Failed to enqueue job to Redis, will be processed via sync', user.id, {
         jobId: job.id,
         context: 'Redis enqueue failed - fallback to sync'
       });
     }
-
-    console.log('API', 'POST /api/upload/large-files', 'Files uploaded successfully', user.id, {
-      jobId: job.id,
-      fileCount: savedFilePaths.length,
-      redisEnqueued: redisSuccess
-    });
 
     return NextResponse.json({ 
       jobId: job.id,
@@ -285,7 +256,7 @@ async function largeFilesUploadHandler(request: Request, _validatedData: z.infer
     // En cas d'erreur, essayer de récupérer l'ID utilisateur si possible
     const userId = session?.user?.id || 'unknown';
     const err = error instanceof Error ? error : new Error(String(error));
-    console.log('API', 'POST /api/upload/large-files', err, userId, {
+    logger.logError('API', 'POST /api/upload/large-files', err, userId, {
       context: 'Processing upload'
     });
     return NextResponse.json(

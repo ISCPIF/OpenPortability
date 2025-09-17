@@ -40,12 +40,11 @@ export const GET = withValidation(
       const repository = new StatsRepository();
       const statsService = new StatsService(repository);
 
-      const stats = await statsService.getUserStats(session.user.id, session.user.has_onboarded);
-      console.log("stats", stats)
-      console.log("onboarded")            
+      const stats = await statsService.getUserStats(session.user.id, session.user.has_onboarded);       
       return NextResponse.json(stats);
     } catch (error) {
-      console.log('API', 'GET /api/stats', error, session?.user?.id || 'anonymous', {
+      const err = error instanceof Error ? error : new Error(String(error))
+      logger.logError('API', 'GET /api/stats', err, session?.user?.id || 'anonymous', {
         context: 'Failed to retrieve user stats'
       });
       

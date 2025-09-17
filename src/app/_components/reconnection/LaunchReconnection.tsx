@@ -132,7 +132,6 @@ export default function LaunchReconnection({
                 const shareText = t('shareText', {
                   count: totalMatches
                 });
-                console.log("SHARE TEXT --->", shareText)
                 handleShare(shareText, platform, session, () => {}, setIsShared);
               }}
               providers={{

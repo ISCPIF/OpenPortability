@@ -24,12 +24,9 @@ export const handleShare = async (text: string, platform: string, session: any, 
   }
 
   if (!session?.user) {
-    console.log('❌ No user session found, returning');
+      console.error('❌ No user session found, returning');
     return;
   }
-
-  console.log('TEXT IS -->', text);
-
   try {
     let url;
     // Remove any existing URLs from the text to prevent duplication
@@ -52,9 +49,7 @@ export const handleShare = async (text: string, platform: string, session: any, 
       if (!response.ok) {
         throw new Error(result.error || 'Failed to share to BlueSky');
       }
-      
-      console.log('✅ Posted to BlueSky successfully', result);
-      
+            
       // Ouvrir le post dans une nouvelle fenêtre si possible
       if (result.uri) {
         const postId = result.uri.split('/').pop();
@@ -77,8 +72,6 @@ export const handleShare = async (text: string, platform: string, session: any, 
       url = `${platformUrls[platform as keyof typeof platformUrls]}/share?text=${encodeURIComponent(textWithoutUrl)}`;
       window.open(url, '_blank');
     }
-
-    console.log('✅ Sharing completed');
 
     if (setIsShared) {
       setIsShared(true);
