@@ -253,6 +253,7 @@ export const GET = withPublicValidation(
     validateQueryParams: true,
     queryParamsSchema: CallbackQuerySchema,
     applySecurityChecks: true,
+    excludeQueryParamsFromSecurity: ['state'],
     customRateLimit: { identifier: 'ip', windowMs: 60_000, maxRequests: 120 },
   }
 );

@@ -39,7 +39,8 @@ export interface ValidationOptions {
   expectedContentType?: string;
   validateQueryParams?: boolean; 
   queryParamsSchema?: z.ZodSchema<any>; 
-  excludeFromSecurityChecks?: string[]; // Liste des champs à exclure des vérifications de sécurité
+  excludeFromSecurityChecks?: string[]; // Liste des champs à exclure des vérifications de sécurité (body)
+  excludeQueryParamsFromSecurity?: string[]; // Liste des query params à exclure des vérifications de sécurité (URL)
 }
 
 /**
@@ -182,13 +183,19 @@ function detectPrototypePollution(jsonString: string): boolean {
 function validateQueryParameters(
   url: URL,
   endpoint: string,
-  userId?: string
+  userId?: string,
+  excludeKeys: string[] = []
 ): { isValid: boolean; errors: string[] } {
   const errors: string[] = [];
   const searchParams = url.searchParams;
   
   // Vérifier chaque paramètre d'URL
   for (const [key, value] of searchParams.entries()) {
+    // Exclure certains paramètres (ex: OAuth state) des checks de sécurité pour éviter les faux positifs
+    if (excludeKeys.includes(key)) {
+      // console.log('Validation', `Skipping security check for excluded query param: ${key}`, userId || 'anonymous');
+      continue;
+    }
     // Vérifier les tentatives de pollution de prototype dans les clés
     const protoRegex = /(__proto__|constructor|prototype)/i;
     if (protoRegex.test(key)) {
@@ -309,7 +316,8 @@ export function withValidation<Out, In = Out>(
       expectedContentType,
       validateQueryParams = true, 
       queryParamsSchema = z.object({}).passthrough(), 
-      excludeFromSecurityChecks = []
+      excludeFromSecurityChecks = [],
+      excludeQueryParamsFromSecurity = []
     } = options;
     
     const url = new URL(request.url);
@@ -349,7 +357,7 @@ export function withValidation<Out, In = Out>(
         // console.log('Validation', `${method} ${endpoint}`, 'Validating URL parameters', session?.user?.id || 'anonymous');
         
         // Vérification de sécurité des paramètres d'URL
-        const queryParamsValidation = validateQueryParameters(url, endpoint, session?.user?.id);
+        const queryParamsValidation = validateQueryParameters(url, endpoint, session?.user?.id, excludeQueryParamsFromSecurity);
         
         if (!queryParamsValidation.isValid) {
           logger.logError('Security', `${method} ${endpoint}`, 'URL parameters validation failed', session?.user?.id || 'anonymous', 
