@@ -2,7 +2,7 @@ import { MatchingRepository } from '../repositories/matchingRepository';
 import { MatchingResult, MatchingTarget, MatchingStats, MatchedFollower } from '../types/matching';
 import { StatsService } from './statsServices';
 import { StatsRepository } from '../repositories/statsRepository';
-import { redis } from '../redis';
+import logger from '../log_utils';
 
 export interface FollowAction {
   userId: string;
@@ -34,8 +34,6 @@ export class MatchingService {
     const { data: firstPageMatches, error: firstPageError } = 
       await this.repository.getFollowableTargets(userId, PAGE_SIZE, 0);
 
-    // console.log("****************************************",firstPageMatches)
-
     if (firstPageError) {
       throw new Error(`Failed to fetch first page: ${firstPageError}`);
     }
@@ -60,19 +58,15 @@ export class MatchingService {
     const totalPages = Math.ceil(totalCount / PAGE_SIZE);
     
     while (page < totalPages) {
-      // console.log("round of page ->", page)
-      // console.log("roud of matches ->", matches)
+
       const { data: matches, error: matchesError } = 
         await this.repository.getFollowableTargets(userId, PAGE_SIZE, page);
-      // console.log("roud of matches ->", matches)
-
       if (matchesError) {
         console.error(`Error fetching page ${page + 1}:`, matchesError);
         break;
       }
 
       if (!matches || matches.length === 0) {
-        console.log(`No more matches found on page ${page + 1}`);
         break;
       }
 
@@ -83,8 +77,6 @@ export class MatchingService {
       }
 
       page++;
-      // console.log(`Total matches so far: ${allMatches.length}`);
-
       // Safety check to prevent infinite loops
       if (allMatches.length >= totalCount) {
         break;
@@ -105,18 +97,16 @@ export class MatchingService {
   }
 
   async getSourcesFromFollower(twitterId: string): Promise<MatchingResult> {
-    console.log('[MatchingService] getSourcesFromFollower started for twitterId:', twitterId);
     
     // ÉTAPE 1: Récupérer les Twitter IDs depuis le repository
     const { data: basicData, error } = await this.repository.getSourcesFromFollower(twitterId);
     
     if (error) {
-      console.error('[MatchingService] Error from repository:', error);
+      logger.logError('[MatchingService] Error from repository:', error, "system");
       throw new Error(`Failed to fetch sources: ${error}`);
     }
 
     if (!basicData || basicData.length === 0) {
-      console.log('[MatchingService] No sources found');
       return {
         following: [],
         stats: {
@@ -128,7 +118,6 @@ export class MatchingService {
       };
     }
 
-    console.log(`[MatchingService] Retrieved ${basicData.length} basic records from repository`);
 
     // NOUVELLE LOGIQUE: Utiliser directement les données retournées par l'RPC
     // et ne plus dépendre de Redis pour filtrer ou enrichir les résultats.
@@ -163,8 +152,6 @@ export class MatchingService {
       has_been_followed_on_mastodon: !!item.has_been_followed_on_mastodon,
     }));
 
-    console.log(`[MatchingService] Successfully mapped ${mappedFollowers.length} followers out of ${basicData.length} total`);
-
     // ÉTAPE 3: Retourner le résultat au format MatchingResult
     const result = {
       following: mappedFollowers,
@@ -176,7 +163,6 @@ export class MatchingService {
       }
     };
     
-    console.log('[MatchingService] Final results:', result.stats);
     return result as unknown as MatchingResult;
   }
 
@@ -190,7 +176,8 @@ export class MatchingService {
         action.error
       );
     } catch (error) {
-      console.error('Failed to update follow status:', error);
+      const errorString = error instanceof Error ? error.message : String(error);
+      logger.logError('Failed to update follow status:', errorString, "system");
       throw new Error('Failed to update follow status');
     }
   }
@@ -202,13 +189,7 @@ export class MatchingService {
     success: boolean,
     error?: string
   ): Promise<void> {
-    console.log('[MatchingService.updateFollowStatusBatch] Starting batch update:', {
-      platform,
-      userId,
-      numberOfTargets: targetIds.length,
-      success,
-      error
-    });
+
 
     try {
       // 1. Mise à jour des relations dans sources_targets
@@ -222,13 +203,11 @@ export class MatchingService {
       
       // 2. Rafraîchir les stats utilisateur (remplace le trigger PostgreSQL)
       if (success) {
-        console.log('[MatchingService.updateFollowStatusBatch] Refreshing user stats after successful follow');
         await this.statsService.refreshUserStats(userId, true);
       }
-      
-      console.log('[MatchingService.updateFollowStatusBatch] Successfully updated follow status for batch');
-    } catch (error) {
-      console.error('[MatchingService.updateFollowStatusBatch] Failed to update follow status batch:', error);
+  } catch (error) {
+    const errorString = error instanceof Error ? error.message : String(error);
+    logger.logError('Failed to update follow status batch:', errorString, "system");
       throw new Error('Failed to update follow status batch');
     }
   }
@@ -249,7 +228,8 @@ export class MatchingService {
         error
       );
     } catch (error) {
-      console.error('Failed to update sources followers status:', error);
+      const errorString = error instanceof Error ? error.message : String(error);
+      logger.logError('Failed to update sources followers status:', errorString, "system");
       throw new Error('Failed to update sources followers status');
     }
   }
@@ -270,7 +250,8 @@ export class MatchingService {
         error
       );
     } catch (error) {
-      console.error('Failed to update sources followers status:', error);
+      const errorString = error instanceof Error ? error.message : String(error);
+      logger.logError('Failed to update sources followers status:', errorString, "system");
       throw new Error('Failed to update sources followers status');
     }
   }

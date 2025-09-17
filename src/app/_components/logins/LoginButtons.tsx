@@ -35,7 +35,6 @@ export default function LoginButtons({ onLoadingChange, onError }: LoginButtonsP
   const mastodonInstances = useMastodonInstances()
 
   const handleServiceSelect = (service: ActiveService) => {
-    console.log("service -->", service)
     setActiveService(service === activeService ? null : service)
     setError(null)
     onError?.(null)

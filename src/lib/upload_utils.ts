@@ -67,10 +67,7 @@ export const validateFileType = (file: File): boolean => {
 };
 
 export const validateFiles = (files: FileList): string | null => {
-  console.log('🔍 Validating files...', {
-    numberOfFiles: files.length,
-    fileNames: Array.from(files).map(f => f.name)
-  });
+
 
   if (files.length === 0) {
     return 'No files selected';
@@ -78,7 +75,6 @@ export const validateFiles = (files: FileList): string | null => {
 
   // Check if it's a single ZIP file
   if (files.length === 1 && files[0].name.toLowerCase().endsWith('.zip')) {
-    console.log('📦 ZIP file detected');
     return validateFile(files[0]);
   }
 
@@ -89,9 +85,6 @@ export const validateFiles = (files: FileList): string | null => {
   if (!fileNames.every(name => name.endsWith('.js'))) {
     return 'All files must be .js files';
   }
-
-  console.log('📄 Analyzing JS files:', fileNames);
-
   // Case 1: Standard case (following.js + follower.js)
   const hasStandardFollowing = fileNames.includes('following.js');
   const hasStandardFollower = fileNames.includes('follower.js');
@@ -102,12 +95,6 @@ export const validateFiles = (files: FileList): string | null => {
   const hasSplitFollower = followerParts.length > 0;
   const hasSplitFollowing = followingParts.length > 0;
 
-  console.log('📊 Files status:', {
-    hasStandardFollowing,
-    hasStandardFollower,
-    followerParts: followerParts.length > 0 ? followerParts.map(f => f.name) : 'none',
-    followingParts: followingParts.length > 0 ? followingParts.map(f => f.name) : 'none'
-  });
 
   // Check file sizes in all cases
   for (const file of files) {
@@ -117,28 +104,19 @@ export const validateFiles = (files: FileList): string | null => {
 
   // Validate combinations
   if (hasStandardFollowing && hasStandardFollower && files.length === 2) {
-    console.log('✅ Standard case validated');
     return null;
   } else if (hasSplitFollower && hasSplitFollowing) {
-    console.log('✅ Split files case validated (both)');
     return null;
   } else if (hasStandardFollowing && hasSplitFollower) {
-    console.log('✅ Split files case validated (follower only)');
     return null;
   } else if (hasSplitFollowing && hasStandardFollower) {
-    console.log('✅ Split files case validated (following only)');
     return null;
   }
-
-  console.log('❌ Invalid file combination');
   return 'Please upload either a ZIP file, following.js + follower.js, or their split versions (following-part*.js/follower-part*.js)';
 };
 
 export const validateTwitterData = (content: string, type: 'following' | 'follower'): string | null => {
-  console.log(`🔍 Validation du fichier ${type}:`, {
-    contentStart: content.substring(0, 50) + '...',
-    length: content.length
-  });
+
 
   const basePrefix = `window.YTD.${type}.part`;
   
@@ -155,19 +133,6 @@ export const validateTwitterData = (content: string, type: 'following' | 'follow
       console.error('❌ Crochet ouvrant "[" non trouvé');
       return `Format de données invalide dans ${type}.js`;
     }
-    const jsonStr = content.substring(jsonStartIndex);
-    console.log('📝 JSON à parser:', {
-      start: jsonStr.substring(0, 50) + '...',
-      end: '...' + jsonStr.substring(jsonStr.length - 50)
-    });
-
-    const data = JSON.parse(jsonStr) as TwitterData[];
-    console.log('✅ Parsing JSON réussi:', {
-      entriesCount: data.length,
-      firstEntry: data[0],
-      lastEntry: data[data.length - 1]
-    });
-
     return null;
   } catch (error) {
     console.error('❌ Erreur lors du parsing JSON:', error);
@@ -185,7 +150,6 @@ export const sanitizeContent = (content: Uint8Array): Uint8Array => {
 };
 
 export const mergePartFiles = (files: ExtractedFile[], type: 'follower' | 'following'): FileProcessResult => {
-  console.log(`🔄 Fusion des fichiers ${type}:`, files.map(f => f.name));
   
   // Trier les fichiers par numéro de part
   const sortedFiles = files.sort((a, b) => {
@@ -193,19 +157,13 @@ export const mergePartFiles = (files: ExtractedFile[], type: 'follower' | 'follo
     const numB = parseInt(b.name.match(/part(\d+)/)?.[1] || '0');
     return numA - numB;
   });
-
-  console.log('📋 Ordre de traitement:', sortedFiles.map(f => f.name));
-
   // Extraire et fusionner les données
   let mergedContent = '';
   let totalCount = 0;
 
   sortedFiles.forEach((file, index) => {
     const isLast = index === sortedFiles.length - 1;
-    const text = new TextDecoder().decode(file.content);
-    console.log(`📖 Traitement de ${file.name}...`);
-    
-    // Trouver les indices de début et fin
+    const text = new TextDecoder().decode(file.content);    
     const startBracket = text.indexOf('[');
     if (startBracket === -1) {
       throw new Error(`Format invalide dans ${file.name}: "[" non trouvé`);
@@ -224,7 +182,6 @@ export const mergePartFiles = (files: ExtractedFile[], type: 'follower' | 'follo
 
     // Compter les objets dans ce fichier
     const objectCount = (content.match(new RegExp(`"${type}"\\s*:`, 'g')) || []).length;
-    console.log(`📊 ${file.name}: ${objectCount} objets trouvés`);
     totalCount += objectCount;
 
     // Ajouter une virgule entre les fichiers (sauf pour le premier morceau)
@@ -235,7 +192,6 @@ export const mergePartFiles = (files: ExtractedFile[], type: 'follower' | 'follo
     mergedContent += content;
   });
 
-  console.log(`📊 Total ${type}: ${totalCount} entrées`);
   
   // Recréer le contenu avec le bon préfixe
   const finalContent = `window.YTD.${type}.part0 = [${mergedContent}`;

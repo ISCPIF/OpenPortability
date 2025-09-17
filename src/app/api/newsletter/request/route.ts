@@ -37,13 +37,12 @@ async function newsletterConsentsHandler(
       ...consents
     };
     
-    console.log('API', 'GET /api/newsletter/request', 'Success', session.user.id, {
-      hasConsents: Object.keys(consents).length > 0
-    });
-    
     return NextResponse.json(response);
   } catch (error) {
-    console.log('API', 'GET /api/newsletter/request', error, session?.user?.id);
+    const err = error instanceof Error ? error : new Error(String(error))
+    logger.logError('API', 'GET /api/newsletter/request', err, session?.user?.id, {
+      context: 'Error in newsletterConsentsHandler'
+    });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -84,16 +83,13 @@ async function updateConsentHandler(
       // Validation de sécurité supplémentaire de l'email
       const emailValidation = validateEmail(data.email);
       if (!emailValidation.isValid) {
-        console.log('Security', 'Invalid email format', `Blocked invalid email: ${data.email}`, session.user.id);
+        const err = emailValidation.error || 'Invalid email format'
+        logger.logError('Security', 'Invalid email format', `Blocked invalid email: ${data.email}`, session.user.id);
         return NextResponse.json(
           { error: emailValidation.error || 'Invalid email format' },
           { status: 400 }
         );
       }
-      
-      console.log('API', 'POST /api/newsletter/request', 'Updating email', session.user.id, {
-        fromDashboard: isDashboard
-      });
       
       await userService.updateEmail(session.user.id, data.email);
     }
@@ -104,18 +100,10 @@ async function updateConsentHandler(
     // Format 1: Consentement unique directement dans l'objet racine
     if ('type' in data && 'value' in data) {
       consentsToUpdate = [{ type: data.type, value: data.value }];
-      console.log('API', 'POST /api/newsletter/request', 'Updating single consent', session.user.id, {
-        consentType: data.type,
-        fromDashboard: isDashboard
-      });
     } 
     // Format 2: Tableau de consentements
     else if (data.consents && Array.isArray(data.consents)) {
       consentsToUpdate = data.consents;
-      console.log('API', 'POST /api/newsletter/request', 'Updating multiple consents', session.user.id, {
-        consentCount: data.consents.length,
-        fromDashboard: isDashboard
-      });
     }
     
     // Mettre à jour tous les consentements
@@ -126,12 +114,12 @@ async function updateConsentHandler(
         await userService.updateConsent(session.user.id, safeType, consent.value, metadata);
       })
     );
-    
-    console.log('API', 'POST /api/newsletter/request', 'Success', session.user.id);
-    return NextResponse.json({ success: true });
+        return NextResponse.json({ success: true });
   } catch (error: any) {
-    console.log('API', 'POST /api/newsletter/request', error, session?.user?.id);
-    
+    const err = error instanceof Error ? error : new Error(String(error))
+    logger.logError('API', 'POST /api/newsletter/request', err, session?.user?.id, {
+      context: 'Error in updateConsentHandler'
+    });    
     // Retourner l'erreur avec plus de détails
     return NextResponse.json({
       success: false,

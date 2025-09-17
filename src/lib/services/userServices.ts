@@ -2,6 +2,7 @@ import { UserRepository } from '@/lib/repositories/userRepository';
 import { redis } from '@/lib/redis';
 import { NewsletterUpdate, ShareEvent, User } from '../types/user';
 import { isValidEmail } from '../utils';
+import logger from '../log_utils';
 
 export class UserService {
   private repository: UserRepository;
@@ -92,25 +93,17 @@ export class UserService {
     research_accepted: boolean;
     // have_seen_newsletter: boolean;
   }> {
-    console.log('🔍 [UserService.getNewsletterPreferences] Getting preferences for user:', userId);
     try {
       // Récupérer l'email de l'utilisateur et have_seen_newsletter
       const user = await this.repository.getUser(userId);
       if (!user) {
+        
         throw new Error('User not found');
       }
 
       // Récupérer les consentements actifs
       const activeConsents = await this.repository.getUserActiveConsents(userId);
       
-      console.log('✅ [UserService.getNewsletterPreferences] Got preferences:', {
-        email: user.email,
-        hqx_newsletter: activeConsents['email_newsletter'] || false,
-        oep_accepted: activeConsents['oep_newsletter'] || false,
-        research_accepted: activeConsents['research_participation'] || false,
-        // have_seen_newsletter: user.have_seen_newsletter
-      });
-
       return {
         email: user.email,
         hqx_newsletter: activeConsents['email_newsletter'] || false,
@@ -135,9 +128,9 @@ export class UserService {
 
     try {
       await this.repository.createShareEvent(event);
-      console.log(`Share event recorded for user ${userId} on platform ${platform}`);
     } catch (error) {
-      console.error('Failed to record share event:', error);
+      const errorString = error instanceof Error ? error.message : String(error);
+      logger.logError('Failed to record share event:', errorString, "system");
       throw error;
     }
   }
@@ -145,10 +138,10 @@ export class UserService {
   async getUserShareEvents(userId: string): Promise<ShareEvent[]> {
     try {
       const events = await this.repository.getShareEvents(userId);
-      console.log(`Retrieved ${events.length} share events for user ${userId}`);
       return events;
     } catch (error) {
-      console.error('Failed to get share events:', error);
+      const errorString = error instanceof Error ? error.message : String(error);
+      logger.logError('Failed to get share events:', errorString, "system");
       throw error;
     }
   }
@@ -160,13 +153,12 @@ export class UserService {
    * @returns Un objet avec les types de consentement comme clés et les valeurs de consentement comme valeurs
    */
   async getUserActiveConsents(userId: string): Promise<Record<string, boolean>> {
-    // console.log('🔍 [UserService.getUserActiveConsents] Getting consents for user:', userId);
     try {
       const consents = await this.repository.getUserActiveConsents(userId);
-      // console.log('✅ [UserService.getUserActiveConsents] Got consents:', consents);
       return consents;
     } catch (error) {
-      console.error('❌ [UserService.getUserActiveConsents] Error:', error);
+      const errorString = error instanceof Error ? error.message : String(error);
+      logger.logError('Failed to get user active consents:', errorString, "system");
       throw error;
     }
   }
@@ -234,7 +226,8 @@ export class UserService {
       const langPref = await this.repository.getUserLanguagePreference(userId);
       return langPref || { language: 'en' }; // Default to English if no preference is set
     } catch (error) {
-      console.error('❌ [UserService.getLanguagePreference] Error:', error);
+      const errorString = error instanceof Error ? error.message : String(error);
+      logger.logError('Failed to get language preference:', errorString, "system");
       throw error;
     }
   }
@@ -287,7 +280,8 @@ export class UserService {
       await this.createTestDMTaskInRedis(userId, platform, userHandles);
 
     } catch (error) {
-      console.error(`❌ [UserService.enablePersonalizedSupportForPlatform] Error for ${platform}:`, error);
+      const errorString = error instanceof Error ? error.message : String(error);
+      logger.logError('Failed to enable personalized support for platform:', errorString, "system");
       throw error;
     }
   }
@@ -315,7 +309,6 @@ export class UserService {
       }
 
       if (!handle) {
-        console.log(`[UserService.createTestDMTaskInRedis] No valid handle for ${platform}, skipping task creation`);
         return;
       }
 
@@ -336,14 +329,12 @@ export class UserService {
       // Clé de déduplication
       const dedupeKey = `task_dedup:${userId}:${platform}:test-dm`;
 
-      console.log(`[UserService.createTestDMTaskInRedis] Creating task for ${platform} with handle ${handle}`);
       
       // const redis = getRedisClient();
       
       // Vérifier si une tâche similaire existe déjà (déduplication)
       const existingTask = await redis.get(dedupeKey);
       if (existingTask) {
-        console.log(`[UserService.createTestDMTaskInRedis] Task already exists for ${userId}:${platform}, skipping`);
         return;
       }
       
@@ -353,10 +344,10 @@ export class UserService {
       // Marquer comme traité pour déduplication (expire après 1 heure)
       await redis.setex(dedupeKey, 3600, JSON.stringify(taskData));
       
-      console.log(`[UserService.createTestDMTaskInRedis] Task queued in ${queueKey} with deduplication key ${dedupeKey}`);
 
     } catch (error) {
-      console.error(`❌ [UserService.createTestDMTaskInRedis] Error for ${platform}:`, error);
+      const errorString = error instanceof Error ? error.message : String(error);
+      logger.logError('Failed to create test DM task in Redis:', errorString, "system");
       // Ne pas throw - les tâches Redis sont non-critiques
     }
   }

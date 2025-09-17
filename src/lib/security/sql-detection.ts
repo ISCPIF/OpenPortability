@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { logger } from '../log_utils';
 
 // Fonction pour charger les exemples SQL depuis le fichier
 function loadSqlExamples(): string[] {
@@ -7,11 +8,12 @@ function loadSqlExamples(): string[] {
     const sqlExamplesPath = path.join(process.cwd(), 'security', 'sql_example.txt');
     const content = fs.readFileSync(sqlExamplesPath, 'utf8');
     return content.split('\n')
-      .filter(line => line.trim() && !line.startsWith('//') && !line.startsWith('#') && !line.startsWith('*'))
-      .map(line => line.trim());
+      .filter((line: string) => line.trim() && !line.startsWith('//') && !line.startsWith('#') && !line.startsWith('*'))
+      .map((line: string) => line.trim());
   } catch (error) {
-    console.log('Security', 'Could not load SQL examples file', 'system', {
-      error: (error as Error).message
+    const errorString = error instanceof Error ? error.message : String(error);
+    logger.logError('Security', 'Could not load SQL examples file', 'system', {
+      error: errorString
     });
     return [];
   }
@@ -173,7 +175,7 @@ export function detectSqlInjectionPayload(input: string): SqlDetectionResult {
   
   // Journalisation si vulnérable
   if (result.isVulnerable) {
-    console.log('Security', 'SQL injection attack detected', 'system', {
+    logger.logError('Security', 'SQL injection attack detected', 'system', {
       detectedPatterns: result.detectedPatterns.slice(0, 5), // Limiter pour éviter un log trop volumineux
       riskLevel: result.riskLevel,
       inputPreview: decodedInput.substring(0, 100) // Limiter la taille du log

@@ -87,20 +87,13 @@ export function useReconnectState() {
 
 
       const followingData = await response.json();
-      console.log("following dsata from matching found is ->", followingData)
       
       // Adapter selon la structure actuelle de l'API (sera simplifié plus tard)
       const followingArray = followingData.matches?.following || followingData.following || [];
       setFollowingList(followingArray);
       
       // Maintenir compatibilité avec l'ancien système
-      setAccountsToProcess(followingArray);
-      
-      // console.log("===== FOLLOWING LIST FETCHED =====");
-      // console.log("Following data:", JSON.stringify(followingData, null, 2));
-      // console.log("Following array length:", followingArray.length);
-      // console.log("===================================");
-      
+      setAccountsToProcess(followingArray);      
       return followingArray;
     } catch (error) {
       console.error('fetchFollowingList: Error:', error);
@@ -144,15 +137,13 @@ export function useReconnectState() {
   // NOUVEAU: Fonction pour re-fetch les stats après un follow (le cache a déjà été mis à jour par la DB)
   const refetchUserStatsAfterFollow = useCallback(async () => {
     try {
-      console.log("🔄 [refetchUserStatsAfterFollow] Starting stats refresh...");
+
       
       // Attendre 5 secondes pour que le webhook PostgreSQL termine
-      console.log("⏳ [refetchUserStatsAfterFollow] Waiting 5s for cache update...");
       await new Promise(resolve => setTimeout(resolve, 4000));
       
       await refreshStats();
       
-      console.log("✅ [refetchUserStatsAfterFollow] Stats refresh completed");
     } catch (error) {
       console.error('❌ [refetchUserStatsAfterFollow] Error:', error);
     }
@@ -262,7 +253,7 @@ export function useReconnectState() {
   const handleAutomaticReconnection = async () => {
     await handleAutomaticMode();
     // Démarrer la migration automatique avec tous les comptes
-    const allAccountIds = accountsToProcess.map(match => 
+    const allAccountIds = accountsToProcess.map((match: any) => 
       'node_id' in match ? match.node_id.toString() : match.source_twitter_id
     );
     handleStartMigration(allAccountIds);
@@ -275,42 +266,31 @@ export function useReconnectState() {
 
   // Fonction pour démarrer la migration
   const handleStartMigration = async (selectedAccounts: string[]) => {
-    console.log(" [handleStartMigration] Called with selectedAccounts:", selectedAccounts);
-    console.log(" [handleStartMigration] selectedAccounts length:", selectedAccounts.length);
-    console.log(" [handleStartMigration] accountsToProcess length:", accountsToProcess.length);
+
     
     try {
       setIsMigrating(true);
       
       // Get all selected accounts and handle both types
-      const accountsToMigrate = accountsToProcess.filter(match => {
+      const accountsToMigrate = accountsToProcess.filter((match: any) => {
         const twitterId = 'node_id' in match 
           ? match.node_id.toString()
           : match.source_twitter_id;
         const isSelected = selectedAccounts.includes(twitterId);
         
-        console.log(" [handleStartMigration] Checking account:", {
-          twitterId,
-          isSelected,
-          matchType: 'node_id' in match ? 'MatchingTarget' : 'MatchedFollower'
-        });
-        
         return isSelected;
       });
-
-      console.log(" [handleStartMigration] Filtered accountsToMigrate:", accountsToMigrate.length);
-      console.log(" [handleStartMigration] accountsToMigrate details:", accountsToMigrate);
       
       // Initialize progress tracking with total matches
       const initialResults = {
         bluesky: {
-          attempted: accountsToMigrate.filter(acc => {
+          attempted: accountsToMigrate.filter((acc: any) => {
             const hasFollowed = 'has_follow_bluesky' in acc 
               ? acc.has_follow_bluesky 
               : acc.has_been_followed_on_bluesky;
             return !hasFollowed;
           }).length,
-          succeeded: accountsToMigrate.filter(acc => {
+          succeeded: accountsToMigrate.filter((acc: any) => {
             const hasFollowed = 'has_follow_bluesky' in acc 
               ? acc.has_follow_bluesky 
               : acc.has_been_followed_on_bluesky;
@@ -318,13 +298,13 @@ export function useReconnectState() {
           }).length
         },
         mastodon: {
-          attempted: accountsToMigrate.filter(acc => {
+          attempted: accountsToMigrate.filter((acc: any) => {
             const hasFollowed = 'has_follow_mastodon' in acc 
               ? acc.has_follow_mastodon 
               : acc.has_been_followed_on_mastodon;
             return !hasFollowed;
           }).length,
-          succeeded: accountsToMigrate.filter(acc => {
+          succeeded: accountsToMigrate.filter((acc: any) => {
             const hasFollowed = 'has_follow_mastodon' in acc 
               ? acc.has_follow_mastodon 
               : acc.has_been_followed_on_mastodon;
@@ -334,13 +314,9 @@ export function useReconnectState() {
       };
       setMigrationResults(initialResults);
 
-      console.log("********")
-      console.log("batchAccounts", accountsToMigrate)
-      console.log("********")
-
       // Process in batches, excluding already followed accounts
       const BATCH_SIZE = 25;
-      let remainingAccounts = accountsToMigrate.filter(acc => {
+      let remainingAccounts = accountsToMigrate.filter((acc: any) => {
         const hasFollowedBluesky = 'has_follow_bluesky' in acc 
           ? acc.has_follow_bluesky 
           : acc.has_been_followed_on_bluesky;
@@ -382,7 +358,7 @@ export function useReconnectState() {
         const result = await response.json();
 
         // Update progress based on batch results
-        setMigrationResults(prevResults => {
+        setMigrationResults((prevResults: any) => {
           if (!prevResults) return initialResults;
 
           return {
@@ -409,7 +385,6 @@ export function useReconnectState() {
       // Même en cas d'erreur, essayons de rafraîchir les stats
       // car il se peut que certains follows aient réussi
       try {
-        console.log(" Attempting stats refresh despite error...");
         await refetchUserStatsAfterFollow();
       } catch (refreshError) {
         console.error('Failed to refresh stats after error:', refreshError);

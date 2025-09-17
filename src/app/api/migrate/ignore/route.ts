@@ -17,21 +17,7 @@ async function ignoreHandler(request: NextRequest, data: z.infer<typeof IgnoreTa
 
     // if (action === 'ignore') {
       await matchingService.ignoreTarget(userId, targetTwitterId, action);
-      
-      console.log("Target ignored successfully", {
-        userId,
-        targetTwitterId,
-        context: "api/migrate/ignore",
-      });
-    // } else {
-    //   await matchingService.unignoreTarget(userId, targetTwitterId);
-      
-    //   console.log("Target unignored successfully", {
-    //     userId,
-    //     targetTwitterId,
-    //     context: "api/migrate/ignore",
-    //   });
-    // }
+
     
     return NextResponse.json({ success: true });
   } catch (error) {

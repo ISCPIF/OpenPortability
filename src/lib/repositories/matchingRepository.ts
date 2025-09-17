@@ -1,7 +1,7 @@
 import { MatchingTarget, StoredProcedureTarget } from '../types/matching';
 import { supabase, authClient } from '../supabase';
 import { redis } from '../redis';
-import { logError, logWarning, logInfo, logDebug } from '../log_utils';
+import logger, { logError, logWarning, logInfo, logDebug } from '../log_utils';
 
 // Types pour la fonction get_social_graph_data
 interface SocialGraphTarget {
@@ -70,16 +70,11 @@ export class MatchingRepository {
     pageSize: number = 1000,
     pageNumber: number = 0
   ): Promise<{ data: StoredProcedureTarget[] | null; error: any }> {
-    // console.log("getFollowableTargets", userId, pageSize, pageNumber);
     
     try {
       // 1. Essayer Redis-first approach
       const redisResult = await this.getFollowableTargetsFromRedis(userId, pageSize, pageNumber);
       if (redisResult.data !== null) {
-        // console.log("getFollowableTargets Redis success:", {
-        //   dataLength: redisResult.data.length,
-        //   firstItem: redisResult.data.length > 0 ? redisResult.data[0] : null
-        // });
         return redisResult;
       }
     } catch (redisError) {
@@ -89,18 +84,12 @@ export class MatchingRepository {
     }
 
     // 2. Fallback vers la fonction SQL existante
-    // console.log("getFollowableTargets falling back to SQL function");
     const result = await this.supabase.rpc('get_followable_targets', {
       user_id: userId,
       page_size: pageSize,
       page_number: pageNumber
     });
     
-    // console.log("getFollowableTargets SQL result:", {
-    //   error: result.error,
-    //   dataLength: result.data?.length || 0,
-    //   firstItem: result.data && result.data.length > 0 ? result.data[0] : null
-    // });
     
     return result;
   }
@@ -378,19 +367,12 @@ export class MatchingRepository {
     pageSize: number = 1000,
     pageNumber: number = 0
   ): Promise<{ data: StoredProcedureTarget[] | null; error: any }> {
-    console.log(`🔍 [STEP 1] Starting getSourcesFromFollower for twitterId: ${twitterId}, pageSize: ${pageSize}, pageNumber: ${pageNumber}`);
     
     // DEBUG: Vérifier la conversion parseInt
     const parsedTwitterId = twitterId;
-    console.log(`🔢 [DEBUG] Original twitterId: "${twitterId}" (type: ${typeof twitterId})`);
-    console.log(`🔢 [DEBUG] Parsed twitterId: ${parsedTwitterId} (type: ${typeof parsedTwitterId})`);
-    console.log(`🔢 [DEBUG] Expected: 1309241221039165446`);
-    console.log(`🔢 [DEBUG] Match expected: ${parsedTwitterId === "1309241221039165446"}`);
     
     // ÉTAPE 1: Récupérer les UUIDs depuis sources_followers (ULTRA RAPIDE)
-    const step1Start = Date.now();
-    console.log(`⚡ [STEP 1] Calling get_sources_from_follower RPC...`);
-    
+    const step1Start = Date.now();    
     const uuidResult = await this.supabase.rpc('get_sources_from_follower', {
       follower_twitter_id_param: parsedTwitterId, // CORRIGÉ: Convertir BigInt en string
       page_size: pageSize,
@@ -398,22 +380,17 @@ export class MatchingRepository {
     });
     
     const step1Duration = Date.now() - step1Start;
-    console.log(`✅ [STEP 1] get_sources_from_follower completed in ${step1Duration}ms`);
     
     // DEBUG: Afficher la réponse brute de Supabase
-    console.log(`🔍 [DEBUG] Raw Supabase response:`, JSON.stringify(uuidResult, null, 2));
     
     if (uuidResult.error) {
-      console.error(`❌ [STEP 1] Error getting source UUIDs:`, uuidResult.error);
+      logger.logError("MatchingRepo", "getSourcesFromFollower", `❌ [STEP 1] Error getting source UUIDs:`, uuidResult.error);
       return { data: null, error: uuidResult.error };
     }
 
-    console.log(`📊 [STEP 1] Retrieved ${uuidResult.data?.length || 0} UUID records`);
-    console.log(`📊 [DEBUG] First 3 records:`, uuidResult.data?.slice(0, 3));
-
     // Si pas de résultats, retourner vide
     if (!uuidResult.data || uuidResult.data.length === 0) {
-      console.log(`🚫 [STEP 1] No sources found for follower ${twitterId} - returning empty array`);
+      logger.logError("MatchingRepo", "getSourcesFromFollower", `🚫 [STEP 1] No sources found for follower ${twitterId} - returning empty array`);
       return { data: [], error: null };
     }
 
@@ -429,14 +406,6 @@ export class MatchingRepository {
       total_count: item.total_count ?? 0,
     }));
 
-    const step3Duration = Date.now() - step1Start;
-    const totalDuration = Date.now() - step1Start;
-    
-    console.log(`✅ [STEP 3] Data merging completed in ${step3Duration}ms`);
-    console.log(`🎉 [FINAL] getSourcesFromFollower completed successfully!`);
-    console.log(`📊 [FINAL] Final results: ${finalData.length}`);
-    console.log(`⏱️ [FINAL] Total duration: ${totalDuration}ms (Step1: ${step1Duration}ms)`);
-    
     return { data: finalData as any, error: null };
   }
 
@@ -448,16 +417,9 @@ export class MatchingRepository {
         .eq("source_id", userId)
         .eq("node_id", targetTwitterId);  // CORRIGÉ: ÉVITER parseInt()
         
-      console.log("Target marked as dismissed", {
-        userId,
-        targetTwitterId,
-        context: "MatchingRepository.ignoreTarget",
-      });
     } catch (error) {
-      console.log("Failed to mark target as dismissed", {
-        error: error instanceof Error ? error.message : String(error),
-        context: "MatchingRepository.ignoreTarget",
-      });
+      const errorString = error instanceof Error ? error.message : String(error);
+      logger.logError("MatchingRepo", "ignoreTarget", "Failed to mark target as dismissed", errorString);
       throw error;
     }
   }
@@ -470,244 +432,11 @@ export class MatchingRepository {
         .eq("source_id", userId)
         .eq("node_id", targetTwitterId);  // CORRIGÉ: ÉVITER parseInt()
         
-      console.log("Target marked as not dismissed", {
-        userId,
-        targetTwitterId,
-        context: "MatchingRepository.unignoreTarget",
-      });
     } catch (error) {
-      console.log("Failed to mark target as not dismissed", {
-        error: error instanceof Error ? error.message : String(error),
-        context: "MatchingRepository.unignoreTarget",
-      });
+      const errorString = error instanceof Error ? error.message : String(error);
+      logger.logError("MatchingRepo", "unignoreTarget", "Failed to mark target as not dismissed", errorString);
       throw error;
     }
-  }
-
-  /**
-   * Récupère les personnes que l'utilisateur suit (following)
-   * @param userId UUID de l'utilisateur
-   * @param limit Nombre maximum de résultats (0 = pas de limite, récupère tout)
-   * @returns Liste des twitter_ids des personnes suivies
-   */
-  async getUserFollowing(userId: string, limit: number = 0): Promise<string[]> {
-    const BATCH_SIZE = 1000;
-    const allFollowing: string[] = [];
-    let offset = 0;
-    let hasMore = true;
-
-    try {
-      while (hasMore) {
-        const { data, error } = await this.supabase
-          .from('sources_targets')
-          .select('node_id::text') // FORCER node_id en TEXT
-          .eq('source_id', userId)
-          .eq('dismissed', false)
-          .range(offset, offset + BATCH_SIZE - 1)
-          .order('node_id::text'); // Ordre consistant pour la pagination
-
-        if (error) {
-          logError('Repository', 'MatchingRepository.getUserFollowing', error, userId, { 
-            limit, 
-            offset, 
-            batchSize: BATCH_SIZE 
-          });
-          throw error;
-        }
-
-        const batch = data?.map(item => item.node_id) || [];
-        allFollowing.push(...batch);
-
-        // Vérifier si on a atteint la limite demandée
-        if (limit > 0 && allFollowing.length >= limit) {
-          return allFollowing.slice(0, limit);
-        }
-
-        // Vérifier s'il y a encore des données
-        hasMore = batch.length === BATCH_SIZE;
-        offset += BATCH_SIZE;
-
-        // Log de progression pour les gros datasets
-        if (offset % 5000 === 0) {
-          logInfo('Repository', 'MatchingRepository.getUserFollowing', 
-            `Retrieved ${allFollowing.length} following records so far`, userId);
-        }
-      }
-
-      logInfo('Repository', 'MatchingRepository.getUserFollowing', 
-        `Retrieved total of ${allFollowing.length} following records`, userId);
-
-      return allFollowing;
-
-    } catch (error) {
-      logError('Repository', 'MatchingRepository.getUserFollowing', 
-        `Failed after retrieving ${allFollowing.length} records`, userId, error);
-      throw error;
-    }
-  }
-
-  /**
-   * Récupère les followers de l'utilisateur
-   * @param userId UUID de l'utilisateur
-   * @param limit Nombre maximum de résultats (0 = pas de limite, récupère tout)
-   * @returns Liste des twitter_ids des followers
-   */
-  async getUserFollowers(userId: string, limit: number = 0): Promise<string[]> {
-    const BATCH_SIZE = 1000;
-    const allFollowers: string[] = [];
-    let offset = 0;
-    let hasMore = true;
-
-    try {
-      while (hasMore) {
-        const { data, error } = await this.supabase
-          .from('sources_followers')
-          .select('follower_id')
-          .eq('source_id', userId)
-          .range(offset, offset + BATCH_SIZE - 1)
-          .order('follower_id'); // Ordre consistant pour la pagination
-
-        if (error) {
-          logError('Repository', 'MatchingRepository.getUserFollowers', error, userId, { 
-            limit, 
-            offset, 
-            batchSize: BATCH_SIZE 
-          });
-          throw error;
-        }
-
-        const batch = data?.map(item => item.follower_id) || [];
-        allFollowers.push(...batch);
-
-        // Vérifier si on a atteint la limite demandée
-        if (limit > 0 && allFollowers.length >= limit) {
-          return allFollowers.slice(0, limit);
-        }
-
-        // Vérifier s'il y a encore des données
-        hasMore = batch.length === BATCH_SIZE;
-        offset += BATCH_SIZE;
-
-        // Log de progression pour les gros datasets
-        if (offset % 5000 === 0) {
-          logInfo('Repository', 'MatchingRepository.getUserFollowers', 
-            `Retrieved ${allFollowers.length} follower records so far`, userId);
-        }
-      }
-
-      logInfo('Repository', 'MatchingRepository.getUserFollowers', 
-        `Retrieved total of ${allFollowers.length} follower records`, userId);
-
-      return allFollowers;
-
-    } catch (error) {
-      logError('Repository', 'MatchingRepository.getUserFollowers', 
-        `Failed after retrieving ${allFollowers.length} records`, userId, error);
-      throw error;
-    }
-  }
-
-  /**
-   * Récupère les stats cachées de l'utilisateur depuis user_stats_cache
-   * @param userId UUID de l'utilisateur
-   * @returns Stats cachées ou null si pas trouvées
-   */
-  async getCachedUserStats(userId: string): Promise<{
-    followers: number;
-    following: number;
-  } | null> {
-    const { data, error } = await this.supabase
-      .from('user_stats_cache')
-      .select('stats')
-      .eq('user_id', userId)
-      .single();
-
-    console.log("data", data)
-    console.log("error", error)
-
-    if (error) {
-      logWarning('Repository', 'MatchingRepository.getCachedUserStats', 
-        'No cached stats found, will fallback to direct count', userId);
-      return null;
-    }
-
-    const stats = data?.stats as any;
-    if (stats?.connections) {
-      return {
-        followers: stats.connections.followers || 0,
-        following: stats.connections.following || 0
-      };
-    }
-
-    return null;
-  }
-
-  /**
-   * Récupère le nombre total de personnes que l'utilisateur suit (depuis cache ou count direct)
-   * @param userId UUID de l'utilisateur
-   * @returns Nombre total de following
-   */
-  async getUserFollowingCount(userId: string): Promise<number> {
-
-    console.log("FOLLOWING")
-    // Essayer d'abord le cache
-    const cachedStats = await this.getCachedUserStats(userId);
-    if (cachedStats) {
-      return cachedStats.following;
-    }
-
-    console.log("cachedStats", cachedStats)
-
-
-    // Fallback sur count direct si pas de cache
-    const { count, error } = await this.supabase
-      .from('sources_targets')
-      .select('*', { count: 'exact', head: true})
-      .eq('source_id', userId)
-      .eq('dismissed', false);
-
-    console.log("count", count)
-    console.log("error", error)
-
-    if (error) {
-      logError('Repository', 'MatchingRepository.getUserFollowingCount', error, userId);
-      throw error;
-    }
-
-    return count || 0;
-  }
-
-  /**
-   * Récupère le nombre total de followers de l'utilisateur (depuis cache ou count direct)
-   * @param userId UUID de l'utilisateur
-   * @returns Nombre total de followers
-   */
-  async getUserFollowersCount(userId: string): Promise<number> {
-
-    console.log("FOLLOWERS")
-    // Essayer d'abord le cache
-    const cachedStats = await this.getCachedUserStats(userId);
-    if (cachedStats) {
-      return cachedStats.followers;
-    }
-
-    console.log("cachedStats", cachedStats)
-
-    // Fallback sur count direct si pas de cache
-    const { count, error } = await this.supabase
-      .from('sources_followers')
-      .select('*', { count: 'exact', head: true})
-      .eq('source_id', userId);
-
-    console.log("count", count)
-    console.log("error", error)
-
-    if (error) {
-      logError('Repository', 'MatchingRepository.getUserFollowersCount', error, userId);
-      throw error;
-    }
-
-    return count || 0;
   }
 
 }
