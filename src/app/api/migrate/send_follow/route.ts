@@ -11,6 +11,7 @@ import logger from '@/lib/log_utils'
 import { withValidation } from '@/lib/validation/middleware'
 import { SendFollowRequestSchema, MatchingAccountSchema } from '@/lib/validation/schemas'
 import { z } from 'zod'
+import { StatsRepository } from '@/lib/repositories/statsRepository'
 
 // Use the schema-inferred type to match the incoming payload shape
 type AccountToFollow = z.infer<typeof MatchingAccountSchema>;
@@ -210,6 +211,19 @@ export const POST = withValidation(
             results.mastodon = { succeeded: 0, failures: [{ error: 'Failed to follow on Mastodon' }] };
           }
         }
+      }
+
+      // For non-onboarded users, refresh the user stats cache after send_follow completes
+      try {
+        if (!session.user.has_onboarded) {
+          const statsRepository = new StatsRepository()
+          await statsRepository.refreshUserStatsCache(userId, false)
+        }
+      } catch (statsErr) {
+        const errMsg = statsErr instanceof Error ? statsErr.message : String(statsErr)
+        console.log('API', 'POST /api/migrate/send_follow', errMsg, userId, {
+          context: 'Optional refreshUserStatsCache for non-onboarded user'
+        })
       }
 
       return NextResponse.json(results)
