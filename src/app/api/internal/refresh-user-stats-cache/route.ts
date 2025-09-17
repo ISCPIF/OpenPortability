@@ -43,7 +43,7 @@ async function handleRefreshUserStatsCache(
     await redis.del(cacheKey);
 
     // 2. Mettre à jour Redis avec les stats reçues dans le payload (TTL: 10 minutes)
-    await redis.set(cacheKey, JSON.stringify(stats), 600);
+    await redis.set(cacheKey, JSON.stringify(stats), 86400);
 
     logger.logInfo('WEBHOOK', 'POST /api/internal/refresh-user-stats-cache', 'User stats cache updated successfully', 'system', {
       context: 'User stats cached in Redis for 10 minutes from payload',

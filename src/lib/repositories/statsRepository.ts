@@ -31,6 +31,7 @@ export class StatsRepository {
           // logger.logInfo('Repository', 'StatsRepository.getUserCompleteStats', 'User stats served from Redis cache', userId, {
           //   context: 'Redis cache hit'
           // });
+          console.log("USING CACHEEEEE")
           return JSON.parse(cached) as UserCompleteStats;
         }
       } catch (redisError) {
@@ -55,6 +56,8 @@ export class StatsRepository {
           .single());
       }
 
+      console.log("stats are ->", data)
+
       if (error) {
         console.log('Repository', 'StatsRepository.getUserCompleteStats', error, userId, { has_onboard });
         throw error;
@@ -63,7 +66,7 @@ export class StatsRepository {
       // 3. Mettre en cache Redis (TTL: 10 minutes)
       try {
         const cacheKey = `user:stats:${userId}`;
-        await redis.set(cacheKey, JSON.stringify(data), 600); // 10 minutes
+        await redis.set(cacheKey, JSON.stringify(data), 86400); // 10 minutes
         
         // logger.logInfo('Repository', 'StatsRepository.getUserCompleteStats', 'User stats cached in Redis', userId, {
           // context: 'Database result cached for 10 minutes'
@@ -107,7 +110,7 @@ export class StatsRepository {
         }
 
         // 3. Mettre en cache pour éviter les futurs cache miss
-        await redis.set('stats:global', JSON.stringify(data), 3600);
+        await redis.set('stats:global', JSON.stringify(data), 86400);
         
         logger.logInfo('Repository', 'StatsRepository.getGlobalStats', 'Global stats fetched from DB and cached', 'system', {
           context: 'Database fallback successful, data cached in Redis'

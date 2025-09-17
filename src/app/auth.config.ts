@@ -154,19 +154,27 @@ export const authConfig = {
       }
     },
     async jwt({ token, user, account, profile }) {
+
+      // console.log("token -->", token)
+      // Helper pour convertir proprement des valeurs potentiellement en string
+      // provenant du provider Credentials (e.g. "true"/"false")
+      const coerceBoolean = (v: unknown): boolean => {
+        return v === true || v === 'true' || v === 1 || v === '1'
+      }
       // S'assurer que token.id existe et que user.id est une string
       if (!token.id && user?.id && typeof user.id === 'string') {
         token.id = user.id
-        token.has_onboarded = !!user.has_onboarded // Conversion explicite en boolean
-        token.hqx_newsletter = !!user.hqx_newsletter
-        token.oep_accepted = !!user.oep_accepted
-        token.research_accepted = !!user.research_accepted
-        token.have_seen_newsletter = !!user.have_seen_newsletter
-        token.automatic_reconnect = !!user.automatic_reconnect
+        // Coercition stricte des booléens pour éviter !!"false" => true
+        token.has_onboarded = coerceBoolean((user as any).has_onboarded)
+        token.hqx_newsletter = coerceBoolean((user as any).hqx_newsletter)
+        token.oep_accepted = coerceBoolean((user as any).oep_accepted)
+        token.research_accepted = coerceBoolean((user as any).research_accepted)
+        token.have_seen_newsletter = coerceBoolean((user as any).have_seen_newsletter)
+        token.automatic_reconnect = coerceBoolean((user as any).automatic_reconnect)
         
         console.log('Auth', 'jwt', 'User token initialization', user.id, {
-          hasOnboarded: !!user.has_onboarded,
-          hqxNewsletter: !!user.hqx_newsletter
+          hasOnboarded: token.has_onboarded,
+          hqxNewsletter: token.hqx_newsletter
         });
       }
 
