@@ -9,7 +9,6 @@ import Footer from '@/app/_components/layouts/Footer'
 import StatsReconnexion from '@/app/_components/reconnection/StatsReconnexion'
 import { useReconnectState } from '@/hooks/useReconnectState'
 import MigrateSea from '@/app/_components/layouts/MigrateSea'
-// import NewsLetterConsentsUpdate from '@/app/_components/NewsLetterConsentsUpdate'
 
 // Nouveau composant conteneur pour gérer la logique conditionnelle
 import ReconnectContainer from '@/app/_components/sections/reconnect/ReconnectContainer'
@@ -66,9 +65,6 @@ export default function ReconnectPage() {
       </div>
     )
   }
-
-  console.log("stats from page reconnect ", stats)
-
   return (
     <div className="min-h-screen bg-[#E8E9E4]">
       <div className="relative z-40 bg-[#E8E9E4]">

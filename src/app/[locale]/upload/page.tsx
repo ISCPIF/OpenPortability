@@ -51,11 +51,9 @@ export default function UploadPage() {
 
   useEffect(() => {
     if (status === "unauthenticated") {
-      // console.log("⛔️ No session found, redirecting to /auth/signin");
       router.replace("/auth/signin");
     }
     if (session?.user?.has_onboarded) {
-      // console.log("✅ User already onboarded, redirecting to /dashboard");
       router.replace("/dashboard");
     }
     if (status !== "loading") {
@@ -77,18 +75,12 @@ export default function UploadPage() {
   };
 
   const validateFiles = (files: FileList): string | null => {
-    // console.log('🔍 Validating files...', {
-    //   numberOfFiles: files.length,
-    //   fileNames: Array.from(files).map(f => f.name)
-    // });
-
     if (files.length === 0) {
       return t('errors.noFiles');
     }
 
     // Check if it's a single ZIP file
     if (files.length === 1 && files[0].name.toLowerCase().endsWith('.zip')) {
-      // console.log('📦 ZIP file detected');
       return validateFile(files[0]);
     }
 
@@ -100,7 +92,6 @@ export default function UploadPage() {
       return 'All files must be .js files';
     }
 
-    // console.log('📄 Analyzing JS files:', fileNames);
 
     // Case 1: Standard case (following.js + follower.js)
     const hasStandardFollowing = fileNames.includes('following.js');
@@ -112,13 +103,6 @@ export default function UploadPage() {
     const hasSplitFollower = followerParts.length > 0;
     const hasSplitFollowing = followingParts.length > 0;
 
-    // console.log('📊 Files status:', {
-    //   hasStandardFollowing,
-    //   hasStandardFollower,
-    //   followerParts: followerParts.length > 0 ? followerParts.map(f => f.name) : 'none',
-    //   followingParts: followingParts.length > 0 ? followingParts.map(f => f.name) : 'none'
-    // });
-
     // Check file sizes in all cases
     for (const file of files) {
       const sizeError = validateFile(file);
@@ -127,25 +111,19 @@ export default function UploadPage() {
 
     // Validate combinations
     if (hasStandardFollowing && hasStandardFollower && files.length === 2) {
-      // console.log('✅ Standard case validated');
       return null;
     } else if (hasSplitFollower && hasSplitFollowing) {
-      // console.log('✅ Split files case validated (both)');
       return null;
     } else if (hasStandardFollowing && hasSplitFollower) {
-      // console.log('✅ Split files case validated (follower only)');
       return null;
     } else if (hasSplitFollowing && hasStandardFollower) {
-      // console.log('✅ Split files case validated (following only)');
       return null;
     }
 
-    // console.log('❌ Invalid file combination');
     return t('errors.invalidCombination');
   };
 
   const validateFileType = (file: File): boolean => {
-    // console.log("File Type =", file.type)
     const validTypes = [
       'application/javascript',
       'text/javascript',
@@ -176,7 +154,6 @@ export default function UploadPage() {
   };
 
   const mergePartFiles = (files: ExtractedFile[], type: 'follower' | 'following'): { content: Uint8Array; count: number } => {
-    // console.log(`🔄 Fusion des fichiers ${type}:`, files.map(f => f.name));
 
     // Trier les fichiers par numéro de part
     const sortedFiles = files.sort((a, b) => {
@@ -184,9 +161,6 @@ export default function UploadPage() {
       const numB = parseInt(b.name.match(/part(\d+)/)?.[1] || '0');
       return numA - numB;
     });
-
-    // console.log('📋 Ordre de traitement:', sortedFiles.map(f => f.name));
-
     // Extraire et fusionner les données
     let mergedContent = '';
     let totalCount = 0;
@@ -194,7 +168,6 @@ export default function UploadPage() {
     sortedFiles.forEach((file, index) => {
       const isLast = index === sortedFiles.length - 1;
       const text = new TextDecoder().decode(file.content);
-      // console.log(`📖 Traitement de ${file.name}...`);
 
       // Trouver les indices de début et fin
       const startBracket = text.indexOf('[');
@@ -215,7 +188,6 @@ export default function UploadPage() {
 
       // Compter les objets dans ce fichier
       const objectCount = (content.match(/"follower"\s*:/g) || []).length;
-      // console.log(`📊 ${file.name}: ${objectCount} objets trouvés`);
       totalCount += objectCount;
 
       // Ajouter une virgule entre les fichiers (sauf pour le premier morceau)
@@ -225,9 +197,6 @@ export default function UploadPage() {
 
       mergedContent += content;
     });
-
-    // console.log(`📊 Total ${type}: ${totalCount} entrées`);
-
     // Recréer le contenu avec le bon préfixe
     const finalContent = `window.YTD.${type}.part0 = [${mergedContent}`;
     return {
@@ -238,10 +207,6 @@ export default function UploadPage() {
 
   const processFiles = async (files: FileList) => {
     try {
-      // console.log('🔄 Starting file processing', {
-      //   numberOfFiles: files.length,
-      //   files: Array.from(files).map(f => ({ name: f.name, size: f.size }))
-      // });
 
       // Validation initiale...
       const validationError = validateFiles(files);
@@ -279,7 +244,6 @@ export default function UploadPage() {
 
       // Traiter les fichiers followers
       if (followerParts.length > 0) {
-        // console.log('🔄 Fusion des fichiers follower...');
         const { content, count } = mergePartFiles(followerParts, 'follower');
 
         // Valider le contenu fusionné
@@ -318,7 +282,6 @@ export default function UploadPage() {
 
       // Traiter les fichiers following (même logique)
       if (followingParts.length > 0) {
-        // console.log('� Fusion des fichiers following...');
         const { content, count } = mergePartFiles(followingParts, 'following');
 
         const textContent = new TextDecoder().decode(content);
@@ -350,11 +313,7 @@ export default function UploadPage() {
         }
       }
 
-      // Envoi au serveur...
-      // console.log('📤 Envoi au serveur...', {
-      //   followerCount: fileCounts.follower,
-      //   followingCount: fileCounts.following
-      // });
+
 
       const response = await fetch('/api/upload/large-files', {
         method: 'POST',
@@ -375,7 +334,7 @@ export default function UploadPage() {
   };
 
   const handleUploadError = (errorMessage: string) => {
-    console.log('❌ Upload error:', errorMessage);
+    console.error('❌ Upload error:', errorMessage);
     setError(errorMessage);
     setIsUploading(false);
     setPendingFiles(null);
@@ -383,7 +342,7 @@ export default function UploadPage() {
   };
 
   const handleCloseError = () => {
-    console.log('🔄 Closing error');
+    console.error('🔄 Closing error');
     setError(null);
   };
 
@@ -391,38 +350,19 @@ export default function UploadPage() {
     // Convertir FileList en Array pour un meilleur logging
     const filesArray = Array.from(files);
 
-    console.log('📁 Files selected:', {
-      numberOfFiles: files.length,
-      firstFileName: files[0]?.name,
-      firstFileType: files[0]?.type,
-      firstFileSize: `${(files[0]?.size / (1024 * 1024)).toFixed(2)}MB`,
-      allFiles: filesArray.map(f => ({
-        name: f.name,
-        type: f.type,
-        size: `${(f.size / (1024 * 1024)).toFixed(2)}MB`,
-        rawSize: f.size
-      }))
-    });
-
     // Vérifications préalables
     if (!files || files.length === 0) {
-      console.log('❌ Erreur: Aucun fichier sélectionné');
+      console.error('❌ Erreur: Aucun fichier sélectionné');
       setError('Aucun fichier sélectionné');
       return;
     }
 
     // Vérifier la taille de chaque fichier individuellement
     for (const file of filesArray) {
-      console.log('📊 Vérification taille fichier:', {
-        fileName: file.name,
-        fileType: file.type,
-        size: `${(file.size / (1024 * 1024)).toFixed(2)}MB`,
-        maxSize: `${(MAX_FILE_SIZE / (1024 * 1024))}MB`,
-        isOverLimit: file.size > MAX_FILE_SIZE
-      });
+
 
       if (file.size > MAX_FILE_SIZE) {
-        console.log('❌ Erreur: Fichier trop volumineux');
+        console.error('❌ Erreur: Fichier trop volumineux');
         setError(t('errors.fileSize'));
         return;
       }
@@ -434,36 +374,22 @@ export default function UploadPage() {
       type: f.type,
       isValid: f.type.startsWith('image/') || f.type.includes('zip')
     }));
-    console.log('🔍 Vérification des types:', fileTypes);
 
-    // for (const file of filesArray) {
-    //   if (!file.type.startsWith('image/') && !file.type.includes('zip')) {
-    //     console.log('❌ Erreur: Type de fichier invalide', {
-    //       fileName: file.name,
-    //       fileType: file.type
-    //     });
-    //     setError(`Le fichier ${file.name} n'est pas une image ou une archive ZIP`);
-    //     return;
-    //   }
-    // }
-
-    console.log('✅ Toutes les vérifications sont passées, affichage de la modale de consentement');
     // Si toutes les vérifications sont passées, stocker les fichiers et afficher la modale
     setPendingFiles(files);
     setShowConsent(true);
   };
 
   const handleConsentDecline = () => {
-    console.log('❌ Consent declined');
+    console.error('❌ Consent declined');
     setPendingFiles(null);
     setShowConsent(false);
   };
 
   const handleConsentAccept = async () => {
-    console.log('✅ Consent accepted, starting processing');
 
     if (!pendingFiles || pendingFiles.length === 0) {
-      console.log('❌ No files to process');
+      console.error('❌ No files to process');
       handleUploadError('No files to process');
       return;
     }

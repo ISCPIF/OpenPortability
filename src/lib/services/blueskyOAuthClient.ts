@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { NodeOAuthClient } from "@atproto/oauth-client-node";
 import { JoseKey } from "@atproto/jwk-jose";
+import logger from "../log_utils";
 
 // Types are not strictly required at runtime; using minimal any typing to avoid coupling
 // If available, you can import NodeSavedState / NodeSavedSession from the package types.
@@ -43,15 +44,6 @@ function getClientMetadata(baseUrl: string) {
     jwks_uri: `${baseUrl}/jwks.json`,
     token_endpoint_auth_signing_alg: "ES256",
   };
-  // Log metadata summary (safe)
-  console.log('[BlueskyOAuthClient] Client metadata prepared', {
-    client_id: metadata.client_id,
-    redirect_uris: metadata.redirect_uris,
-    jwks_uri: metadata.jwks_uri,
-    token_endpoint_auth_method: metadata.token_endpoint_auth_method,
-    token_endpoint_auth_signing_alg: metadata.token_endpoint_auth_signing_alg,
-    scope: metadata.scope
-  });
   return metadata;
 }
 
@@ -60,17 +52,6 @@ async function getKeyset() {
   if (!jwkStr) throw new Error("BLUESKY_PRIVATE_JWK is not set");
   const jwk = JSON.parse(jwkStr);
   // Provide raw private JWK; the client accepts importable JWK objects
-  const hasPrivate = typeof jwk.d === 'string' && jwk.d.length > 0;
-  console.log('[BlueskyOAuthClient] Loaded private JWK from env', {
-    hasPrivate,
-    alg: jwk.alg,
-    kty: jwk.kty,
-    crv: jwk.crv,
-    kid: jwk.kid,
-    hasX: typeof jwk.x === 'string',
-    hasY: typeof jwk.y === 'string'
-  });
-  // Build JoseKey (ensures ES256 signing key with kid is available)
   const key = await JoseKey.fromImportable(jwk);
   return [key];
 }
@@ -80,7 +61,6 @@ export async function createBlueskyOAuthClient() {
   if (!baseUrl) {
     throw new Error("Invalid NEXTAUTH_URL. It must be an https hostname (not an IP or localhost).");
   }
-  console.log('[BlueskyOAuthClient] Using base URL', { baseUrl });
   const client = new NodeOAuthClient({
     clientMetadata: getClientMetadata(baseUrl),
     // The library will import keys internally. Provide importable JWK(s).
@@ -96,21 +76,18 @@ export async function createBlueskyOAuthClient() {
           maxAge: 60 * 10, // 10 minutes
           path: "/",
         });
-        console.log('[BlueskyOAuthClient] stateStore.set()', { name, hasState: !!internalState });
       },
       async get(key: string): Promise<any | undefined> {
         const name = `oauth_state_${key}`;
         const store = await cookies();
         const state = store.get(name);
         const exists = !!state;
-        console.log('[BlueskyOAuthClient] stateStore.get()', { name, exists });
         return state ? JSON.parse(state.value) : undefined;
       },
       async del(key: string): Promise<void> {
         const name = `oauth_state_${key}`;
         const store = await cookies();
         store.delete(name);
-        console.log('[BlueskyOAuthClient] stateStore.del()', { name });
       },
     },
     // Persistent sessionStore to allow token rehydration (enables sessionGetter and dpopFetch)
@@ -121,14 +98,6 @@ export async function createBlueskyOAuthClient() {
           const redis = getRedis();
           const key = `bsky:session:${sub}`;
           await redis.set(key, JSON.stringify(session), 'EX', 60 * 60 * 24 * 30); // 30 days
-          console.log('[BlueskyOAuthClient] sessionStore.set()', { key, hasSession: !!session });
-          console.log('[BlueskyOAuthClient] sessionStore.set() summary', {
-            sub,
-            hasTokenSet: !!session?.tokenSet,
-            tokenType: session?.tokenSet?.token_type,
-            scope: session?.tokenSet?.scope,
-            hasDpopJwk: !!session?.dpopJwk,
-          });
         } catch (e: any) {
           console.warn('[BlueskyOAuthClient] sessionStore.set() failed; proceeding without persistence', { message: e?.message });
         }
@@ -139,22 +108,12 @@ export async function createBlueskyOAuthClient() {
           const redis = getRedis();
           const key = `bsky:session:${sub}`;
           const raw = await redis.get(key);
-          const exists = !!raw;
-          console.log('[BlueskyOAuthClient] sessionStore.get()', { key, exists });
           if (!raw) return undefined;
           try {
             const parsed = JSON.parse(raw);
-            const tokenSet = parsed?.tokenSet || {};
-            console.log('[BlueskyOAuthClient] sessionStore.get() summary', {
-              sub,
-              hasTokenSet: !!parsed?.tokenSet,
-              tokenType: tokenSet?.token_type,
-              scope: tokenSet?.scope,
-              hasDpopJwk: !!parsed?.dpopJwk,
-            });
             return parsed;
           } catch (e: any) {
-            console.warn('[BlueskyOAuthClient] sessionStore.get() parse failed', { message: e?.message });
+            logger.logWarning('[BlueskyOAuthClient] sessionStore.get() parse failed', { message: e?.message });
             return undefined;
           }
         } catch (e: any) {
@@ -168,18 +127,12 @@ export async function createBlueskyOAuthClient() {
           const redis = getRedis();
           const key = `bsky:session:${sub}`;
           await redis.del(key);
-          console.log('[BlueskyOAuthClient] sessionStore.del()', { key });
         } catch (e: any) {
-          console.warn('[BlueskyOAuthClient] sessionStore.del() failed', { message: e?.message });
+          const errorString = e instanceof Error ? e.message : String(e);
+          logger.logError('[BlueskyOAuthClient] sessionStore.del() failed', errorString, "system");
         }
       },
     },
   });
-  console.log('[BlueskyOAuthClient] client summary', {
-    hasSessionGetter: !!(client as any)?.sessionGetter,
-    sessionGetterHasGet: typeof (client as any)?.sessionGetter?.get === 'function',
-  });
-  console.log("[BlueskyOAuthClient] Client created", client);
-
   return client;
 }

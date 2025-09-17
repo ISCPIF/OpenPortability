@@ -10,6 +10,7 @@ import type { AdapterAccountType } from "next-auth/adapters"
 import type { CustomAdapterUser } from '@/lib/supabase-adapter'
 import { authClient } from '@/lib/supabase'
 import logger from '@/lib/log_utils'
+import { Session, JWT } from "next-auth"
 
 import { auth } from "./auth"
 
@@ -69,9 +70,9 @@ export const authConfig = {
     }
   },
   callbacks: {
-    async signIn({ user, account, profile }) {
+    async signIn({ user, account, profile }: { user: User, account: Account, profile: Profile }) {
       if (!account) {
-        console.log('Auth', 'signIn', 'No account provided during sign in', user?.id);
+        logger.logError('Auth', 'signIn', 'No account provided during sign in', user?.id);
         return false;
       }
 
@@ -82,11 +83,6 @@ export const authConfig = {
         if (session?.user?.id && account.provider === 'mastodon') {
           const mastodonProfile = profile as MastodonProfile;
           const instance = new URL(mastodonProfile.url).origin;
-          
-          console.log('Auth', 'signIn', 'Mastodon account verification', session.user.id, {
-            mastodonId: mastodonProfile.id,
-            instance
-          });
 
           // Vérifier si un autre utilisateur a déjà ce compte Mastodon
           const { data: existingUser } = await authClient
@@ -97,7 +93,7 @@ export const authConfig = {
             .single();
 
             if (existingUser && existingUser.id !== session.user.id) {
-              console.log('Auth', 'signIn', 'This Mastodon account is already linked to another user', session.user.id, {
+              logger.logError('Auth', 'signIn', 'This Mastodon account is already linked to another user', session.user.id, {
                 existingUserId: existingUser.id,
                 mastodonId: mastodonProfile.id,
                 instance
@@ -112,17 +108,9 @@ export const authConfig = {
           // The actual account linking is already handled in our API route/callbacks.
           // To avoid creating a wrong "credentials" account entry with providerAccountId = userId,
           // we only link when it's a real OAuth account AND the providerAccountId looks like a DID.
-          const isCredentials = account.type === 'credentials'
           const isDid = typeof account.providerAccountId === 'string' && account.providerAccountId.startsWith('did:')
 
-          if (isCredentials) {
-            console.log('Auth', 'signIn', 'Skip linking Bluesky account for credentials provider', session.user.id, {
-              providerAccountId: account.providerAccountId
-            });
-          } else if (isDid) {
-            console.log('Auth', 'signIn', 'Linking Bluesky account', session.user.id, {
-              providerAccountId: account.providerAccountId
-            });
+          if (isDid) {
             await supabaseAdapter.linkAccount({
               userId: session.user.id,
               type: account.type as AdapterAccountType,
@@ -136,26 +124,23 @@ export const authConfig = {
               id_token: account.id_token,
               session_state: account.session_state
             });
-            console.log('Auth', 'signIn', 'Successfully linked Bluesky account', session.user.id);
+            logger.logInfo('Auth', 'signIn', 'Successfully linked Bluesky account', session.user.id);
           } else {
-            console.log('Auth', 'signIn', 'Skip linking Bluesky account (not credentials but invalid providerAccountId)', session.user.id, {
+            logger.logError('Auth', 'signIn', 'Skip linking Bluesky account (not credentials but invalid providerAccountId)', session.user.id, {
               providerAccountId: account.providerAccountId,
               accountType: account.type
             });
           }
         }
-
-        // Autoriser la connexion dans tous les cas
-        console.log('Auth', 'signIn', 'Authentication successful', user?.id, { provider: account.provider });
         return true;
       } catch (error) {
-        console.log('Auth', 'signIn', error, user?.id, { provider: account?.provider });
+        const err = error instanceof Error ? error.message : String(error);
+        logger.logError('Auth', 'signIn', err, user?.id, { provider: account?.provider });
         return false;
       }
     },
-    async jwt({ token, user, account, profile }) {
+    async jwt({ token, user, account, profile }: { token: JWT, user: User, account: Account, profile: Profile }) {
 
-      // console.log("token -->", token)
       // Helper pour convertir proprement des valeurs potentiellement en string
       // provenant du provider Credentials (e.g. "true"/"false")
       const coerceBoolean = (v: unknown): boolean => {
@@ -171,28 +156,15 @@ export const authConfig = {
         token.research_accepted = coerceBoolean((user as any).research_accepted)
         token.have_seen_newsletter = coerceBoolean((user as any).have_seen_newsletter)
         token.automatic_reconnect = coerceBoolean((user as any).automatic_reconnect)
-        
-        console.log('Auth', 'jwt', 'User token initialization', user.id, {
-          hasOnboarded: token.has_onboarded,
-          hqxNewsletter: token.hqx_newsletter
-        });
       }
 
       if (account && profile) {
         try {
           if (account?.provider === 'bluesky') {
-            console.log('Auth', 'jwt', 'Bluesky token processing', token.id || '', {
-              provider: 'bluesky'
-            });
             // The user object should already be properly formatted from the credentials provider
             return token;
           }
           if (account.provider === 'twitter' && profile && isTwitterProfile(profile)) {
-            console.log('Auth', 'jwt', 'Twitter profile update', token.id || '', {
-              twitterId: profile.data.id,
-              twitterUsername: profile.data.username
-            });
-            
             await supabaseAdapter.updateUser(token.id || '', {
               provider: 'twitter',
               profile: profile
@@ -202,19 +174,14 @@ export const authConfig = {
             token.twitter_image = profile.data.profile_image_url
             token.name = profile.data.name
           }
-          else if ((account.provider === 'mastodon' || account.provider === 'piaille') && profile && isMastodonProfile(profile)) {
+          else if ((account.provider === 'mastodon') && profile && isMastodonProfile(profile)) {
             const instance = profile.url ? new URL(profile.url).origin : undefined;
-            
-            console.log('Auth', 'jwt', 'Mastodon profile update', token.id || '', {
-              mastodonId: profile.id,
-              mastodonUsername: profile.username,
-              instance
-            });
             
             await supabaseAdapter.updateUser(token.id || '', {
               provider: 'mastodon',
               profile: profile
             })
+            
             token.mastodon_id = profile.id
             token.mastodon_username = profile.username
             token.mastodon_image = profile.avatar
@@ -222,15 +189,16 @@ export const authConfig = {
             token.name = profile.display_name
           }
         } catch (error) {
-          console.log('Auth', 'jwt', error, token.id || '', { provider: account.provider });
+          const err = error instanceof Error ? error.message : String(error);
+          logger.logError('Auth', 'jwt', err, token.id || '', { provider: account.provider });
         }
       }
 
       return token
     },
-    async session({ session, token }) {
+    async session({ session, token }: { session: Session, token: any }) {
       if (!supabaseAdapter.getUser) {
-        console.log('Auth', 'session', new Error('Required adapter methods are not implemented'), token.id);
+        logger.logError('Auth', 'session', new Error('Required adapter methods are not implemented'), token.id);
         throw new Error('Required adapter methods are not implemented');
       }
       if (session.user && token.id) {
@@ -238,14 +206,6 @@ export const authConfig = {
           const user = await supabaseAdapter.getUser(token.id)
           
           if (user) {
-            // console.log("🔍 [DEBUG] User from DB:", {
-            //   id: user.id,
-            //   twitter_id: user.twitter_id,
-            //   twitter_id_type: typeof user.twitter_id,
-            //   twitter_username: user.twitter_username
-            // });
-            // logger.logDebug('Auth', 'session', 'User session refresh', token.id);
-            
             session.user = {
               ...session.user,
               id: token.id,
@@ -275,19 +235,15 @@ export const authConfig = {
             }
           }
         } catch (error) {
-          console.log('Auth', 'session', error, token.id);
+          const err = error instanceof Error ? error.message : String(error);
+          logger.logError('Auth', 'session', err, token.id);
         }
       }
-
-      // console.log("SESSION FROM CALLBACK IS ---->", session)
-      // console.log("type of twitter id ->", typeof session.user.twitter_id)
       return session
     },
-    async redirect({ url, baseUrl }) {
-      // Handles redirect after sign in
-      // console.log('REDIRECT', { url, baseUrl })
+    async redirect({ url, baseUrl }: { url: string, baseUrl: string }) {
       
-      logger.logDebug('Auth', 'redirect', 'Handling redirect after sign in', undefined, { url, baseUrl });
+      logger.logInfo('Auth', 'redirect', 'Handling redirect after sign in', undefined, { url, baseUrl });
       
       return url.startsWith(baseUrl) 
         ? url
@@ -300,9 +256,9 @@ export const authConfig = {
       name: "Bluesky",
       type: "credentials",
       credentials: {},
-      async authorize(credentials): Promise<CustomAdapterUser | null> {
+      async authorize(credentials: any): Promise<CustomAdapterUser | null> {
         if (!credentials) {
-          console.error('Missing credentials');
+          logger.logError('Auth', 'bluesky.authorize', 'Missing credentials');
           return null;
         }
         
@@ -310,7 +266,8 @@ export const authConfig = {
           // The user object should already be properly formatted from the API
           return credentials as unknown as CustomAdapterUser;
         } catch (error) {
-          console.error('Bluesky auth error:', error);
+          const err = error instanceof Error ? error.message : String(error);
+          logger.logError('Auth', 'bluesky.authorize', err);
           return null;
         }
       }
@@ -320,19 +277,16 @@ export const authConfig = {
       clientSecret: process.env.TWITTER_CLIENT_SECRET!,
       // version: "2.0",
       // checks: ["none"], // Désactiver la vérification du state pour Twitter
-      async profile(profile, tokens) {
-        console.log('Auth', 'twitter.profile', 'Processing Twitter profile', undefined, {
-          twitterId: profile.data.id,
-          twitterUsername: profile.data.username
-        });
+      async profile(profile: any, tokens: any) {
+
         if (profile.status === 429 || profile.detail =="Too Many Requests") {
-          console.log("Twitter rate limit detected in profile");
+          logger.logError("Auth", "twitter.profile", "Twitter rate limit detected in profile");
           throw new Error("RATE_LIMIT");
         }
 
         // Si le profil est invalide
         if (!profile || !profile.data) {
-          console.log("Invalid Twitter profile:", profile);
+          logger.logError("Auth", "twitter.profile", "Invalid Twitter profile:", profile);
           throw new Error("INVALID_PROFILE");
         }
         return {
@@ -355,11 +309,6 @@ export const authConfig = {
       // This will be rewrited on the fly later on
       issuer: "https://mastodon.space",
       profile(profile: MastodonProfile) {
-        console.log('Auth', 'mastodon.profile', 'Processing Mastodon profile', undefined, {
-          mastodonId: profile.id,
-          mastodonUsername: profile.username,
-          url: profile.url
-        });
         
         return {
           id: profile.id,

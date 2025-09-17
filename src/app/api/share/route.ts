@@ -16,16 +16,12 @@ export const POST = withValidation(
 
       const shareService = new UserService();
       await shareService.recordShareEvent(session.user.id, data.platform, data.success);
-      
-      console.log('API', 'POST /api/share', session.user.id, {
-        context: 'Share event recorded',
-        platform: data.platform,
-        success: data.success
-      });
+    
       
       return NextResponse.json({ success: true });
     } catch (error) {
-      console.log('API', 'POST /api/share', error, session?.user?.id || 'anonymous', {
+      const err = error instanceof Error ? error : new Error(String(error))
+      logger.logError('API', 'POST /api/share', err, session?.user?.id || 'anonymous', {
         context: 'Failed to record share event',
         platform: data.platform
       });
@@ -52,15 +48,11 @@ export const GET = withValidation(
 
       const userRepo = new UserRepository();
       const hasShares = await userRepo.hasShareEvents(session.user.id);
-
-      console.log('API', 'GET /api/share', session.user.id, {
-        context: 'Share status checked',
-        hasShares
-      });
       
       return NextResponse.json({ hasShares });
     } catch (error) {
-      console.log('API', 'GET /api/share', error, session?.user?.id || 'anonymous', {
+      const err = error instanceof Error ? error : new Error(String(error))
+      logger.logError('API', 'GET /api/share', err, session?.user?.id || 'anonymous', {
         context: 'Failed to check share status'
       });
       

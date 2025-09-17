@@ -16,16 +16,11 @@ async function handleSyncRedisTasks(
   validatedData: z.infer<typeof EmptySchema>
 ): Promise<NextResponse> {
   try {
-    console.log('🔄 [sync-redis-tasks] Starting daily sync via GET...');
-
-    console.log('🧹 Cleaning existing Redis queues...');
     const existingKeys = await redis.keys('consent_tasks:*');
     if (existingKeys.length > 0) {
       for (const key of existingKeys) {
         await redis.del(key);
-      }
-      console.log(`🗑️ Deleted ${existingKeys.length} existing queues`);
-    }
+      }    }
     
     const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
     const queueKey = `consent_tasks:${today}`;

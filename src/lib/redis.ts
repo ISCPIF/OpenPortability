@@ -1,6 +1,6 @@
 import Redis from 'ioredis';
 import { supabase } from '@/lib/supabase';
-// import { console.log, console.log, console.log } from './log_utils.ts';
+import logger from './log_utils';
 
 // Configuration Redis sécurisée et optimisée
 const redisConfig = {
@@ -44,27 +44,27 @@ class RedisClient {
 
   private setupEventHandlers() {
     this.client.on('connect', () => {
-      console.log('Redis', 'Connected to Redis server', 'Connection established');
+      logger.logInfo('Redis', 'Connected to Redis server', 'Connection established');
       // Ne pas mettre isConnected = true ici !
     });
     
     this.client.on('ready', () => {
-      console.log('Redis', 'Redis client ready', 'Client ready for operations');
+      logger.logInfo('Redis', 'Redis client ready', 'Client ready for operations');
       this.isConnected = true; // ← Déplacer ici !
     });
     
-    this.client.on('error', (error) => {
-      console.log('Redis', 'Redis connection error', error, 'system');
+    this.client.on('error', (error: any) => {
+      logger.logError('Redis', 'Redis connection error', error, 'system');
       this.isConnected = false;
     });
 
     this.client.on('close', () => {
-      console.log('Redis', 'Redis connection closed', 'Connection closed');
+      logger.logInfo('Redis', 'Redis connection closed', 'Connection closed');
       this.isConnected = false;
     });
 
     this.client.on('reconnecting', () => {
-      console.log('Redis', 'Reconnecting to Redis', 'Attempting reconnection');
+      logger.logInfo('Redis', 'Reconnecting to Redis', 'Attempting reconnection');
     });
   }
 
@@ -89,7 +89,8 @@ class RedisClient {
       await this.ensureConnection();
       return await this.client.get(key);
     } catch (error) {
-      console.log('Redis', 'Failed to get key', error, 'system', { key });
+      const errorString = error instanceof Error ? error.message : String(error);
+      logger.logError('Redis', 'Failed to get key', errorString, 'system', { key });
       return null;
     }
   }
@@ -104,7 +105,8 @@ class RedisClient {
       }
       return true;
     } catch (error) {
-      console.log('Redis', 'Failed to set key', error, 'system', { key, ttlSeconds });
+      const errorString = error instanceof Error ? error.message : String(error);
+      logger.logError('Redis', 'Failed to set key', errorString, 'system', { key, ttlSeconds });
       return false;
     }
   }
@@ -115,7 +117,8 @@ class RedisClient {
       const result = await this.client.del(key);
       return result > 0;
     } catch (error) {
-      console.log('Redis', 'Failed to delete key', error, 'system', { key });
+      const errorString = error instanceof Error ? error.message : String(error);
+      logger.logError('Redis', 'Failed to delete key', errorString, 'system', { key });
       return false;
     }
   }
@@ -126,7 +129,8 @@ class RedisClient {
       const result = await this.client.exists(key);
       return result === 1;
     } catch (error) {
-      console.log('Redis', 'Failed to check key existence', error, 'system', { key });
+      const errorString = error instanceof Error ? error.message : String(error);
+      logger.logError('Redis', 'Failed to check key existence', errorString, 'system', { key });
       return false;
     }
   }
@@ -138,7 +142,8 @@ class RedisClient {
       const args = Array.isArray(members) ? members : [members];
       return await this.client.sadd(key, ...args);
     } catch (error) {
-      console.log('Redis', 'Failed to SADD', error, 'system', { key, membersCount: Array.isArray(members) ? members.length : 1 });
+      const errorString = error instanceof Error ? error.message : String(error);
+      logger.logError('Redis', 'Failed to SADD', errorString, 'system', { key, membersCount: Array.isArray(members) ? members.length : 1 });
       return 0;
     }
   }
@@ -149,7 +154,8 @@ class RedisClient {
       const args = Array.isArray(members) ? members : [members];
       return await this.client.srem(key, ...args);
     } catch (error) {
-      console.log('Redis', 'Failed to SREM', error, 'system', { key, membersCount: Array.isArray(members) ? members.length : 1 });
+      const errorString = error instanceof Error ? error.message : String(error);
+      logger.logError('Redis', 'Failed to SREM', errorString, 'system', { key, membersCount: Array.isArray(members) ? members.length : 1 });
       return 0;
     }
   }
@@ -159,7 +165,8 @@ class RedisClient {
       await this.ensureConnection();
       return await this.client.smembers(key);
     } catch (error) {
-      console.log('Redis', 'Failed to SMEMBERS', error, 'system', { key });
+      const errorString = error instanceof Error ? error.message : String(error);
+      logger.logError('Redis', 'Failed to SMEMBERS', errorString, 'system', { key });
       return [];
     }
   }
@@ -169,7 +176,8 @@ class RedisClient {
       await this.ensureConnection();
       return await this.client.scard(key);
     } catch (error) {
-      console.log('Redis', 'Failed to SCARD', error, 'system', { key });
+      const errorString = error instanceof Error ? error.message : String(error);
+      logger.logError('Redis', 'Failed to SCARD', errorString, 'system', { key });
       return 0;
     }
   }
@@ -180,7 +188,8 @@ class RedisClient {
       if (keys.length === 0) return [];
       return await this.client.sunion(...keys);
     } catch (error) {
-      console.log('Redis', 'Failed to SUNION', error, 'system', { keysCount: keys.length });
+      const errorString = error instanceof Error ? error.message : String(error);
+      logger.logError('Redis', 'Failed to SUNION', errorString, 'system', { keysCount: keys.length });
       return [];
     }
   }
@@ -190,7 +199,8 @@ class RedisClient {
       await this.ensureConnection();
       return await this.client.incr(key);
     } catch (error) {
-      console.log('Redis', 'Failed to increment key', error, 'system', { key });
+      const errorString = error instanceof Error ? error.message : String(error);
+      logger.logError('Redis', 'Failed to increment key', errorString, 'system', { key });
       return null;
     }
   }
@@ -201,7 +211,8 @@ class RedisClient {
       const result = await this.client.expire(key, seconds);
       return result === 1;
     } catch (error) {
-      console.log('Redis', 'Failed to set expiration', error, 'system', { key, seconds });
+      const errorString = error instanceof Error ? error.message : String(error); 
+      logger.logError('Redis', 'Failed to set expiration', errorString, 'system', { key, seconds });
       return false;
     }
   }
@@ -228,7 +239,8 @@ class RedisClient {
       
       return { allowed, remaining, resetTime };
     } catch (error) {
-      console.log('Redis', 'Rate limit check failed', error, 'system', { key, limit, windowSeconds });
+      const errorString = error instanceof Error ? error.message : String(error);
+      logger.logError('Redis', 'Rate limit check failed', errorString, 'system', { key, limit, windowSeconds });
       // En cas d'erreur Redis, on autorise la requête (fail-open)
       return { allowed: true, remaining: limit, resetTime: Date.now() + (windowSeconds * 1000) };
     }
@@ -240,7 +252,8 @@ class RedisClient {
       const result = await this.client.ping();
       return result === 'PONG';
     } catch (error) {
-      console.log('Redis', 'Redis health check failed', error, 'system');
+      const errorString = error instanceof Error ? error.message : String(error);
+      logger.logError('Redis', 'Redis health check failed', errorString, 'system');
       return false;
     }
   }
@@ -279,15 +292,11 @@ class RedisClient {
         timestamp: Date.now()
       }));
 
-      console.log('Redis', 'Job enqueued successfully', `Job ${job.id} added to queue`, 'system', {
-        jobId: job.id,
-        userId: job.user_id,
-        jobType: job.job_type
-      });
 
       return true;
     } catch (error) {
-      console.log('Redis', 'Failed to enqueue job', error, 'system', {
+      const errorString = error instanceof Error ? error.message : String(error);
+      logger.logError('Redis', 'Failed to enqueue job', errorString, 'system', {
         jobId: job.id,
         userId: job.user_id
       });
@@ -316,7 +325,8 @@ class RedisClient {
 
       return { pending, processing, completed, failed };
     } catch (error) {
-      console.log('Redis', 'Failed to get job queue metrics', error, 'system');
+      const errorString = error instanceof Error ? error.message : String(error);
+      logger.logError('Redis', 'Failed to get job queue metrics', errorString, 'system');
       return null;
     }
   }
@@ -344,7 +354,8 @@ class RedisClient {
       
       return null;
     } catch (error) {
-      console.log('Redis', 'Failed to find job in queue', error, 'system', {
+      const errorString = error instanceof Error ? error.message : String(error);
+      logger.logError('Redis', 'Failed to find job in queue', errorString, 'system', {
         jobId,
         queueName
       });
@@ -381,17 +392,12 @@ class RedisClient {
           }
         }
       }
-      
-      if (totalRemoved > 0) {
-        console.log('Redis', 'Cleaned up old jobs', `Removed ${totalRemoved} old jobs`, 'system', {
-          removedCount: totalRemoved,
-          maxAgeHours
-        });
-      }
+    
       
       return true;
     } catch (error) {
-      console.log('Redis', 'Failed to cleanup old jobs', error, 'system', { maxAgeHours });
+      const errorString = error instanceof Error ? error.message : String(error);
+      logger.logError('Redis', 'Failed to cleanup old jobs', errorString, 'system', { maxAgeHours });
       return false;
     }
   }
@@ -460,7 +466,8 @@ class RedisClient {
           try {
             mapping.mastodon = JSON.parse(mastodonResult[1] as string);
           } catch (e) {
-            console.log('Redis', 'Failed to parse Mastodon mapping', e, 'system', { twitterId });
+            const errorString = e instanceof Error ? e.message : String(e);
+            logger.logError('Redis', 'Failed to parse Mastodon mapping', errorString, 'system', { twitterId });
           }
         }
         
@@ -472,7 +479,8 @@ class RedisClient {
       return mappings;
       
     } catch (error) {
-      console.log('Redis', 'Batch get social mappings failed', error, 'system', { 
+      const errorString = error instanceof Error ? error.message : String(error);
+      logger.logError('Redis', 'Batch get social mappings failed', errorString, 'system', { 
         twitterIdsCount: twitterIds.length 
       });
       throw error;
@@ -518,7 +526,8 @@ class RedisClient {
       return setCount;
       
     } catch (error) {
-      console.log('Redis', 'Batch set social mappings failed', error, 'system', { 
+      const errorString = error instanceof Error ? error.message : String(error);
+      logger.logError('Redis', 'Batch set social mappings failed', errorString, 'system', { 
         mappingsCount: mappings.length 
       });
       throw error;
@@ -542,7 +551,8 @@ class RedisClient {
       };
       
     } catch (error) {
-      console.log('Redis', 'Failed to get social mapping stats', error, 'system');
+      const errorString = error instanceof Error ? error.message : String(error);
+      logger.logError('Redis', 'Failed to get social mapping stats', errorString, 'system');
       return { bluesky: 0, mastodon: 0, total: 0 };
     }
   }
@@ -571,7 +581,8 @@ class RedisClient {
       return 0;
       
     } catch (error) {
-      console.log('Redis', 'Failed to delete social mapping', error, 'system', { 
+      const errorString = error instanceof Error ? error.message : String(error);
+      logger.logError('Redis', 'Failed to delete social mapping', errorString, 'system', { 
         twitterId, 
         platform 
       });
@@ -583,9 +594,9 @@ class RedisClient {
   async disconnect(): Promise<void> {
     try {
       await this.client.quit();
-      console.log('Redis', 'Redis client disconnected', 'Clean shutdown');
     } catch (error) {
-      console.log('Redis', 'Error during Redis disconnect', error, 'system');
+      const errorString = error instanceof Error ? error.message : String(error);
+      logger.logError('Redis', 'Error during Redis disconnect', errorString, 'system');
     }
   }
 
@@ -608,7 +619,8 @@ class RedisClient {
       await this.ensureConnection();
       return await this.client.lpush(key, value);
     } catch (error) {
-      console.log('Redis', 'Failed to lpush', error, 'system', { key });
+      const errorString = error instanceof Error ? error.message : String(error);
+      logger.logError('Redis', 'Failed to lpush', errorString, 'system', { key });
       return 0;
     }
   }
@@ -618,7 +630,8 @@ class RedisClient {
       await this.ensureConnection();
       return await this.client.setex(key, seconds, value);
     } catch (error) {
-      console.log('Redis', 'Failed to setex', error, 'system', { key, seconds });
+      const errorString = error instanceof Error ? error.message : String(error);
+      logger.logError('Redis', 'Failed to setex', errorString, 'system', { key, seconds });
       return 'ERROR';
     }
   }
@@ -628,7 +641,8 @@ class RedisClient {
       await this.ensureConnection();
       return await this.client.lrange(key, start, stop);
     } catch (error) {
-      console.log('Redis', 'Failed to lrange', error, 'system', { key, start, stop });
+      const errorString = error instanceof Error ? error.message : String(error);
+      logger.logError('Redis', 'Failed to lrange', errorString, 'system', { key, start, stop });
       return [];
     }
   }
@@ -638,27 +652,20 @@ class RedisClient {
       await this.ensureConnection();
       return await this.client.llen(key);
     } catch (error) {
-      console.log('Redis', 'Failed to llen', error, 'system', { key });
+      const errorString = error instanceof Error ? error.message : String(error);
+      logger.logError('Redis', 'Failed to llen', errorString, 'system', { key });
       return 0;
     }
   }
 
-  // async del(...keys: string[]): Promise<number> {
-  //   try {
-  //     await this.ensureConnection();
-  //     return await this.client.del(...keys);
-  //   } catch (error) {
-  //     console.log('Redis', 'Failed to del', error, 'system', { keys });
-  //     return 0;
-  //   }
-  // }
 
   async lrem(key: string, count: number, value: string): Promise<number> {
     try {
       await this.ensureConnection();
       return await this.client.lrem(key, count, value);
     } catch (error) {
-      console.log('Redis', 'Failed to lrem', error, 'system', { key, count });
+      const errorString = error instanceof Error ? error.message : String(error);
+      logger.logError('Redis', 'Failed to lrem', errorString, 'system', { key, count });
       return 0;
     }
   }
@@ -676,7 +683,6 @@ export const rawRedisClient = redis;
  */
 export async function loadInitialMappingsToRedis(): Promise<void> {
   try {
-    console.log('🔄 Loading initial mappings from PostgreSQL to Redis...');
     
     // Attendre que Redis soit prêt
     await redis.ensureConnection();
@@ -686,12 +692,8 @@ export async function loadInitialMappingsToRedis(): Promise<void> {
     const existingMastodonKeys = await redis.keys('twitter_to_mastodon:*');
     
     if (existingBlueskyKeys.length > 0 || existingMastodonKeys.length > 0) {
-      console.log(`📋 Redis already contains mappings: ${existingBlueskyKeys.length} Bluesky + ${existingMastodonKeys.length} Mastodon mappings`);
-      console.log('⏭️ Skipping initial loading from PostgreSQL');
       return;
     }
-
-    console.log('🔍 No existing mappings found in Redis, loading from PostgreSQL...');
 
     // 1. Charger les correspondances Bluesky avec pagination
     let blueskyTotal = 0;
@@ -705,7 +707,10 @@ export async function loadInitialMappingsToRedis(): Promise<void> {
         .range(blueskyPage * pageSize, (blueskyPage + 1) * pageSize - 1);
 
       if (blueskyError) {
-        console.error('❌ Error loading Bluesky mappings:', blueskyError);
+        logger.logError('Redis', 'Failed to load Bluesky mappings', blueskyError, 'system', { 
+          blueskyPage, 
+          pageSize 
+        });
         break;
       }
       
@@ -727,7 +732,6 @@ export async function loadInitialMappingsToRedis(): Promise<void> {
       blueskyTotal += blueskyUsers.length;
       blueskyPage++;
       
-      console.log(`✅ Loaded page ${blueskyPage}: ${blueskyUsers.length} Bluesky mappings (total: ${blueskyTotal})`);
       
       if (blueskyUsers.length < pageSize) {
         break; // Dernière page
@@ -745,7 +749,10 @@ export async function loadInitialMappingsToRedis(): Promise<void> {
         .range(mastodonPage * pageSize, (mastodonPage + 1) * pageSize - 1);
 
       if (mastodonError) {
-        console.error('❌ Error loading Mastodon mappings:', mastodonError);
+        logger.logError('Redis', 'Failed to load Mastodon mappings', mastodonError, 'system', { 
+          mastodonPage, 
+          pageSize 
+        });
         break;
       }
       
@@ -766,18 +773,16 @@ export async function loadInitialMappingsToRedis(): Promise<void> {
       await mastodonPipeline.exec();
       mastodonTotal += mastodonUsers.length;
       mastodonPage++;
-      
-      console.log(`✅ Loaded page ${mastodonPage}: ${mastodonUsers.length} Mastodon mappings (total: ${mastodonTotal})`);
-      
+            
       if (mastodonUsers.length < pageSize) {
         break; // Dernière page
       }
     }
 
-    console.log(`🎉 Initial mappings loading completed successfully! Total: ${blueskyTotal} Bluesky + ${mastodonTotal} Mastodon mappings`);
 
   } catch (error) {
-    console.error('❌ Failed to load initial mappings to Redis:', error);
+    const errorString = error instanceof Error ? error.message : String(error);
+    logger.logError('Redis', 'Failed to load initial mappings to Redis', errorString, 'system');
     // Ne pas faire échouer le démarrage du serveur si Redis n'est pas disponible
     // Le fallback SQL fonctionnera toujours
   }

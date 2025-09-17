@@ -41,7 +41,6 @@ export function getRedis(): Redis {
   });
 
   client.on('connect', () => {
-    console.log('[Redis] connected');
   });
 
   return client;

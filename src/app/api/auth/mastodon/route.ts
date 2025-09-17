@@ -15,9 +15,6 @@ const EmptySchema = z.object({});
 export const GET = withValidation(
   EmptySchema,
   async (request: NextRequest, data: {}) => {
-    console.log('API', 'GET /api/auth/mastodon', 'anonymous', {
-      context: 'Fetching Mastodon instances'
-    });
     
     try {
       // 1. Essayer Redis d'abord
@@ -27,11 +24,6 @@ export const GET = withValidation(
         const cachedInstances = await redis.get('mastodon:instances');
         if (cachedInstances) {
           instancesList = JSON.parse(cachedInstances);
-          
-          logger.logInfo('API', 'GET /api/auth/mastodon', 'Mastodon instances served from Redis cache', 'anonymous', {
-            context: 'Cache hit - Redis data served',
-            count: instancesList.length
-          });
 
           return NextResponse.json({ instances: instancesList });
         }
@@ -49,7 +41,7 @@ export const GET = withValidation(
         .order('instance');
 
       if (error) {
-        console.log('API', 'GET /api/auth/mastodon', error, 'anonymous', {
+        logger.logError('API', 'GET /api/auth/mastodon', error, 'anonymous', {
           context: 'Database error while fetching instances'
         });
         
@@ -75,15 +67,10 @@ export const GET = withValidation(
           error: cacheError
         });
       }
-
-      console.log('API', 'GET /api/auth/mastodon', 'anonymous', {
-        context: 'Successfully fetched Mastodon instances from database',
-        count: instancesList.length
-      });
-
       return NextResponse.json({ instances: instancesList });
     } catch (error) {
-      console.log('API', 'GET /api/auth/mastodon', error, 'anonymous', {
+      const errorString = error instanceof Error ? error.message : String(error);
+      logger.logError('API', 'GET /api/auth/mastodon', errorString, 'anonymous', {
         context: 'Unexpected error in Mastodon instances handler'
       });
       

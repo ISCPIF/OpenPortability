@@ -37,11 +37,6 @@ interface UploadButtonProps {
 }
 
 const processFiles = async (files: FileList): Promise<{ name: string; content: Uint8Array }[]> => {
-  console.log('🎯 Début du traitement des fichiers...', {
-    nbFiles: files.length,
-    fileNames: Array.from(files).map(f => f.name)
-  });
-
   // Validation des fichiers
   const validationError = validateFiles(files);
   if (validationError) {
@@ -58,17 +53,9 @@ const processFiles = async (files: FileList): Promise<{ name: string; content: U
   const standardFollowingFile = fileArray.find(f => f.name.toLowerCase() === 'following.js');
   const standardFollowerFile = fileArray.find(f => f.name.toLowerCase() === 'follower.js');
 
-  console.log('📄 Fichiers détectés:', {
-    followerParts: followerParts.map(f => f.name),
-    followingParts: followingParts.map(f => f.name),
-    standardFollowing: standardFollowingFile?.name || 'manquant',
-    standardFollower: standardFollowerFile?.name || 'manquant'
-  });
-
   // Traiter les fichiers follower
   let followerData: any[] = [];
   if (followerParts.length > 0) {
-    console.log('🔄 Traitement des parts follower...');
     const extractedFiles: ExtractedFile[] = await Promise.all(
       followerParts.map(async file => ({
         name: file.name,
@@ -78,7 +65,6 @@ const processFiles = async (files: FileList): Promise<{ name: string; content: U
     const { content, count } = mergePartFiles(extractedFiles, 'follower');
     followerData = JSON.parse(new TextDecoder().decode(content).split('=')[1]);
   } else if (standardFollowerFile) {
-    console.log('📄 Lecture du follower.js standard...');
     const content = await standardFollowerFile.text();
     const validationError = validateTwitterData(content, 'follower');
     if (validationError) throw new Error(validationError);
@@ -88,7 +74,6 @@ const processFiles = async (files: FileList): Promise<{ name: string; content: U
   // Traiter les fichiers following
   let followingData: any[] = [];
   if (followingParts.length > 0) {
-    console.log('🔄 Traitement des parts following...');
     const extractedFiles: ExtractedFile[] = await Promise.all(
       followingParts.map(async file => ({
         name: file.name,
@@ -98,7 +83,6 @@ const processFiles = async (files: FileList): Promise<{ name: string; content: U
     const { content, count } = mergePartFiles(extractedFiles, 'following');
     followingData = JSON.parse(new TextDecoder().decode(content).split('=')[1]);
   } else if (standardFollowingFile) {
-    console.log('📄 Lecture du following.js standard...');
     const content = await standardFollowingFile.text();
     const validationError = validateTwitterData(content, 'following');
     if (validationError) throw new Error(validationError);
@@ -114,7 +98,6 @@ const processFiles = async (files: FileList): Promise<{ name: string; content: U
       name: 'follower.js',
       content: sanitizeContent(new TextEncoder().encode(followerContent))
     });
-    console.log('✅ follower.js généré:', { entries: followerData.length });
   }
 
   if (followingData.length > 0) {
@@ -123,7 +106,6 @@ const processFiles = async (files: FileList): Promise<{ name: string; content: U
       name: 'following.js',
       content: sanitizeContent(new TextEncoder().encode(followingContent))
     });
-    console.log('✅ following.js généré:', { entries: followingData.length });
   }
 
   return result;

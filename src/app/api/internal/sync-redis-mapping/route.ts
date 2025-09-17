@@ -35,24 +35,12 @@ async function handleSyncRedisMapping(
   try {
     const { action, platform, twitter_id } = validatedData;
 
-    console.log('Processing sync-redis-mapping request', {
-      action,
-      platform,
-      twitter_id,
-      endpoint: '/api/internal/sync-redis-mapping'
-    });
-
     const redisKey = `twitter_to_${platform}:${twitter_id}`;
 
     if (action === 'delete') {
       // Supprimer la correspondance de Redis
       await redis.del(redisKey);
       
-      console.log('API', 'POST /api/internal/sync-redis-mapping', 'Mapping deleted from Redis', 'system', {
-        platform,
-        twitter_id,
-        redisKey
-      });
 
     } else if (action === 'upsert') {
       let redisValue: string;
@@ -63,6 +51,9 @@ async function handleSyncRedisMapping(
         const bluesky_id = validatedData.bluesky_id || validatedData.data?.bluesky_id;
         
         if (!bluesky_username) {
+          logger.logError('API', 'POST /api/internal/sync-redis-mapping', 'bluesky_username is required for Bluesky platform', 'system', {
+            context: 'Bluesky username is required for Bluesky platform'
+          });
           return NextResponse.json(
             { error: 'bluesky_username is required for Bluesky platform' },
             { status: 400 }
@@ -78,6 +69,9 @@ async function handleSyncRedisMapping(
         const mastodon_instance = validatedData.mastodon_instance || validatedData.data?.mastodon_instance;
         
         if (!mastodon_id || !mastodon_username || !mastodon_instance) {
+          logger.logError('API', 'POST /api/internal/sync-redis-mapping', 'mastodon_id, mastodon_username and mastodon_instance are required for Mastodon platform', 'system', {
+            context: 'Mastodon ID, username and instance are required for Mastodon platform'
+          });
           return NextResponse.json(
             { error: 'mastodon_id, mastodon_username and mastodon_instance are required for Mastodon platform' },
             { status: 400 }
@@ -94,12 +88,6 @@ async function handleSyncRedisMapping(
       // Stocker dans Redis (pas de TTL, cache permanent)
       await redis.set(redisKey, redisValue);
 
-      console.log('API', 'POST /api/internal/sync-redis-mapping', 'Mapping updated in Redis', 'system', {
-        platform,
-        twitter_id,
-        redisKey,
-        redisValue
-      });
     }
 
     return NextResponse.json({ 
@@ -111,7 +99,8 @@ async function handleSyncRedisMapping(
     });
 
   } catch (error) {
-    console.log('API', 'POST /api/internal/sync-redis-mapping', error, 'system', {
+    const err = error instanceof Error ? error : new Error(String(error))
+    logger.logError('API', 'POST /api/internal/sync-redis-mapping', err, 'system', {
       context: 'Failed to sync Redis mapping'
     });
     
