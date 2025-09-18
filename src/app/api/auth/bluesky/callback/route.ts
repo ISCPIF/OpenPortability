@@ -37,6 +37,14 @@ async function callbackHandler(request: NextRequest) {
   try {
     const client = await createBlueskyOAuthClient();
     const searchParams = request.nextUrl.searchParams;
+    
+    // Log callback parameters for debugging
+    console.log('[Bluesky OAuth Callback] Received parameters:', {
+      code: searchParams.get('code')?.substring(0, 20) + '...',
+      state: searchParams.get('state'),
+      iss: searchParams.get('iss'),
+      timestamp: new Date().toISOString()
+    });
 
     // Complete OAuth flow and get session
     const { session, state } = await client.callback(searchParams);
