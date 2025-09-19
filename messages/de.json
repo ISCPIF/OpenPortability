@@ -207,44 +207,30 @@
             "uploadFailed": "Upload nach mehreren Versuchen fehlgeschlagen. Bitte versuche es erneut."
         }
     },
-    "largeFiles": {
-        "progress": {
-            "following": {
-                "title": "Folgend",
-                "processed": "{processed} / {total}"
-            },
-            "followers": {
-                "title": "Follower",
-                "processed": "{processed} / {total}"
-            },
-            "total": {
-                "title": "Vollständiger Fortschritt",
-                "processed": "{processed} / {total}"
-            }
-        },
-        "logo": {
-            "alt": "OpenPortability-Logo"
-        },
-        "status": {
-            "title": "Status",
-            "pending": "Warte",
-            "processing": "Verarbeite",
-            "completed": "Erledigt",
-            "failed": "Fehlgeschlagen"
-        },
-        "stats": {
-            "followers": "Follower",
-            "following": "Folgend"
-        },
-        "button": {
-            "dashboard": "Zurück zur Übersichtsseite"
-        },
-        "logoCNRS": {
-            "alt": "CNRS, Nationales Zentrum für wissenschaftliche Forschung"
-        },
-        "downloadingContacts": "Deine Kontakte werden heruntergeladen. Anschließend musst du die Wiederverbindung bestätigen.",
-        "redirecting": "Automatische Weiterleitung in"
-    },
+"largeFiles": {
+  "logo": { "alt": "OpenPortability-Logo" },
+  "logoCNRS": { "alt": "CNRS, Nationales Zentrum für wissenschaftliche Forschung" },
+  "downloadingContacts": "Deine Kontakte werden heruntergeladen. Anschließend musst du die Wiederverbindung bestätigen.",
+  "phase": {
+    "pending": "Vorbereitung",
+    "nodes": "Netzwerk wird erstellt",
+    "edges": "Verbindungen werden hergestellt",
+    "completed": "Erledigt",
+    "failed": "Fehlgeschlagen"
+  },
+  "status": {
+    "title": "Status",
+    "pending": "Warte",
+    "processing": "Verarbeite",
+    "completed": "Erledigt",
+    "failed": "Fehlgeschlagen"
+  },
+  "button": {
+    "dashboard": "Zurück zur Übersichtsseite",
+    "retryUpload": "Zurück zum Upload"
+  },
+  "redirecting": "Automatische Weiterleitung in"
+},
     "dashboard": {
         "shareModal": {
             "shareOn": "Teilen auf {platform}",

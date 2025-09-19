@@ -425,44 +425,30 @@
         "errorIgnoringAccount": "Erro ao ignorar a conta",
         "errorRestoringAccount": "Erro ao restaurar a conta"
       },
-    "largeFiles": {
-        "progress": {
-            "total": {
-                "processed": "{processed} / {total}",
-                "title": "Progresso total"
-            },
-            "followers": {
-                "title": "Seguidores",
-                "processed": "{processed} / {total}"
-            },
-            "following": {
-                "title": "Seguindo",
-                "processed": "{processed} / {total}"
-            }
-        },
-        "downloadingContacts": "Seus contatos estão sendo baixados. Em seguida, você precisará validar a reconexão.",
-        "redirecting": "Redirecionamento automático em",
-        "status": {
-            "processing": "Processamento",
-            "title": "Status",
-            "pending": "Pendente",
-            "completed": "Concluído",
-            "failed": "Falhou"
-        },
-        "logo": {
-            "alt": "Logo da OpenPortability"
-        },
-        "logoCNRS": {
-            "alt": "CNRS, Centro Nacional de Pesquisa Científica da França"
-        },
-        "stats": {
-            "followers": "Seguidores",
-            "following": "Seguindo"
-        },
-        "button": {
-            "dashboard": "Retornar ao painel de controle"
-        }
-    },
+"largeFiles": {
+  "logo": { "alt": "Logo da OpenPortability" },
+  "logoCNRS": { "alt": "CNRS, Centro Nacional de Pesquisa Científica da França" },
+  "downloadingContacts": "Seus contatos estão sendo baixados. Em seguida, você precisará validar a reconexão.",
+  "phase": {
+    "pending": "Preparando",
+    "nodes": "Recriando sua rede",
+    "edges": "Recriando suas conexões",
+    "completed": "Concluído",
+    "failed": "Falhou"
+  },
+  "status": {
+    "title": "Status",
+    "pending": "Pendente",
+    "processing": "Processando",
+    "completed": "Concluído",
+    "failed": "Falhou"
+  },
+  "button": {
+    "dashboard": "Retornar ao painel de controle",
+    "retryUpload": "Voltar ao envio"
+  },
+  "redirecting": "Redirecionamento automático em"
+},
     "AccountToMigrate": {
         "followOnBluesky": "Seguir no Bluesky",
         "followOnMastodon": "Seguir no Mastodon",
