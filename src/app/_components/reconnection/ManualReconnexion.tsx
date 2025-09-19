@@ -64,6 +64,23 @@ export default function ManualReconnexion({
   const [activeView, setActiveView] = useState<'notFollowed' | 'followed' | 'ignored'>('notFollowed');
   const itemsPerPage = 50;
 
+  // Log du nombre d'objets reçus au chargement
+  console.log('📊 [ManualReconnexion] Nombre total d\'objets reçus au chargement:', matches.length);
+  console.log('📊 [ManualReconnexion] Détail des objets reçus:', matches);
+  
+  // Log détaillé des premiers objets pour comprendre la structure
+  if (matches.length > 0) {
+    console.log('🔬 [ManualReconnexion] Structure du premier objet:', matches[0]);
+    console.log('🔬 [ManualReconnexion] Clés du premier objet:', Object.keys(matches[0]));
+    console.log('🔬 [ManualReconnexion] isMatchingTarget(premier):', isMatchingTarget(matches[0]));
+    
+    if (matches.length > 1) {
+      console.log('🔬 [ManualReconnexion] Structure du deuxième objet:', matches[1]);
+      console.log('🔬 [ManualReconnexion] isMatchingTarget(deuxième):', isMatchingTarget(matches[1]));
+    }
+  }
+
+
   // Filter matches based on user's connected accounts and active view
   const filteredMatches = matches.filter(match => {
     const blueskyHandle = isMatchingTarget(match) ? match.bluesky_handle : match.bluesky_handle;
@@ -97,6 +114,11 @@ export default function ManualReconnexion({
     // Show account if it matches criteria for either platform and isn't dismissed
     return (showForBluesky || showForMastodon) && !isDismissed;
   });
+
+  // Log du nombre d'objets après filtrage
+  console.log('🔍 [ManualReconnexion] Nombre d\'objets après filtrage pour la vue "' + activeView + '":', filteredMatches.length);
+  console.log('🔍 [ManualReconnexion] Détail des objets filtrés:', filteredMatches);
+  console.log('🔍 [ManualReconnexion] Comptes connectés - Bluesky:', session.user.bluesky_username, 'Mastodon:', session.user.mastodon_username);
   
   
   const startIndex = (currentPage - 1) * itemsPerPage;
@@ -247,6 +269,11 @@ export default function ManualReconnexion({
     }
   };
 
+  // Log des comptes sur la page courante
+  console.log('📄 [ManualReconnexion] Comptes affichés sur la page courante (' + currentPage + '):', currentMatches.length);
+  console.log('📄 [ManualReconnexion] Détail des comptes de la page courante:', currentMatches);
+
+
   return (
     <div className="w-full max-w-4xl mx-auto bg-[#1A237E] rounded-lg p-3 sm:p-6 mt-4 sm:mt-12">
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 sm:mb-6 gap-3 sm:gap-0">
@@ -328,7 +355,22 @@ export default function ManualReconnexion({
             const hasFollowMastodon = isMatchingTarget(match) ? match.has_follow_mastodon : match.has_been_followed_on_mastodon;
             const isDismissed = isMatchingTarget(match) && (match as MatchingTarget).dismissed;
             
-            if (!targetTwitterId) return null;
+            console.log(`🔍 [ManualReconnexion] Traitement compte ${index}:`, {
+              targetTwitterId,
+              blueskyHandle,
+              hasFollowBluesky,
+              hasFollowMastodon,
+              isDismissed,
+              isMatchingTarget: isMatchingTarget(match),
+              match
+            });
+            
+            if (!targetTwitterId) {
+              console.log(`❌ [ManualReconnexion] Compte ${index} ignoré - targetTwitterId vide`);
+              return null;
+            }
+            
+            console.log(`✅ [ManualReconnexion] Rendu compte ${index} - targetTwitterId: ${targetTwitterId}`);
             
             return (
               <AccountToMigrate
