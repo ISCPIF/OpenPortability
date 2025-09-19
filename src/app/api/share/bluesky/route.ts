@@ -79,21 +79,24 @@ async function blueskyShareHandler(req: Request, data: BlueskyShareRequest, sess
         });
     }
     catch (error) {
-        logger.logError('API', 'POST /api/share/bluesky', error, session.user.id, {
+      const err = error instanceof Error ? error : new Error(String(error))
+        logger.logError('API', 'POST /api/share/bluesky', err, session.user.id, {
           context: 'BlueSky post creation'
         });
         return NextResponse.json(
-            { success: false, error: error.message || 'Internal server error' },
+            { success: false, error: err.message || 'Internal server error' },
             { status: 500 }
         );
     }
   } catch (error) {
     const userId = session?.user?.id || 'unknown';
-    logger.logError('API', 'POST /api/share/bluesky', error, userId, {
+    const err = error instanceof Error ? error : new Error(String(error))
+
+    logger.logError('API', 'POST /api/share/bluesky', err, userId, {
       context: 'Unexpected error in BlueSky share process'
     });
     return NextResponse.json(
-      { success: false, error: 'Internal server error' },
+      { success: false, error: err.message || 'Internal server error' },
       { status: 500 }
     );
   }

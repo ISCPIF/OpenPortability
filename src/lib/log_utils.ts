@@ -11,7 +11,8 @@ export enum LogLevel {
   WARNING = 'WARNING',
   ERROR = 'ERROR',
   REQUEST = 'REQUEST',
-  PERFORMANCE = 'PERFORMANCE'
+  PERFORMANCE = 'PERFORMANCE',
+  ALERT = 'ALERT'
 }
 
 // Configuration
@@ -63,7 +64,8 @@ function getLogLevelValue(level: LogLevel): number {
     WARNING: 2,
     ERROR: 3,
     REQUEST: 1,
-    PERFORMANCE: 1
+    PERFORMANCE: 1,
+    ALERT: 4
   };
   return levels[level] || 0;
 }
@@ -96,7 +98,8 @@ function getLogFileStream(level: LogLevel): fs.WriteStream | null {
     
     return stream;
   } catch (error) {
-    console.error(`Erreur lors de la création du dossier de logs ou du stream: ${error.message}`);
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error(`Erreur lors de la création du dossier de logs ou du stream: ${msg}`);
     return null;
   }
 }
@@ -122,7 +125,8 @@ function getErrorWarningStream(): fs.WriteStream | null {
     
     return stream;
   } catch (error) {
-    console.error(`Erreur lors de la création du stream pour erreurs et warnings: ${error.message}`);
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error(`Erreur lors de la création du stream pour erreurs et warnings: ${msg}`);
     return null;
   }
 }
@@ -248,6 +252,27 @@ export function logError(source: string, action: string, error: Error | string, 
     stack
   };
   
+  writeLog(entry);
+}
+
+export function logAlert(source: string, action: string, error: Error | string, userId?: string, details?: any, correlationId?: string, requestId?: string) {
+  // Alerts are always logged, regardless of min level, because they are critical
+  const message = error instanceof Error ? error.message : error;
+  const stack = error instanceof Error ? error.stack : undefined;
+
+  const entry: LogEntry = {
+    timestamp: new Date().toISOString(),
+    level: LogLevel.ALERT,
+    userId,
+    source,
+    action,
+    message,
+    details,
+    correlationId,
+    requestId,
+    stack
+  };
+
   writeLog(entry);
 }
 
@@ -380,7 +405,8 @@ export function withLogging(handler: Function) {
       endTimer();
       
       // Enregistrer l'erreur
-      logError('API', req.nextUrl.pathname, error, userId, {
+      const err = error instanceof Error ? error : new Error(String(error));
+      logError('API', req.nextUrl.pathname, err, userId, {
         method: req.method,
         url: req.url
       }, undefined, requestId);
@@ -407,6 +433,7 @@ const logger = {
   logDebug,
   logRequest,
   logPerformance,
+  logAlert,
   startPerformanceTimer,
   withLogging
 };

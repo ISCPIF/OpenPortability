@@ -78,9 +78,7 @@ export function useStats() {
   
     // Global debounced refreshStats - un seul appel même avec multiple instances
     const refreshStats = useCallback(() => {
-      console.log(` [${instanceId.current}] refreshStats CALLED - Timestamp:`, Date.now());
-      console.log(` [${instanceId.current}] Stack:`, new Error().stack?.split('\n').slice(0, 3));
-      
+
       // Annuler le timeout précédent s'il existe
       if (globalRefreshTimeout) {
         clearTimeout(globalRefreshTimeout);
@@ -88,7 +86,6 @@ export function useStats() {
       
       // Créer un nouveau timeout global
       globalRefreshTimeout = setTimeout(() => {
-        console.log(` [GLOBAL] refreshStats EXECUTING after debounce`);
         dataFetchedRef.current = false;
         globalDataFetched.current = false;
         fetchStats(true);
