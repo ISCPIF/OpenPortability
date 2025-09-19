@@ -70,26 +70,37 @@ export class MatchingRepository {
     pageSize: number = 1000,
     pageNumber: number = 0
   ): Promise<{ data: StoredProcedureTarget[] | null; error: any }> {
+    console.log('📦 [MatchingRepository.getFollowableTargets] Début - userId:', userId, 'pageSize:', pageSize, 'pageNumber:', pageNumber);
     
-    try {
-      // 1. Essayer Redis-first approach
-      const redisResult = await this.getFollowableTargetsFromRedis(userId, pageSize, pageNumber);
-      if (redisResult.data !== null) {
-        return redisResult;
-      }
-    } catch (redisError) {
-      logWarning('Repository', 'MatchingRepository.getFollowableTargets', 'Redis unavailable, falling back to SQL', userId, {
-        error: redisError instanceof Error ? redisError.message : 'Unknown Redis error'
-      });
-    }
+    // try {
+    //   // 1. Essayer Redis-first approach
+    //   console.log('🔴 [MatchingRepository.getFollowableTargets] Tentative Redis-first...');
+    //   const redisResult = await this.getFollowableTargetsFromRedis(userId, pageSize, pageNumber);
+      
+    //   if (redisResult.data !== null) {
+    //     console.log('✅ [MatchingRepository.getFollowableTargets] Redis réussi - éléments:', redisResult.data?.length || 0);
+    //     console.log('✅ [MatchingRepository.getFollowableTargets] Détail Redis result:', redisResult.data);
+    //     return redisResult;
+    //   } else {
+    //     console.log('🔴 [MatchingRepository.getFollowableTargets] Redis a retourné null - fallback vers SQL');
+    //   }
+    // } catch (redisError) {
+    //   console.log('⚠️ [MatchingRepository.getFollowableTargets] Erreur Redis - fallback vers SQL:', redisError);
+    //   logWarning('Repository', 'MatchingRepository.getFollowableTargets', 'Redis unavailable, falling back to SQL', userId, {
+    //     error: redisError instanceof Error ? redisError.message : 'Unknown Redis error'
+    //   });
+    // }
 
     // 2. Fallback vers la fonction SQL existante
+    console.log('🟦 [MatchingRepository.getFollowableTargets] Appel SQL get_followable_targets...');
     const result = await this.supabase.rpc('get_followable_targets', {
       user_id: userId,
       page_size: pageSize,
       page_number: pageNumber
     });
     
+    console.log('🟦 [MatchingRepository.getFollowableTargets] Résultat SQL - éléments:', result.data?.length || 0, 'erreur:', result.error);
+    console.log('🟦 [MatchingRepository.getFollowableTargets] Détail SQL result:', result.data);
     
     return result;
   }
@@ -102,8 +113,11 @@ export class MatchingRepository {
     pageSize: number,
     pageNumber: number
   ): Promise<{ data: StoredProcedureTarget[] | null; error: any }> {
+    console.log('🔴 [getFollowableTargetsFromRedis] Début Redis - userId:', userId);
+    
     try {
       // 1. D'abord récupérer les plateformes connectées de l'utilisateur (comme PostgreSQL)
+      console.log('👤 [getFollowableTargetsFromRedis] Récupération des plateformes utilisateur...');
       const { data: userPlatforms, error: userError } = await authClient
         .from('users')
         .select('bluesky_username, mastodon_username')
@@ -111,13 +125,18 @@ export class MatchingRepository {
         .single();
 
       if (userError) {
+        console.error('❌ [getFollowableTargetsFromRedis] Erreur plateformes utilisateur:', userError);
         throw new Error(`User platforms error: ${userError.message}`);
       }
 
       const hasBluesky = !!userPlatforms?.bluesky_username;
       const hasMastodon = !!userPlatforms?.mastodon_username;
+      
+      console.log('👤 [getFollowableTargetsFromRedis] Plateformes utilisateur - Bluesky:', hasBluesky, 'Mastodon:', hasMastodon);
+      console.log('👤 [getFollowableTargetsFromRedis] Détail userPlatforms:', userPlatforms);
 
       // 2. Récupérer tous les sources_targets de l'utilisateur qui ne sont pas encore suivis
+      console.log('💾 [getFollowableTargetsFromRedis] Récupération sources_targets...');
       const { data: sourcesTargets, error: dbError } = await this.supabase
         .from('sources_targets')
         .select('node_id::text, has_follow_bluesky, has_follow_mastodon, followed_at_bluesky, followed_at_mastodon, dismissed') // FORCER node_id en TEXT
@@ -125,20 +144,32 @@ export class MatchingRepository {
         .or('has_follow_bluesky.eq.false,has_follow_mastodon.eq.false'); // Au moins une plateforme non suivie
 
       if (dbError) {
+        console.error('❌ [getFollowableTargetsFromRedis] Erreur base de données:', dbError);
         throw new Error(`Database error: ${dbError.message}`);
       }
 
+      console.log('💾 [getFollowableTargetsFromRedis] Sources targets récupérés:', sourcesTargets?.length || 0);
+      console.log('💾 [getFollowableTargetsFromRedis] Détail sources targets:', sourcesTargets);
+
       if (!sourcesTargets || sourcesTargets.length === 0) {
+        console.log('🚫 [getFollowableTargetsFromRedis] Aucun sources_targets - retour vide');
         return { data: [], error: null };
       }
 
       // 3. Récupérer les correspondances depuis Redis en batch
       const twitterIds = sourcesTargets.map(st => st.node_id); // CONVERSION EN STRING
       
+      console.log('🔴 [getFollowableTargetsFromRedis] Twitter IDs à rechercher dans Redis:', twitterIds.length);
+      console.log('🔴 [getFollowableTargetsFromRedis] Détail Twitter IDs:', twitterIds.slice(0, 10), '...'); // Afficher seulement les 10 premiers
+      
       // Utiliser la méthode batchGetSocialMappings au lieu de mget
       const mappings = await redis.batchGetSocialMappings(twitterIds);
+      
+      console.log('🔴 [getFollowableTargetsFromRedis] Mappings Redis récupérés:', mappings.size);
+      console.log('🔴 [getFollowableTargetsFromRedis] Exemple mappings:', Array.from(mappings.entries()).slice(0, 3));
 
       // 4. Construire les résultats avec les correspondances trouvées ET filtrage par plateformes utilisateur
+      console.log('🔍 [getFollowableTargetsFromRedis] Construction des résultats...');
       const results: StoredProcedureTarget[] = [];
       let totalCount = 0;
       let skippedCount = 0;
@@ -197,19 +228,32 @@ export class MatchingRepository {
 
   
 
+      console.log('📈 [getFollowableTargetsFromRedis] Statistiques de construction:');
+      console.log('  - Total results:', results.length);
+      console.log('  - Skipped count:', skippedCount);
+      console.log('  - Skipped reasons:', skippedReasons);
+      console.log('  - Bluesky mappings:', blueskyMappings);
+      console.log('  - Mastodon mappings:', mastodonMappings);
+      console.log('  - Both platform mappings:', bothPlatformMappings);
+
       // 5. Appliquer la pagination
       const startIndex = pageNumber * pageSize;
       const endIndex = startIndex + pageSize;
+      console.log('📄 [getFollowableTargetsFromRedis] Pagination - startIndex:', startIndex, 'endIndex:', endIndex);
+      
       const paginatedResults = results.slice(startIndex, endIndex);
+      console.log('📄 [getFollowableTargetsFromRedis] Résultats paginés:', paginatedResults.length);
 
       // 6. Ajouter le total_count à chaque résultat
       paginatedResults.forEach(result => {
         result.total_count = totalCount;
       });
 
+      console.log('✅ [getFollowableTargetsFromRedis] Résultat final Redis:', paginatedResults);
       return { data: paginatedResults, error: null };
 
     } catch (error) {
+      console.error('❌ [getFollowableTargetsFromRedis] Erreur Redis:', error);
       const err = error instanceof Error ? error : new Error(String(error));
       logError('Repository', 'MatchingRepository.getFollowableTargetsFromRedis', err, userId);
       return { data: null, error: error };
@@ -439,4 +483,38 @@ export class MatchingRepository {
     }
   }
 
+  async markNodesAsUnavailableBatch(
+    nodeIds: string[], 
+    platform: 'bluesky' | 'mastodon', 
+    reason: string
+  ): Promise<void> {
+    console.log('Repository', `markNodesAsUnavailableBatch called with nodeIds: ${JSON.stringify(nodeIds)}, platform: ${platform}, reason: ${reason}`, "system");
+    
+    const updates = platform === 'bluesky' 
+      ? { 
+          bluesky_unavailable: true, 
+          failure_reason_bluesky: reason 
+        }
+      : { 
+          mastodon_unavailable: true, 
+          failure_reason_mastodon: reason 
+        };
+  
+    console.log('Repository', `Updates object: ${JSON.stringify(updates)}`, "system");
+  
+    // Convertir les nodeIds en bigint pour la requête PostgreSQL
+    const bigintNodeIds = nodeIds.map(id => BigInt(id));
+    
+    const { data, error, count } = await this.supabase
+      .from('nodes')
+      .update(updates)
+      .in('twitter_id', bigintNodeIds)
+      .select('twitter_id, bluesky_unavailable, mastodon_unavailable, failure_reason_bluesky, failure_reason_mastodon');
+  
+    console.log('Repository', `Update result - count: ${count}, data: ${JSON.stringify(data)}, error: ${error}`, "system");
+  
+    if (error) {
+      throw new Error(`Failed to mark nodes as unavailable: ${error.message}`);
+    }
+  }
 }

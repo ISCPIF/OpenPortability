@@ -95,36 +95,84 @@ export const POST = withValidation(
             const matchedFollowers = blueskyAccounts.filter(isMatchedFollower);
             const matchingTargets = blueskyAccounts.filter((acc: any) => !isMatchedFollower(acc));
 
-            // Determine if there was any success
-            const hasSuccess = results.bluesky.succeeded > 0;
-            const errorMessage = results.bluesky.failures.length > 0 
-              ? results.bluesky.failures.map((f: any) => f.error).join('; ') 
-              : undefined;
-
-            // Update sources_followers table for MatchedFollower type
+            // Séparer les succès des échecs basé sur les handles
+            const failedHandles = new Set(results.bluesky.failures.map((f: any) => f.handle));
+            
+            // Pour MatchedFollower type
             if (matchedFollowers.length > 0) {
-              await matchingService.updateSourcesFollowersStatusBatch(
-                session.user.twitter_id!,
-                matchedFollowers.map((acc: any) => acc.source_twitter_id),
-                'bluesky',
-                hasSuccess,
-                errorMessage
-              );
-            }
-
-            // Update sources_targets table for MatchingTarget type
-            if (matchingTargets.length > 0) {
-              const targetIds = matchingTargets
-                .map((acc: any) => String((acc as any).node_id))
-                .filter((id: any): id is string => !!id && id.trim().length > 0);
-              if (targetIds.length > 0) {
-                await matchingService.updateFollowStatusBatch(
-                  userId,
-                  targetIds,
+              const successfulFollowers = matchedFollowers.filter((acc: any) => !failedHandles.has(acc.bluesky_handle));
+              const failedFollowers = matchedFollowers.filter((acc: any) => failedHandles.has(acc.bluesky_handle));
+              
+              // Traiter les succès
+              if (successfulFollowers.length > 0) {
+                await matchingService.updateSourcesFollowersStatusBatch(
+                  session.user.twitter_id!,
+                  successfulFollowers.map((acc: any) => acc.source_twitter_id),
                   'bluesky',
-                  hasSuccess,
+                  true,
+                  undefined
+                );
+              }
+              
+              // Traiter les échecs
+              if (failedFollowers.length > 0) {
+                const errorMessage = results.bluesky.failures
+                  .filter((f: any) => failedFollowers.some((acc: any) => acc.bluesky_handle === f.handle))
+                  .map((f: any) => f.error)
+                  .join('; ');
+                  
+                await matchingService.updateSourcesFollowersStatusBatch(
+                  session.user.twitter_id!,
+                  failedFollowers.map((acc: any) => acc.source_twitter_id),
+                  'bluesky',
+                  false,
                   errorMessage
                 );
+              }
+            }
+
+            // Pour MatchingTarget type
+            if (matchingTargets.length > 0) {
+              const successfulTargets = matchingTargets.filter((acc: any) => !failedHandles.has(acc.bluesky_handle));
+              const failedTargets = matchingTargets.filter((acc: any) => failedHandles.has(acc.bluesky_handle));
+              
+              // Traiter les succès
+              if (successfulTargets.length > 0) {
+                const successTargetIds = successfulTargets
+                  .map((acc: any) => String(acc.node_id))
+                  .filter((id: any): id is string => !!id && id.trim().length > 0);
+                  
+                if (successTargetIds.length > 0) {
+                  await matchingService.updateFollowStatusBatch(
+                    userId,
+                    successTargetIds,
+                    'bluesky',
+                    true,
+                    undefined
+                  );
+                }
+              }
+              
+              // Traiter les échecs
+              if (failedTargets.length > 0) {
+                const failedTargetIds = failedTargets
+                  .map((acc: any) => String(acc.node_id))
+                  .filter((id: any): id is string => !!id && id.trim().length > 0);
+                  
+                if (failedTargetIds.length > 0) {
+                  const errorMessage = results.bluesky.failures
+                    .filter((f: any) => failedTargets.some((acc: any) => acc.bluesky_handle === f.handle))
+                    .map((f: any) => f.error)
+                    .join('; ');
+                    
+                  await matchingService.updateFollowStatusBatch(
+                    userId,
+                    failedTargetIds,
+                    'bluesky',
+                    false,
+                    errorMessage
+                  );
+                }
               }
             }
           } catch (blueskyError) {
@@ -175,34 +223,106 @@ export const POST = withValidation(
             const matchedFollowers = mastodonAccounts.filter(isMatchedFollower);
             const matchingTargets = mastodonAccounts.filter((acc: any) => !isMatchedFollower(acc));
 
-            // Update sources_followers table for MatchedFollower type
+            // Séparer les succès des échecs basé sur les handles (format: username@instance)
+            const failedHandles = new Set(results.mastodon.failures.map((f: any) => f.handle));
+            
+            // Pour MatchedFollower type
             if (matchedFollowers.length > 0) {
-              await matchingService.updateSourcesFollowersStatusBatch(
-                session.user.twitter_id!,
-                matchedFollowers.map((acc: any) => acc.source_twitter_id),
-                'mastodon',
-                results.mastodon.succeeded > 0,
-                results.mastodon.failures.length > 0 
-                  ? results.mastodon.failures.map((f: any) => f.error).join('; ') 
-                  : undefined
-              );
+              const successfulFollowers = matchedFollowers.filter((acc: any) => {
+                const handle = `${acc.mastodon_username}@${acc.mastodon_instance.replace('https://', '')}`;
+                return !failedHandles.has(handle);
+              });
+              const failedFollowers = matchedFollowers.filter((acc: any) => {
+                const handle = `${acc.mastodon_username}@${acc.mastodon_instance.replace('https://', '')}`;
+                return failedHandles.has(handle);
+              });
+              
+              // Traiter les succès
+              if (successfulFollowers.length > 0) {
+                await matchingService.updateSourcesFollowersStatusBatch(
+                  session.user.twitter_id!,
+                  successfulFollowers.map((acc: any) => acc.source_twitter_id),
+                  'mastodon',
+                  true,
+                  undefined
+                );
+              }
+              
+              // Traiter les échecs
+              if (failedFollowers.length > 0) {
+                const errorMessage = results.mastodon.failures
+                  .filter((f: any) => {
+                    return failedFollowers.some((acc: any) => {
+                      const handle = `${acc.mastodon_username}@${acc.mastodon_instance.replace('https://', '')}`;
+                      return handle === f.handle;
+                    });
+                  })
+                  .map((f: any) => f.error)
+                  .join('; ');
+                  
+                await matchingService.updateSourcesFollowersStatusBatch(
+                  session.user.twitter_id!,
+                  failedFollowers.map((acc: any) => acc.source_twitter_id),
+                  'mastodon',
+                  false,
+                  errorMessage
+                );
+              }
             }
 
-            // Update sources_targets table for MatchingTarget type
+            // Pour MatchingTarget type
             if (matchingTargets.length > 0) {
-              const targetIds = matchingTargets
-                .map((acc: any) => String((acc as any).node_id))
-                .filter((id: any): id is string => !!id && id.trim().length > 0);
-              if (targetIds.length > 0) {
-                await matchingService.updateFollowStatusBatch(
-                  userId,
-                  targetIds,
-                  'mastodon',
-                  results.mastodon.succeeded > 0,
-                  results.mastodon.failures.length > 0 
-                    ? results.mastodon.failures.map((f: any) => f.error).join('; ') 
-                    : undefined
-                );
+              const successfulTargets = matchingTargets.filter((acc: any) => {
+                const handle = `${acc.mastodon_username}@${acc.mastodon_instance.replace('https://', '')}`;
+                return !failedHandles.has(handle);
+              });
+              const failedTargets = matchingTargets.filter((acc: any) => {
+                const handle = `${acc.mastodon_username}@${acc.mastodon_instance.replace('https://', '')}`;
+                return failedHandles.has(handle);
+              });
+              
+              // Traiter les succès
+              if (successfulTargets.length > 0) {
+                const successTargetIds = successfulTargets
+                  .map((acc: any) => String(acc.node_id))
+                  .filter((id: any): id is string => !!id && id.trim().length > 0);
+                  
+                if (successTargetIds.length > 0) {
+                  await matchingService.updateFollowStatusBatch(
+                    userId,
+                    successTargetIds,
+                    'mastodon',
+                    true,
+                    undefined
+                  );
+                }
+              }
+              
+              // Traiter les échecs
+              if (failedTargets.length > 0) {
+                const failedTargetIds = failedTargets
+                  .map((acc: any) => String(acc.node_id))
+                  .filter((id: any): id is string => !!id && id.trim().length > 0);
+                  
+                if (failedTargetIds.length > 0) {
+                  const errorMessage = results.mastodon.failures
+                    .filter((f: any) => {
+                      return failedTargets.some((acc: any) => {
+                        const handle = `${acc.mastodon_username}@${acc.mastodon_instance.replace('https://', '')}`;
+                        return handle === f.handle;
+                      });
+                    })
+                    .map((f: any) => f.error)
+                    .join('; ');
+                    
+                  await matchingService.updateFollowStatusBatch(
+                    userId,
+                    failedTargetIds,
+                    'mastodon',
+                    false,
+                    errorMessage
+                  );
+                }
               }
             }
           } catch (mastodonError) {
@@ -243,7 +363,7 @@ export const POST = withValidation(
   },
   {
     requireAuth: true,
-    applySecurityChecks: true,
+    applySecurityChecks: false,
     skipRateLimit: false,
   }
 );
