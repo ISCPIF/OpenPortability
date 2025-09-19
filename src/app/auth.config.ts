@@ -10,7 +10,8 @@ import type { AdapterAccountType } from "next-auth/adapters"
 import type { CustomAdapterUser } from '@/lib/supabase-adapter'
 import { authClient } from '@/lib/supabase'
 import logger from '@/lib/log_utils'
-import { Session, JWT } from "next-auth"
+import type { Session } from "next-auth"
+import type { JWT } from "next-auth/jwt"
 
 import { auth } from "./auth"
 
@@ -70,8 +71,8 @@ export const authConfig = {
     }
   },
   callbacks: {
-    async signIn({ user, account, profile }: { user: User, account: Account, profile: Profile }) {
-      if (!account) {
+    async signIn({ user, account, profile }: { user: User | AdapterUser; account?: Account | null; profile?: Profile }){
+    if (!account) {
         logger.logError('Auth', 'signIn', 'No account provided during sign in', user?.id);
         return false;
       }
@@ -139,7 +140,7 @@ export const authConfig = {
         return false;
       }
     },
-    async jwt({ token, user, account, profile }: { token: JWT, user: User, account: Account, profile: Profile }) {
+    async jwt({ token, user, account, profile }: { token: JWT; user?: User | AdapterUser; account?: Account | null; profile?: Profile }) {
 
       // Helper pour convertir proprement des valeurs potentiellement en string
       // provenant du provider Credentials (e.g. "true"/"false")

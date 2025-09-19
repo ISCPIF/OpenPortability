@@ -159,7 +159,7 @@ volumes:
     driver_opts:
       type: tmpfs
       device: tmpfs
-      o: "noexec"
+      o: "noexec,uid=1000,gid=1000,mode=0775"
   app_logs:
     driver: local
     driver_opts:
