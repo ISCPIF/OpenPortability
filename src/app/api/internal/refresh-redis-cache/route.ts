@@ -30,23 +30,24 @@ async function handleRefreshRedisCache(
     }
 
     // Mettre à jour Redis avec TTL de 65 minutes (sécurité)
-    await redis.set('stats:global', JSON.stringify(stats), 3900);
+    await redis.set('stats:global', JSON.stringify(stats), 86400);
 
     logger.logInfo('API', routeLabel, 'Redis cache updated successfully', 'system', {
       context: 'Global stats cached in Redis',
-      ttl: 3900,
+      ttl: 86400,
       statsKeys: Object.keys(stats)
     });
 
     return NextResponse.json({ 
       success: true, 
       timestamp: new Date().toISOString(),
-      ttl: 3900 
+      ttl: 86400 
     });
 
   } catch (error) {
     const routeLabel = `${request.method} /api/internal/refresh-redis-cache`;
-    logger.logError('API', routeLabel, error, 'system', {
+    const err = error instanceof Error ? error : new Error(String(error))
+    logger.logError('API', routeLabel, err, 'system', {
       context: 'Failed to update Redis cache from GET request'
     });
 

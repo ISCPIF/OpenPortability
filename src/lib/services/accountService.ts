@@ -4,6 +4,7 @@ import { Provider, RefreshResult, TokenData, TokenUpdate } from '../types/accoun
 import { supabaseAdapter } from '../supabase-adapter';
 import { supabase } from '../supabase';
 import { decrypt } from '../encryption';
+import logger from '../log_utils';
 
 export class AccountService {
   private repository: AccountRepository;
@@ -14,46 +15,84 @@ export class AccountService {
 
 
   async verifyAndRefreshBlueskyToken(userId: string): Promise<RefreshResult> {
-    // console.log(' [AccountService.verifyAndRefreshBlueskyToken] Starting token verification for user:', userId);
     const account = await this.repository.getProviderAccount(userId, 'bluesky');
     if (!account) {
-      console.warn(' [AccountService.verifyAndRefreshBlueskyToken] No Bluesky account found for user:', userId);
+      logger.logError('Security', 'No Bluesky account found for user:', userId);
       return { success: false, error: 'No Bluesky account found', requiresReauth: true };
     }
 
+    // Tokens in repository.getProviderAccount() are already decrypted. Do NOT decrypt again.
     if (!account.access_token || !account.refresh_token) {
-      console.warn(' [AccountService.verifyAndRefreshBlueskyToken] Missing tokens for user:', userId);
+      logger.logWarning('Security', 'Missing tokens for user:', userId);
       return { success: false, error: 'Missing tokens', requiresReauth: true };
     }
 
-    // console.log(' [AccountService.verifyAndRefreshBlueskyToken] Account found:', account);
-    const agent = new BskyAgent({ service: 'https://bsky.social' });
+    // Bluesky OAuth tokens are DPoP-bound and not compatible with BskyAgent.resumeSession (which expects app-password session tokens)
+    // Instead, check for the persisted OAuth session in Redis using the DID and validate minimal scope.
     try {
-      // Déchiffrer les tokens avant de les utiliser
-      const accessToken = decrypt(account.access_token);
-      const refreshToken = decrypt(account.refresh_token);
-      
-      await agent.resumeSession({
-        accessJwt: accessToken,
-        refreshJwt: refreshToken,
-        handle: account.provider_account_id.split('.')[0],
-        did: account.provider_account_id,
-        active: true
-      });
+      const did: string = account.provider_account_id;
+      const handleGuess = did.includes('.') ? did.split('.')[0] : did;
 
-      // Si le token a été rafraîchi par l'agent, mettons à jour la BD avec les nouveaux tokens chiffrés
-      if (agent.session && agent.session?.accessJwt !== accessToken) {
-        await this.repository.updateTokens(userId, 'bluesky', {
-          access_token: agent.session.accessJwt,
-          refresh_token: agent.session.refreshJwt,
-        });
-      } else {
-        // console.log(' [AccountService.verifyAndRefreshBlueskyToken] Token is still valid, no refresh needed');
+      // Attempt to read the OAuth session saved by blueskyOAuthClient's sessionStore
+      const { getRedis } = await import('../services/redisClient');
+      const redis = getRedis();
+      const redisKey = `bsky:session:${did}`;
+      const raw = await redis.get(redisKey);
+
+      if (!raw) {
+        console.warn(' [AccountService.verifyAndRefreshBlueskyToken] No OAuth session found in Redis for DID:', did);
+        return { 
+          success: false, 
+          error: 'Missing OAuth session (DPoP)',
+          requiresReauth: true 
+        };
       }
 
+      const sessionData = JSON.parse(raw);
+      const tokenSet = sessionData?.tokenSet || {};
+      const scope: string | undefined = tokenSet.scope;
+      const tokenType: string | undefined = tokenSet.token_type;
+
+      // Validate expected minimal scope
+      // We request "atproto transition:generic" in client metadata. If scope is missing or different, make it explicit.
+      if (!scope || !scope.includes('atproto')) {
+        console.error(' [AccountService.verifyAndRefreshBlueskyToken] Token scope invalid or missing', { userId, did, scope, tokenType });
+        return {
+          success: false,
+          error: `Bad token scope: expected atproto scope, got ${scope ?? 'none'} (type=${tokenType ?? 'unknown'})`,
+          requiresReauth: true,
+        };
+      }
+
+      // Optional: make a lightweight authenticated call using dpopFetch to ensure the session works
+      const dpopFetch = sessionData?.dpopFetch;
+      if (typeof dpopFetch === 'function') {
+        try {
+          const origin = 'https://bsky.social';
+          const url = new URL('/xrpc/app.bsky.actor.getProfile', origin);
+          url.searchParams.set('actor', did);
+          const resp = await dpopFetch(url.toString());
+          if (!resp.ok) {
+            const body = await resp.text();
+            console.warn(' [AccountService.verifyAndRefreshBlueskyToken] dpopFetch non-OK', { status: resp.status, body });
+            return {
+              success: false,
+              error: `OAuth session invalid (status ${resp.status})`,
+              requiresReauth: true,
+            };
+          }
+        } catch (e: any) {
+          console.warn(' [AccountService.verifyAndRefreshBlueskyToken] dpopFetch failed', { message: e?.message });
+          return {
+            success: false,
+            error: 'OAuth session check failed',
+            requiresReauth: true,
+          };
+        }
+      }
       return { success: true };
-    } catch (error) {
-      console.error(' [AccountService.verifyAndRefreshBlueskyToken] Token refresh failed:', error.message);
+    } catch (error: any) {
+      logger.logError('Security', 'Token refresh failed:', error.message);
       return { 
         success: false, 
         error: error.message,
@@ -65,12 +104,12 @@ export class AccountService {
   async verifyAndRefreshMastodonToken(userId: string): Promise<RefreshResult> {
     const account = await this.repository.getProviderAccount(userId, 'mastodon');
     if (!account) {
-      console.warn(' [AccountService.verifyAndRefreshMastodonToken] No Mastodon account found for user:', userId);
+      logger.logWarning('Security', 'No Mastodon account found for user:', userId);
       return { success: false, error: 'No Mastodon account found', requiresReauth: true };
     }
 
     if (!account.scope?.includes('follow')) {
-      console.warn(' [AccountService.verifyAndRefreshMastodonToken] Account scope does not include "follow" permission:', userId);
+      logger.logWarning('Security', 'Account scope does not include "follow" permission:', userId);
       
       // Supprimer le compte de la table accounts uniquement
       // await this.repository.deleteAccount(userId, 'mastodon');
@@ -78,11 +117,6 @@ export class AccountService {
       return { success: false, error: 'Missing follow permission', requiresReauth: true };
     }
 
-    // console.log(' [AccountService.verifyAndRefreshMastodonToken] Account found:', {
-    //   userId,
-    //   account.access_token,
-    //   // hasRefreshToken: !!account.refresh_token
-    // });
 
     // Récupérer l'instance Mastodon depuis le profil utilisateur
     if (!supabaseAdapter?.getUser) {
@@ -95,11 +129,7 @@ export class AccountService {
       console.warn(' [AccountService.verifyAndRefreshMastodonToken] No Mastodon instance found for user:', userId);
       return { success: false, error: 'No Mastodon instance found', requiresReauth: true };
     }
-
-    // console.log(' [AccountService.verifyAndRefreshMastodonToken] Using Mastodon instance:', user.mastodon_instance);
-
     try {
-    //   console.log(' [AccountService.verifyAndRefreshMastodonToken] Verifying credentials with Mastodon API');
       const response = await fetch(`${user.mastodon_instance}/api/v1/accounts/verify_credentials`, {
         headers: {
           'Authorization': `Bearer ${account.access_token}`
@@ -111,9 +141,8 @@ export class AccountService {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-    //   console.log(' [AccountService.verifyAndRefreshMastodonToken] Token is valid');
       return { success: true };
-    } catch (error) {
+    } catch (error: any) {
       console.error(' [AccountService.verifyAndRefreshMastodonToken] Token validation failed:', error.message);
       return { 
         success: false, 
@@ -133,14 +162,9 @@ export class AccountService {
   }
 
   isTokenValid(tokenData: TokenData): boolean {
-    // console.log(' [AccountService.isTokenValid] Checking token validity:', {
-    //   hasExpiryDate: !!tokenData.expires_at,
-    //   expiryDate: tokenData.expires_at
-    // });
     if (!tokenData.expires_at) return true;
     const expiryDate = new Date(tokenData.expires_at);
     const isValid = expiryDate > new Date();
-    // console.log(`${isValid ? '' : ''} [AccountService.isTokenValid] Token is ${isValid ? 'valid' : 'expired'}`);
     return isValid;
   }
 }

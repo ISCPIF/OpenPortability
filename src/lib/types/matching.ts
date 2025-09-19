@@ -12,7 +12,7 @@ export interface MatchingTarget {
 }
 
 export interface StoredProcedureTarget {
-  node_id: number;
+  node_id: string;
   bluesky_handle: string | null;
   mastodon_handle: string | null;
   mastodon_username: string | null;

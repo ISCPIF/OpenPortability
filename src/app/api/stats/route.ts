@@ -5,6 +5,7 @@ import logger from '@/lib/log_utils';
 import { withValidation } from '@/lib/validation/middleware';
 import { z } from 'zod';
 import { StatsQueryParamsSchema } from '@/lib/validation/schemas';
+// Removed MatchingService and direct Redis usage; caching is centralized in the repository
 
 // Endpoint GET refactorisé avec le middleware de validation
 export const GET = withValidation(
@@ -16,33 +17,34 @@ export const GET = withValidation(
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
       }
 
+      // Cas des utilisateurs non-onboarded:
+      // - si pas de twitter_id: renvoyer des zéros
+      // - si un twitter_id existe: déléguer au StatsService (le repository gère le cache Redis et l'RPC sources)
       if (!session?.user?.has_onboarded) {
         if (!session?.user?.twitter_id) {
           return NextResponse.json({
             connections: {
               followers: 0,
-              following: 0
+              following: 0,
+              totalEffectiveFollowers: 0,
             },
             matches: {
               bluesky: { total: 0, hasFollowed: 0, notFollowed: 0 },
               mastodon: { total: 0, hasFollowed: 0, notFollowed: 0 }
-            }
+            },
+            updated_at: new Date().toISOString()
           });
         }
       }
-
-      // Récupérer les paramètres d'URL validés
-      const url = new URL(request.url);
-      const limit = url.searchParams.get('limit') ? Number(url.searchParams.get('limit')) : undefined;
       
       const repository = new StatsRepository();
       const statsService = new StatsService(repository);
-      
-      const stats = await statsService.getUserStats(session.user.id, session.user.has_onboarded, limit);
-            
+
+      const stats = await statsService.getUserStats(session.user.id, session.user.has_onboarded);       
       return NextResponse.json(stats);
     } catch (error) {
-      console.log('API', 'GET /api/stats', error, session?.user?.id || 'anonymous', {
+      const err = error instanceof Error ? error : new Error(String(error))
+      logger.logError('API', 'GET /api/stats', err, session?.user?.id || 'anonymous', {
         context: 'Failed to retrieve user stats'
       });
       

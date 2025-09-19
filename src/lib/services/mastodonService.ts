@@ -1,10 +1,10 @@
 import { 
   IMastodonService, 
   MastodonAccount, 
-  MastodonFollowResult,
   MastodonBatchFollowResult,
   MastodonTarget
 } from '../types/mastodon';
+import logger from '../log_utils';
 
 export class MastodonService implements IMastodonService {
   private cleanInstance(instance: string): string {
@@ -50,18 +50,11 @@ export class MastodonService implements IMastodonService {
     const cleanTargetInstance = targetInstance.replace('https://', '');
     const cleanUsername = targetUsername.split('@')[0];
 
-    console.log(' [MastodonService.followAccount] Starting follow process:', {
-      userInstance: cleanUserInstance,
-      targetUsername: cleanUsername,
-      targetInstance: cleanTargetInstance,
-      accountId
-    });
 
     try {
       // Always search first for cross-instance follows
       if (cleanUserInstance !== cleanTargetInstance) {
         const searchUrl = `https://${cleanUserInstance}/api/v1/accounts/search?q=${cleanUsername}@${cleanTargetInstance}&resolve=true&limit=1`;
-        console.log(' [MastodonService.followAccount] Searching account with URL:', searchUrl);
 
         const searchResponse = await fetch(searchUrl, {
           headers: {
@@ -82,9 +75,7 @@ export class MastodonService implements IMastodonService {
           };
         }
 
-        const accounts = await searchResponse.json();
-        console.log(' [MastodonService.followAccount] Number of accounts found:', accounts.length);
-
+        const accounts: MastodonAccount[] = await searchResponse.json();
         const accountToFollow = accounts.find(acc =>
           acc.acct === `${cleanUsername}@${cleanTargetInstance}` ||
           (acc.username === cleanUsername && acc.url.includes(cleanTargetInstance))
@@ -102,35 +93,22 @@ export class MastodonService implements IMastodonService {
         // Use the resolved ID instead of the provided one
         const resolvedId = accountToFollow.id;
         const success = await this.followAccountById(accessToken, cleanUserInstance, resolvedId);
-
-        console.log(' [MastodonService.followAccount] Follow resolved account:', {
-          success,
-          error: success ? undefined : 'Failed to follow resolved account'
-        });
         return { success, error: success ? undefined : 'Failed to follow resolved account' };
       } 
       // For same-instance follows, we can use the provided ID directly
       else if (accountId) {
-        console.log(' [MastodonService.followAccount] Using direct ID for same instance:', {
-          accountId,
-          cleanUserInstance
-        });
         const success = await this.followAccountById(accessToken, cleanUserInstance, accountId);
         return { success, error: success ? undefined : 'Failed to follow by ID' };
       }
       else {
-        console.error(' [MastodonService.followAccount] No account ID provided for same instance follow:', {
-          userInstance: cleanUserInstance,
-          targetUsername: cleanUsername,
-          targetInstance: cleanTargetInstance
-        });
         return { success: false, error: 'No account ID provided for same instance follow' };
       }
     } catch (error) {
-      console.error(' [MastodonService.followAccount] Error following on Mastodon:', error);
+      const errorString = error instanceof Error ? error.message : String(error);
+      logger.logError(' [MastodonService.followAccount] Error following on Mastodon:', errorString, "system");
       return { 
         success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+        error: errorString 
       };
     }
   }
