@@ -9,7 +9,7 @@ import { NextResponse } from 'next/server';
 // - Endpoints de lecture purs: pas de limite (skipRateLimit)
 
 // Environment variable for debug mode (defaults to false)
-const DEBUG_RATE_LIMIT = 'true';
+const DEBUG_RATE_LIMIT: boolean = true;
 
 // Configuration par endpoint
 export interface RateLimitConfig {

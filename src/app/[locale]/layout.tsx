@@ -4,7 +4,7 @@ import { Inter, Space_Grotesk } from 'next/font/google'
 import "../globals.css";
 import { Providers } from "../providers";
 import { auth } from "@/app/auth";
-import { MotionWrapper } from "../_components/MotionWrapper";
+import { MotionWrapper } from "../_components/layouts/MotionWrapper";
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
 import { Toaster } from 'sonner';

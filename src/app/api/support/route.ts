@@ -4,7 +4,7 @@ import { auth } from '@/app/auth';
 import logger from '@/lib/log_utils';
 import { secureSupportContentExtended, type SupportFormData } from '@/lib/security-utils';
 import { withValidation } from '@/lib/validation/middleware';
-import { SupportRequestSchema, type SupportRequestSchema as SupportInput } from '@/lib/validation/schemas';
+import { SupportRequestSchema, type SupportRequest } from '@/lib/validation/schemas';
 
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
@@ -19,10 +19,7 @@ const transporter = nodemailer.createTransport({
 // Handler avec le nouveau middleware
 export const POST = withValidation(
   SupportRequestSchema,
-  async (request: NextRequest, data: SupportInput) => {
-
-
-    console.log('API', 'POST /api/support', data);
+  async (request: NextRequest, data: SupportRequest) => {
     try {
       const session = await auth();
       
@@ -95,17 +92,12 @@ Niveau de sécurité: ${securityResult.securityReport.securityLevel}
 
         await transporter.sendMail(mailOptions);
 
-        // Log de succès avec informations de sécurité
-        console.log('API', 'POST /api/support', session?.user?.id || 'anonymous', {
-          context: 'Support email sent successfully',
-          securityLevel: securityResult.securityReport.securityLevel,
-          hasHtmlContent: !!securityResult.htmlContent
-        });
 
         return NextResponse.json({ success: true });
       } catch (mailError) {
         // Log détaillé de l'erreur d'envoi d'email
-        console.log('API', 'Failed to send support email', mailError, session?.user?.id || 'anonymous', {
+        const err = mailError instanceof Error ? mailError : new Error(String(mailError))
+        logger.logError('API', 'Failed to send support email', err, session?.user?.id || 'anonymous', {
           context: 'Mail send error',
           securityLevel: securityResult.securityReport.securityLevel
         });
@@ -117,7 +109,8 @@ Niveau de sécurité: ${securityResult.securityReport.securityLevel}
       }
     } catch (error) {
       const session = await auth();
-      console.log('API', 'POST /api/support', error, session?.user?.id || 'anonymous', {
+      const err = error instanceof Error ? error : new Error(String(error))
+      logger.logError('API', 'POST /api/support', err, session?.user?.id || 'anonymous', {
         context: 'Unexpected error in support handler'
       });
       return NextResponse.json(

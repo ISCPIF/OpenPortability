@@ -77,7 +77,6 @@ export class UserRepository {
    * @returns Un objet avec les types de consentement comme clés et les valeurs de consentement comme valeurs
    */
   async getUserActiveConsents(userId: string): Promise<Record<string, boolean>> {
-    // console.log(' [UserRepository.getUserActiveConsents] Querying DB for user:', userId);
     const { data, error } = await supabase
       .from('newsletter_consents')
       .select('consent_type, consent_value')
@@ -90,15 +89,13 @@ export class UserRepository {
       throw error;
     }
 
-    // console.log(' [UserRepository.getUserActiveConsents] Raw DB results:', data);
 
     // Transformer les résultats en objet
     const consents: Record<string, boolean> = {};
-    data?.forEach(item => {
+    data?.forEach((item: any) => {
       consents[item.consent_type] = item.consent_value;
     });
     
-    // console.log(' [UserRepository.getUserActiveConsents] Transformed consents:', consents);
     return consents;
   }
 
@@ -218,8 +215,6 @@ export class UserRepository {
     metadata: Record<string, any> = {}
   ): Promise<any> {
 
-    console.log(' [UserRepository.insertNewsletterConsent] Inserting consent:', consentType, consentValue);
-    // Insérer le nouveau consentement (le trigger deactivate_previous_consents gérera la désactivation)
     const { data, error } = await supabase
       .from('newsletter_consents')
       .insert({
@@ -369,22 +364,19 @@ export class UserRepository {
       if (platform && taskType) {
         const dedupKey = `task_dedup:${userId}:${platform}:${taskType}`;
         await redis.del(dedupKey);
-        console.log(`🗑️ [cleanupRedisForDeletedTasks] Deleted dedup key: ${dedupKey}`);
       }
       else if (platform) {
         const pattern = `task_dedup:${userId}:${platform}:*`;
         const keys = await redis.keys(pattern);
         if (keys.length > 0) {
-          await redis.del(...keys);
-          console.log(`🗑️ [cleanupRedisForDeletedTasks] Deleted ${keys.length} dedup keys for platform ${platform}`);
+          await redis.redisClient.del(...keys);
         }
       }
       else {
         const pattern = `task_dedup:${userId}:*`;
         const keys = await redis.keys(pattern);
         if (keys.length > 0) {
-          await redis.del(...keys);
-          console.log(`🗑️ [cleanupRedisForDeletedTasks] Deleted ${keys.length} dedup keys for user ${userId}`);
+          await redis.redisClient.del(...keys);
         }
       }
 
@@ -427,11 +419,11 @@ export class UserRepository {
       }
       
       if (removedCount > 0) {
-        console.log(`🗑️ [cleanupRedisForDeletedTasks] Removed ${removedCount} tasks from Redis queue ${queueKey}`);
       }
 
     } catch (error) {
-      console.error('❌ [cleanupRedisForDeletedTasks] Redis cleanup failed:', error);
+      const errorString = error instanceof Error ? error.message : String(error);
+      logError('Repository', 'UserRepository.cleanupRedisForDeletedTasks', errorString, userId, { platform, taskType });
       // Ne pas faire échouer la suppression des tâches DB si Redis échoue
     }
   }

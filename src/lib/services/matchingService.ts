@@ -2,7 +2,7 @@ import { MatchingRepository } from '../repositories/matchingRepository';
 import { MatchingResult, MatchingTarget, MatchingStats, MatchedFollower } from '../types/matching';
 import { StatsService } from './statsServices';
 import { StatsRepository } from '../repositories/statsRepository';
-import { redis } from '../redis';
+import logger from '../log_utils';
 
 export interface FollowAction {
   userId: string;
@@ -25,22 +25,30 @@ export class MatchingService {
   }
 
   async getFollowableTargets(userId: string): Promise<MatchingResult> {
+    console.log('🚀 [MatchingService.getFollowableTargets] Début de la récupération des cibles pour userId:', userId);
+    
     const PAGE_SIZE = 1000;
     let allMatches: MatchingTarget[] = [];
     let page = 0;
     let totalCount = 0;
 
+    console.log('📋 [MatchingService.getFollowableTargets] Configuration - PAGE_SIZE:', PAGE_SIZE);
+
     // Première requête pour obtenir le total et la première page
+    console.log('📡 [MatchingService.getFollowableTargets] Appel repository.getFollowableTargets pour la première page...');
     const { data: firstPageMatches, error: firstPageError } = 
       await this.repository.getFollowableTargets(userId, PAGE_SIZE, 0);
 
-    // console.log("****************************************",firstPageMatches)
-
     if (firstPageError) {
+      console.error('❌ [MatchingService.getFollowableTargets] Erreur lors de la première page:', firstPageError);
       throw new Error(`Failed to fetch first page: ${firstPageError}`);
     }
 
+    console.log('📊 [MatchingService.getFollowableTargets] Première page reçue - nombre d\'éléments:', firstPageMatches?.length || 0);
+    console.log('📊 [MatchingService.getFollowableTargets] Détail première page:', firstPageMatches);
+
     if (!firstPageMatches || firstPageMatches.length === 0) {
+      console.log('🚫 [MatchingService.getFollowableTargets] Aucune donnée trouvée - retour résultat vide');
       return {
         following: [],
         stats: {
@@ -56,67 +64,82 @@ export class MatchingService {
     totalCount = firstPageMatches[0]?.total_count || firstPageMatches.length;
     allMatches = [...firstPageMatches];
 
+    console.log('🔢 [MatchingService.getFollowableTargets] Total count détecté:', totalCount);
+    console.log('📄 [MatchingService.getFollowableTargets] Éléments ajoutés à allMatches:', allMatches.length);
+
     // Calculate total pages based on total count
     const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+    console.log('📚 [MatchingService.getFollowableTargets] Nombre total de pages calculé:', totalPages);
     
     while (page < totalPages) {
-      // console.log("round of page ->", page)
-      // console.log("roud of matches ->", matches)
+      console.log(`🔄 [MatchingService.getFollowableTargets] Récupération page ${page + 1}/${totalPages}...`);
+
       const { data: matches, error: matchesError } = 
         await this.repository.getFollowableTargets(userId, PAGE_SIZE, page);
-      // console.log("roud of matches ->", matches)
-
+      
       if (matchesError) {
-        console.error(`Error fetching page ${page + 1}:`, matchesError);
+        console.error(`❌ [MatchingService.getFollowableTargets] Erreur page ${page + 1}:`, matchesError);
         break;
       }
 
+      console.log(`📊 [MatchingService.getFollowableTargets] Page ${page + 1} reçue - éléments:`, matches?.length || 0);
+
       if (!matches || matches.length === 0) {
-        console.log(`No more matches found on page ${page + 1}`);
+        console.log(`🚫 [MatchingService.getFollowableTargets] Page ${page + 1} vide - arrêt de la pagination`);
         break;
       }
 
       if (page === 0) {
+        console.log('⏭️ [MatchingService.getFollowableTargets] Page 0 déjà ajoutée précédemment');
         // First page already added above
       } else {
+        const beforeLength = allMatches.length;
         allMatches = [...allMatches, ...matches];
+        console.log(`➕ [MatchingService.getFollowableTargets] Page ${page + 1} ajoutée - avant: ${beforeLength}, après: ${allMatches.length}`);
       }
 
       page++;
-      // console.log(`Total matches so far: ${allMatches.length}`);
-
       // Safety check to prevent infinite loops
       if (allMatches.length >= totalCount) {
+        console.log('🛑 [MatchingService.getFollowableTargets] Limite de sécurité atteinte - arrêt');
         break;
       }
     }
+
+    const blueskyMatches = allMatches.filter(m => m.bluesky_handle).length;
+    const mastodonMatches = allMatches.filter(m => m.mastodon_id).length;
+
+    console.log('📈 [MatchingService.getFollowableTargets] Statistiques finales:');
+    console.log('  - Total following:', totalCount);
+    console.log('  - Matched following:', allMatches.length);
+    // console.log('  - Bluesky matches:', blueskyMatches);
+    // console.log('  - Mastodon matches:', mastodonMatches);
 
     const result = {
       following: allMatches,
       stats: {
         total_following: totalCount,
         matched_following: allMatches.length,
-        bluesky_matches: allMatches.filter(m => m.bluesky_handle).length,
-        mastodon_matches: allMatches.filter(m => m.mastodon_id).length
+        bluesky_matches: blueskyMatches,
+        mastodon_matches: mastodonMatches
       }
     };
     
+    // console.log('✅ [MatchingService.getFollowableTargets] Résultat final construit:', result);
     return result;
   }
 
   async getSourcesFromFollower(twitterId: string): Promise<MatchingResult> {
-    console.log('[MatchingService] getSourcesFromFollower started for twitterId:', twitterId);
     
     // ÉTAPE 1: Récupérer les Twitter IDs depuis le repository
     const { data: basicData, error } = await this.repository.getSourcesFromFollower(twitterId);
     
     if (error) {
-      console.error('[MatchingService] Error from repository:', error);
+      logger.logError('[MatchingService] Error from repository:', error, "system");
       throw new Error(`Failed to fetch sources: ${error}`);
     }
 
     if (!basicData || basicData.length === 0) {
-      console.log('[MatchingService] No sources found');
       return {
         following: [],
         stats: {
@@ -128,7 +151,6 @@ export class MatchingService {
       };
     }
 
-    console.log(`[MatchingService] Retrieved ${basicData.length} basic records from repository`);
 
     // NOUVELLE LOGIQUE: Utiliser directement les données retournées par l'RPC
     // et ne plus dépendre de Redis pour filtrer ou enrichir les résultats.
@@ -163,8 +185,6 @@ export class MatchingService {
       has_been_followed_on_mastodon: !!item.has_been_followed_on_mastodon,
     }));
 
-    console.log(`[MatchingService] Successfully mapped ${mappedFollowers.length} followers out of ${basicData.length} total`);
-
     // ÉTAPE 3: Retourner le résultat au format MatchingResult
     const result = {
       following: mappedFollowers,
@@ -176,98 +196,7 @@ export class MatchingService {
       }
     };
     
-    console.log('[MatchingService] Final results:', result.stats);
-    return result;
-  }
-
-  // Helper pour récupérer le mapping Bluesky depuis Redis
-  private async getBlueskyMapping(twitterId: string): Promise<{ username: string; id: string } | null> {
-    try {
-      const redisKey = `twitter_to_bluesky:${twitterId}`;
-      const redisValue = await redis.get(redisKey);
-      
-      if (!redisValue) {
-        return null;
-      }
-
-      // Supporter les deux formats Redis:
-      // Format nouveau: "username|id" 
-      // Format existant: "username.bsky.social" (juste le handle)
-      if (redisValue.includes('|')) {
-        // Format pipe-delimited: "username|id"
-        const [username, id] = redisValue.split('|');
-        
-        if (!username || !id) {
-          console.warn(`[MatchingService] Invalid Bluesky Redis pipe format for ${twitterId}: ${redisValue}`);
-          return null;
-        }
-
-        return { username, id };
-      } else {
-        // Format legacy: juste le handle Bluesky
-        // Ex: "fondationshoah.bsky.social"
-        if (redisValue.includes('.bsky.social')) {
-          return { 
-            username: redisValue, // Le handle complet
-            id: '' // Pas d'ID disponible dans le format legacy
-          };
-        } else {
-          console.warn(`[MatchingService] Unknown Bluesky Redis format for ${twitterId}: ${redisValue}`);
-          return null;
-        }
-      }
-    } catch (error) {
-      console.error(`[MatchingService] Error getting Bluesky mapping for ${twitterId}:`, error);
-      return null;
-    }
-  }
-
-  // Helper pour récupérer le mapping Mastodon depuis Redis
-  private async getMastodonMapping(twitterId: string): Promise<{ id: string; username: string; instance: string } | null> {
-    try {
-      const redisKey = `twitter_to_mastodon:${twitterId}`;
-      const redisValue = await redis.get(redisKey);
-      
-      if (!redisValue) {
-        return null;
-      }
-
-      // Supporter les deux formats Redis:
-      // Format nouveau: "id|username|instance"
-      // Format existant: JSON object
-      if (redisValue.includes('|')) {
-        // Format pipe-delimited: "id|username|instance"
-        const [id, username, instance] = redisValue.split('|');
-        
-        if (!id || !username || !instance) {
-          console.warn(`[MatchingService] Invalid Mastodon Redis pipe format for ${twitterId}: ${redisValue}`);
-          return null;
-        }
-
-        return { id, username, instance };
-      } else {
-        // Format legacy: JSON object
-        try {
-          const parsed = JSON.parse(redisValue);
-          if (parsed.id && parsed.username && parsed.instance) {
-            return {
-              id: parsed.id,
-              username: parsed.username,
-              instance: parsed.instance
-            };
-          } else {
-            console.warn(`[MatchingService] Missing fields in Mastodon JSON for ${twitterId}: ${redisValue}`);
-            return null;
-          }
-        } catch (parseError) {
-          console.warn(`[MatchingService] Invalid Mastodon JSON format for ${twitterId}: ${redisValue}`);
-          return null;
-        }
-      }
-    } catch (error) {
-      console.error(`[MatchingService] Error getting Mastodon mapping for ${twitterId}:`, error);
-      return null;
-    }
+    return result as unknown as MatchingResult;
   }
 
   async updateFollowStatus(action: FollowAction): Promise<void> {
@@ -279,26 +208,26 @@ export class MatchingService {
         action.status === 'success',
         action.error
       );
+      
+      // Marquer comme unavailable si échec
+      if (action.status !== 'success' && action.error) {
+        await this.repository.markNodesAsUnavailableBatch([action.targetId], action.platform, action.error);
+      }
     } catch (error) {
-      console.error('Failed to update follow status:', error);
+      const errorString = error instanceof Error ? error.message : String(error);
+      logger.logError('Failed to update follow status:', errorString, "system");
       throw new Error('Failed to update follow status');
     }
   }
 
   async updateFollowStatusBatch(
     userId: string,
-    targetIds: number[],
+    targetIds: string[],
     platform: 'bluesky' | 'mastodon',
     success: boolean,
     error?: string
   ): Promise<void> {
-    console.log('[MatchingService.updateFollowStatusBatch] Starting batch update:', {
-      platform,
-      userId,
-      numberOfTargets: targetIds.length,
-      success,
-      error
-    });
+
 
     try {
       // 1. Mise à jour des relations dans sources_targets
@@ -311,28 +240,32 @@ export class MatchingService {
       );
       
       // 2. Rafraîchir les stats utilisateur (remplace le trigger PostgreSQL)
+      console.log('updateFollowStatusBatch - success:', success, 'error:', error, 'targetIds.length:', targetIds.length);
+      
       if (success) {
-        console.log('[MatchingService.updateFollowStatusBatch] Refreshing user stats after successful follow');
+        console.log('Success path - refreshing user stats');
         await this.statsService.refreshUserStats(userId, true);
       }
-      
-      console.log('[MatchingService.updateFollowStatusBatch] Successfully updated follow status for batch');
-    } catch (error) {
-      console.error('[MatchingService.updateFollowStatusBatch] Failed to update follow status batch:', error);
-      throw new Error('Failed to update follow status batch');
-    }
-  }
+      else if (!success && error && targetIds.length > 0) {
+        console.log('Error path - marking nodes as unavailable');
+        console.log('Marking nodes as unavailable', `Platform: ${platform}, Error: ${error}, TargetIds: ${JSON.stringify(targetIds)}`, "system");
+        try {
+          await this.repository.markNodesAsUnavailableBatch(targetIds, platform, error);
+          console.log('Successfully marked nodes as unavailable', `Count: ${targetIds.length}`, "system");
+          await this.statsService.refreshUserStats(userId, true);
 
-  async getBatchFollowTargets(
-    userId: string,
-    platform: 'bluesky' | 'mastodon',
-    limit: number = 50
-  ): Promise<MatchingTarget[]> {
-    try {
-      return await this.repository.getUnprocessedFollowTargets(userId, platform, limit);
-    } catch (error) {
-      console.error('Failed to get batch follow targets:', error);
-      throw new Error('Failed to get batch follow targets');
+        } catch (markError) {
+          // Log l'erreur mais ne fait pas échouer toute l'opération
+          const markErrorString = markError instanceof Error ? markError.message : String(markError);
+          console.log('Failed to mark nodes as unavailable:', markErrorString, "system");
+        }
+      } else {
+        console.log('No action taken - success:', success, 'error:', !!error, 'targetIds.length:', targetIds.length);
+      }
+  } catch (error) {
+    const errorString = error instanceof Error ? error.message : String(error);
+    logger.logError('Failed to update follow status batch:', errorString, "system");
+      throw new Error('Failed to update follow status batch');
     }
   }
 
@@ -352,7 +285,8 @@ export class MatchingService {
         error
       );
     } catch (error) {
-      console.error('Failed to update sources followers status:', error);
+      const errorString = error instanceof Error ? error.message : String(error);
+      logger.logError('Failed to update sources followers status:', errorString, "system");
       throw new Error('Failed to update sources followers status');
     }
   }
@@ -373,7 +307,8 @@ export class MatchingService {
         error
       );
     } catch (error) {
-      console.error('Failed to update sources followers status:', error);
+      const errorString = error instanceof Error ? error.message : String(error);
+      logger.logError('Failed to update sources followers status:', errorString, "system");
       throw new Error('Failed to update sources followers status');
     }
   }
@@ -384,22 +319,5 @@ export class MatchingService {
     } else {
       return this.repository.unignoreTarget(userId, targetTwitterId);
     }
-  }
-
-  /**
-   * Récupère uniquement les listes des twitter_id du réseau utilisateur
-   * @param userId UUID de l'utilisateur
-   * @returns Objet avec following et followers (sans stats)
-   */
-  async getUserNetworkIds(userId: string): Promise<{
-    following: string[];
-    followers: string[];
-  }> {
-    const userNetwork = await this.repository.getUserNetwork(userId);
-    
-    return {
-      following: userNetwork.following,
-      followers: userNetwork.followers
-    };
   }
 }

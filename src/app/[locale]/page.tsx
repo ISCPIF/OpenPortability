@@ -7,30 +7,17 @@ export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
 
 export default async function Home() {
-  // console.log("🏠 [Home] Starting home page render...");
+  const session = await auth();
   
-  try {
-    const session = await auth();
-    // console.log("🔑 [Home] Session:", session ? "Found" : "Not found");
-    
-    const locale = await getLocale();
-    // console.log("🌍 [Home] Current locale:", locale);
-    
-    if (!session) {
-      // console.log("➡️ [Home] Redirecting to signin page...");
-      redirect(`/${locale}/auth/signin`);
-    }
-    
-    if (!session.user.has_onboarded){
-    // console.log("➡️ [Home] Redirecting to dashboard...");
+  const locale = await getLocale();
+  
+  if (!session) {
+    redirect(`/${locale}/auth/signin`);
+  }
+  
+  if (!session.user.has_onboarded){
     redirect(`/${locale}/dashboard`);
-    }
-    else
-    {
-      redirect(`/${locale}/reconnect`);
-    }
-  } catch (error) {
-    console.error("❌ [Home] Error:", error);
-    throw error;
+  } else {
+    redirect(`/${locale}/reconnect`);
   }
 }

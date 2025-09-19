@@ -28,10 +28,7 @@ export class StatsRepository {
         const cached = await redis.get(cacheKey);
         
         if (cached) {
-          // logger.logInfo('Repository', 'StatsRepository.getUserCompleteStats', 'User stats served from Redis cache', userId, {
-          //   context: 'Redis cache hit'
-          // });
-          return JSON.parse(cached);
+          return JSON.parse(cached) as UserCompleteStats;
         }
       } catch (redisError) {
         logger.logWarning('Repository', 'StatsRepository.getUserCompleteStats', 'Redis unavailable, fallback to DB', userId, {
@@ -41,7 +38,7 @@ export class StatsRepository {
       }
 
       // 2. Fallback vers DB (logique existante)
-      let data, error;
+      let data: unknown, error: unknown;
 
       if (!has_onboard) {
         ({ data, error } = await supabase
@@ -55,15 +52,17 @@ export class StatsRepository {
           .single());
       }
 
+
       if (error) {
-        console.log('Repository', 'StatsRepository.getUserCompleteStats', error, userId, { has_onboard });
+        const errorString = error instanceof Error ? error.message : String(error);
+        logger.logError('Repository', 'StatsRepository.getUserCompleteStats', errorString, userId, { has_onboard });
         throw error;
       }
 
       // 3. Mettre en cache Redis (TTL: 10 minutes)
       try {
         const cacheKey = `user:stats:${userId}`;
-        await redis.set(cacheKey, JSON.stringify(data), 600); // 10 minutes
+        await redis.set(cacheKey, JSON.stringify(data), 86400); // 10 minutes
         
         // logger.logInfo('Repository', 'StatsRepository.getUserCompleteStats', 'User stats cached in Redis', userId, {
           // context: 'Database result cached for 10 minutes'
@@ -74,9 +73,7 @@ export class StatsRepository {
           error: redisError instanceof Error ? redisError.message : 'Unknown Redis error'
         });
       }
-
-      // console.log("data from getUserCompleteStats", data);
-      return data;
+      return data as UserCompleteStats;
     }
 
     async getGlobalStats(): Promise<GlobalStats> {
@@ -87,7 +84,7 @@ export class StatsRepository {
           logger.logInfo('Repository', 'StatsRepository.getGlobalStats', 'Global stats served from Redis cache', 'system', {
             context: 'Redis cache hit for global stats'
           });
-          return JSON.parse(cached);
+          return JSON.parse(cached) as GlobalStats;
         }
 
         // 2. Cache miss - récupérer depuis la DB
@@ -107,13 +104,13 @@ export class StatsRepository {
         }
 
         // 3. Mettre en cache pour éviter les futurs cache miss
-        await redis.set('stats:global', JSON.stringify(data), 3600);
+        await redis.set('stats:global', JSON.stringify(data), 86400);
         
         logger.logInfo('Repository', 'StatsRepository.getGlobalStats', 'Global stats fetched from DB and cached', 'system', {
           context: 'Database fallback successful, data cached in Redis'
         });
 
-        return data;
+        return data as GlobalStats;
 
       } catch (redisError) {
         // 4. Si Redis complètement indisponible, aller directement en DB
@@ -133,7 +130,7 @@ export class StatsRepository {
           throw error;
         }
 
-        return data;
+        return data as GlobalStats;
       }
     }
 
@@ -155,7 +152,8 @@ export class StatsRepository {
 
         return data.stats as GlobalStats;
       } catch (error) {
-        logger.logError('Repository', 'StatsRepository.getGlobalStatsFromCache', error, 'system', {
+        const err = error instanceof Error ? error : new Error(String(error));
+        logger.logError('Repository', 'StatsRepository.getGlobalStatsFromCache', err, 'system', {
           context: 'Failed to read from global_stats_cache table'
         });
         return null;
@@ -171,14 +169,11 @@ export class StatsRepository {
             p_user_id: userId.toString() 
           })
           .single());
-
-          console.log("WRONG SIDE")
       } else {
         
         ({ error } = await supabase.rpc('refresh_user_stats_cache', {
           p_user_id: userId
         }));
-        console.log("UPDATING USER STAT CACHE")
       }
       
       if (error) {

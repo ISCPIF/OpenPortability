@@ -20,14 +20,9 @@ services:
         - "3000:3000"
       volumes:
         # Mount entire directory but preserve container's node_modules
-<<<<<<< HEAD
-        - .:/app
+        - ./:/app
         - /app/node_modules
         - /app/.next
-=======
-        # - ./:/app
-        # - /app/node_modules
->>>>>>> clean_branch
         - shared-tmp:/app/tmp
         - app_logs:/app/logs
       depends_on:
@@ -84,13 +79,8 @@ services:
       - redis_data:/data
     command: redis-server /usr/local/etc/redis/redis.conf
     # Ne pas exposer le port en production pour la sécurité
-<<<<<<< HEAD
-    ports:
-      - "6379:6379"
-=======
     # ports:
     #   - "6379:6379"
->>>>>>> clean_branch
     healthcheck:
       test: ["CMD", "redis-cli", "-a", "votre_mot_de_passe_redis_securise_ici", "ping"]
       interval: 30s
@@ -169,7 +159,7 @@ volumes:
     driver_opts:
       type: tmpfs
       device: tmpfs
-      o: "noexec"
+      o: "noexec,uid=1000,gid=1000,mode=0775"
   app_logs:
     driver: local
     driver_opts:
