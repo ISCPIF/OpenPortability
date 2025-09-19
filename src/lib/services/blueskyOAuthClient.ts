@@ -209,11 +209,13 @@ export async function createBlueskyOAuthClient() {
             const parsed = JSON.parse(raw);
             return parsed;
           } catch (e: any) {
-            logger.logWarning('[BlueskyOAuthClient] sessionStore.get() parse failed', { message: e?.message });
+            const errorString = e instanceof Error ? e.message : String(e);
+            logger.logWarning('[BlueskyOAuthClient] sessionStore.get() parse failed', errorString, "system");
             return undefined;
           }
         } catch (e: any) {
-          console.warn('[BlueskyOAuthClient] sessionStore.get() failed; proceeding without persistence', { message: e?.message });
+          const errorString = e instanceof Error ? e.message : String(e);
+          logger.logWarning('[BlueskyOAuthClient] sessionStore.get() failed; proceeding without pers src/lib/services/blueskyOAuthClient.tsistence', errorString, "system");
           return undefined;
         }
       },

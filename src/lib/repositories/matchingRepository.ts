@@ -428,7 +428,8 @@ export class MatchingRepository {
     // DEBUG: Afficher la réponse brute de Supabase
     
     if (uuidResult.error) {
-      logger.logError("MatchingRepo", "getSourcesFromFollower", `❌ [STEP 1] Error getting source UUIDs:`, uuidResult.error);
+      const errorString = uuidResult.error instanceof Error ? uuidResult.error.message : String(uuidResult.error);
+      logger.logError("MatchingRepo", "getSourcesFromFollower", `❌ [STEP 1] Error getting source UUIDs:`, errorString);
       return { data: null, error: uuidResult.error };
     }
 
