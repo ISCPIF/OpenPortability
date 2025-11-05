@@ -47,8 +47,8 @@ export interface DBAccount {
 
 export interface DBSession {
   id: string
-  sessionToken: string
-  userId: string
+  session_token: string
+  user_id: string
   expires: Date
   created_at: Date
   updated_at: Date
