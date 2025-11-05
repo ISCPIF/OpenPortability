@@ -153,7 +153,7 @@ export const pgSessionRepository = {
   async updateSession(sessionToken: string, updates: Partial<DBSession>): Promise<DBSession> {
     try {
       const fields = Object.keys(updates).filter(key => key !== 'session_token')
-      const setClauses = fields.map((field, i) => `"${field}" = $${i + 2}`).join(', ')
+      const setClauses = fields.map((field, i) => `${field} = $${i + 2}`).join(', ')
       const values = [sessionToken, ...fields.map(field => updates[field as keyof DBSession])]
 
       const sql = `
