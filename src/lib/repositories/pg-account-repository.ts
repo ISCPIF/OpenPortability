@@ -3,6 +3,16 @@ import type { DBAccount } from '../types/database'
 import logger from '../log_utils'
 
 /**
+ * Helper pour parser expires_at qui est retourné comme string par PostgreSQL bigint
+ */
+function parseAccount(account: any): DBAccount {
+  return {
+    ...account,
+    expires_at: account.expires_at ? parseInt(account.expires_at, 10) : null
+  }
+}
+
+/**
  * Repository pour les opérations sur les comptes OAuth (schéma next-auth)
  */
 export const pgAccountRepository = {
@@ -15,7 +25,7 @@ export const pgAccountRepository = {
         'SELECT * FROM accounts WHERE provider = $1 AND provider_account_id = $2',
         [provider, providerAccountId]
       )
-      return result.rows[0] || null
+      return result.rows[0] ? parseAccount(result.rows[0]) : null
     } catch (error) {
       logger.logError('Repository', 'pgAccountRepository.getAccount', 'Error fetching account', undefined, {
         provider,
@@ -35,7 +45,7 @@ export const pgAccountRepository = {
         'SELECT * FROM accounts WHERE provider = $1 AND user_id = $2',
         [provider, userId]
       )
-      return result.rows[0] || null
+      return result.rows[0] ? parseAccount(result.rows[0]) : null
     } catch (error) {
       logger.logError('Repository', 'pgAccountRepository.getProviderAccount', 'Error fetching provider account', userId, {
         provider,
@@ -54,7 +64,7 @@ export const pgAccountRepository = {
         'SELECT * FROM accounts WHERE user_id = $1',
         [userId]
       )
-      return result.rows
+      return result.rows.map(parseAccount)
     } catch (error) {
       logger.logError('Repository', 'pgAccountRepository.getAccountsByUserId', 'Error fetching accounts', userId, { error })
       throw error
@@ -90,7 +100,7 @@ export const pgAccountRepository = {
         throw new Error('Failed to upsert account')
       }
       
-      return result.rows[0]
+      return parseAccount(result.rows[0])
     } catch (error) {
       logger.logError('Repository', 'pgAccountRepository.upsertAccount', 'Error upserting account', accountData.user_id, {
         accountData,
@@ -131,7 +141,7 @@ export const pgAccountRepository = {
         throw new Error('Account not found')
       }
       
-      return result.rows[0]
+      return parseAccount(result.rows[0])
     } catch (error) {
       logger.logError('Repository', 'pgAccountRepository.updateTokens', 'Error updating tokens', undefined, {
         provider,
