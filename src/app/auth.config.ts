@@ -1,14 +1,13 @@
 import NextAuth, { NextAuthConfig } from "next-auth"
 import TwitterProvider from "next-auth/providers/twitter"
 import MastodonProvider from "next-auth/providers/mastodon"
-import { supabaseAdapter } from "@/lib/supabase-adapter"
-import type { TwitterData, MastodonProfile, BlueskyProfile } from "@/lib/supabase-adapter"
+import { pgAdapter } from "@/lib/pg-adapter"
+import type { TwitterData, MastodonProfile, BlueskyProfile } from "@/lib/pg-adapter"
 import type { User, Account, Profile } from "next-auth"
 import type { AdapterUser } from "next-auth/adapters"
 import { isTwitterProfile, isMastodonProfile, isBlueskyProfile } from "./auth"
 import type { AdapterAccountType } from "next-auth/adapters"
-import type { CustomAdapterUser } from '@/lib/supabase-adapter'
-import { authClient } from '@/lib/supabase'
+import type { CustomAdapterUser } from '@/lib/pg-adapter'
 import logger from '@/lib/log_utils'
 import type { Session } from "next-auth"
 import type { JWT } from "next-auth/jwt"
@@ -16,7 +15,7 @@ import type { JWT } from "next-auth/jwt"
 import { auth } from "./auth"
 
 export const authConfig = {
-  adapter: supabaseAdapter,
+  adapter: pgAdapter,
   secret: process.env.NEXTAUTH_SECRET,
   trustHost: true,
   session: {
@@ -86,14 +85,10 @@ export const authConfig = {
           const instance = new URL(mastodonProfile.url).origin;
 
           // Vérifier si un autre utilisateur a déjà ce compte Mastodon
-          const { data: existingUser } = await authClient
-            .from('users')
-            .select('id')
-            .eq('mastodon_id', mastodonProfile.id)
-            .eq('mastodon_instance', instance)
-            .single();
+          const { pgUserRepository } = await import('@/lib/repositories/pg-user-repository');
+          const existingUser = await pgUserRepository.getUserByProviderId('mastodon', mastodonProfile.id);
 
-            if (existingUser && existingUser.id !== session.user.id) {
+            if (existingUser && existingUser.mastodon_instance === instance && existingUser.id !== session.user.id) {
               logger.logError('Auth', 'signIn', 'This Mastodon account is already linked to another user', session.user.id, {
                 existingUserId: existingUser.id,
                 mastodonId: mastodonProfile.id,
@@ -112,7 +107,7 @@ export const authConfig = {
           const isDid = typeof account.providerAccountId === 'string' && account.providerAccountId.startsWith('did:')
 
           if (isDid) {
-            await supabaseAdapter.linkAccount({
+            await pgAdapter.linkAccount({
               userId: session.user.id,
               type: account.type as AdapterAccountType,
               provider: account.provider,
@@ -166,7 +161,7 @@ export const authConfig = {
             return token;
           }
           if (account.provider === 'twitter' && profile && isTwitterProfile(profile)) {
-            await supabaseAdapter.updateUser(token.id || '', {
+            await pgAdapter.updateUser(token.id || '', {
               provider: 'twitter',
               profile: profile
             })
@@ -178,7 +173,7 @@ export const authConfig = {
           else if ((account.provider === 'mastodon') && profile && isMastodonProfile(profile)) {
             const instance = profile.url ? new URL(profile.url).origin : undefined;
             
-            await supabaseAdapter.updateUser(token.id || '', {
+            await pgAdapter.updateUser(token.id || '', {
               provider: 'mastodon',
               profile: profile
             })
@@ -198,13 +193,13 @@ export const authConfig = {
       return token
     },
     async session({ session, token }: { session: Session, token: any }) {
-      if (!supabaseAdapter.getUser) {
+      if (!pgAdapter.getUser) {
         logger.logError('Auth', 'session', new Error('Required adapter methods are not implemented'), token.id);
         throw new Error('Required adapter methods are not implemented');
       }
       if (session.user && token.id) {
         try {
-          const user = await supabaseAdapter.getUser(token.id)
+          const user = await pgAdapter.getUser(token.id)
           
           if (user) {
             session.user = {
