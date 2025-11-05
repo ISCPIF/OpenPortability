@@ -12,7 +12,7 @@ export const pgSessionRepository = {
   async getSession(sessionToken: string): Promise<DBSession | null> {
     try {
       const result = await queryNextAuth<DBSession>(
-        'SELECT * FROM sessions WHERE "sessionToken" = $1',
+        'SELECT * FROM sessions WHERE session_token = $1',
         [sessionToken]
       )
       return result.rows[0] || null
@@ -33,15 +33,15 @@ export const pgSessionRepository = {
       const result = await queryNextAuth<any>(
         `SELECT 
           s.id as session_id,
-          s."sessionToken",
-          s."userId",
+          s.session_token,
+          s.user_id as session_user_id,
           s.expires,
           s.created_at as session_created_at,
           s.updated_at as session_updated_at,
           u.id as user_id,
           u.name,
           u.email,
-          u."emailVerified",
+          u.email_verified,
           u.image,
           u.has_onboarded,
           u.hqx_newsletter,
@@ -59,13 +59,11 @@ export const pgSessionRepository = {
           u.mastodon_username,
           u.mastodon_image,
           u.mastodon_instance,
-          u.facebook_id,
-          u.facebook_image,
           u.created_at as user_created_at,
           u.updated_at as user_updated_at
         FROM sessions s
-        INNER JOIN users u ON s."userId" = u.id
-        WHERE s."sessionToken" = $1`,
+        INNER JOIN users u ON s.user_id = u.id
+        WHERE s.session_token = $1`,
         [sessionToken]
       )
 
@@ -78,8 +76,8 @@ export const pgSessionRepository = {
       return {
         session: {
           id: row.session_id,
-          sessionToken: row.sessionToken,
-          userId: row.userId,
+          session_token: row.session_token,
+          user_id: row.session_user_id,
           expires: row.expires,
           created_at: row.session_created_at,
           updated_at: row.session_updated_at,
@@ -88,7 +86,7 @@ export const pgSessionRepository = {
           id: row.user_id,
           name: row.name,
           email: row.email,
-          emailVerified: row.emailVerified,
+          email_verified: row.email_verified,
           image: row.image,
           has_onboarded: row.has_onboarded,
           hqx_newsletter: row.hqx_newsletter,
@@ -106,8 +104,6 @@ export const pgSessionRepository = {
           mastodon_username: row.mastodon_username,
           mastodon_image: row.mastodon_image,
           mastodon_instance: row.mastodon_instance,
-          facebook_id: row.facebook_id,
-          facebook_image: row.facebook_image,
           created_at: row.user_created_at,
           updated_at: row.user_updated_at,
         },
@@ -125,16 +121,16 @@ export const pgSessionRepository = {
    * Crée une nouvelle session
    */
   async createSession(sessionData: {
-    sessionToken: string
-    userId: string
+    session_token: string
+    user_id: string
     expires: Date
   }): Promise<DBSession> {
     try {
       const result = await queryNextAuth<DBSession>(
-        `INSERT INTO sessions ("sessionToken", "userId", expires)
+        `INSERT INTO sessions (session_token, user_id, expires)
          VALUES ($1, $2, $3)
          RETURNING *`,
-        [sessionData.sessionToken, sessionData.userId, sessionData.expires]
+        [sessionData.session_token, sessionData.user_id, sessionData.expires]
       )
 
       if (!result.rows[0]) {
@@ -143,7 +139,7 @@ export const pgSessionRepository = {
 
       return result.rows[0]
     } catch (error) {
-      logger.logError('Repository', 'pgSessionRepository.createSession', 'Error creating session', sessionData.userId, {
+      logger.logError('Repository', 'pgSessionRepository.createSession', 'Error creating session', sessionData.user_id, {
         sessionData,
         error
       })
@@ -156,14 +152,14 @@ export const pgSessionRepository = {
    */
   async updateSession(sessionToken: string, updates: Partial<DBSession>): Promise<DBSession> {
     try {
-      const fields = Object.keys(updates).filter(key => key !== 'sessionToken')
+      const fields = Object.keys(updates).filter(key => key !== 'session_token')
       const setClauses = fields.map((field, i) => `"${field}" = $${i + 2}`).join(', ')
       const values = [sessionToken, ...fields.map(field => updates[field as keyof DBSession])]
 
       const sql = `
         UPDATE sessions
         SET ${setClauses}, updated_at = NOW()
-        WHERE "sessionToken" = $1
+        WHERE session_token = $1
         RETURNING *
       `
 
@@ -189,7 +185,7 @@ export const pgSessionRepository = {
    */
   async deleteSession(sessionToken: string): Promise<void> {
     try {
-      await queryNextAuth('DELETE FROM sessions WHERE "sessionToken" = $1', [sessionToken])
+      await queryNextAuth('DELETE FROM sessions WHERE session_token = $1', [sessionToken])
     } catch (error) {
       logger.logError('Repository', 'pgSessionRepository.deleteSession', 'Error deleting session', undefined, {
         sessionToken,
@@ -204,7 +200,7 @@ export const pgSessionRepository = {
    */
   async deleteSessionsByUserId(userId: string): Promise<void> {
     try {
-      await queryNextAuth('DELETE FROM sessions WHERE "userId" = $1', [userId])
+      await queryNextAuth('DELETE FROM sessions WHERE user_id = $1', [userId])
     } catch (error) {
       logger.logError('Repository', 'pgSessionRepository.deleteSessionsByUserId', 'Error deleting sessions', userId, { error })
       throw error
