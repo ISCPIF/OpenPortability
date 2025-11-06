@@ -13,7 +13,7 @@ services:
       restart: always
       networks:
         - app_network
-        - supabase_network_helloquittex
+        - db_openportability_db_network
       extra_hosts:
         - "host.docker.internal:host-gateway"
       ports:
@@ -30,28 +30,28 @@ services:
           condition: service_completed_successfully
 
 
-  worker:
-    build:
-      context: ./worker
-      dockerfile: Dockerfile
-    # user: "1001:1001"
-    volumes:
-      - ./worker:/app
-      - /app/node_modules
-      - shared-tmp:/app/tmp
-      - app_logs:/app/logs
-    env_file:
-      - ./worker/.env
-    environment:
-      - NODE_ENV=development
-    networks:
-      - app_network
-      - supabase_network_helloquittex
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    depends_on:
-      redis-init:
-        condition: service_completed_successfully
+  # worker:
+  #   build:
+  #     context: ./worker
+  #     dockerfile: Dockerfile
+  #   # user: "1001:1001"
+  #   volumes:
+  #     - ./worker:/app
+  #     - /app/node_modules
+  #     - shared-tmp:/app/tmp
+  #     - app_logs:/app/logs
+  #   env_file:
+  #     - ./worker/.env
+  #   environment:
+  #     - NODE_ENV=development
+  #   networks:
+  #     - app_network
+  #     - supabase_network_helloquittex
+  #   extra_hosts:
+  #     - "host.docker.internal:host-gateway"
+  #   depends_on:
+  #     redis-init:
+  #       condition: service_completed_successfully
 
   nginx:
     image: nginx:alpine
@@ -97,7 +97,8 @@ services:
       - redis/.env.redis
     networks:
       - app_network
-      - supabase_network_helloquittex
+      # - supabase_network_helloquittex
+      - db_openportability_db_network
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
@@ -150,8 +151,10 @@ services:
 networks:
   app_network:
     driver: bridge
-  supabase_network_helloquittex:
+  db_openportability_db_network:
     external: true
+    # name: db_openportability_db_network
+
 
 volumes:
   shared-tmp:
