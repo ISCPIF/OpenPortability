@@ -21,6 +21,8 @@ describe('PgBlueskyRepository', () => {
     const user = await pgUserRepository.createUser({
       ...mockTwitterUser,
       email: `test-${randomUUID()}@example.com`,
+      twitter_id: Math.floor(Math.random() * 1000000000000000).toString(),
+      twitter_username: `twitteruser-${randomUUID().slice(0, 8)}`,
     })
     userId = user.id
     await nextAuthPool.query('COMMIT')
@@ -52,7 +54,12 @@ describe('PgBlueskyRepository', () => {
     })
 
     it('should return user when Bluesky account exists', async () => {
-      // Link a Bluesky account first
+      // COMMIT pour que linkBlueskyAccount puisse voir l'utilisateur
+      await nextAuthPool.query('COMMIT')
+      await publicPool.query('COMMIT')
+      
+      // Link a Bluesky account first dans une transaction
+      await nextAuthPool.query('BEGIN')
       const blueskyData = {
         accessJwt: 'test-access-token',
         refreshJwt: 'test-refresh-token',
@@ -63,16 +70,29 @@ describe('PgBlueskyRepository', () => {
       }
 
       await pgBlueskyRepository.linkBlueskyAccount(userId, blueskyData)
+      await nextAuthPool.query('COMMIT')
 
       // Now retrieve the user
+      await nextAuthPool.query('BEGIN')
       const user = await pgBlueskyRepository.getUserByBlueskyId(blueskyDid)
       expect(user).not.toBeNull()
       expect(user?.id).toBe(userId)
+      await nextAuthPool.query('COMMIT')
+      
+      // Redémarrer les transactions pour afterEach
+      await nextAuthPool.query('BEGIN')
+      await publicPool.query('BEGIN')
     })
   })
 
   describe('linkBlueskyAccount', () => {
     it('should link a Bluesky account to a user', async () => {
+      // COMMIT pour que linkBlueskyAccount puisse voir l'utilisateur
+      await nextAuthPool.query('COMMIT')
+      await publicPool.query('COMMIT')
+      
+      // Link dans une transaction
+      await nextAuthPool.query('BEGIN')
       const blueskyData = {
         accessJwt: 'test-access-token',
         refreshJwt: 'test-refresh-token',
@@ -85,11 +105,18 @@ describe('PgBlueskyRepository', () => {
       await expect(
         pgBlueskyRepository.linkBlueskyAccount(userId, blueskyData)
       ).resolves.not.toThrow()
+      await nextAuthPool.query('COMMIT')
 
-      // Verify account was created
-      const account = await pgAccountRepository.getProviderAccount('bluesky', blueskyDid)
-      expect(account).not.toBeNull()
-      expect(account?.id).toBe(userId)
+      // Verify account was created by getting user by DID
+      await nextAuthPool.query('BEGIN')
+      const user = await pgBlueskyRepository.getUserByBlueskyId(blueskyDid)
+      expect(user).not.toBeNull()
+      expect(user?.id).toBe(userId)
+      await nextAuthPool.query('COMMIT')
+      
+      // Redémarrer les transactions pour afterEach
+      await nextAuthPool.query('BEGIN')
+      await publicPool.query('BEGIN')
     })
 
     it('should handle different token types', async () => {
@@ -130,6 +157,11 @@ describe('PgBlueskyRepository', () => {
 
   describe('updateBlueskyProfile', () => {
     it('should update user Bluesky profile', async () => {
+      // COMMIT pour que updateBlueskyProfile puisse voir l'utilisateur
+      await nextAuthPool.query('COMMIT')
+      await publicPool.query('COMMIT')
+      
+      await nextAuthPool.query('BEGIN')
       const profile = {
         did: blueskyDid,
         handle: blueskyHandle,
@@ -140,8 +172,10 @@ describe('PgBlueskyRepository', () => {
       await expect(
         pgBlueskyRepository.updateBlueskyProfile(userId, profile)
       ).resolves.not.toThrow()
+      await nextAuthPool.query('COMMIT')
 
       // Verify profile was updated
+      await nextAuthPool.query('BEGIN')
       const user = await pgUserRepository.getUser(userId)
       expect(user?.bluesky_id).toBe(blueskyDid)
       expect(user?.bluesky_username).toBe(blueskyHandle)
@@ -149,6 +183,11 @@ describe('PgBlueskyRepository', () => {
     })
 
     it('should handle profile without avatar', async () => {
+      // COMMIT pour que updateBlueskyProfile puisse voir l'utilisateur
+      await nextAuthPool.query('COMMIT')
+      await publicPool.query('COMMIT')
+      
+      await nextAuthPool.query('BEGIN')
       const profile = {
         did: blueskyDid,
         handle: blueskyHandle,
@@ -158,7 +197,9 @@ describe('PgBlueskyRepository', () => {
       await expect(
         pgBlueskyRepository.updateBlueskyProfile(userId, profile)
       ).resolves.not.toThrow()
+      await nextAuthPool.query('COMMIT')
 
+      await nextAuthPool.query('BEGIN')
       const user = await pgUserRepository.getUser(userId)
       expect(user?.bluesky_id).toBe(blueskyDid)
       expect(user?.bluesky_username).toBe(blueskyHandle)
@@ -182,8 +223,20 @@ describe('PgBlueskyRepository', () => {
 
   describe('updateFollowStatus', () => {
     it('should update follow status for a source-target relationship', async () => {
+      // COMMIT pour créer source et node
+      await nextAuthPool.query('COMMIT')
+      await publicPool.query('COMMIT')
+      
       // First, we need to create a sources_targets relationship
-      const targetTwitterId = Math.floor(Math.random() * 1000000000000000).toString()
+      const nodeId = Math.floor(Math.random() * 1000000000000000)
+      
+      // Create node entry first (FK constraint)
+      await publicPool.query('BEGIN')
+      await publicPool.query(
+        `INSERT INTO nodes (twitter_id) VALUES ($1) ON CONFLICT (twitter_id) DO NOTHING`,
+        [nodeId]
+      )
+      await publicPool.query('COMMIT')
 
       // Create source entry
       await publicPool.query('BEGIN')
@@ -191,39 +244,57 @@ describe('PgBlueskyRepository', () => {
         `INSERT INTO sources (id, bluesky_handle) VALUES ($1, $2)`,
         [userId, 'test.bsky.social']
       )
+      await publicPool.query('COMMIT')
 
       // Create sources_targets entry
+      await publicPool.query('BEGIN')
       await publicPool.query(
-        `INSERT INTO sources_targets (source_id, target_twitter_id, has_follow_bluesky)
+        `INSERT INTO sources_targets (source_id, node_id, has_follow_bluesky)
          VALUES ($1, $2, false)`,
-        [userId, targetTwitterId]
+        [userId, nodeId]
       )
       await publicPool.query('COMMIT')
 
       // Update follow status
+      await publicPool.query('BEGIN')
       await expect(
-        pgBlueskyRepository.updateFollowStatus(userId, targetTwitterId)
+        pgBlueskyRepository.updateFollowStatus(userId, nodeId.toString())
       ).resolves.not.toThrow()
+      await publicPool.query('COMMIT')
 
       // Verify status was updated
       await publicPool.query('BEGIN')
       const result = await publicPool.query(
         `SELECT has_follow_bluesky FROM sources_targets
-         WHERE source_id = $1 AND target_twitter_id = $2`,
-        [userId, targetTwitterId]
+         WHERE source_id = $1 AND node_id = $2`,
+        [userId, nodeId]
       )
       await publicPool.query('COMMIT')
 
       expect(result.rows[0]?.has_follow_bluesky).toBe(true)
+      
+      // Redémarrer les transactions
+      await nextAuthPool.query('BEGIN')
+      await publicPool.query('BEGIN')
     })
 
     it('should handle non-existent relationship gracefully', async () => {
-      const targetTwitterId = Math.floor(Math.random() * 1000000000000000).toString()
+      // COMMIT pour que updateFollowStatus puisse voir l'utilisateur
+      await nextAuthPool.query('COMMIT')
+      await publicPool.query('COMMIT')
+      
+      await publicPool.query('BEGIN')
+      const nodeId = Math.floor(Math.random() * 1000000000000000).toString()
 
       // This should not throw even if relationship doesn't exist
       await expect(
-        pgBlueskyRepository.updateFollowStatus(userId, targetTwitterId)
+        pgBlueskyRepository.updateFollowStatus(userId, nodeId)
       ).resolves.not.toThrow()
+      await publicPool.query('COMMIT')
+      
+      // Redémarrer les transactions
+      await nextAuthPool.query('BEGIN')
+      await publicPool.query('BEGIN')
     })
   })
 })

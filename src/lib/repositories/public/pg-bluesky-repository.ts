@@ -1,6 +1,7 @@
 import { BlueskySessionData, BlueskyProfile } from '../../types/bluesky'
 import { queryPublic } from '../../database'
 import { pgAccountRepository } from '../auth/pg-account-repository'
+import { pgUserRepository } from '../auth/pg-user-repository'
 import logger from '../../log_utils'
 
 /**
@@ -10,11 +11,15 @@ import logger from '../../log_utils'
 export const pgBlueskyRepository = {
   /**
    * Récupère un utilisateur par son Bluesky DID
-   * Délègue à pgAccountRepository pour chercher le compte provider
+   * Cherche d'abord le compte Bluesky, puis retourne l'utilisateur complet
    */
   async getUserByBlueskyId(did: string) {
     try {
-      return await pgAccountRepository.getProviderAccount('bluesky', did)
+      const account = await pgAccountRepository.getAccount('bluesky', did)
+      if (!account) return null
+      
+      // Retourner le user complet, pas juste l'account
+      return await pgUserRepository.getUser(account.user_id)
     } catch (error) {
       logger.logWarning(
         'Repository',
@@ -65,7 +70,7 @@ export const pgBlueskyRepository = {
    */
   async updateBlueskyProfile(userId: string, profile: BlueskyProfile): Promise<void> {
     try {
-      await queryPublic(
+      const result = await queryPublic(
         `UPDATE "next-auth".users 
          SET bluesky_id = $1, 
              bluesky_username = $2, 
@@ -74,6 +79,10 @@ export const pgBlueskyRepository = {
          WHERE id = $4`,
         [profile.did, profile.handle, profile.avatar, userId]
       )
+      
+      if (result.rowCount === 0) {
+        throw new Error(`User not found: ${userId}`)
+      }
     } catch (error) {
       const errorString = error instanceof Error ? error.message : String(error)
       logger.logError(
@@ -99,8 +108,8 @@ export const pgBlueskyRepository = {
     try {
       await queryPublic(
         `UPDATE sources_targets 
-         SET has_follow_bluesky = true, updated_at = CURRENT_TIMESTAMP
-         WHERE source_id = $1 AND target_twitter_id = $2`,
+         SET has_follow_bluesky = true
+         WHERE source_id = $1 AND node_id = $2`,
         [userId, targetTwitterId]
       )
     } catch (error) {
