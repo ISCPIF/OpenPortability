@@ -1,7 +1,8 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { pgConsentRepository } from '../../../repositories/public/pg-consent-repository'
 import { pgUserRepository } from '../../../repositories/auth/pg-user-repository'
 import { mockTwitterUser } from '../../fixtures/user-fixtures'
+import { nextAuthPool } from '../../../database'
 
 describe('PgConsentRepository', () => {
   let userId: string
@@ -10,6 +11,20 @@ describe('PgConsentRepository', () => {
     // Create a test user for each test
     const user = await pgUserRepository.createUser(mockTwitterUser)
     userId = user.id
+    
+    // IMPORTANT: Commit la transaction nextAuth pour que l'utilisateur soit visible dans public
+    await nextAuthPool.query('COMMIT')
+    // Redémarrer une transaction pour le reste du test
+    await nextAuthPool.query('BEGIN')
+  })
+
+  afterEach(async () => {
+    // Nettoyer l'utilisateur créé (commit pour que le DELETE soit effectif)
+    await nextAuthPool.query('COMMIT')
+    await nextAuthPool.query('BEGIN')
+    await pgUserRepository.deleteUser(userId)
+    await nextAuthPool.query('COMMIT')
+    await nextAuthPool.query('BEGIN')
   })
 
   describe('getUserActiveConsents', () => {
