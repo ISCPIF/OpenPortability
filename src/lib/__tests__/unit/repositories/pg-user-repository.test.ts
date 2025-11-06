@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { pgUserRepository } from '../../../repositories/pg-user-repository'
+import { pgUserRepository } from '../../../repositories/auth/pg-user-repository'
 import {
   mockTwitterUser,
   mockMastodonUser,

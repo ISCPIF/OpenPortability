@@ -85,7 +85,7 @@ export const authConfig = {
           const instance = new URL(mastodonProfile.url).origin;
 
           // Vérifier si un autre utilisateur a déjà ce compte Mastodon
-          const { pgUserRepository } = await import('@/lib/repositories/pg-user-repository');
+          const { pgUserRepository } = await import('@/lib/repositories/auth/pg-user-repository');
           const existingUser = await pgUserRepository.getUserByProviderId('mastodon', mastodonProfile.id);
 
             if (existingUser && existingUser.mastodon_instance === instance && existingUser.id !== session.user.id) {

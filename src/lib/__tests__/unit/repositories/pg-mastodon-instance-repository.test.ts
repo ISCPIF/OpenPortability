@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { pgMastodonInstanceRepository } from '../../../repositories/pg-mastodon-instance-repository'
+import { pgMastodonInstanceRepository } from '../../../repositories/auth/pg-mastodon-instance-repository'
 import {
   mockMastodonSocial,
   mockPiailleFr,

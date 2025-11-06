@@ -9,9 +9,9 @@ import type { Profile } from "next-auth"
 import { encrypt, decrypt } from './encryption'
 import { auth } from '@/app/auth'
 import logger from '@/lib/log_utils'
-import { pgUserRepository } from './repositories/pg-user-repository'
-import { pgAccountRepository } from './repositories/pg-account-repository'
-import { pgMastodonInstanceRepository } from './repositories/pg-mastodon-instance-repository'
+import { pgUserRepository } from './repositories/auth/pg-user-repository'
+import { pgAccountRepository } from './repositories/auth/pg-account-repository'
+import { pgMastodonInstanceRepository } from './repositories/auth/pg-mastodon-instance-repository'
 import type { DBUser } from './types/database'
 
 export interface CustomAdapterUser extends Omit<AdapterUser, 'image'> {
