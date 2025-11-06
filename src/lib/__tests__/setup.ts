@@ -46,16 +46,32 @@ beforeAll(async () => {
   }
 })
 
+// Variable pour stocker les clients de transaction
+let nextAuthClient: any = null
+let publicClient: any = null
+
 beforeEach(async () => {
+  // Obtenir des clients dédiés pour les transactions
+  nextAuthClient = await nextAuthPool.connect()
+  publicClient = await publicPool.connect()
+  
   // Démarrer une transaction pour isoler chaque test
-  await nextAuthPool.query('BEGIN')
-  await publicPool.query('BEGIN')
+  await nextAuthClient.query('BEGIN')
+  await publicClient.query('BEGIN')
 })
 
 afterEach(async () => {
   // Rollback de la transaction pour annuler les changements
-  await nextAuthPool.query('ROLLBACK')
-  await publicPool.query('ROLLBACK')
+  if (nextAuthClient) {
+    await nextAuthClient.query('ROLLBACK')
+    nextAuthClient.release()
+    nextAuthClient = null
+  }
+  if (publicClient) {
+    await publicClient.query('ROLLBACK')
+    publicClient.release()
+    publicClient = null
+  }
   
   // Nettoyer les mocks après chaque test
   vi.clearAllMocks()
