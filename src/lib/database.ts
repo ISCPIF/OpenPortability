@@ -7,8 +7,8 @@ let _publicPool: Pool | null = null
 
 function getNextAuthPoolConfig() {
   return {
-    host: process.env.POSTGRES_HOST || 'localhost',
-    port: parseInt(process.env.POSTGRES_PORT || '5432'),
+    host: process.env.PGBOUNCER_HOST || 'pgbouncer',
+    port: parseInt(process.env.PGBOUNCER_PORT || '6432'),
     database: process.env.POSTGRES_DB || 'nexus',
     user: process.env.POSTGRES_USER || 'postgres',
     password: process.env.POSTGRES_PASSWORD || 'mysecretpassword',
@@ -20,8 +20,8 @@ function getNextAuthPoolConfig() {
 
 function getPublicPoolConfig() {
   return {
-    host: process.env.POSTGRES_HOST || 'localhost',
-    port: parseInt(process.env.POSTGRES_PORT || '5432'),
+    host: process.env.PGBOUNCER_HOST || 'pgbouncer',
+    port: parseInt(process.env.PGBOUNCER_PORT || '6432'),
     database: process.env.POSTGRES_DB || 'nexus',
     user: process.env.POSTGRES_USER || 'postgres',
     password: process.env.POSTGRES_PASSWORD || 'mysecretpassword',
