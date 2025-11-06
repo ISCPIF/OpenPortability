@@ -1,30 +1,44 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { pgConsentRepository } from '../../../repositories/public/pg-consent-repository'
-import { pgUserRepository } from '../../../repositories/auth/pg-user-repository'
-import { mockTwitterUser } from '../../fixtures/user-fixtures'
-import { nextAuthPool } from '../../../database'
+import { nextAuthPool, publicPool } from '../../../database'
+import { randomUUID } from 'crypto'
 
 describe('PgConsentRepository', () => {
   let userId: string
 
   beforeEach(async () => {
-    // Create a test user for each test
-    const user = await pgUserRepository.createUser(mockTwitterUser)
-    userId = user.id
+    // Créer un utilisateur et COMMIT pour qu'il soit visible dans publicPool
+    // La FK newsletter_consents_user_id_fkey référence "next-auth".users(id)
+    userId = randomUUID()
     
-    // IMPORTANT: Commit la transaction nextAuth pour que l'utilisateur soit visible dans public
+    // Commit la transaction en cours du setup
     await nextAuthPool.query('COMMIT')
-    // Redémarrer une transaction pour le reste du test
+    
+    // Créer l'utilisateur dans une transaction dédiée
     await nextAuthPool.query('BEGIN')
+    await nextAuthPool.query(
+      `INSERT INTO "next-auth".users (id, name, email) VALUES ($1, $2, $3)`,
+      [userId, 'Test User', `test-${userId}@example.com`]
+    )
+    await nextAuthPool.query('COMMIT')
+    
+    // Redémarrer une transaction pour le test
+    await nextAuthPool.query('BEGIN')
+    await publicPool.query('BEGIN')
   })
 
   afterEach(async () => {
-    // Nettoyer l'utilisateur créé (commit pour que le DELETE soit effectif)
+    // Nettoyer l'utilisateur créé
     await nextAuthPool.query('COMMIT')
+    await publicPool.query('COMMIT')
+    
     await nextAuthPool.query('BEGIN')
-    await pgUserRepository.deleteUser(userId)
+    await nextAuthPool.query('DELETE FROM "next-auth".users WHERE id = $1', [userId])
     await nextAuthPool.query('COMMIT')
+    
+    // Redémarrer les transactions pour les autres tests
     await nextAuthPool.query('BEGIN')
+    await publicPool.query('BEGIN')
   })
 
   describe('getUserActiveConsents', () => {
