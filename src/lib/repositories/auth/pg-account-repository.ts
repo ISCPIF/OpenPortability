@@ -1,6 +1,7 @@
-import { queryNextAuth } from '../database'
-import type { DBAccount } from '../types/database'
-import logger from '../log_utils'
+import { queryNextAuth } from '../../database'
+import type { DBAccount } from '../../types/database'
+import logger from '../../log_utils'
+import { encrypt, decrypt } from '../../encryption'
 
 /**
  * Helper pour parser expires_at qui est retourné comme string par PostgreSQL bigint
@@ -9,6 +10,18 @@ function parseAccount(account: any): DBAccount {
   return {
     ...account,
     expires_at: account.expires_at ? parseInt(account.expires_at, 10) : null
+  }
+}
+
+/**
+ * Helper pour décrypter les tokens sensibles
+ */
+function decryptTokens(account: DBAccount): DBAccount {
+  return {
+    ...account,
+    access_token: account.access_token ? decrypt(account.access_token) : null,
+    refresh_token: account.refresh_token ? decrypt(account.refresh_token) : null,
+    id_token: account.id_token ? decrypt(account.id_token) : null,
   }
 }
 
@@ -38,6 +51,7 @@ export const pgAccountRepository = {
 
   /**
    * Récupère un compte par provider et user_id
+   * Les tokens retournés sont DÉCRYPTÉS
    */
   async getProviderAccount(provider: string, userId: string): Promise<DBAccount | null> {
     try {
@@ -45,7 +59,9 @@ export const pgAccountRepository = {
         'SELECT * FROM accounts WHERE provider = $1 AND user_id = $2',
         [provider, userId]
       )
-      return result.rows[0] ? parseAccount(result.rows[0]) : null
+      if (!result.rows[0]) return null
+      const account = parseAccount(result.rows[0])
+      return decryptTokens(account)
     } catch (error) {
       logger.logError('Repository', 'pgAccountRepository.getProviderAccount', 'Error fetching provider account', userId, {
         provider,
@@ -112,6 +128,8 @@ export const pgAccountRepository = {
 
   /**
    * Met à jour les tokens d'un compte
+   * Les tokens passés en paramètre sont ENCRYPTÉS avant insertion
+   * Les tokens retournés sont DÉCRYPTÉS
    */
   async updateTokens(
     provider: string,
@@ -124,9 +142,17 @@ export const pgAccountRepository = {
     }
   ): Promise<DBAccount> {
     try {
-      const fields = Object.keys(tokens)
+      // Encrypt sensitive tokens before update
+      const encryptedTokens = {
+        ...tokens,
+        access_token: tokens.access_token ? encrypt(tokens.access_token) : null,
+        refresh_token: tokens.refresh_token ? encrypt(tokens.refresh_token) : null,
+        id_token: tokens.id_token ? encrypt(tokens.id_token) : null,
+      }
+      
+      const fields = Object.keys(encryptedTokens)
       const setClauses = fields.map((field, i) => `${field} = $${i + 3}`).join(', ')
-      const values = [provider, providerAccountId, ...fields.map(field => tokens[field as keyof typeof tokens])]
+      const values = [provider, providerAccountId, ...fields.map(field => encryptedTokens[field as keyof typeof encryptedTokens])]
       
       const sql = `
         UPDATE accounts
@@ -141,7 +167,8 @@ export const pgAccountRepository = {
         throw new Error('Account not found')
       }
       
-      return parseAccount(result.rows[0])
+      const account = parseAccount(result.rows[0])
+      return decryptTokens(account)
     } catch (error) {
       logger.logError('Repository', 'pgAccountRepository.updateTokens', 'Error updating tokens', undefined, {
         provider,
