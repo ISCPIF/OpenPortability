@@ -15,13 +15,26 @@ function parseAccount(account: any): DBAccount {
 
 /**
  * Helper pour décrypter les tokens sensibles
+ * Gère le cas où les tokens ne sont pas chiffrés (retourne le token tel quel)
  */
 function decryptTokens(account: DBAccount): DBAccount {
+  const safeDecrypt = (token: string | null): string | null => {
+    if (!token) return null
+    try {
+      const decrypted = decrypt(token)
+      // Si le déchiffrement retourne une chaîne vide, c'est que le token n'était pas chiffré
+      return decrypted || token
+    } catch (error) {
+      // Si erreur de déchiffrement, le token n'était probablement pas chiffré
+      return token
+    }
+  }
+
   return {
     ...account,
-    access_token: account.access_token ? decrypt(account.access_token) : null,
-    refresh_token: account.refresh_token ? decrypt(account.refresh_token) : null,
-    id_token: account.id_token ? decrypt(account.id_token) : null,
+    access_token: safeDecrypt(account.access_token),
+    refresh_token: safeDecrypt(account.refresh_token),
+    id_token: safeDecrypt(account.id_token),
   }
 }
 
