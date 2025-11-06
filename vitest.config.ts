@@ -6,6 +6,8 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     setupFiles: ['./src/lib/__tests__/setup.ts'],
+    // Désactiver le parallélisme pour éviter les conflits de transactions
+    fileParallelism: false,
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
