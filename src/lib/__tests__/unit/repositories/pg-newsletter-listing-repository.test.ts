@@ -1,19 +1,48 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { pgNewsletterListingRepository } from '../../../repositories/public/pg-newsletter-listing-repository'
 import { pgUserRepository } from '../../../repositories/auth/pg-user-repository'
 import { mockTwitterUser } from '../../fixtures/user-fixtures'
+import { nextAuthPool, publicPool } from '../../../database'
+import { randomUUID } from 'crypto'
 
 describe('PgNewsletterListingRepository', () => {
   let userId: string
   let userEmail: string
 
   beforeEach(async () => {
-    userEmail = `test-${Date.now()}@example.com`
+    // Commit la transaction en cours du setup
+    await nextAuthPool.query('COMMIT')
+    await publicPool.query('COMMIT')
+    
+    // Créer l'utilisateur et COMMIT pour qu'il soit visible dans publicPool
+    await nextAuthPool.query('BEGIN')
+    userEmail = `test-${randomUUID()}@example.com`
     const user = await pgUserRepository.createUser({
       ...mockTwitterUser,
       email: userEmail,
+      twitter_id: Math.floor(Math.random() * 1000000000000000).toString(),
+      twitter_username: `twitteruser-${randomUUID().slice(0, 8)}`,
     })
     userId = user.id
+    await nextAuthPool.query('COMMIT')
+    
+    // Redémarrer les transactions pour le test
+    await nextAuthPool.query('BEGIN')
+    await publicPool.query('BEGIN')
+  })
+
+  afterEach(async () => {
+    // Nettoyer l'utilisateur créé
+    await nextAuthPool.query('COMMIT')
+    await publicPool.query('COMMIT')
+    
+    await nextAuthPool.query('BEGIN')
+    await nextAuthPool.query('DELETE FROM "next-auth".users WHERE id = $1', [userId])
+    await nextAuthPool.query('COMMIT')
+    
+    // Redémarrer les transactions pour les autres tests
+    await nextAuthPool.query('BEGIN')
+    await publicPool.query('BEGIN')
   })
 
   describe('insertNewsletterListing', () => {
@@ -80,11 +109,24 @@ describe('PgNewsletterListingRepository', () => {
     })
 
     it('should not affect other users listings', async () => {
-      const user2Email = `test2-${Date.now()}@example.com`
+      // COMMIT les transactions en cours
+      await nextAuthPool.query('COMMIT')
+      await publicPool.query('COMMIT')
+      
+      // Créer user2 avec des données uniques et COMMIT
+      await nextAuthPool.query('BEGIN')
+      const user2Email = `test-${randomUUID()}@example.com`
       const user2 = await pgUserRepository.createUser({
         ...mockTwitterUser,
         email: user2Email,
+        twitter_id: Math.floor(Math.random() * 1000000000000000).toString(),
+        twitter_username: `twitteruser-${randomUUID().slice(0, 8)}`,
       })
+      await nextAuthPool.query('COMMIT')
+      
+      // Redémarrer les transactions pour le reste du test
+      await nextAuthPool.query('BEGIN')
+      await publicPool.query('BEGIN')
 
       await pgNewsletterListingRepository.insertNewsletterListing(userId)
       await pgNewsletterListingRepository.insertNewsletterListing(user2.id)
