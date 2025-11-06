@@ -15,13 +15,16 @@ import { pgUserRepository } from '../../repositories/auth/pg-user-repository'
 import { pgAccountRepository } from '../../repositories/auth/pg-account-repository'
 import type { AdapterAccount } from 'next-auth/adapters'
 
+// Générer des IDs uniques pour éviter les conflits entre tests
+const getRandomId = () => Math.floor(Math.random() * 1000000000000000).toString()
+
 describe('PgAdapter', () => {
   describe('createUser', () => {
     describe('Twitter', () => {
       it('should create a new Twitter user', async () => {
         const twitterProfile: TwitterData = {
           data: {
-            id: '123456789',
+            id: getRandomId(),
             name: 'Twitter Test User',
             username: 'twittertest',
             profile_image_url: 'https://pbs.twimg.com/profile_images/123/avatar.jpg'
@@ -35,16 +38,17 @@ describe('PgAdapter', () => {
 
         expect(user.id).toBeDefined()
         expect(user.name).toBe('Twitter Test User')
-        expect(user.twitter_id).toBe('123456789')
+        expect(user.twitter_id).toBe(twitterProfile.data.id)
         expect(user.twitter_username).toBe('twittertest')
         expect(user.twitter_image).toBe('https://pbs.twimg.com/profile_images/123/avatar.jpg')
         expect(user.has_onboarded).toBe(false)
       })
 
       it('should return existing Twitter user if already exists', async () => {
+        const uniqueId = getRandomId()
         const twitterProfile: TwitterData = {
           data: {
-            id: '987654321',
+            id: uniqueId,
             name: 'Existing Twitter User',
             username: 'existingtwitter',
             profile_image_url: 'https://pbs.twimg.com/profile_images/456/avatar.jpg'
@@ -64,14 +68,14 @@ describe('PgAdapter', () => {
         } as any)
 
         expect(user1.id).toBe(user2.id)
-        expect(user2.twitter_id).toBe('987654321')
+        expect(user2.twitter_id).toBe(uniqueId)
       })
     })
 
     describe('Mastodon', () => {
       it('should create a new Mastodon user', async () => {
         const mastodonProfile: MastodonProfile = {
-          id: 'mastodon123',
+          id: getRandomId(),
           username: 'mastodontest',
           display_name: 'Mastodon Test User',
           avatar: 'https://mastodon.social/avatars/original/missing.png',
@@ -85,14 +89,15 @@ describe('PgAdapter', () => {
 
         expect(user.id).toBeDefined()
         expect(user.name).toBe('Mastodon Test User')
-        expect(user.mastodon_id).toBe('mastodon123')
+        expect(user.mastodon_id).toBe(mastodonProfile.id)
         expect(user.mastodon_username).toBe('mastodontest')
         expect(user.mastodon_instance).toBe('https://mastodon.social')
       })
 
       it('should return existing Mastodon user with same ID and instance', async () => {
+        const uniqueId = getRandomId()
         const mastodonProfile: MastodonProfile = {
-          id: 'mastodon456',
+          id: uniqueId,
           username: 'existingmastodon',
           display_name: 'Existing Mastodon User',
           avatar: 'https://mastodon.social/avatars/original/missing.png',
@@ -112,11 +117,11 @@ describe('PgAdapter', () => {
         } as any)
 
         expect(user1.id).toBe(user2.id)
-        expect(user2.mastodon_id).toBe('mastodon456')
+        expect(user2.mastodon_id).toBe(uniqueId)
       })
 
       it('should allow same mastodon_id on different instances', async () => {
-        const sharedMastodonId = 'shared_mastodon_id_999'
+        const sharedMastodonId = getRandomId()
 
         // Create user on mastodon.social
         const mastodonSocialProfile: MastodonProfile = {
