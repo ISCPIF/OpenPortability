@@ -11,8 +11,8 @@ import {
   type MastodonProfile,
   type BlueskyProfile
 } from '../../pg-adapter'
-import { pgUserRepository } from '../../repositories/pg-user-repository'
-import { pgAccountRepository } from '../../repositories/pg-account-repository'
+import { pgUserRepository } from '../../repositories/auth/pg-user-repository'
+import { pgAccountRepository } from '../../repositories/auth/pg-account-repository'
 import type { AdapterAccount } from 'next-auth/adapters'
 
 describe('PgAdapter', () => {

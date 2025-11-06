@@ -1,6 +1,6 @@
-import { queryNextAuth } from '../database'
-import type { DBUser } from '../types/database'
-import logger from '../log_utils'
+import { queryNextAuth } from '../../database'
+import type { DBUser } from '../../types/database'
+import logger from '../../log_utils'
 
 /**
  * Repository pour les opérations sur les utilisateurs (schéma next-auth)

@@ -1,6 +1,6 @@
-import { queryPublic } from '../database'
-import type { DBMastodonInstance } from '../types/database'
-import logger from '../log_utils'
+import { queryPublic } from '../../database'
+import type { DBMastodonInstance } from '../../types/database'
+import logger from '../../log_utils'
 
 /**
  * Repository pour les opérations sur les instances Mastodon (schéma public)

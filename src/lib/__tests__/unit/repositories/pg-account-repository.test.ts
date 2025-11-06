@@ -1,6 +1,7 @@
-import { describe, it, expect } from 'vitest'
-import { pgAccountRepository } from '../../../repositories/pg-account-repository'
-import { pgUserRepository } from '../../../repositories/pg-user-repository'
+import { describe, it, expect, beforeEach } from 'vitest'
+import { pgAccountRepository } from '../../../repositories/auth/pg-account-repository'
+import { pgUserRepository } from '../../../repositories/auth/pg-user-repository'
+import { encrypt, decrypt } from '../../../encryption'
 import {
   mockTwitterAccount,
   mockMastodonAccount,
@@ -11,6 +12,80 @@ import {
 import { mockTwitterUser } from '../../fixtures/user-fixtures'
 
 describe('PgAccountRepository', () => {
+  describe('Token Encryption/Decryption', () => {
+    it('should decrypt tokens when retrieving account via getProviderAccount', async () => {
+      const user = await pgUserRepository.createUser(mockTwitterUser)
+      const accountData = mockTwitterAccount(user.id)
+      
+      // Insert account with plain tokens (will be encrypted by upsertAccount)
+      await pgAccountRepository.upsertAccount(accountData)
+      
+      // Retrieve via getProviderAccount - tokens should be decrypted
+      const retrieved = await pgAccountRepository.getProviderAccount('twitter', user.id)
+      
+      expect(retrieved).not.toBeNull()
+      expect(retrieved?.access_token).toBe(accountData.access_token)
+      expect(retrieved?.refresh_token).toBe(accountData.refresh_token)
+      // Verify tokens are not encrypted (they should be plain strings)
+      expect(retrieved?.access_token).not.toBe(encrypt(accountData.access_token!))
+    })
+
+    it('should encrypt tokens when updating via updateTokens', async () => {
+      const user = await pgUserRepository.createUser(mockTwitterUser)
+      const accountData = mockTwitterAccount(user.id)
+      
+      await pgAccountRepository.upsertAccount(accountData)
+      
+      const newAccessToken = 'new_plain_access_token_12345'
+      const newRefreshToken = 'new_plain_refresh_token_67890'
+      
+      // Update tokens with plain values
+      const updated = await pgAccountRepository.updateTokens(
+        'twitter',
+        accountData.provider_account_id!,
+        {
+          access_token: newAccessToken,
+          refresh_token: newRefreshToken,
+          expires_at: Math.floor(Date.now() / 1000) + 3600,
+        }
+      )
+      
+      // Returned tokens should be decrypted
+      expect(updated.access_token).toBe(newAccessToken)
+      expect(updated.refresh_token).toBe(newRefreshToken)
+      
+      // Verify by retrieving again - should still be decrypted
+      const retrieved = await pgAccountRepository.getProviderAccount('twitter', user.id)
+      expect(retrieved?.access_token).toBe(newAccessToken)
+      expect(retrieved?.refresh_token).toBe(newRefreshToken)
+    })
+
+    it('should handle null tokens correctly', async () => {
+      const user = await pgUserRepository.createUser(mockTwitterUser)
+      const accountData = mockMastodonAccount(user.id) // Mastodon doesn't use refresh token
+      
+      await pgAccountRepository.upsertAccount(accountData)
+      
+      const retrieved = await pgAccountRepository.getProviderAccount('mastodon', user.id)
+      
+      expect(retrieved?.access_token).toBe(accountData.access_token)
+      expect(retrieved?.refresh_token).toBeNull()
+    })
+
+    it('should decrypt id_token if present', async () => {
+      const user = await pgUserRepository.createUser(mockTwitterUser)
+      const accountData = mockTwitterAccount(user.id)
+      accountData.id_token = 'test_id_token_value'
+      
+      await pgAccountRepository.upsertAccount(accountData)
+      
+      const retrieved = await pgAccountRepository.getProviderAccount('twitter', user.id)
+      
+      expect(retrieved?.id_token).toBe('test_id_token_value')
+      expect(retrieved?.id_token).not.toBe(encrypt('test_id_token_value'))
+    })
+  })
+
   describe('upsertAccount & getAccount', () => {
     it('should create and retrieve a Twitter account', async () => {
       const user = await pgUserRepository.createUser(mockTwitterUser)

@@ -1,27 +1,26 @@
 import { BskyAgent } from '@atproto/api';
-import { AccountRepository } from '../repositories/accountRepository';
+import { pgAccountRepository } from '../repositories/auth/pg-account-repository';
+import { pgUserRepository } from '../repositories/auth/pg-user-repository';
+import { pgMastodonInstanceRepository } from '../repositories/auth/pg-mastodon-instance-repository';
 import { Provider, RefreshResult, TokenData, TokenUpdate } from '../types/account';
 import { supabaseAdapter } from '../supabase-adapter';
 import { supabase } from '../supabase';
-import { decrypt } from '../encryption';
 import logger from '../log_utils';
 
 export class AccountService {
-  private repository: AccountRepository;
-
   constructor() {
-    this.repository = new AccountRepository();
+    // pgAccountRepository is a singleton object, no instantiation needed
   }
 
 
   async verifyAndRefreshBlueskyToken(userId: string): Promise<RefreshResult> {
-    const account = await this.repository.getProviderAccount(userId, 'bluesky');
+    const account = await pgAccountRepository.getProviderAccount('bluesky', userId);
     if (!account) {
       logger.logError('Security', 'No Bluesky account found for user:', userId);
       return { success: false, error: 'No Bluesky account found', requiresReauth: true };
     }
 
-    // Tokens in repository.getProviderAccount() are already decrypted. Do NOT decrypt again.
+    // Tokens from pgAccountRepository.getProviderAccount() are already decrypted. Do NOT decrypt again.
     if (!account.access_token || !account.refresh_token) {
       logger.logWarning('Security', 'Missing tokens for user:', userId);
       return { success: false, error: 'Missing tokens', requiresReauth: true };
@@ -102,7 +101,7 @@ export class AccountService {
   }
 
   async verifyAndRefreshMastodonToken(userId: string): Promise<RefreshResult> {
-    const account = await this.repository.getProviderAccount(userId, 'mastodon');
+    const account = await pgAccountRepository.getProviderAccount('mastodon', userId);
     if (!account) {
       logger.logWarning('Security', 'No Mastodon account found for user:', userId);
       return { success: false, error: 'No Mastodon account found', requiresReauth: true };
@@ -154,7 +153,7 @@ export class AccountService {
 
   async getAccountByProviderAndUserId(provider: string, userId: string): Promise<any | null> {
     try {
-      return await this.repository.getProviderAccount(userId, provider as Provider);
+      return await pgAccountRepository.getProviderAccount(provider, userId);
     } catch (error) {
       console.error(`Error fetching account ${provider}:`, error);
       return null;
