@@ -1,7 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { pgStatsRepository } from '../../../repositories/public/pg-stats-repository'
 import { redis } from '../../../redis'
-import { publicPool } from '../../../database'
+import { nextAuthPool, publicPool } from '../../../database'
+import { pgUserRepository } from '../../../repositories/auth/pg-user-repository'
+import { mockTwitterUser } from '../../fixtures/user-fixtures'
 import { randomUUID } from 'crypto'
 
 // Mock Redis pour les tests
@@ -14,25 +16,59 @@ vi.mock('../../../redis', () => ({
 }))
 
 describe('PgStatsRepository', () => {
-  const userId = randomUUID()
-
   beforeEach(async () => {
-    // Commit les transactions en cours
-    await publicPool.query('COMMIT')
-    await publicPool.query('BEGIN')
-
     // Nettoyer les caches Redis
     vi.clearAllMocks()
   })
 
   afterEach(async () => {
-    await publicPool.query('COMMIT')
-    await publicPool.query('BEGIN')
     vi.clearAllMocks()
   })
 
+  // Helper pour créer un utilisateur de test
+  async function createTestUser(): Promise<string> {
+    await nextAuthPool.query('COMMIT')
+    await publicPool.query('COMMIT')
+
+    await nextAuthPool.query('BEGIN')
+    const user = await pgUserRepository.createUser({
+      ...mockTwitterUser,
+      email: `test-${randomUUID()}@example.com`,
+      twitter_id: Math.floor(Math.random() * 1000000000000000).toString(),
+      twitter_username: `twitteruser-${randomUUID().slice(0, 8)}`,
+    })
+    const testUserId = user.id
+    await nextAuthPool.query('COMMIT')
+
+    await publicPool.query('BEGIN')
+    await publicPool.query(
+      `INSERT INTO sources (id) VALUES ($1)`,
+      [testUserId]
+    )
+    await publicPool.query('COMMIT')
+
+    await nextAuthPool.query('BEGIN')
+    await publicPool.query('BEGIN')
+
+    return testUserId
+  }
+
+  // Helper pour nettoyer un utilisateur de test
+  async function cleanupTestUser(testUserId: string): Promise<void> {
+    await nextAuthPool.query('COMMIT')
+    await publicPool.query('COMMIT')
+
+    await nextAuthPool.query('BEGIN')
+    await nextAuthPool.query('DELETE FROM "next-auth".users WHERE id = $1', [testUserId])
+    await nextAuthPool.query('COMMIT')
+
+    await nextAuthPool.query('BEGIN')
+    await publicPool.query('BEGIN')
+  }
+
   describe('getUserCompleteStats', () => {
     it('should return cached stats from Redis if available', async () => {
+      const mockUserId = randomUUID()
       const mockStats = {
         connections: {
           followers: 100,
@@ -48,68 +84,80 @@ describe('PgStatsRepository', () => {
 
       vi.mocked(redis.get).mockResolvedValueOnce(JSON.stringify(mockStats))
 
-      const result = await pgStatsRepository.getUserCompleteStats(userId, true)
+      const result = await pgStatsRepository.getUserCompleteStats(mockUserId, true)
 
       expect(result).toEqual(mockStats)
-      expect(redis.get).toHaveBeenCalledWith(`user:stats:${userId}`)
+      expect(redis.get).toHaveBeenCalledWith(`user:stats:${mockUserId}`)
       expect(redis.set).not.toHaveBeenCalled()
     })
 
     it('should fetch from DB if Redis cache miss (has_onboard=true)', async () => {
+      const testUserId = await createTestUser()
       vi.mocked(redis.get).mockResolvedValueOnce(null)
       vi.mocked(redis.set).mockResolvedValueOnce('OK')
 
-      const result = await pgStatsRepository.getUserCompleteStats(userId, true)
+      const result = await pgStatsRepository.getUserCompleteStats(testUserId, true)
 
       expect(result).toBeDefined()
       expect(result.connections).toBeDefined()
       expect(result.matches).toBeDefined()
-      expect(redis.get).toHaveBeenCalledWith(`user:stats:${userId}`)
+      expect(redis.get).toHaveBeenCalledWith(`user:stats:${testUserId}`)
       expect(redis.set).toHaveBeenCalledWith(
-        `user:stats:${userId}`,
+        `user:stats:${testUserId}`,
         expect.any(String),
         86400
       )
+
+      await cleanupTestUser(testUserId)
     })
 
     it('should fetch from DB if Redis cache miss (has_onboard=false)', async () => {
+      const testUserId = await createTestUser()
       vi.mocked(redis.get).mockResolvedValueOnce(null)
       vi.mocked(redis.set).mockResolvedValueOnce('OK')
 
-      const result = await pgStatsRepository.getUserCompleteStats(userId, false)
+      const result = await pgStatsRepository.getUserCompleteStats(testUserId, false)
 
       expect(result).toBeDefined()
       expect(result.connections).toBeDefined()
       expect(result.matches).toBeDefined()
-      expect(redis.get).toHaveBeenCalledWith(`user:stats:${userId}`)
+      expect(redis.get).toHaveBeenCalledWith(`user:stats:${testUserId}`)
       expect(redis.set).toHaveBeenCalledWith(
-        `user:stats:${userId}`,
+        `user:stats:${testUserId}`,
         expect.any(String),
         86400
       )
+
+      await cleanupTestUser(testUserId)
     })
 
     it('should handle Redis errors and fallback to DB', async () => {
+      const testUserId = await createTestUser()
       const redisError = new Error('Redis connection failed')
       vi.mocked(redis.get).mockRejectedValueOnce(redisError)
       vi.mocked(redis.set).mockResolvedValueOnce('OK')
 
-      const result = await pgStatsRepository.getUserCompleteStats(userId, true)
+      const result = await pgStatsRepository.getUserCompleteStats(testUserId, true)
 
       expect(result).toBeDefined()
       expect(result.connections).toBeDefined()
       expect(redis.set).toHaveBeenCalled()
+
+      await cleanupTestUser(testUserId)
     })
 
     it('should handle Redis set errors gracefully', async () => {
+      const testUserId = await createTestUser()
       const redisError = new Error('Redis set failed')
       vi.mocked(redis.get).mockResolvedValueOnce(null)
       vi.mocked(redis.set).mockRejectedValueOnce(redisError)
 
-      const result = await pgStatsRepository.getUserCompleteStats(userId, true)
+      const result = await pgStatsRepository.getUserCompleteStats(testUserId, true)
 
       expect(result).toBeDefined()
       expect(result.connections).toBeDefined()
+
+      await cleanupTestUser(testUserId)
     })
 
     it('should throw error if user not found', async () => {
@@ -215,31 +263,40 @@ describe('PgStatsRepository', () => {
 
   describe('refreshUserStatsCache', () => {
     it('should refresh user stats cache and invalidate Redis (has_onboard=true)', async () => {
+      const testUserId = await createTestUser()
       vi.mocked(redis.del).mockResolvedValueOnce(1)
 
       await expect(
-        pgStatsRepository.refreshUserStatsCache(userId, true)
+        pgStatsRepository.refreshUserStatsCache(testUserId, true)
       ).resolves.not.toThrow()
 
-      expect(redis.del).toHaveBeenCalledWith(`user:stats:${userId}`)
+      expect(redis.del).toHaveBeenCalledWith(`user:stats:${testUserId}`)
+
+      await cleanupTestUser(testUserId)
     })
 
     it('should refresh user stats cache and invalidate Redis (has_onboard=false)', async () => {
+      const testUserId = await createTestUser()
       vi.mocked(redis.del).mockResolvedValueOnce(1)
 
       await expect(
-        pgStatsRepository.refreshUserStatsCache(userId, false)
+        pgStatsRepository.refreshUserStatsCache(testUserId, false)
       ).resolves.not.toThrow()
 
-      expect(redis.del).toHaveBeenCalledWith(`user:stats:${userId}`)
+      expect(redis.del).toHaveBeenCalledWith(`user:stats:${testUserId}`)
+
+      await cleanupTestUser(testUserId)
     })
 
     it('should handle Redis del errors gracefully', async () => {
+      const testUserId = await createTestUser()
       vi.mocked(redis.del).mockRejectedValueOnce(new Error('Redis del failed'))
 
       await expect(
-        pgStatsRepository.refreshUserStatsCache(userId, true)
+        pgStatsRepository.refreshUserStatsCache(testUserId, true)
       ).resolves.not.toThrow()
+
+      await cleanupTestUser(testUserId)
     })
 
     it('should throw error if user not found', async () => {
