@@ -1,16 +1,16 @@
-import { NextRequest, NextResponse } from "next/server";
-import { auth, signIn } from "@/app/auth";
-import { createBlueskyOAuthClient } from "@/lib/services/blueskyOAuthClient";
-import { BlueskyRepository } from "@/lib/repositories/blueskyRepository";
-import { BlueskyService } from "@/lib/services/blueskyServices";
-import { supabaseAdapter } from "@/lib/supabase-adapter";
-import { withPublicValidation } from "@/lib/validation/middleware";
-import { z } from "zod";
+import { NextRequest, NextResponse } from "next/server"
+import { auth, signIn } from "@/app/auth"
+import { createBlueskyOAuthClient } from "@/lib/services/blueskyOAuthClient"
+import { pgBlueskyRepository } from "@/lib/repositories/public/pg-bluesky-repository"
+import { pgUserRepository } from "@/lib/repositories/auth/pg-user-repository"
+import { pgAccountRepository } from "@/lib/repositories/auth/pg-account-repository"
+import { BlueskyService } from "@/lib/services/blueskyServices"
+import { withPublicValidation } from "@/lib/validation/middleware"
+import { z } from "zod"
 
-export const runtime = 'nodejs';
+export const runtime = 'nodejs'
 
-const blueskyRepository = new BlueskyRepository();
-const blueskyService = new BlueskyService(blueskyRepository);
+const blueskyService = new BlueskyService(pgBlueskyRepository)
 
 // Conservative schema for known OAuth callback params (all optional, length-limited)
 const CallbackQuerySchema = z.object({
@@ -146,64 +146,68 @@ async function callbackHandler(request: NextRequest) {
       }
     }
     // Continue with user account linking
-    const currentSession = await auth();
-    let userId = currentSession?.user?.id || undefined;
-    const existingUser = await blueskyRepository.getUserByBlueskyId(did);
+    const currentSession = await auth()
+    let userId = currentSession?.user?.id || undefined
+    const existingUser = await pgBlueskyRepository.getUserByBlueskyId(did)
 
     if (existingUser) {
-      userId = existingUser.id;
-      await blueskyRepository.updateBlueskyProfile(userId, profile);
-      
+      userId = existingUser.id
+      await pgBlueskyRepository.updateBlueskyProfile(userId, profile)
+
       if (accessToken && refreshToken) {
-        await blueskyRepository.linkBlueskyAccount(userId, { 
-          did, 
-          handle: profile.handle, 
-          accessJwt: accessToken, 
-          refreshJwt: refreshToken,
+        await pgAccountRepository.upsertAccount({
+          user_id: userId,
+          type: 'oauth',
+          provider: 'bluesky',
+          provider_account_id: did,
+          access_token: accessToken,
+          refresh_token: refreshToken,
           scope,
           token_type: tokenType,
-        });
+        })
       } else {
-        console.warn('[Account Link] No tokens available for existing user');
+        console.warn('[Account Link] No tokens available for existing user')
       }
     } else if (userId) {
-      await blueskyRepository.updateBlueskyProfile(userId, profile);
-      
+      await pgBlueskyRepository.updateBlueskyProfile(userId, profile)
+
       if (accessToken && refreshToken) {
-        await blueskyRepository.linkBlueskyAccount(userId, { 
-          did, 
-          handle: profile.handle, 
-          accessJwt: accessToken, 
-          refreshJwt: refreshToken,
+        await pgAccountRepository.upsertAccount({
+          user_id: userId,
+          type: 'oauth',
+          provider: 'bluesky',
+          provider_account_id: did,
+          access_token: accessToken,
+          refresh_token: refreshToken,
           scope,
           token_type: tokenType,
-        });
+        })
       } else {
-        console.warn('[Account Link] No tokens available for current user');
+        console.warn('[Account Link] No tokens available for current user')
       }
     } else {
-      const user = await supabaseAdapter.createUser({
-        provider: 'bluesky',
-        profile: {
-          did: profile.did,
-          handle: profile.handle,
-          displayName: profile.displayName,
-          avatar: profile.avatar,
-        }
-      });
-      userId = user.id;
-      
+      const newUser = await pgUserRepository.createUser({
+        name: profile.displayName || profile.handle,
+        email: 'none',
+        bluesky_id: profile.did,
+        bluesky_username: profile.handle,
+        bluesky_image: profile.avatar,
+      })
+      userId = newUser.id
+
       if (accessToken && refreshToken) {
-        await blueskyRepository.linkBlueskyAccount(userId, { 
-          did, 
-          handle: profile.handle, 
-          accessJwt: accessToken, 
-          refreshJwt: refreshToken,
+        await pgAccountRepository.upsertAccount({
+          user_id: userId,
+          type: 'oauth',
+          provider: 'bluesky',
+          provider_account_id: did,
+          access_token: accessToken,
+          refresh_token: refreshToken,
           scope,
           token_type: tokenType,
-        });
+        })
       } else {
-        console.warn('[Account Link] No tokens available for new user');
+        console.warn('[Account Link] No tokens available for new user')
       }
     }
 
