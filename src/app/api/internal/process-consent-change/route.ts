@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { supabase, authClient } from '@/lib/supabase';
 import { redis } from '@/lib/redis';
-import { UserRepository } from '@/lib/repositories/userRepository';
 import { withInternalValidation } from '@/lib/validation/internal-middleware';
+import { pgNewsletterListingRepository } from '@/lib/repositories/public/pg-newsletter-listing-repository'
+import { pgPythonTasksRepository } from '@/lib/repositories/public/pg-python-tasks-repository'
 
 // Schéma de validation pour le payload du trigger
 const ConsentChangeSchema = z.object({
@@ -20,8 +20,7 @@ const ConsentChangeSchema = z.object({
   })
 });
 
-// Instance du repository
-const userRepository = new UserRepository();
+// No legacy repositories; operations go through pg-* repositories
 
 /**
  * Handler principal pour traiter les changements de consent
@@ -100,8 +99,7 @@ async function handlePlatformDMConsent(
     
   } else {
     // Consent désactivé → Supprimer tâches en attente (pending ET waiting)
-    await userRepository.deletePendingPythonTasks(userId, platform);
-    await deleteWaitingPythonTasks(userId, platform);
+    await pgPythonTasksRepository.deleteTasks(userId, platform, ['pending', 'waiting'])
     console.log(` [handlePlatformDMConsent] Deleted pending and waiting tasks for ${platform}`);
   }
 }
@@ -116,37 +114,11 @@ async function handleEmailNewsletterConsent(
 ) {
   try {
     if (consentValue) {
-      // Récupérer l'email de l'utilisateur
-      const { data: user } = await authClient
-        .from('users')
-        .select('email')
-        .eq('id', userId)
-        .single();
-
-      if (!user?.email) {
-        console.error(` [handleEmailNewsletterConsent] No email found for user ${userId}`);
-        return;
-      }
-
-      // Insérer dans newsletter_listing
-      await supabase
-        .from('newsletter_listing')
-        .upsert({
-          user_id: userId,
-          email: user.email,
-          created_at: new Date().toISOString()
-        });
-        
-      console.log(` [handleEmailNewsletterConsent] Added to newsletter_listing: ${user.email}`);
-      
+      await pgNewsletterListingRepository.insertNewsletterListing(userId)
+      console.log(` [handleEmailNewsletterConsent] Added to newsletter_listing for user ${userId}`);
     } else {
-      // Supprimer de newsletter_listing
-      await supabase
-        .from('newsletter_listing')
-        .delete()
-        .eq('user_id', userId);
-        
-      console.log(` [handleEmailNewsletterConsent] Removed from newsletter_listing`);
+      await pgNewsletterListingRepository.deleteNewsletterListing(userId)
+      console.log(` [handleEmailNewsletterConsent] Removed from newsletter_listing for user ${userId}`);
     }
   } catch (error) {
     console.error(` [handleEmailNewsletterConsent] Error:`, error);
@@ -165,45 +137,21 @@ async function createTestDMTask(
 ) {
   try {
     // 1. Vérifier s'il existe déjà une tâche pending pour éviter les doublons
-    const { data: existingTask } = await supabase
-      .from('python_tasks')
-      .select('id')
-      .eq('user_id', userId)
-      .eq('platform', platform)
-      .eq('task_type', 'test-dm')
-      .eq('status', 'pending')
-      .single();
-
-    if (existingTask) {
+    const exists = await pgPythonTasksRepository.pendingTaskExists(userId, platform, 'test-dm')
+    if (exists) {
       console.log(` [createTestDMTask] Task already exists for ${userId}:${platform}, skipping`);
       return;
     }
 
     // 2. Créer la tâche dans python_tasks
     const taskPayload = { handle };
-    
-    const { data: newTask, error: dbError } = await supabase
-      .from('python_tasks')
-      .insert({
-        user_id: userId,
-        status: 'pending',
-        task_type: 'test-dm',
-        platform: platform,
-        payload: taskPayload
-      })
-      .select('id')
-      .single();
+    const newTaskId = await pgPythonTasksRepository.createPendingTask(userId, platform, 'test-dm', taskPayload)
 
-    if (dbError) {
-      console.error(` [createTestDMTask] DB error:`, dbError);
-      throw dbError;
-    }
-
-    console.log(` [createTestDMTask] Created python_task ${newTask.id} for ${platform}`);
+    console.log(` [createTestDMTask] Created python_task ${newTaskId} for ${platform}`);
 
     // 3. Ajouter à Redis (avec fallback si Redis est down)
     try {
-      await addTaskToRedis(userId, platform, handle, newTask.id);
+      await addTaskToRedis(userId, platform, handle, newTaskId);
       console.log(` [createTestDMTask] Added to Redis queue for ${platform}`);
     } catch (redisError) {
       console.error(` [createTestDMTask] Redis error (task still created in DB):`, redisError);
@@ -226,38 +174,15 @@ async function createWaitingTestDMTask(
 ) {
   try {
     // 1. Vérifier s'il existe déjà une tâche waiting pour éviter les doublons
-    const { data: existingTask } = await supabase
-      .from('python_tasks')
-      .select('id')
-      .eq('user_id', userId)
-      .eq('platform', platform)
-      .eq('task_type', 'test-dm')
-      .eq('status', 'waiting')
-      .single();
-
-    if (existingTask) {
+    const exists = await pgPythonTasksRepository.waitingTaskExists(userId, platform, 'test-dm')
+    if (exists) {
       console.log(` [createWaitingTestDMTask] Task already exists for ${userId}:${platform}, skipping`);
       return;
     }
 
     // 2. Créer la tâche dans python_tasks
-    const { data: newTask, error: dbError } = await supabase
-      .from('python_tasks')
-      .insert({
-        user_id: userId,
-        status: 'waiting',
-        task_type: 'test-dm',
-        platform: platform
-      })
-      .select('id')
-      .single();
-
-    if (dbError) {
-      console.error(` [createWaitingTestDMTask] DB error:`, dbError);
-      throw dbError;
-    }
-
-    console.log(` [createWaitingTestDMTask] Created python_task ${newTask.id} for ${platform}`);
+    const newTaskId = await pgPythonTasksRepository.createWaitingTask(userId, platform, 'test-dm')
+    console.log(` [createWaitingTestDMTask] Created python_task ${newTaskId} for ${platform}`);
 
   } catch (error) {
     console.error(` [createWaitingTestDMTask] Error for ${platform}:`, error);
@@ -305,51 +230,10 @@ async function addTaskToRedis(
 /**
  * Supprime les tâches Python en attente pour une plateforme
  */
-async function deletePendingPythonTasks(userId: string, platform: 'bluesky' | 'mastodon') {
-  try {
-    // Supprimer de python_tasks
-    const { error } = await supabase
-      .from('python_tasks')
-      .delete()
-      .eq('user_id', userId)
-      .eq('platform', platform)
-      .in('status', ['pending', 'waiting']);
-
-    if (error) {
-      console.error(` [deletePendingPythonTasks] DB error:`, error);
-      throw error;
-    }
-
-    // TODO: Nettoyer Redis si nécessaire (optionnel)
-    
-    console.log(` [deletePendingPythonTasks] Deleted pending tasks for ${platform}`);
-    
-  } catch (error) {
-    console.error(` [deletePendingPythonTasks] Error for ${platform}:`, error);
-    throw error;
-  }
-}
-
-/**
- * Supprime les tâches Python en attente pour une plateforme
- */
 async function deleteWaitingPythonTasks(userId: string, platform: 'bluesky' | 'mastodon') {
   try {
-    // Supprimer de python_tasks
-    const { error } = await supabase
-      .from('python_tasks')
-      .delete()
-      .eq('user_id', userId)
-      .eq('platform', platform)
-      .eq('status', 'waiting');
-
-    if (error) {
-      console.error(` [deleteWaitingPythonTasks] DB error:`, error);
-      throw error;
-    }
-
+    await pgPythonTasksRepository.deleteTasks(userId, platform, ['waiting'])
     console.log(` [deleteWaitingPythonTasks] Deleted waiting tasks for ${platform}`);
-    
   } catch (error) {
     console.error(` [deleteWaitingPythonTasks] Error for ${platform}:`, error);
     throw error;

@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { supabase } from '@/lib/supabase';
 import { redis } from '@/lib/redis';
 import { withInternalValidation } from '@/lib/validation/internal-middleware';
+import { pgPythonTasksRepository } from '@/lib/repositories/public/pg-python-tasks-repository'
 
 // Schéma de validation pour le payload du trigger
 const ActivateWaitingTasksSchema = z.object({
@@ -31,17 +31,16 @@ async function handleActivateWaitingTasks(
     console.log(`🔄 [activate-waiting-tasks] Processing ${activated_tasks} tasks for user ${user_id} on ${platform}`);
 
     // 1. Récupérer les tâches pending récemment activées pour ce user/platform
-    const { data: tasks, error } = await supabase
-      .from('python_tasks')
-      .select('id, user_id, task_type, platform, payload, created_at, status')
-      .eq('user_id', user_id)
-      .eq('platform', platform)
-      .eq('status', 'pending')
-      .eq('task_type', 'test-dm')
-      .gte('updated_at', new Date(Date.now() - 5 * 60 * 1000).toISOString()) // Dernières 5 minutes
-      .order('updated_at', { ascending: false });
-
-    if (error) {
+    let tasks
+    try {
+      const sinceIso = new Date(Date.now() - 5 * 60 * 1000).toISOString() // Dernières 5 minutes
+      tasks = await pgPythonTasksRepository.getRecentlyActivatedPendingTasks(
+        user_id,
+        platform,
+        sinceIso,
+        'test-dm'
+      )
+    } catch (error) {
       console.error('❌ [activate-waiting-tasks] DB error:', error);
       return NextResponse.json({ error: 'Database error' }, { status: 500 });
     }
