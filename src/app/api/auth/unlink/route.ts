@@ -1,11 +1,12 @@
  import { NextResponse } from "next/server"
- import logger from '@/lib/log_utils'
- import { withValidation } from "@/lib/validation/middleware"
- import { z } from "zod"
- import { authClient } from "@/lib/supabase"
+import logger from '@/lib/log_utils'
+import { withValidation } from "@/lib/validation/middleware"
+import { z } from "zod"
+import { pgUserRepository } from '@/lib/repositories/auth/pg-user-repository'
+import { pgAccountRepository } from '@/lib/repositories/auth/pg-account-repository'
 
- // Classe d'erreur pour la déliaison de compte (interne au module)
- class UnlinkError extends Error {
+// Classe d'erreur pour la déliaison de compte (interne au module)
+class UnlinkError extends Error {
   constructor(
     message: string,
     public code: 'LAST_ACCOUNT' | 'NOT_FOUND' | 'NOT_LINKED' | 'DATABASE_ERROR',
@@ -38,20 +39,15 @@ async function unlinkHandler(_req: Request, data: UnlinkRequest, session: any) {
     const { provider } = data
     
     // Récupérer l'utilisateur pour vérifier les comptes liés
-    const { data: user, error: userError } = await authClient
-      .from('users')
-      .select('*')
-      .eq('id', userId)
-      .single()
-    
-    if (userError || !user) {
-      logger.logError('API', 'POST /api/auth/unlink', 'Error fetching user', userId, { provider, error: userError })
+    const user = await pgUserRepository.getUser(userId)
+    if (!user) {
+      logger.logError('API', 'POST /api/auth/unlink', 'Error fetching user', userId, { provider })
       throw new UnlinkError("User not found", "NOT_FOUND", 404)
     }
     
-    // Vérifier si le compte est lié
-    const providerIdField = `${provider}_id`
-    if (!user[providerIdField]) {
+    // Vérifier si le compte est lié (type-safe)
+    const providerIdPresent = provider === 'twitter' ? user.twitter_id : provider === 'bluesky' ? user.bluesky_id : user.mastodon_id
+    if (!providerIdPresent) {
       logger.logWarning('API', 'POST /api/auth/unlink', 'Account not found for provider', userId, { provider })
       return NextResponse.json({ 
         error: 'Account not found', 
@@ -60,9 +56,11 @@ async function unlinkHandler(_req: Request, data: UnlinkRequest, session: any) {
     }
     
     // Vérifier si c'est le dernier compte lié
-    const linkedProviders = ['twitter_id', 'bluesky_id', 'mastodon_id']
-      .filter(field => user[field])
-      .length
+    const linkedProviders = [
+      user.twitter_id,
+      user.bluesky_id,
+      user.mastodon_id,
+    ].filter(Boolean).length
     
     if (linkedProviders <= 1) {
       logger.logWarning('API', 'POST /api/auth/unlink', 'Cannot unlink last account', userId, { provider })
@@ -72,16 +70,16 @@ async function unlinkHandler(_req: Request, data: UnlinkRequest, session: any) {
     // Vérifier si c'est une instance Piaille pour Mastodon
     const isPiaille = provider === 'mastodon' && user.mastodon_instance === 'piaille.fr'
     
-    // Supprimer le compte de la table accounts
-    const { error: deleteError } = await authClient
-      .from('accounts')
-      .delete()
-      .eq('user_id', userId)
-      .eq('provider', isPiaille ? 'piaille' : provider)
-    
-    if (deleteError) {
-      logger.logError('API', 'POST /api/auth/unlink', 'Error deleting account', userId, { provider, error: deleteError })
-      // On continue même en cas d'erreur car le compte pourrait ne pas exister dans la table accounts
+    // Supprimer le compte de la table accounts (via repo)
+    try {
+      const providerForAccounts = isPiaille ? 'piaille' : provider
+      const account = await pgAccountRepository.getProviderAccount(providerForAccounts, userId)
+      if (account) {
+        await pgAccountRepository.deleteAccount(providerForAccounts, account.provider_account_id)
+      }
+    } catch (deleteErr) {
+      logger.logError('API', 'POST /api/auth/unlink', 'Error deleting account', userId, { provider, error: deleteErr })
+      // Continuer même en cas d'erreur car le compte peut ne pas exister dans accounts
     }
     
     // Mettre à jour les champs dans la table users
@@ -96,14 +94,11 @@ async function unlinkHandler(_req: Request, data: UnlinkRequest, session: any) {
       updates.mastodon_instance = null
     }
     
-    // Mettre à jour l'utilisateur
-    const { error: updateError } = await authClient
-      .from('users')
-      .update(updates)
-      .eq('id', userId)
-    
-    if (updateError) {
-      logger.logError('API', 'POST /api/auth/unlink', 'Error updating user', userId, { provider, error: updateError })
+    // Mettre à jour l'utilisateur (via repo)
+    try {
+      await pgUserRepository.updateUser(userId, updates)
+    } catch (updateErr) {
+      logger.logError('API', 'POST /api/auth/unlink', 'Error updating user', userId, { provider, error: updateErr })
       throw new UnlinkError("Database error", "DATABASE_ERROR", 500)
     }
     
