@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
 import { redis } from '@/lib/redis';
 import { withInternalValidation } from '@/lib/validation/internal-middleware';
 import { z } from 'zod';
+import { pgPythonTasksRepository } from '@/lib/repositories/public/pg-python-tasks-repository'
 
 // Schéma vide pour les requêtes GET sans body
 const EmptySchema = z.object({});
@@ -26,14 +26,10 @@ async function handleSyncRedisTasks(
     const queueKey = `consent_tasks:${today}`;
     
     // 1. Récupérer toutes les tâches pending/waiting du jour
-    const { data: tasks, error } = await supabase
-      .from('python_tasks')
-      .select('id, user_id, task_type, platform, payload, created_at, status')
-      .in('status', ['pending', 'waiting'])
-      .gte('created_at', `${today}T00:00:00Z`)
-      .lt('created_at', `${new Date(Date.now() + 24*60*60*1000).toISOString().split('T')[0]}T00:00:00Z`);
-    
-    if (error) {
+    let tasks
+    try {
+      tasks = await pgPythonTasksRepository.getTasksForDayStatuses(['pending', 'waiting'], today)
+    } catch (error) {
       console.error('❌ [sync-redis-tasks] DB error:', error);
       return NextResponse.json({ error: 'Database error' }, { status: 500 });
     }

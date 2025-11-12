@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
 import { redis } from '@/lib/redis';
 import logger from '@/lib/log_utils';
 import { withInternalValidation } from '@/lib/validation/internal-middleware';
 import { z } from 'zod';
+import { pgMastodonInstanceRepository } from '@/lib/repositories/auth/pg-mastodon-instance-repository'
 
 // Schéma vide pour les requêtes GET sans body
 const EmptySchema = z.object({});
@@ -17,20 +17,9 @@ async function handleRefreshMastodonCache(
       context: 'Mastodon cache refresh triggered via GET request'
     });
 
-    // Récupérer les instances depuis la DB
-    const { data: instances, error } = await supabase
-      .from('mastodon_instances')
-      .select('instance')
-      .order('instance');
-
-    if (error) {
-      logger.logError('API', 'GET /api/internal/refresh-mastodon-cache', error, 'system', {
-        context: 'Database error while fetching instances for cache refresh'
-      });
-      return NextResponse.json({ error: 'Failed to fetch instances' }, { status: 500 });
-    }
-
-    const instancesList = instances?.map(row => row.instance) || [];
+    // Récupérer les instances depuis la DB (repository)
+    const instances = await pgMastodonInstanceRepository.getAllInstances()
+    const instancesList = instances.map(row => row.instance)
 
     // Mettre à jour Redis sans TTL (cache permanent, invalidé uniquement par trigger)
     await redis.set('mastodon:instances', JSON.stringify(instancesList));
