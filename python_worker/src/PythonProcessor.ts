@@ -271,7 +271,7 @@ async function getUnfollowedStatsFromRedis(userId: string): Promise<{ bluesky: n
     // 1. Récupérer les sources_targets non suivis
     const { data: sourcesTargets, error } = await supabase
       .from('sources_targets')
-      .select('target_twitter_id, has_follow_bluesky, has_follow_mastodon, dismissed')
+      .select('node_id, has_follow_bluesky, has_follow_mastodon, dismissed')
       .eq('source_id', userId)
       .or('has_follow_bluesky.eq.false,has_follow_mastodon.eq.false')
       .eq('dismissed', false); // Seulement les non-ignorés
@@ -289,7 +289,7 @@ async function getUnfollowedStatsFromRedis(userId: string): Promise<{ bluesky: n
     console.log("data retrieved sources_targets retrieved from db :", sourcesTargets.length);
 
     // 2. Récupérer les mappings depuis Redis
-    const twitterIds = sourcesTargets.map(st => st.target_twitter_id);
+    const twitterIds = sourcesTargets.map(st => st.node_id);
 
     console.log("twitterIds", twitterIds.length)
     const mappings = await redis.batchGetSocialMappings(twitterIds);
@@ -301,10 +301,10 @@ async function getUnfollowedStatsFromRedis(userId: string): Promise<{ bluesky: n
     let stats = { bluesky: 0, mastodon: 0 };
 
     for (const sourceTarget of sourcesTargets) {
-      const mapping = mappings.get(sourceTarget.target_twitter_id);
+      const mapping = mappings.get(sourceTarget.node_id);
       
       if (mapping) {
-        console.log("we have a mapping for", sourceTarget.target_twitter_id)
+        console.log("we have a mapping for", sourceTarget.node_id)
         console.log(sourceTarget)
         console.log(mapping)
         // Compter Bluesky si correspondance existe et pas encore suivi
@@ -384,10 +384,10 @@ export async function processPythonTask(
       
       result = await executeDm(task, workerId, testMessage);
       
-      // Si succès, programmer manuellement la tâche newsletter
+      // La newsletter sera automatiquement créée par le trigger PostgreSQL
+      // handle_completed_task quand le statut passe à 'completed'
       if (result.success) {
-        await scheduleNewsletterTask(task);
-        console.log(`✅ [PythonProcessor] Test DM successful, newsletter scheduled for user ${task.user_id}`);
+        console.log(`✅ [PythonProcessor] Test DM successful, newsletter will be scheduled by DB trigger for user ${task.user_id}`);
       }
       
     } else if (task.task_type === 'send-reco-newsletter') {

@@ -101,7 +101,89 @@ function loadAllMessages(): AllMessages {
 const ALL_MESSAGES = loadAllMessages();
 
 /**
- * Consomme une tâche depuis Redis (priorité) ou PostgreSQL (fallback)
+ * Synchronise les tâches pending depuis PostgreSQL vers Redis
+ * Récupère toutes les tâches avec status='pending' et scheduled_for <= NOW()
+ */
+async function syncPendingTasksToRedis(): Promise<number> {
+  try {
+    console.log('🔄 [Sync] Syncing pending tasks from PostgreSQL to Redis...');
+    
+    // Récupérer toutes les tâches pending dont le scheduled_for est passé ou null
+    const { data: tasks, error } = await supabase
+      .from('python_tasks')
+      .select('*')
+      .eq('status', 'pending')
+      .or('scheduled_for.is.null,scheduled_for.lte.' + new Date().toISOString());
+
+    if (error) {
+      console.error(`❌ [Sync] Failed to fetch pending tasks:`, error.message);
+      return 0;
+    }
+
+    if (!tasks || tasks.length === 0) {
+      console.log('✅ [Sync] No pending tasks to sync');
+      return 0;
+    }
+
+    console.log(`📥 [Sync] Found ${tasks.length} pending tasks to sync`);
+    
+    let syncedCount = 0;
+    const today = new Date().toISOString().split('T')[0];
+    const queueKey = `consent_tasks:${today}`;
+
+    for (const task of tasks) {
+      try {
+        // Vérifier si la tâche existe déjà dans Redis pour éviter les doublons
+        const allKeys = await redis.keys('consent_tasks:*');
+        let alreadyInRedis = false;
+        
+        for (const key of allKeys) {
+          const queueItems = await redis.lrange(key, 0, -1);
+          for (const item of queueItems) {
+            const taskData = JSON.parse(item);
+            if (taskData.id === task.id) {
+              alreadyInRedis = true;
+              break;
+            }
+          }
+          if (alreadyInRedis) break;
+        }
+
+        if (alreadyInRedis) {
+          console.log(`⏭️  [Sync] Task ${task.id} already in Redis, skipping`);
+          continue;
+        }
+
+        // Ajouter la tâche à Redis
+        const redisTask = {
+          id: task.id,
+          user_id: task.user_id,
+          task_type: task.task_type,
+          platform: task.platform,
+          handle: task.payload.handle,
+          created_at: task.created_at
+        };
+
+        await redis.lpush(queueKey, JSON.stringify(redisTask));
+        syncedCount++;
+        console.log(`✅ [Sync] Added task ${task.id} (${task.task_type}) to Redis queue ${queueKey}`);
+        
+      } catch (taskError) {
+        console.error(`❌ [Sync] Failed to sync task ${task.id}:`, taskError instanceof Error ? taskError.message : String(taskError));
+      }
+    }
+
+    console.log(`✅ [Sync] Successfully synced ${syncedCount}/${tasks.length} tasks to Redis`);
+    return syncedCount;
+    
+  } catch (error) {
+    console.error('❌ [Sync] Failed to sync pending tasks:', error instanceof Error ? error.message : String(error));
+    return 0;
+  }
+}
+
+/**
+ * Consomme une tâche depuis Redis
  */
 async function consumeTask(workerId: string): Promise<PythonTask | null> {
   try {
@@ -158,33 +240,12 @@ async function consumeTask(workerId: string): Promise<PythonTask | null> {
       }
     }
     
-    console.log(`📥 [Worker ${workerId}] No Redis task found, checking PostgreSQL fallback`);
+    // Aucune tâche trouvée dans Redis
+    return null;
     
   } catch (redisError) {
-    // Si Redis complètement down, utiliser seulement PostgreSQL
-    console.log(`❌ [Worker ${workerId}] Redis completely down:`, redisError instanceof Error ? redisError.message : String(redisError));
-  }
-
-  // 2. Fallback PostgreSQL - récupérer une tâche pending
-  try {
-    const { data: tasks, error: dbError } = await supabase
-      .rpc('claim_next_pending_task', { 
-        worker_id_param: workerId 
-      });
-
-    if (dbError) {
-      console.log(`❌ [Worker ${workerId}] PostgreSQL RPC error:`, dbError.message);
-      return null;
-    }
-
-    if (tasks && tasks.length > 0) {
-      console.log(`📥 [Worker ${workerId}] Got PostgreSQL task: ${tasks[0].id} (${tasks[0].task_type})`);
-      return tasks[0];
-    }
-    
-    return null;
-  } catch (dbError) {
-    console.log(`❌ [Worker ${workerId}] PostgreSQL fallback failed:`, dbError instanceof Error ? dbError.message : String(dbError));
+    // Si Redis complètement down, on ne peut pas traiter de tâches
+    console.log(`❌ [Worker ${workerId}] Redis error:`, redisError instanceof Error ? redisError.message : String(redisError));
     return null;
   }
 }
@@ -287,15 +348,30 @@ async function sleep(ms: number): Promise<void> {
  * Worker principal - consommation réactive
  */
 async function startWorker() {
-  console.log(`🚀 [Python Worker ${WORKER_CONFIG.id}] Started (Redis-first architecture)`);
+  console.log(`🚀 [Python Worker ${WORKER_CONFIG.id}] Started (Redis-only architecture)`);
   
   // Test de santé Redis au démarrage
   const redisHealthy = await redis.healthCheck();
   console.log(`🔍 [Worker ${WORKER_CONFIG.id}] Redis health: ${redisHealthy ? '✅ OK' : '❌ DOWN'}`);
   
+  // Synchronisation initiale des tâches pending depuis PostgreSQL
+  await syncPendingTasksToRedis();
+  
+  // Programmer la synchronisation quotidienne (toutes les 24 heures)
+  const SYNC_INTERVAL = 24 * 60 * 60 * 1000; // 24 heures en millisecondes
+  let lastSyncTime = Date.now();
+  
   while (true) {
     try {
-      // Consommer une tâche (Redis → PostgreSQL fallback)
+      // Vérifier si une synchronisation quotidienne est nécessaire
+      const timeSinceLastSync = Date.now() - lastSyncTime;
+      if (timeSinceLastSync >= SYNC_INTERVAL) {
+        console.log('⏰ [Worker] 24 hours elapsed, triggering daily sync...');
+        await syncPendingTasksToRedis();
+        lastSyncTime = Date.now();
+      }
+      
+      // Consommer une tâche depuis Redis
       const task = await consumeTask(WORKER_CONFIG.id);
       
       if (task) {
