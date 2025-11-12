@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase'
+import { pgImportJobsRepository } from '@/lib/repositories/public/pg-import-jobs-repository'
 import logger from '@/lib/log_utils';
 import { withValidation } from "@/lib/validation/middleware"
 import { z } from "zod"
@@ -103,15 +103,12 @@ async function getImportStatus(request: NextRequest, _data: z.infer<typeof Empty
     }
 
     // 2. Fallback vers DB si Redis indisponible
-    const { data: job, error: jobError } = await supabase
-      .from('import_jobs')
-      .select('*')
-      .eq('id', jobId)
-      .eq('user_id', session.user.id)
-      .single();
-
-    if (jobError) {
-      logger.logError('API', 'GET /api/import-status/[jobId]', new Error(jobError.message), session.user.id, { 
+    let job: any | null = null;
+    try {
+      job = await pgImportJobsRepository.getJobForUser(jobId as string, session.user.id)
+    } catch (dbError) {
+      const err = dbError instanceof Error ? dbError : new Error(String(dbError));
+      logger.logError('API', 'GET /api/import-status/[jobId]', err, session.user.id, {
         jobId,
         context: 'Database query error'
       });
