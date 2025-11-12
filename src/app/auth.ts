@@ -2,20 +2,24 @@ import NextAuth from "next-auth"
 import type { Profile } from "next-auth"
 import { authConfig } from "./auth.config"
 import type { TwitterData, MastodonProfile, BlueskyProfile } from "@/lib/supabase-adapter"
-import { supabase } from "@/lib/supabase"
 import logger from '@/lib/log_utils'
+import { pgMastodonInstanceRepository } from '@/lib/repositories/auth/pg-mastodon-instance-repository'
 
 export type { TwitterData as TwitterProfile } from "@/lib/supabase-adapter"
 export type { MastodonProfile }
 export type { BlueskyProfile }
 
 
-async function createMastodonApp(instance: string){
+type MastodonAppCreds = { instance: string; client_id: string; client_secret: string }
+
+async function createMastodonApp(instance: string): Promise<MastodonAppCreds | null>{
   logger.logInfo('Auth', 'createMastodonApp', `Vérification de l'instance ${instance}`, undefined, { instance });
   
-  const { data: instances } = await supabase.from("mastodon_instances").select();
   const lcInstance = instance.toLowerCase()
-  let cachedAppData = instances?.find(r => r.instance.toLowerCase() == lcInstance);
+  const existing = await pgMastodonInstanceRepository.getInstance(lcInstance)
+  let cachedAppData: MastodonAppCreds | null = existing 
+    ? { instance: existing.instance, client_id: existing.client_id, client_secret: existing.client_secret }
+    : null
   
   if (!cachedAppData) {
     logger.logInfo('Auth', 'createMastodonApp', `Nouvelle instance Mastodon détectée: ${lcInstance}`, undefined, { 
@@ -71,22 +75,24 @@ async function createMastodonApp(instance: string){
         clientId: json.client_id 
       });
       
-      await supabase.from("mastodon_instances").insert(cachedAppData)
-        .then(({ error }) => {
-          if (error) {
-            logger.logError('Auth', 'createMastodonApp', 
-              `Erreur lors de l'enregistrement des informations d'OAuth dans Supabase`,
-              undefined, 
-              { instance: lcInstance, error: error.message, code: error.code }
-            );
-          } else {
-            logger.logInfo('Auth', 'createMastodonApp', 
-              `Instance ${lcInstance} enregistrée avec succès dans Supabase`, 
-              undefined, 
-              { instance: lcInstance }
-            );
-          }
-        });
+      try {
+        await pgMastodonInstanceRepository.createInstance({
+          instance: lcInstance,
+          client_id: json.client_id,
+          client_secret: json.client_secret,
+        })
+        logger.logInfo('Auth', 'createMastodonApp', 
+          `Instance ${lcInstance} enregistrée avec succès`, 
+          undefined, 
+          { instance: lcInstance }
+        );
+      } catch (error: any) {
+        logger.logError('Auth', 'createMastodonApp', 
+          `Erreur lors de l'enregistrement des informations d'OAuth`,
+          undefined, 
+          { instance: lcInstance, error: error?.message }
+        );
+      }
     } catch (error) {
       logger.logError('Auth', 'createMastodonApp', 
         error instanceof Error ? error : new Error('Unknown error during Mastodon OAuth creation'), 
@@ -118,7 +124,7 @@ export const { auth, signIn, signOut, handlers } = NextAuth(async req => {
     const res = await createMastodonApp(instance);
     const mastodonProvider = authConfig.providers.find(prov => prov.id === "mastodon");
     
-    if (mastodonProvider) {     
+    if (mastodonProvider && res) {     
       const issuer = `https://${instance}`;
       // Narrow to an OAuth-like provider before mutation to satisfy TypeScript
       const oauthProv = (mastodonProvider as unknown) as {
@@ -152,7 +158,7 @@ export const { auth, signIn, signOut, handlers } = NextAuth(async req => {
       );
     } else {
       logger.logError('Auth', 'mastodonSignIn', 
-        'Provider Mastodon non trouvé dans la configuration',
+        'Provider Mastodon non trouvé dans la configuration ou credentials introuvables',
         undefined, 
         { instance }
       );
