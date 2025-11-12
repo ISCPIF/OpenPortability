@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server"
-import { auth } from "@/app/auth"
-import { supabase, authClient } from '@/lib/supabase'
 import { redis } from '@/lib/redis'
 import logger from '@/lib/log_utils'
 import { withValidation } from "@/lib/validation/middleware"
 import { z } from "zod"
+import { queryPublic } from '@/lib/database'
+import { pgUserRepository } from '@/lib/repositories/auth/pg-user-repository'
 
 // Schéma vide car cette route ne nécessite pas de body
 const EmptySchema = z.object({}).strict()
@@ -24,27 +24,20 @@ async function deleteHandler(_request: Request, _validatedData: {}, session: any
     // 1. Si l'utilisateur a has_onboarded = true
     if (session.user.has_onboarded) {
       logger.logInfo('API', 'DELETE /api/delete', 'User has onboarded, cleaning up public schema data', userId)
-
-      const { error: sourceError } = await supabase
-        .from('sources')
-        .delete()
-        .eq('id', userId)
-
-      if (sourceError) {
-        logger.logError('API', 'DELETE /api/delete', new Error(sourceError.message), userId, { context: 'Deleting source' })
-        throw new Error(sourceError.message)
+      try {
+        await queryPublic(`DELETE FROM sources WHERE id = $1`, [userId])
+      } catch (e: any) {
+        logger.logError('API', 'DELETE /api/delete', e instanceof Error ? e : new Error(String(e)), userId, { context: 'Deleting source' })
+        throw e
       }
       logger.logInfo('API', 'DELETE /api/delete', 'Successfully deleted source', userId)
 
       // Mettre à jour has_onboarded à false dans next-auth
-      const { error: hasBoardError } = await authClient
-        .from('users')
-        .update({ has_onboarded: false })
-        .eq('id', session.user.id);
-
-      if (hasBoardError) {
-        logger.logError('API', 'DELETE /api/delete', new Error(hasBoardError.message), userId, { context: 'Updating has_onboarded' })
-        throw new Error(hasBoardError.message)
+      try {
+        await pgUserRepository.updateUser(session.user.id, { has_onboarded: false })
+      } catch (e: any) {
+        logger.logError('API', 'DELETE /api/delete', e instanceof Error ? e : new Error(String(e)), userId, { context: 'Updating has_onboarded' })
+        throw e
       }
       logger.logInfo('API', 'DELETE /api/delete', 'Successfully updated has_onboarded to false', userId)
     }
@@ -70,14 +63,11 @@ async function deleteHandler(_request: Request, _validatedData: {}, session: any
     }
 
     // 3. Supprimer l'utilisateur de next-auth
-    const { error: deleteError } = await authClient
-      .from('users')
-      .delete()
-      .eq('id', userId)
-
-    if (deleteError) {
-      logger.logError('API', 'DELETE /api/delete', new Error(deleteError.message), userId, { context: 'Deleting user' })
-      throw new Error(deleteError.message)
+    try {
+      await pgUserRepository.deleteUser(userId)
+    } catch (e: any) {
+      logger.logError('API', 'DELETE /api/delete', e instanceof Error ? e : new Error(String(e)), userId, { context: 'Deleting user' })
+      throw e
     }
     logger.logInfo('API', 'DELETE /api/delete', 'Successfully deleted user', userId)
     

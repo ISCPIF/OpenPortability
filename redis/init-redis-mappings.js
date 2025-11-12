@@ -6,7 +6,7 @@
  */
 
 const { createClient: createRedisClient } = require('redis');
-const { createClient: createSupabaseClient } = require('@supabase/supabase-js');
+const { Pool } = require('pg');
 
 // Configuration Redis
 const REDIS_CONFIG = {
@@ -20,33 +20,17 @@ const REDIS_CONFIG = {
   database: parseInt(process.env.REDIS_DB || '0')
 };
 
-// Configuration Supabase
-if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
-  throw new Error('Missing env.NEXT_PUBLIC_SUPABASE_URL');
-}
-
-if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-  throw new Error('Missing env.SUPABASE_SERVICE_ROLE_KEY');
-}
-
-const supabase = createSupabaseClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY,
-  {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false
-    },
-    global: {
-      fetch: (url, options) => {
-        return fetch(url, {
-          ...options,
-          signal: AbortSignal.timeout(30000), // 30 second timeout
-        });
-      },
-    }
-  }
-);
+// Configuration PostgreSQL via PgBouncer
+const pgPool = new Pool({
+  user: process.env.POSTGRES_USER || 'postgres',
+  password: process.env.POSTGRES_PASSWORD || 'mysecretpassword',
+  host: process.env.PGBOUNCER_HOST || 'pgbouncer',  // ← utilise le hostname
+  port: parseInt(process.env.PGBOUNCER_PORT || '6432'),
+  database: process.env.POSTGRES_DB || 'nexus',
+  max: 10,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 30000,
+});
 
 async function waitForRedis(redisClient, maxRetries = 30, delay = 2000) {
   console.log('🔄 Waiting for Redis to be ready...');
@@ -65,27 +49,24 @@ async function waitForRedis(redisClient, maxRetries = 30, delay = 2000) {
   throw new Error(`Redis not available after ${maxRetries} attempts`);
 }
 
-async function waitForSupabase(supabase, maxRetries = 10, delay = 2000) {
-  console.log('🔄 Waiting for Supabase to be ready...');
+async function waitForPostgres(pgPool, maxRetries = 10, delay = 2000) {
+  console.log('🔄 Waiting for PostgreSQL to be ready...');
   
   for (let i = 0; i < maxRetries; i++) {
     try {
-      // Simple test with nodes table - just check if we can access it
-      const { data, error } = await supabase.from('nodes').select('twitter_id').limit(1);
-      if (!error) {
-        console.log('✅ Supabase is ready!');
-        return true;
-      }
-      console.log('Supabase error:', error);
-      throw error;
+      const client = await pgPool.connect();
+      await client.query('SELECT 1');
+      client.release();
+      console.log('✅ PostgreSQL is ready!');
+      return true;
     } catch (error) {
-      console.log(`⏳ Supabase not ready yet (attempt ${i + 1}/${maxRetries}), retrying in ${delay/1000}s...`);
+      console.log(`⏳ PostgreSQL not ready yet (attempt ${i + 1}/${maxRetries}), retrying in ${delay/1000}s...`);
       console.log('Error details:', error.message);
       await new Promise(resolve => setTimeout(resolve, delay));
     }
   }
   
-  throw new Error(`Supabase not available after ${maxRetries} attempts`);
+  throw new Error(`PostgreSQL not available after ${maxRetries} attempts`);
 }
 
 async function loadInitialMappingsToRedis() {
@@ -100,8 +81,8 @@ async function loadInitialMappingsToRedis() {
     await redisClient.connect();
     await waitForRedis(redisClient);
 
-    // Vérification Supabase
-    await waitForSupabase(supabase);
+    // Vérification PostgreSQL
+    await waitForPostgres(pgPool);
 
     console.log('📊 Loading Bluesky mappings from twitter_bluesky_users...');
     
@@ -112,24 +93,23 @@ async function loadInitialMappingsToRedis() {
     let lastTwitterId = null; // keyset pagination cursor
 
     while (true) {
-      let blueskyQuery = supabase
-        .from('twitter_bluesky_users')
-        .select('twitter_id, twitter_id::text, bluesky_username, bluesky_id')
-        .not('twitter_id', 'is', null)
-        .not('bluesky_username', 'is', null)
-        .not('bluesky_id', 'is', null)
-        .order('twitter_id', { ascending: true })
-        .limit(pageSize);
-
-      if (lastTwitterId !== null) {
-        blueskyQuery = blueskyQuery.gt('twitter_id', lastTwitterId);
-      }
-
-      const { data: blueskyUsers, error: blueskyError } = await blueskyQuery;
+      let query = `
+        SELECT twitter_id::text, bluesky_username, bluesky_id
+        FROM twitter_bluesky_users
+        WHERE twitter_id IS NOT NULL
+          AND bluesky_username IS NOT NULL
+          AND bluesky_id IS NOT NULL
+      `;
       
-      if (blueskyError) {
-        throw new Error(`Failed to fetch Bluesky users: ${blueskyError.message}`);
+      if (lastTwitterId !== null) {
+        query += ` AND twitter_id > $1`;
       }
+      
+      query += ` ORDER BY twitter_id ASC LIMIT $${lastTwitterId !== null ? '2' : '1'}`;
+      
+      const params = lastTwitterId !== null ? [lastTwitterId, pageSize] : [pageSize];
+      const result = await pgPool.query(query, params);
+      const blueskyUsers = result.rows;
       
       if (!blueskyUsers || blueskyUsers.length === 0) {
         break;
@@ -139,9 +119,8 @@ async function loadInitialMappingsToRedis() {
       const blueskyPipeline = redisClient.multi();
       
       for (const user of blueskyUsers) {
-        const idText = user.twitter_id_text ?? (user.twitter_id != null ? String(user.twitter_id) : null);
-        if (idText && user.bluesky_username && user.bluesky_id) {
-          const key = `twitter_to_bluesky:${idText}`;
+        if (user.twitter_id && user.bluesky_username && user.bluesky_id) {
+          const key = `twitter_to_bluesky:${user.twitter_id}`;
           // Store as JSON to mirror Mastodon format
           const value = JSON.stringify({
             username: user.bluesky_username,
@@ -170,21 +149,27 @@ async function loadInitialMappingsToRedis() {
     // ÉTAPE 2: Charger les mappings Mastodon depuis twitter_mastodon_users
     let mastodonTotal = 0;
     let mastodonPage = 0;
+    let lastMastodonTwitterId = null;
 
     while (true) {
-      const { data: mastodonUsers, error: mastodonError } = await supabase
-        .from('twitter_mastodon_users')
-        .select('twitter_id::text, mastodon_id, mastodon_username, mastodon_instance')
-        .not('twitter_id', 'is', null)
-        .not('mastodon_id', 'is', null)
-        .not('mastodon_username', 'is', null)
-        .not('mastodon_instance', 'is', null)
-        .order('twitter_id')
-        .range(mastodonPage * pageSize, (mastodonPage + 1) * pageSize - 1);
+      let query = `
+        SELECT twitter_id::text, mastodon_id, mastodon_username, mastodon_instance
+        FROM twitter_mastodon_users
+        WHERE twitter_id IS NOT NULL
+          AND mastodon_id IS NOT NULL
+          AND mastodon_username IS NOT NULL
+          AND mastodon_instance IS NOT NULL
+      `;
       
-      if (mastodonError) {
-        throw new Error(`Failed to fetch Mastodon users: ${mastodonError.message}`);
+      if (lastMastodonTwitterId !== null) {
+        query += ` AND twitter_id > $1`;
       }
+      
+      query += ` ORDER BY twitter_id ASC LIMIT $${lastMastodonTwitterId !== null ? '2' : '1'}`;
+      
+      const params = lastMastodonTwitterId !== null ? [lastMastodonTwitterId, pageSize] : [pageSize];
+      const result = await pgPool.query(query, params);
+      const mastodonUsers = result.rows;
       
       if (!mastodonUsers || mastodonUsers.length === 0) {
         break;
@@ -208,6 +193,7 @@ async function loadInitialMappingsToRedis() {
       await mastodonPipeline.exec();
       mastodonTotal += mastodonUsers.length;
       mastodonPage++;
+      lastMastodonTwitterId = mastodonUsers[mastodonUsers.length - 1].twitter_id; // advance cursor
       
       console.log(`✅ Loaded Mastodon page ${mastodonPage}: ${mastodonUsers.length} users (total: ${mastodonTotal})`);
       
@@ -230,6 +216,15 @@ async function loadInitialMappingsToRedis() {
         console.log('✅ Redis connection closed');
       } catch (error) {
         console.error('❌ Error closing Redis connection:', error);
+      }
+    }
+    
+    if (pgPool) {
+      try {
+        await pgPool.end();
+        console.log('✅ PostgreSQL connection pool closed');
+      } catch (error) {
+        console.error('❌ Error closing PostgreSQL connection pool:', error);
       }
     }
   }

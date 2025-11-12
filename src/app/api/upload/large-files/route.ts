@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase'
 import { writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
 import logger from '@/lib/log_utils';
@@ -7,6 +6,7 @@ import { withValidation } from '@/lib/validation/middleware';
 import { z } from 'zod';
 import { secureFileContentExtended, type FileContentData } from '@/lib/security-utils';
 import { redis } from '@/lib/redis';
+import { pgImportJobsRepository } from '@/lib/repositories/public/pg-import-jobs-repository'
 
 // Répertoire temporaire pour les uploads - doit être accessible aux workers
 const TEMP_UPLOAD_DIR = process.env.TEMP_UPLOAD_DIR || '/app/tmp';
@@ -37,24 +37,16 @@ async function largeFilesUploadHandler(request: Request, _validatedData: z.infer
     }
 
     // 2. Vérifier si l'utilisateur a déjà un job en cours
-    const { data: existingJobs, error: jobCheckError } = await supabase
-      .from('import_jobs')
-      .select('id, status')
-      .eq('user_id', user.id)
-      .in('status', ['pending', 'processing']);
-
-    if (jobCheckError) {
-      const err = jobCheckError instanceof Error ? jobCheckError : new Error(String(jobCheckError));
-      logger.logError('API', 'POST /api/upload/large-files', err, user.id, {
-        context: 'Checking existing jobs'
-      });
-      return NextResponse.json(
-        { error: 'Failed to verify existing jobs' },
-        { status: 500 }
-      );
+    let hasActive = false
+    try {
+      hasActive = await pgImportJobsRepository.hasActiveJob(user.id)
+    } catch (err) {
+      const e = err instanceof Error ? err : new Error(String(err))
+      logger.logError('API', 'POST /api/upload/large-files', e, user.id, { context: 'Checking existing jobs' })
+      return NextResponse.json({ error: 'Failed to verify existing jobs' }, { status: 500 })
     }
 
-    if (existingJobs && existingJobs.length > 0) {
+    if (hasActive) {
       logger.logError('API', 'POST /api/upload/large-files', 'User has pending or processing jobs', user.id);
       return NextResponse.json(
         { error: 'You already have a file upload in progress' },
@@ -202,28 +194,19 @@ async function largeFilesUploadHandler(request: Request, _validatedData: z.infer
     }
 
     // Créer le job pour le traitement asynchrone
-    const { data: job, error: jobError } = await supabase
-      .from('import_jobs')
-      .insert({
-        user_id: user.id,
+    let job
+    try {
+      job = await pgImportJobsRepository.createJob({
+        userId: user.id,
         status: 'pending',
-        total_items: 0,
-        created_at: new Date().toISOString(),
-        job_type: 'large_file_import',
-        file_paths: savedFilePaths
+        totalItems: 0,
+        jobType: 'large_file_import',
+        filePaths: savedFilePaths,
       })
-      .select()
-      .single();
-
-    if (jobError) {
-      const err = jobError instanceof Error ? jobError : new Error(String(jobError));
-      logger.logError('API', 'POST /api/upload/large-files', err, user.id, {
-        context: 'Creating import job'
-      });
-      return NextResponse.json(
-        { error: 'Failed to create processing job' },
-        { status: 500 }
-      );
+    } catch (err) {
+      const e = err instanceof Error ? err : new Error(String(err))
+      logger.logError('API', 'POST /api/upload/large-files', e, user.id, { context: 'Creating import job' })
+      return NextResponse.json({ error: 'Failed to create processing job' }, { status: 500 })
     }
 
     // Ajouter le job à la queue Redis pour traitement immédiat
