@@ -190,6 +190,16 @@ class RedisClientManager {
     }
   }
 
+  public async lpush(key: string, value: string): Promise<number> {
+    try {
+      await this.ensureConnection();
+      return await this.redis.lpush(key, value);
+    } catch (error: unknown) {
+      console.log(`❌ [Redis] LPUSH error on ${key}:`, error instanceof Error ? error.message : String(error));
+      return 0;
+    }
+  }
+
   public async keys(pattern: string): Promise<string[]> {
     try {
       await this.ensureConnection();
