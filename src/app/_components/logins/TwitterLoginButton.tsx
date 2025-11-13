@@ -5,6 +5,8 @@ import { motion, type Variants } from "framer-motion"
 import { FaXTwitter } from 'react-icons/fa6'
 import { plex } from "@/app/fonts/plex"
 import { useTranslations } from 'next-intl'
+import { Button } from '@/app/_components/ui/Button'
+import { useTheme } from '@/hooks/useTheme'
 
 interface TwitterLoginButtonProps {
   onLoadingChange?: (isLoading: boolean) => void;
@@ -37,6 +39,7 @@ export default function TwitterLoginButton({
   onClick
 }: TwitterLoginButtonProps) {
   const t = useTranslations('dashboardLoginButtons')
+  const { isDark } = useTheme()
 
   const handleSignIn = async () => {
     try {
@@ -71,23 +74,52 @@ export default function TwitterLoginButton({
   }
 
   return (
-    <motion.button
+    <motion.div
       variants={itemVariants}
       initial="hidden"
       animate="visible"
       exit="exit"
-      onClick={onClick ?? handleSignIn}
-      className={`flex items-center justify-center gap-2 w-full px-4 py-2 text-white 
-                  ${isSelected 
-                    ? 'bg-black ring-2 ring-white/30'
-                    : 'bg-[#282729] border border-white hover:bg-gray-600'}
-                  rounded-lg transition-colors ${plex.className} ${className}`}
-      disabled={isConnected}
+      className="w-full"
     >
-      <FaXTwitter className="w-5 h-5" />
+      <Button 
+        onClick={onClick ?? handleSignIn}
+        className="w-full px-8 py-6 tracking-widest border-2 transition-all duration-300 flex items-center justify-center gap-2"
+        style={{
+          backgroundColor: isDark ? 'transparent' : '#000000',
+          borderColor: isDark ? '#ffffff' : '#000000',
+          color: '#ffffff',
+          boxShadow: isDark 
+            ? '0 0 15px rgba(0,123,255,0.5), inset 0 0 15px rgba(0,123,255,0.1)'
+            : '0 0 15px rgba(0,0,0,0.3)',
+          fontFamily: 'monospace',
+        }}
+        onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => {
+          if (isDark) {
+            e.currentTarget.style.backgroundColor = '#ffffff';
+            e.currentTarget.style.color = '#000000';
+            e.currentTarget.style.boxShadow = '0 0 30px #007bff, inset 0 0 20px rgba(0,123,255,0.3)';
+          } else {
+            e.currentTarget.style.backgroundColor = '#1a1a1a';
+            e.currentTarget.style.boxShadow = '0 0 30px rgba(0,0,0,0.6)';
+          }
+        }}
+        onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => {
+          if (isDark) {
+            e.currentTarget.style.backgroundColor = 'transparent';
+            e.currentTarget.style.color = '#ffffff';
+            e.currentTarget.style.boxShadow = '0 0 15px rgba(0,123,255,0.5), inset 0 0 15px rgba(0,123,255,0.1)';
+          } else {
+            e.currentTarget.style.backgroundColor = '#000000';
+            e.currentTarget.style.boxShadow = '0 0 15px rgba(0,0,0,0.3)';
+          }
+        }}
+        disabled={isConnected}
+      >
+        <FaXTwitter className="w-5 h-5" />
       <span>
         {isConnected ? t('connected') : t('services.twitter')}
       </span>
-    </motion.button>
+            </Button>
+    </motion.div>
   )
 }

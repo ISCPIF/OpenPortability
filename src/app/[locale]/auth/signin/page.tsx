@@ -9,10 +9,11 @@ import { plex } from "@/app/fonts/plex"
 import Link from "next/link"
 import LoginButtons from "@/app/_components/logins/LoginButtons"
 import LoadingIndicator from "@/app/_components/layouts/LoadingIndicator"
-import LoginSea from "@/app/_components/layouts/LoginSea"
+import { ParticulesBackground } from "@/app/_components/layouts/ParticulesBackground"
 import Footer from "@/app/_components/layouts/Footer";
 import { useTranslations } from 'next-intl'
 import Header from "@/app/_components/layouts/Header"
+import { useTheme } from "@/hooks/useTheme"
 
 export default function SignIn() {
   const { data: session, status } = useSession()
@@ -23,6 +24,10 @@ export default function SignIn() {
   const params = useParams()
   const locale = params.locale as string;
   const [error, setError] = useState<string | null>(null)
+  
+  // 🎨 Utiliser le hook useTheme pour accéder aux couleurs du thème
+  // Cela retourne : theme ('dark'|'light'), colors (objet avec toutes les couleurs), isDark (boolean), mounted (boolean)
+  const { colors, isDark, mounted } = useTheme()
 
 
   useEffect(() => {
@@ -37,41 +42,46 @@ export default function SignIn() {
     setIsLoading(loading)
   }
 
+  // Éviter le flash de contenu avant le montage du hook
+  if (!mounted) {
+    return null
+  }
+
   return (
-    <div className="min-h-screen bg-[#2a39a9] w-full">
+    <div 
+      className="flex flex-col min-h-screen"
+      // 🎨 Appliquer la couleur de fond du thème
+      style={{ backgroundColor: colors.background }}
+    >
+      {/* Header */}
       <Header />
-      <div className="w-full">
-        <div className="flex flex-col text-center text-[#E2E4DF]">
-          {/* Sea background that takes full width */}
-          <LoginSea />
-          
-          {/* Login buttons positioned below the sea background */}
-          <div className="w-full max-w-md mx-auto px-4">
-            {(status === "loading" || isLoading) ? (
-              <div className="py-8">
-                <LoadingIndicator msg={t('loading')} />
-              </div>
-            ) : (
-              <div className="z-10">
-                <LoginButtons onLoadingChange={handleLoadingChange} />
-              </div>
-            )}
-            
-            {error && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="text-center text-sm text-red-600 mt-4"
-              >
-                {t(`errors.${error}`)}
-              </motion.div>
-            )}
-          </div>
-        </div>
-        <div className="mt-16">
-          <Footer />
-        </div>
+      
+      {/* Arrière-plan avec particules - prend l'espace restant */}
+      <div className="flex-1 overflow-hidden">
+        <ParticulesBackground />
       </div>
+      
+      {/* Contenu principal avec couleur de texte adaptée au thème */}
+      <div 
+        className="w-full max-w-md mx-auto px-4 relative z-20"
+        style={{ color: colors.text }}
+      >
+        
+        {error && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            // 🎨 Adapter la couleur d'erreur au thème
+            className="text-center text-sm mt-4"
+            style={{ color: isDark ? '#ff6b6b' : '#d32f2f' }}
+          >
+            {t(`errors.${error}`)}
+          </motion.div>
+        )}
+      </div>
+      
+      {/* Footer */}
+      <Footer />
     </div>
   )
 }
