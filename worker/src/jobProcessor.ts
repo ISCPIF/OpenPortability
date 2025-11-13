@@ -1,5 +1,6 @@
 // worker/src/jobProcessor.ts
-import { supabase } from './supabase';
+import { importJobsRepository } from './repositories/importJobsRepository';
+import { sourcesRepository } from './repositories/sourcesRepository';
 import * as dotenv from 'dotenv';
 import { readFile, unlink, rm } from 'fs/promises';
 import { join, dirname } from 'path';
@@ -128,35 +129,21 @@ async function updateJobProgress(
       following: {
         processed: processedItems.following,
         total: totalItems.following
-      }
+      },
+      total: totalItems.followers + totalItems.following,
+      processed: processedItems.followers + processedItems.following
     };
-
-    const updateData: any = {
-      total_items: totalItems.followers + totalItems.following,
-      stats: stats,
-      updated_at: new Date().toISOString()
-    };
-
-    if (status !== 'processing') {
-      updateData.status = status;
-    }
-    if (errorMessage) {
-      updateData.error_log = errorMessage;
-    }
 
     const opId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-    console.log('JobProcessor', 'updateJobProgress:request', { opId, jobId, workerId, status, hasErrorMessage: !!errorMessage, updateKeys: Object.keys(updateData) });
+    console.log('JobProcessor', 'updateJobProgress:request', { opId, jobId, workerId, status, hasErrorMessage: !!errorMessage });
 
-    const { data, error } = await supabase
-      .from('import_jobs')
-      .update(updateData)
-      .eq('id', jobId);
-
-    if (error) {
-      console.log('JobProcessor', 'updateJobProgress:response', { opId, jobId, workerId, status, dataIsNull: data == null, errorMessage: error.message });
-      throw error;
+    if (status !== 'processing') {
+      await importJobsRepository.updateJobStatus(jobId, status, stats, errorMessage);
+    } else {
+      await importJobsRepository.updateJobProgress(jobId, stats);
     }
-    console.log('JobProcessor', 'updateJobProgress:response', { opId, jobId, workerId, status, dataIsNull: data == null });
+
+    console.log('JobProcessor', 'updateJobProgress:response', { opId, jobId, workerId, status });
 
   } catch (error) {
     console.log(`[Worker ${workerId}] Error updating job progress:`, error);
@@ -247,21 +234,7 @@ async function processTwitterFile(filePath: string, workerId: string): Promise<a
 
 async function ensureSourceExists(userId: string, workerId: string) {
   try {
-    const { data: existingSource } = await supabase
-      .from('sources')
-      .select('id')
-      .eq('id', userId)
-      .single();
-
-    if (!existingSource) {
-      const { error } = await supabase
-        .from('sources')
-        .insert([{ id: userId }]);
-
-      if (error && error.code !== '23505') {
-        throw error;
-      }
-    }
+    await sourcesRepository.ensureExists(userId);
   } catch (error) {
     console.log(`[Worker ${workerId}] Error ensuring source exists:`, error);
     throw error;
@@ -654,11 +627,11 @@ export {
 export async function executePostgresCommand(sql: string, workerId: string, timeoutMs: number = 120000): Promise<{ success: boolean; error?: string }> {
   return new Promise((resolve) => {
     const env = {
-      PGHOST: process.env.POSTGRES_HOST || 'localhost',
-      PGPORT: process.env.POSTGRES_PORT || '5432',
-      PGDATABASE: process.env.POSTGRES_DB || 'postgres',
+      PGHOST: 'postgres-db',  // Nom du container PostgreSQL
+      PGPORT: '5432',  // Port interne du container (pas 6432 qui est pgbouncer)
+      PGDATABASE: 'nexus',
       PGUSER: process.env.POSTGRES_USER || 'postgres',
-      PGPASSWORD: process.env.POSTGRES_PASSWORD || 'postgres'
+      PGPASSWORD: process.env.POSTGRES_PASSWORD || 'mysecretpassword'
     };
 
     console.log(`[Worker ${workerId}] 🕒 Using adaptive timeout: ${timeoutMs}ms (${Math.round(timeoutMs/1000)}s)`);
