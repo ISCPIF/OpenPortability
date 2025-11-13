@@ -4,7 +4,7 @@ import { JobManager } from './jobManager';
 import { processJob } from './jobProcessor';
 import { redisClient } from './redisClient';
 import logger from './log_utils';
-import { authClient } from './supabase'
+import { usersRepository } from './repositories/usersRepository'
 
 // Charger les variables d'environnement au tout début
 dotenv.config();
@@ -187,35 +187,14 @@ function randomSleep(min: number, max: number): Promise<void> {
 
 // Fonction utilitaire pour retry avec backoff exponentiel
 async function updateUserOnboardedStatusWithRetry(
-  authClient: any,
   userId: string,
   maxRetries: number = 3,
   baseDelay: number = 1000
 ): Promise<{ success: boolean; error?: string }> {
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      const { error } = await authClient
-        .from('users')
-        .update({ has_onboarded: true })
-        .eq('id', userId);
-
-      if (!error) {
-        return { success: true };
-      }
-
-      // Si c'est un timeout et qu'on a encore des tentatives
-      if (error.message.includes('timeout') && attempt < maxRetries) {
-        const delay = baseDelay * Math.pow(2, attempt - 1); // Backoff exponentiel
-        console.log(`Worker updateUserOnboardedStatus ⏳ Attempt ${attempt}/${maxRetries} failed (timeout), retrying in ${delay}ms...`, {
-          userId,
-          error: error.message
-        });
-        await new Promise(resolve => setTimeout(resolve, delay));
-        continue;
-      }
-
-      // Autre erreur ou dernière tentative
-      return { success: false, error: error.message };
+      await usersRepository.updateOnboardedStatus(userId);
+      return { success: true };
 
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
@@ -323,7 +302,7 @@ async function startWorker(): Promise<void> {
             stats: jobStats
           });
 
-          const { success, error } = await updateUserOnboardedStatusWithRetry(authClient, job.user_id);
+          const { success, error } = await updateUserOnboardedStatusWithRetry(job.user_id);
           if (!success) {
             console.log('Worker', 'processJob', `❌ Failed to update user ${job.user_id} onboarded status`, {
               workerId,
