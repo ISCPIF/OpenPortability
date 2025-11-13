@@ -6,6 +6,7 @@ import { memo, useState } from 'react';
 import { Github, Mail } from 'lucide-react';
 import SupportModal from '../modales/SupportModale';
 import logoCNRS from "../../../../public/logo-cnrs-blanc.svg"
+import { useTheme } from '@/hooks/useTheme';
 
 const FooterLink = memo(({ href, children }: { href: string; children: React.ReactNode }) => (
   <a 
@@ -22,6 +23,7 @@ const Footer = memo(() => {
   const t = useTranslations('footer');
   const year = new Date().getFullYear();
   const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
+  const { colors, isDark } = useTheme();
 
   const hostedText = t.raw('hosted.text');
   const cnrsText = t.raw('hosted.cnrs');
@@ -49,7 +51,7 @@ const Footer = memo(() => {
   });
 
   return (
-    <footer className="w-full py-8 mt-auto bg-gradient-to-br bg-[#2a39a9]">
+    <footer className="w-full py-8 mt-auto" style={{ backgroundColor: isDark ? '#0a0f1f' : colors.background, color: isDark ? '#ffffff' : colors.text }}>
       <div className="container mx-auto px-4">
         <div className="flex flex-col items-center text-center gap-3">
           <div className="text-sm text-slate-300 font-space-grotesk">

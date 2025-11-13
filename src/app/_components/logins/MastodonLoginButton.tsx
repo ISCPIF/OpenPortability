@@ -5,6 +5,8 @@ import { SiMastodon } from 'react-icons/si'
 import { plex } from "@/app/fonts/plex"
 import { ChevronDown, Plus, Search, X } from 'lucide-react'
 import { useTranslations } from 'next-intl'
+import { Button } from '@/app/_components/ui/Button'
+import { useTheme } from '@/hooks/useTheme'
 
 interface MastodonLoginButtonProps {
   onLoadingChange?: (loading: boolean) => void
@@ -58,6 +60,7 @@ export default function MastodonLoginButton({
   const [searchTerm, setSearchTerm] = useState('')
   const [instanceError, setInstanceError] = useState('')
   const t = useTranslations('dashboardLoginButtons')
+  const { isDark } = useTheme()
 
 
   // useEffect(() => {
@@ -132,86 +135,144 @@ export default function MastodonLoginButton({
 
   if (!showForm) {
     return (
-      <motion.button
+      <motion.div
         variants={itemVariants}
         initial="hidden"
         animate="visible"
         exit="exit"
-        onClick={onClick}
-        className={`flex items-center justify-center gap-2 w-full px-4 py-2.5 text-white 
-                   ${isSelected
-            ? 'bg-[#4c32b5] ring-2 ring-purple-400/50'
-            : 'bg-[#563ACC] hover:bg-[#4c32b5]'} 
-                   rounded-xl transition-all duration-200 ${plex.className} ${className}
-                   hover:shadow-lg hover:shadow-purple-500/20`}
-        disabled={isConnected}
+        className="w-full"
       >
-        <SiMastodon className="w-5 h-5" />
+        <Button 
+          onClick={onClick}
+          className="w-full px-8 py-6 tracking-widest border-2 transition-all duration-300 flex items-center justify-center gap-2"
+          style={{
+            backgroundColor: isDark ? 'transparent' : '#7c3aed',
+            borderColor: '#7c3aed',
+            color: '#ffffff',
+            boxShadow: isDark 
+              ? '0 0 15px rgba(0, 123, 255, 0.3), 0 0 15px rgba(255, 0, 127, 0.3)'
+              : '0 0 15px rgba(124, 58, 237, 0.3)',
+            fontFamily: 'monospace',
+          }}
+          onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => {
+            if (isDark) {
+              e.currentTarget.style.backgroundImage = '#6d28d9';
+              e.currentTarget.style.color = '#ffffff';
+              e.currentTarget.style.boxShadow = '0 0 30px #007bff, 0 0 30px #ff007f';
+            } else {
+              e.currentTarget.style.backgroundColor = '#6d28d9';
+              e.currentTarget.style.boxShadow = '0 0 30px rgba(124, 58, 237, 0.6)';
+            }
+          }}
+          onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => {
+            if (isDark) {
+              e.currentTarget.style.backgroundImage = 'none';
+              e.currentTarget.style.color = '#ffffff';
+              e.currentTarget.style.boxShadow = '0 0 15px rgba(0, 123, 255, 0.3), 0 0 15px rgba(255, 0, 127, 0.3)';
+            } else {
+              e.currentTarget.style.backgroundColor = '#7c3aed';
+              e.currentTarget.style.boxShadow = '0 0 15px rgba(124, 58, 237, 0.3)';
+            }
+          }}
+          disabled={isConnected}
+        >
+          <SiMastodon className="w-5 h-5" />
         <span className="font-medium">
           {isConnected ? t('connected') : t('services.mastodon.title')}
-        </span>
-        <ChevronDown
-          className={`w-4 h-4 transition-transform duration-300 ${isSelected ? 'rotate-180' : ''}`}
-        />
-      </motion.button>
+        </span>        </Button>
+      </motion.div>
     )
   }
 
   return (
-    <div
-      className={`px-4 py-4 bg-white rounded-2xl shadow-xl text-sm text-gray-800`}
-    >
-      <div className="">
-        <datalist id="known_instances">
-          {instances.map((instance, index) => (
-            <option key={index} value={instance} />
-          ))}
-        </datalist>
-        <form onSubmit={() => handleSignIn(instanceText)}>
-          <div className="relative">
-            <p>
-              {t('services.mastodon.instance')}
+    <div className="w-full">
+      <datalist id="known_instances">
+        {instances.map((instance, index) => (
+          <option key={index} value={instance} />
+        ))}
+      </datalist>
+      <form onSubmit={() => handleSignIn(instanceText)} className="space-y-4">
+        <div className="relative">
+          <label className={`${plex.className} block text-sm font-medium mb-2`}
+            style={{ color: isDark ? '#ffffff' : '#000000' }}>
+            {t('services.mastodon.instance')}
+          </label>
+          <input
+            type="text"
+            list="known_instances"
+            value={instanceText}
+            onChange={(e) => {
+              setInstanceError('')
+              const instanceName = e.target.value?.trim();
+              validateInstance(instanceName)
+              setInstanceText(e.target.value)
+            }}
+            placeholder="mastodon.social"
+            className={`${plex.className} w-full px-4 py-3 border-2 rounded-lg transition-all duration-300 tracking-wide
+              ${isDark 
+                ? 'bg-transparent text-white placeholder-white-600 border-[#7c3aed]'
+                : 'bg-[#ffffff] text-black placeholder-white/60 border-[#7c3aed]'
+              }
+              ${instanceError
+                ? 'border-red-500 focus:border-red-500'
+                : isDark
+                  ? 'focus:border-[#7c3aed] focus:shadow-[0_0_15px_rgba(124,58,237,0.5)]'
+                  : 'focus:border-[#6d28d9] focus:shadow-[0_0_15px_rgba(124,58,237,0.3)]'
+              }
+              focus:outline-none`}
+            style={{
+              fontFamily: 'monospace'
+            }}
+          />
+          {instanceError && (
+            <p className={`${plex.className} mt-2 text-sm font-medium`}
+              style={{ color: '#ef4444' }}>
+              {instanceError}
             </p>
-            <input
-              type="text" list="known_instances"
-              value={instanceText}
-              onChange={(e) => {
-                setInstanceError('')
-                const instanceName = e.target.value?.trim();
-                validateInstance(instanceName)
-                setInstanceText(e.target.value)
-              }}
-              className={`w-full px-4 py-3 my-3 bg-gray-50 border rounded-xl 
-                              text-gray-800 placeholder-gray-500 
-                              focus:ring-2 focus:outline-none 
-                              ${instanceError
-                  ? 'border-red-300 focus:border-red-400 focus:ring-red-400/20'
-                  : 'border-gray-200 focus:border-purple-400 focus:ring-purple-400/20'
-                }`}
-            />
-            {instanceError && (
-              <p
-                className="mt-2 text-sm text-red-600"
-              >
-                {instanceError}
-              </p>
-            )}
-          </div>
+          )}
+        </div>
 
-          <button
-            type="submit"
-            className="w-full py-3 px-4 bg-purple-600 hover:bg-purple-700 
-                            text-white font-medium rounded-xl shadow-lg 
-                            shadow-purple-600/20 hover:shadow-purple-600/30 
-                            disabled:bg-purple-200
-                             flex items-center justify-center gap-2"
-            disabled={!instanceText || !!instanceError}
-          >
-            <SiMastodon className="w-5 h-5" />
-            {t('services.mastodon.connect')}
-          </button>
-        </form>
-      </div>
+        <button
+          type="submit"
+          className={`${plex.className} w-full py-3 px-4 border-2 rounded-lg transition-all duration-300 
+            flex items-center justify-center gap-2 tracking-widest font-medium disabled:opacity-50`}
+          style={{
+            backgroundColor: isDark ? 'transparent' : '#7c3aed',
+            borderColor: '#7c3aed',
+            color: isDark ? '#7c3aed' : '#ffffff',
+            boxShadow: isDark 
+              ? '0 0 15px rgba(124, 58, 237, 0.3)'
+              : '0 0 15px rgba(124, 58, 237, 0.3)',
+            fontFamily: 'monospace'
+          }}
+          onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => {
+            if (!instanceText || instanceError) return;
+            if (isDark) {
+              e.currentTarget.style.backgroundColor = '#7c3aed';
+              e.currentTarget.style.color = '#ffffff';
+              e.currentTarget.style.boxShadow = '0 0 30px rgba(124, 58, 237, 0.6)';
+            } else {
+              e.currentTarget.style.backgroundColor = '#6d28d9';
+              e.currentTarget.style.boxShadow = '0 0 30px rgba(124, 58, 237, 0.6)';
+            }
+          }}
+          onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => {
+            if (!instanceText || instanceError) return;
+            if (isDark) {
+              e.currentTarget.style.backgroundColor = 'transparent';
+              e.currentTarget.style.color = '#7c3aed';
+              e.currentTarget.style.boxShadow = '0 0 15px rgba(124, 58, 237, 0.3)';
+            } else {
+              e.currentTarget.style.backgroundColor = '#7c3aed';
+              e.currentTarget.style.boxShadow = '0 0 15px rgba(124, 58, 237, 0.3)';
+            }
+          }}
+          disabled={!instanceText || !!instanceError}
+        >
+          <SiMastodon className="w-5 h-5" />
+          {t('services.mastodon.connect')}
+        </button>
+      </form>
     </div>
   )
 }
