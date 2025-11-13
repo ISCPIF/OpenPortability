@@ -1,5 +1,5 @@
 // worker/src/jobManager.ts
-import { supabase } from './supabase';
+import { importJobsRepository } from './repositories/importJobsRepository';
 import { RedisJobQueue, ImportJob } from './redisQueue';
 import { redisClient } from './redisClient';
 import logger from './log_utils';
@@ -7,12 +7,7 @@ import * as dotenv from 'dotenv';
 
 dotenv.config();
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-if (!supabaseUrl || !supabaseKey) {
-  throw new Error('Missing Supabase environment variables');
-}
+// Database connection is handled by repositories
 
 
 
@@ -78,25 +73,17 @@ export class JobManager {
   }
 
   /**
-   * Synchroniser les jobs depuis Supabase vers Redis (migration initiale)
+   * Synchroniser les jobs depuis PostgreSQL vers Redis (migration initiale)
    */
   private async syncJobsFromSupabase(): Promise<void> {
     try {
-      // console.log('JobManager', 'syncJobsFromSupabase', 'Starting job synchronization from Supabase');
+      // console.log('JobManager', 'syncJobsFromSupabase', 'Starting job synchronization from PostgreSQL');
       
-      // Récupérer les jobs pending depuis Supabase
-      const { data: pendingJobs, error } = await supabase
-        .from('import_jobs')
-        .select('*')
-        .eq('status', 'pending')
-        .order('created_at', { ascending: true });
-
-      if (error) {
-        throw new Error(`Failed to fetch pending jobs: ${error.message}`);
-      }
+      // Récupérer les jobs pending depuis PostgreSQL
+      const pendingJobs = await importJobsRepository.getPendingJobs();
 
       if (!pendingJobs || pendingJobs.length === 0) {
-        // console.log('JobManager', 'syncJobsFromSupabase', 'No pending jobs found in Supabase');
+        // console.log('JobManager', 'syncJobsFromSupabase', 'No pending jobs found in PostgreSQL');
         return;
       }
 
@@ -109,7 +96,7 @@ export class JobManager {
             user_id: job.user_id,
             status: job.status,
             total_items: job.total_items || 0,
-            error_log: job.error_log,
+            error_log: job.error_log || undefined,
             file_paths: job.file_paths || [],
             job_type: job.job_type,
             stats: job.stats,
@@ -132,7 +119,7 @@ export class JobManager {
         syncedJobs: syncedCount
       });
     } catch (error) {
-      console.log('JobManager', 'syncJobsFromSupabase', 'Failed to sync jobs from Supabase', {
+      console.log('JobManager', 'syncJobsFromSupabase', 'Failed to sync jobs from PostgreSQL', {
         error: error instanceof Error ? error.message : 'Unknown error'
       });
       throw error;
@@ -160,7 +147,7 @@ export class JobManager {
   }
 
   /**
-   * Synchroniser les statuts des jobs vers Supabase
+   * Synchroniser les statuts des jobs vers PostgreSQL
    */
   private async syncJobStatusToSupabase(): Promise<void> {
     try {
@@ -205,14 +192,14 @@ export class JobManager {
         });
       }
     } catch (error) {
-      console.log('JobManager', 'syncJobStatusToSupabase', 'Failed to sync job status to Supabase', {
+      console.log('JobManager', 'syncJobStatusToSupabase', 'Failed to sync job status to PostgreSQL', {
         error: error instanceof Error ? error.message : 'Unknown error'
       });
     }
   }
 
   /**
-   * Mettre à jour un job dans Supabase
+   * Mettre à jour un job dans PostgreSQL
    */
   private async updateJobInSupabase(
     jobId: string, 
@@ -221,49 +208,26 @@ export class JobManager {
     errorLog?: string | null
   ): Promise<void> {
     try {
-      const updateData: any = {
-        status,
-        updated_at: new Date().toISOString()
-      };
-
-      if (stats) {
-        updateData.stats = stats;
-      }
-
-      if (errorLog) {
-        updateData.error_log = errorLog;
-      }
-
       const opId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
       console.log('JobManager', 'updateJobInSupabase:request', {
         opId,
         jobId,
         status,
         hasStats: !!stats,
-        hasErrorLog: !!errorLog,
-        updateKeys: Object.keys(updateData)
+        hasErrorLog: !!errorLog
       });
 
-      const { data, error } = await supabase
-        .from('import_jobs')
-        .update(updateData)
-        .eq('id', jobId);
-
-      if (error) {
-        console.log('JobManager', 'updateJobInSupabase:response', { opId, jobId, status, dataIsNull: data == null, errorMessage: error.message });
-        throw new Error(`Failed to update job ${jobId}: ${error.message}`);
-      }
+      await importJobsRepository.updateJobStatus(jobId, status, stats, errorLog);
 
       console.log('JobManager', 'updateJobInSupabase:response', {
         opId,
         jobId,
         status,
         hasStats: !!stats,
-        hasError: !!errorLog,
-        dataIsNull: data == null
+        hasError: !!errorLog
       });
     } catch (error) {
-      console.log('JobManager', 'updateJobInSupabase', 'Failed to update job in Supabase', {
+      console.log('JobManager', 'updateJobInSupabase', 'Failed to update job in PostgreSQL', {
         jobId,
         status,
         error: error instanceof Error ? error.message : 'Unknown error',
