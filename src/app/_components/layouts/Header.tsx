@@ -10,6 +10,7 @@ import { useTranslations } from 'next-intl';
 import { usePathname } from 'next/navigation';
 import { plex } from '@/app/fonts/plex';
 import { useDashboardState } from '@/hooks/useDashboardState';
+import { useTheme } from '@/hooks/useTheme';
 
 // Shared helper to ensure a single in-flight language fetch across components
 const ensureLanguagePreference = async (userId: string | undefined, currentLocale: string) => {
@@ -56,6 +57,7 @@ const UnauthenticatedHeader = () => {
   const pathname = usePathname();
   const [isLanguageOpen, setIsLanguageOpen] = useState(false);
   const currentLocale = pathname.split('/')[1];
+  const { colors, isDark } = useTheme();
 
   const languages = [
     { code: 'fr', name: 'FR'},
@@ -73,7 +75,7 @@ const UnauthenticatedHeader = () => {
   };
 
   return (
-    <header className="relative z-10">
+    <header className="relative z-10" style={{ backgroundColor: isDark ? '#0a0f1f' : colors.background, color: isDark ? '#ffffff' : colors.text }}>
       <div className="absolute inset-0 bg-transparent pointer-events-none" />
       <div className="relative">
         <div className="container mx-auto px-6 py-4">
@@ -84,13 +86,14 @@ const UnauthenticatedHeader = () => {
                   onClick={() => setIsLanguageOpen(!isLanguageOpen)}
                   className="flex items-center gap-2 p-2 rounded-lg hover:bg-black/5 transition-colors"
                 >
-                  <Globe className="w-5 h-5 text-white" aria-hidden="true" />
-                  <span className="text-lg text-white">
+                  <Globe className="w-5 h-5" style={{ color: isDark ? '#ffffff' : colors.text }} aria-hidden="true" />
+                  <span className="text-lg" style={{ color: isDark ? '#ffffff' : colors.text }}>
                     {languages.find(lang => lang.code === currentLocale)?.name}
                   </span>
                   <ChevronDown
-                    className={`w-4 h-4 text-white/60 transition-transform duration-200 
+                    className={`w-4 h-4 transition-transform duration-200 
                       ${isLanguageOpen ? 'rotate-180' : ''}`}
+                    style={{ color: isDark ? 'rgba(255, 255, 255, 0.6)' : `${colors.text}99` }}
                   />
                 </button>
                 <AnimatePresence>
@@ -101,12 +104,28 @@ const UnauthenticatedHeader = () => {
                       exit={{ opacity: 0, y: -10 }}
                       className="absolute right-0 mt-2 w-40 origin-top-right"
                     >
-                      <div className="bg-black/40 backdrop-blur-xl rounded-xl border border-black/10 shadow-xl overflow-hidden">
+                      <div 
+                        className="backdrop-blur-xl rounded-xl border shadow-xl overflow-hidden"
+                        style={{
+                          backgroundColor: isDark ? 'rgba(0, 0, 0, 0.4)' : 'rgba(255, 255, 255, 0.9)',
+                          borderColor: isDark ? 'rgba(0, 0, 0, 0.1)' : 'rgba(0, 0, 0, 0.1)'
+                        }}
+                      >
                         {languages.map((lang) => (
                           <button
                             key={lang.code}
                             onClick={() => switchLanguage(lang.code)}
-                            className="w-full px-4 py-2 text-sm text-white hover:bg-white/10 transition-colors text-left"
+                            className="w-full px-4 py-2 text-sm text-left transition-colors"
+                            style={{
+                              color: isDark ? '#ffffff' : colors.text,
+                              backgroundColor: isDark ? 'transparent' : 'transparent'
+                            }}
+                            onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => {
+                              e.currentTarget.style.backgroundColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)';
+                            }}
+                            onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => {
+                              e.currentTarget.style.backgroundColor = 'transparent';
+                            }}
                           >
                             {lang.name}
                           </button>
@@ -130,6 +149,7 @@ const AuthenticatedHeader = () => {
   const t = useTranslations('header');
   const pathname = usePathname();
   const currentLocale = pathname.split('/')[1];
+  const { colors, isDark } = useTheme();
 
   const languages = [
     { code: 'fr', name: 'FR'},
@@ -174,7 +194,7 @@ const AuthenticatedHeader = () => {
   };
 
   return (
-    <header className="relative z-10">
+    <header className="relative z-10" style={{ backgroundColor: isDark ? '#0a0f1f' : colors.background, color: isDark ? '#ffffff' : colors.text }}>
       <div className="absolute inset-0 bg-transparent pointer-events-none" />
       <div className="relative">
         <div className="container mx-auto px-6 py-4">

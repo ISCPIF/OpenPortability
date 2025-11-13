@@ -47,7 +47,7 @@ export default function LoginButtons({ onLoadingChange, onError }: LoginButtonsP
   }
 
   return (
-    <div className="w-full mx-auto bg-transparent">
+    <div className="w-full bg-transparent">
       
       <motion.div
         variants={containerVariants}
