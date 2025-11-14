@@ -9,11 +9,10 @@ import { plex } from "@/app/fonts/plex"
 import Link from "next/link"
 import LoginButtons from "@/app/_components/logins/LoginButtons"
 import LoadingIndicator from "@/app/_components/layouts/LoadingIndicator"
-import { ParticulesBackground } from "@/app/_components/layouts/ParticulesBackground"
-import Footer from "@/app/_components/layouts/Footer";
 import { useTranslations } from 'next-intl'
-import Header from "@/app/_components/layouts/Header"
 import { useTheme } from "@/hooks/useTheme"
+import logoBlanc from "@/../public/logo/logo-openport-blanc.svg"
+import logoRose from "@/../public/logos/logo-openport-rose.svg"
 
 export default function SignIn() {
   const { data: session, status } = useSession()
@@ -48,40 +47,38 @@ export default function SignIn() {
   }
 
   return (
-    <div 
-      className="flex flex-col min-h-screen"
-      // 🎨 Appliquer la couleur de fond du thème
-      style={{ backgroundColor: colors.background }}
-    >
-      {/* Header */}
-      <Header />
-      
-      {/* Arrière-plan avec particules - prend l'espace restant */}
-      <div className="flex-1 overflow-hidden">
-        <ParticulesBackground />
-      </div>
-      
-      {/* Contenu principal avec couleur de texte adaptée au thème */}
-      <div 
-        className="w-full max-w-md mx-auto px-4 relative z-20"
-        style={{ color: colors.text }}
-      >
-        
+    <div className="w-full px-4">
+      <div className="mx-auto max-w-md flex flex-col items-center text-center gap-6">
+        <Image
+          src={isDark ? logoBlanc : logoRose}
+          alt="OpenPort Logo"
+          width={306}
+          height={82}
+          className="mx-auto sm:w-[200px] md:w-[280px] flex-shrink-0"
+          priority
+        />
+
+        <p className={`${plex.className} text-lg lg:text-xl my-1 lg:my-2`}>
+          {true
+            ? t('subtitle')
+            : (session?.user?.twitter_id ? t('embark') : t('embarkOrLogin'))}
+        </p>
+
+        <div className="w-full max-w-sm">
+          <LoginButtons onLoadingChange={handleLoadingChange} />
+        </div>
+
         {error && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            // 🎨 Adapter la couleur d'erreur au thème
-            className="text-center text-sm mt-4"
+            className="text-center text-sm"
             style={{ color: isDark ? '#ff6b6b' : '#d32f2f' }}
           >
             {t(`errors.${error}`)}
           </motion.div>
         )}
       </div>
-      
-      {/* Footer */}
-      <Footer />
     </div>
   )
 }

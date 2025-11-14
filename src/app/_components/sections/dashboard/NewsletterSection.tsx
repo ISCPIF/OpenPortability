@@ -5,6 +5,7 @@ import NewsletterFirstSeen from '@/app/_components/modales/NewsLetterFirstSeen';
 import notificationIcon from '../../../../../public/newSVG/notif.svg';
 import { plex } from '@/app/fonts/plex';
 import { useTranslations } from 'next-intl';
+import { useTheme } from '@/hooks/useTheme';
 
 type NewsletterSectionProps = {
   userId: string;
@@ -26,6 +27,7 @@ export default function NewsletterSection({
   onModalOpenChange
 }: NewsletterSectionProps) {
   const t = useTranslations('dashboard');
+  const { isDark } = useTheme();
   const hasNewsletterConsent = newsletterData?.consents?.hqx_newsletter;
 
   // Ne rien afficher si l'utilisateur a déjà consenti
@@ -36,13 +38,19 @@ export default function NewsletterSection({
   return (
     <>
       {/* Newsletter button */}
-      <div className="flex flex-col items-center text-center px-4">
+      <div
+        className={`flex flex-col items-center text-center rounded-2xl transition-colors ${
+          isDark
+            ? 'bg-transparent px-4 py-4'
+            : 'bg-transparent backdrop-blur-sm px-2 py-2'
+        }`}
+      >
         <Image
           src={notificationIcon}
           alt=""
           width={18}
           height={18}
-          className="text-white mb-2"
+          className={`${isDark ? 'text-white' : 'text-indigo-700'} mb-2`}
         />
         <motion.button
           whileHover={{ scale: 1.02 }}
@@ -51,7 +59,11 @@ export default function NewsletterSection({
             setShowModal(true);
             if (onModalOpenChange) onModalOpenChange(true);
           }}
-          className="group inline-flex items-center gap-2 sm:gap-3 text-indigo-200 hover:text-white transition-colors underline decoration-indigo-500"
+          className={`group inline-flex items-center gap-2 sm:gap-3 transition-colors underline ${
+            isDark
+              ? 'text-indigo-200 hover:text-white decoration-indigo-500'
+              : 'text-indigo-700 hover:text-indigo-900 decoration-indigo-700'
+          }`}
         >
           <span className={`${plex.className} text-base sm:text-lg`}>{t('newsletter.subscribe')}</span>
         </motion.button>

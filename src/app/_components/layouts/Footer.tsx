@@ -8,14 +8,19 @@ import SupportModal from '../modales/SupportModale';
 import logoCNRS from "../../../../public/logo-cnrs-blanc.svg"
 import { useTheme } from '@/hooks/useTheme';
 
-const FooterLink = memo(({ href, children }: { href: string; children: React.ReactNode }) => (
-  <a 
-    href={href}
-    className="text-indigo-300 hover:text-pink-400 transition-colors duration-200"
-  >
-    {children}
-  </a>
-));
+const FooterLink = memo(({ href, children }: { href: string; children: React.ReactNode }) => {
+  const { isDark } = useTheme();
+  const lightClasses = 'text-indigo-700 hover:text-pink-600';
+  const darkClasses = 'text-indigo-300 hover:text-pink-400';
+  return (
+    <a 
+      href={href}
+      className={`${isDark ? darkClasses : lightClasses} transition-colors duration-200`}
+    >
+      {children}
+    </a>
+  );
+});
 
 FooterLink.displayName = 'FooterLink';
 
@@ -54,7 +59,7 @@ const Footer = memo(() => {
     <footer className="w-full py-8 mt-auto" style={{ backgroundColor: isDark ? '#0a0f1f' : colors.background, color: isDark ? '#ffffff' : colors.text }}>
       <div className="container mx-auto px-4">
         <div className="flex flex-col items-center text-center gap-3">
-          <div className="text-sm text-slate-300 font-space-grotesk">
+          <div className={`${isDark ? 'text-slate-300' : 'text-gray-900'} text-sm font-space-grotesk`}>
             {content}
           </div>
           <FooterLink href="/privacy_policy">
@@ -66,7 +71,7 @@ const Footer = memo(() => {
             </FooterLink>
             <button 
               onClick={() => setIsSupportModalOpen(true)}
-              className="text-indigo-300 hover:text-pink-400 transition-colors duration-200"
+              className={`${isDark ? 'text-indigo-300 hover:text-pink-400' : 'text-indigo-700 hover:text-pink-600'} transition-colors duration-200`}
             >
               <Mail className="w-5 h-5" />
             </button>
