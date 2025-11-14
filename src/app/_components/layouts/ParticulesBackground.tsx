@@ -1,37 +1,11 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import { useParams, usePathname } from 'next/navigation';
-import { plex } from '@/app/fonts/plex';
-import { useTranslations } from 'next-intl';
-import Image from 'next/image';
-import Header from './Header';
-import Footer from './Footer';
-import LoginButtons from '../logins/LoginButtons';
-import logoBlanc from '../../../../public/logo/logo-openport-blanc.svg';
-import logoRose from '../../../../public/logos/logo-openport-rose.svg';
+import { useEffect, useRef } from 'react';
 import { useTheme } from '@/hooks/useTheme';
-import { useSession } from 'next-auth/react';
 
 export function ParticulesBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const { colors, isDark } = useTheme();
-  const pathname = usePathname();
-  const params = useParams();
-
-  const [isLoading, setIsLoading] = useState(false);
-
-  const { data: session } = useSession();
-  const t = useTranslations('signin');
-
-  const isSigninPage = pathname.includes('/auth/signin');
-  const isDashboardPage = pathname.includes('/dashboard');
-  const isSettingsPage = pathname.includes('/settings');
-
-
-  const handleLoadingChange = (loading: boolean) => {
-    setIsLoading(loading);
-  };
+  const { colors } = useTheme();
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -111,7 +85,8 @@ export function ParticulesBackground() {
 
     const animate = () => {
       time += 0.016;
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const { width, height } = canvas;
+      ctx.clearRect(0, 0, width, height);
 
       // Update cluster centers (slow drift)
       clusters.forEach(cluster => {
@@ -119,16 +94,16 @@ export function ParticulesBackground() {
         cluster.centerY += cluster.vy;
 
         // Bounce off edges
-        if (cluster.centerX < cluster.radius || cluster.centerX > canvas.width - cluster.radius) {
+        if (cluster.centerX < cluster.radius || cluster.centerX > width - cluster.radius) {
           cluster.vx *= -1;
         }
-        if (cluster.centerY < cluster.radius || cluster.centerY > canvas.height - cluster.radius) {
+        if (cluster.centerY < cluster.radius || cluster.centerY > height - cluster.radius) {
           cluster.vy *= -1;
         }
 
         // Keep in bounds
-        cluster.centerX = Math.max(cluster.radius, Math.min(canvas.width - cluster.radius, cluster.centerX));
-        cluster.centerY = Math.max(cluster.radius, Math.min(canvas.height - cluster.radius, cluster.centerY));
+        cluster.centerX = Math.max(cluster.radius, Math.min(width - cluster.radius, cluster.centerX));
+        cluster.centerY = Math.max(cluster.radius, Math.min(height - cluster.radius, cluster.centerY));
       });
 
       // Update particles with gravitational attraction to cluster center
@@ -253,71 +228,18 @@ export function ParticulesBackground() {
   }, []);
 
   return (
-    <div className="flex flex-col min-h-[75vh]">
-      {/* Header */}
-      {/* <Header /> */}
-      
-      {/* Main content with particles background */}
-      <div className="relative flex-1 overflow-hidden flex flex-col items-center justify-center">
-        {/* Base background with subtle texture */}
-        <div 
-          className="absolute inset-0"
-          style={{ 
-            backgroundColor: colors.background,
-            backgroundImage: 'radial-gradient(circle at 20% 50%, rgba(0, 123, 255, 0.03) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(255, 0, 127, 0.03) 0%, transparent 50%)'
-          }}
-        />
-
-        {/* Canvas for enhanced particles */}
-        <canvas
-          ref={canvasRef}
-          className="absolute inset-0 pointer-events-none"
-        />
-
-        {/* Logo overlay */}
-        <div className="relative z-10 flex flex-col items-center gap-4 h-full justify-center">
-          <Image
-            src={isDark ? logoBlanc : logoRose}
-            alt="OpenPort Logo"
-            width={306}
-            height={82}
-            className="mx-auto sm:w-[200px] md:w-[280px] flex-shrink-0"
-            priority
-          />
-
-        {/* {!isSettingsPage && (
-          <h1 className={`${plex.className} text-2xl lg:text-3xl mt-4 mb-4`}>{t('title')}</h1>
-
-        )} */}
-
-        {!session?.user.has_onboarded && !isSettingsPage && (
-          <p className={`${plex.className} text-lg lg:text-xl my-4 lg:my-6`}>
-            {isSigninPage 
-              ? t('subtitle') 
-              : session?.user?.twitter_id 
-                ? t('embark')
-                : t('embarkOrLogin')
-            }
-          </p>
-        )}
-        {isDashboardPage && session?.user && !session.user.has_onboarded && !isSettingsPage && (
-          <p className={`${plex.className} text-lg lg:text-xl mt-4 max-w-md`}>
-            <span className="font-extrabold text-white">{t('welcome')}</span>{' '}
-            <span className="font-extrabold text-[#d6356f]">
-              @{session.user.twitter_username || session.user.bluesky_username || session.user.mastodon_username}
-            </span>
-          </p>
-        )}
-          
-          {/* Login Buttons */}
-          <div className="w-full max-w-sm px-4 flex-shrink-0">
-            <LoginButtons onLoadingChange={handleLoadingChange} />
-          </div>
-        </div>
-      </div>
-      
-      {/* Footer */}
-      {/* <Footer /> */}
+    <div className="absolute inset-0 pointer-events-none z-0">
+      <div 
+        className="absolute inset-0"
+        style={{ 
+          backgroundColor: colors.background,
+          backgroundImage: 'radial-gradient(circle at 20% 50%, rgba(0, 123, 255, 0.03) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(255, 0, 127, 0.03) 0%, transparent 50%)'
+        }}
+      />
+      <canvas
+        ref={canvasRef}
+        className="absolute inset-0 pointer-events-none"
+      />
     </div>
   );
 }

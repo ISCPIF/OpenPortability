@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from "react";
+import type React from 'react';
 import { useSession, signIn, signOut } from "next-auth/react";
 import Link from 'next/link';
 import Image from 'next/image';
@@ -217,14 +218,13 @@ const AuthenticatedHeader = () => {
                   onClick={() => setIsLanguageOpen(!isLanguageOpen)}
                   className="flex items-center gap-2 p-2 rounded-lg hover:bg-black/5 transition-colors"
                 >
-                  <Globe className={`w-5 h-5 ${pathname.includes('/reconnect') ? 'text-gray-800' : 'text-white'}`} aria-hidden="true" />
-                  <span className={`text-lg ${pathname.includes('/reconnect') ? 'text-gray-800' : 'text-white'}`}>
+                  <Globe className="w-5 h-5" aria-hidden="true" style={{ color: isDark ? '#ffffff' : colors.text }} />
+                  <span className="text-lg" style={{ color: isDark ? '#ffffff' : colors.text }}>
                     {languages.find(lang => lang.code === currentLocale)?.name}
                   </span>
                   <ChevronDown
-                    className={`w-4 h-4 transition-transform duration-200 
-                      ${isLanguageOpen ? 'rotate-180' : ''} 
-                      ${pathname.includes('/reconnect') ? 'text-gray-800/60' : 'text-white/60'}`}
+                    className={`w-4 h-4 transition-transform duration-200 ${isLanguageOpen ? 'rotate-180' : ''}`}
+                    style={{ color: isDark ? 'rgba(255, 255, 255, 0.6)' : `${colors.text}99` }}
                   />
                 </button>
 
@@ -236,7 +236,13 @@ const AuthenticatedHeader = () => {
                       exit={{ opacity: 0, y: -10 }}
                       className="absolute right-0 mt-2 w-40 origin-top-right"
                     >
-                      <div className={`${pathname.includes('/reconnect') ? 'bg-white/90' : 'bg-black/40'} backdrop-blur-xl rounded-xl border border-black/10 shadow-xl overflow-hidden`}>
+                      <div 
+                        className="backdrop-blur-xl rounded-xl border shadow-xl overflow-hidden"
+                        style={{
+                          backgroundColor: isDark ? 'rgba(0, 0, 0, 0.4)' : 'rgba(255, 255, 255, 0.9)',
+                          borderColor: isDark ? 'rgba(0, 0, 0, 0.1)' : 'rgba(0, 0, 0, 0.1)'
+                        }}
+                      >
                         {languages.map((lang) => (
                           <button
                             key={lang.code}
@@ -244,8 +250,21 @@ const AuthenticatedHeader = () => {
                               switchLanguage(lang.code);
                               setIsLanguageOpen(false);
                             }}
-                            className={`w-full px-4 py-2 text-xs ${plex.className} ${pathname.includes('/reconnect') ? 'text-gray-800 hover:bg-gray-100' : 'text-white hover:bg-white/10'} transition-colors text-left flex items-center gap-2
-                              ${currentLocale === lang.code ? pathname.includes('/reconnect') ? 'bg-gray-50' : 'bg-white/5' : ''}`}
+                            className={`w-full px-4 py-2 text-xs ${plex.className} transition-colors text-left flex items-center gap-2`}
+                            style={{
+                              color: isDark ? '#ffffff' : colors.text,
+                              backgroundColor: currentLocale === lang.code
+                                ? (isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)')
+                                : 'transparent'
+                            }}
+                            onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => {
+                              e.currentTarget.style.backgroundColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)';
+                            }}
+                            onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => {
+                              e.currentTarget.style.backgroundColor = currentLocale === lang.code
+                                ? (isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)')
+                                : 'transparent';
+                            }}
                           >
                             <span className="text-base">{lang.name}</span>
                           </button>
@@ -271,8 +290,8 @@ const AuthenticatedHeader = () => {
                               title={t('returnToDashboard')}
                               aria-label={t('returnToDashboard')}
                             >
-                              <Home className={`w-5 h-5 ${pathname.includes('/reconnect') ? 'text-gray-800' : 'text-white'}`} />
-                              <span className={`hidden group-hover:block text-sm ${pathname.includes('/reconnect') ? 'text-gray-800' : 'text-white'}`}>{t('returnToDashboard')}</span>
+                              <Home className="w-5 h-5" style={{ color: isDark ? '#ffffff' : colors.text }} />
+                              <span className="hidden group-hover:block text-sm" style={{ color: isDark ? '#ffffff' : colors.text }}>{t('returnToDashboard')}</span>
                             </Link>
                           ) : (
                             <Link
@@ -281,13 +300,13 @@ const AuthenticatedHeader = () => {
                               title={t('settings')}
                               aria-label={t('settings')}
                             >
-                              <Settings className={`w-5 h-5 ${pathname.includes('/reconnect') ? 'text-gray-800' : 'text-white'}`} />
-                              <span className={`hidden group-hover:block text-sm ${pathname.includes('/reconnect') ? 'text-gray-800' : 'text-white'}`}>{t('settings')}</span>
+                              <Settings className="w-5 h-5" style={{ color: isDark ? '#ffffff' : colors.text }} />
+                              <span className="hidden group-hover:block text-sm" style={{ color: isDark ? '#ffffff' : colors.text }}>{t('settings')}</span>
                             </Link>
                           )}
                         <div className="p-2">
                           <div className="hidden sm:block">
-                            <p className={`text-xs ${pathname.includes('/reconnect') ? 'text-gray-600' : 'text-white/60'}`}>
+                            <p className="text-xs" style={{ color: isDark ? 'rgba(255, 255, 255, 0.6)' : `${colors.text}99` }}>
                               {t('profile.username', { username })}
                             </p>
                           </div>
@@ -321,8 +340,8 @@ const AuthenticatedHeader = () => {
                           >
 
                   
-                            <LogOut className={`w-5 h-5 ${pathname.includes('/reconnect') ? 'text-gray-800' : 'text-white'}`} />
-                            <span className={`hidden group-hover:block text-sm ${pathname.includes('/reconnect') ? 'text-gray-800' : 'text-white'}`}>{t('logout')}</span>
+                            <LogOut className="w-5 h-5" style={{ color: isDark ? '#ffffff' : colors.text }} />
+                            <span className="hidden group-hover:block text-sm" style={{ color: isDark ? '#ffffff' : colors.text }}>{t('logout')}</span>
                           </button>
                         </div>
                       </div>

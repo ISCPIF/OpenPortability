@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef } from "react"
+import type React from 'react'
 import { motion, AnimatePresence } from "framer-motion"
 import { signIn } from "next-auth/react"
 import { useTranslations } from 'next-intl'
@@ -9,6 +10,7 @@ import { plex } from "@/app/fonts/plex"
 import Image from 'next/image'
 import BlueSkyLogin from './BlueSkyLogin'
 import MastodonLoginButton from '../logins/MastodonLoginButton'
+import { Button } from '@/app/_components/ui/Button'
 
 import mastodonIcon from '../../../../public/newSVG/masto.svg'
 import blueskyIcon from '../../../../public/newSVG/BS.svg'
@@ -119,33 +121,63 @@ export default function DashboardLoginButtons({
           )}
         </p>
       )}
-      <motion.button
-        variants={itemVariants}
-        initial="hidden"
-        animate="visible"
-        whileHover={{ scale: 1.02 }}
-        whileTap={{ scale: 0.98 }}
-        onClick={() => {
-          if (service === 'twitter') {
-            handleTwitterSignIn()
-          } else {
-            setSelectedService(selectedService === service ? null : service)
-          }
-        }}
-        disabled={isLoading}
-        className={`${plex.className} flex-shrink-0 sm:flex-1 flex text-left justify-between py-5 sm:py-5 px-5 sm:px-6 rounded-full text-sm sm:text-base font-bold transition-colors relative overflow-hidden group ${
-          service === 'twitter' 
-            ? 'bg-[#d6356f] text-white hover:opacity-95' 
-            : service === 'bluesky' 
-              ? 'bg-gradient-to-r from-[#1185fe] to-[#0063d3] text-white hover:opacity-95' 
-              : 'bg-white text-[#2a39a9] hover:bg-gray-50'
-        }`}
-      >
-        <div className="flex gap-3 text-left items-center">
-          <Image src={icon} alt={service} width={24} height={24} />
-          <span className="uppercase text-sm">{label}</span>
-        </div>
-      </motion.button>
+      <motion.div variants={itemVariants} initial="hidden" animate="visible">
+        <Button
+          onClick={() => {
+            if (service === 'twitter') {
+              handleTwitterSignIn()
+            } else {
+              setSelectedService(selectedService === service ? null : service)
+            }
+          }}
+          disabled={isLoading}
+          className={`${plex.className} w-full sm:flex-1 flex flex-col sm:flex-row items-center justify-center gap-4 px-8 py-6 rounded-full uppercase tracking-[0.25em] sm:tracking-[0.35em] border-2 transition-all duration-300 text-center`}
+          style={{
+            backgroundColor: 'transparent',
+            borderColor: service === 'twitter' ? '#ff007f' : service === 'bluesky' ? '#007bff' : '#6d28d9',
+            color: service === 'twitter' ? '#ff007f' : service === 'bluesky' ? '#007bff' : '#6d28d9',
+            boxShadow:
+              service === 'twitter'
+                ? '0 0 15px rgba(255, 0, 127, 0.5), inset 0 0 15px rgba(255, 0, 127, 0.1)'
+                : service === 'bluesky'
+                  ? '0 0 15px rgba(0, 123, 255, 0.5), inset 0 0 15px rgba(0, 123, 255, 0.1)'
+                  : '0 0 15px rgba(16, 185, 129, 0.5), inset 0 0 15px rgba(16, 185, 129, 0.1)',
+            fontFamily: 'monospace',
+          }}
+          onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => {
+            if (service === 'twitter') {
+              e.currentTarget.style.backgroundColor = '#ff007f'
+              e.currentTarget.style.color = '#ffffff'
+              e.currentTarget.style.boxShadow = '0 0 30px #ff007f, inset 0 0 20px rgba(255, 0, 127, 0.3)'
+            } else if (service === 'bluesky') {
+              e.currentTarget.style.backgroundColor = '#007bff'
+              e.currentTarget.style.color = '#ffffff'
+              e.currentTarget.style.boxShadow = '0 0 30px #007bff, inset 0 0 20px rgba(0, 123, 255, 0.3)'
+            } else {
+              e.currentTarget.style.backgroundColor = '#6d28d9'
+              e.currentTarget.style.color = '#ffffff'
+              e.currentTarget.style.boxShadow = '0 0 30px #6d28d9, inset 0 0 20px rgba(16, 185, 129, 0.3)'
+            }
+          }}
+          onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => {
+            e.currentTarget.style.backgroundColor = 'transparent'
+            e.currentTarget.style.color = service === 'twitter' ? '#ff007f' : service === 'bluesky' ? '#007bff' : '#6d28d9'
+            e.currentTarget.style.boxShadow =
+              service === 'twitter'
+                ? '0 0 15px rgba(255, 0, 127, 0.5), inset 0 0 15px rgba(255, 0, 127, 0.1)'
+                : service === 'bluesky'
+                  ? '0 0 15px rgba(0, 123, 255, 0.5), inset 0 0 15px rgba(0, 123, 255, 0.1)'
+                  : '0 0 15px rgba(16, 185, 129, 0.5), inset 0 0 15px rgba(16, 185, 129, 0.1)'
+          }}
+        >
+          <div className="flex items-center justify-center gap-3 w-full flex-wrap">
+            <Image src={icon} alt={service} width={24} height={24} className="flex-shrink-0" />
+            <span className="flex-1 min-w-[150px] text-xs sm:text-sm leading-tight break-words whitespace-normal text-center">
+              {label}
+            </span>
+          </div>
+        </Button>
+      </motion.div>
     </div>
   )
 
