@@ -6,6 +6,7 @@ import { FaBluesky, FaXTwitter, FaMastodon } from 'react-icons/fa6'
 import { IoUnlinkOutline } from "react-icons/io5"
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
+import { useTheme } from '@/hooks/useTheme'
 
 type ProfileCardProps = {
   type: 'twitter' | 'bluesky' | 'mastodon'
@@ -16,6 +17,7 @@ export default function ProfileCard({ type, showUnlink = false }: ProfileCardPro
   const { data: session, update: updateSession } = useSession()
   const [isUnlinking, setIsUnlinking] = useState(false)
   const t = useTranslations('profile')
+  const { isDark } = useTheme()
 
   if (!session?.user) return null
 
@@ -110,11 +112,29 @@ export default function ProfileCard({ type, showUnlink = false }: ProfileCardPro
       setIsUnlinking(false)
     }
   }
+  const cardClasses = isDark
+    ? 'bg-white/5 hover:bg-white/10 border-white/10 hover:border-white/20 text-white'
+    : 'bg-white/90 hover:bg-white border-slate-200 hover:border-slate-300 text-slate-900 shadow-[0_10px_25px_rgba(15,23,42,0.07)]'
+
+  const iconWrapperClasses = isDark
+    ? 'bg-white/10'
+    : 'bg-slate-900/5'
+
+  const usernameClasses = isDark
+    ? 'text-sm font-medium text-white hover:text-blue-400'
+    : 'text-sm font-semibold text-slate-900 hover:text-[#ff007f]'
+
+  const instanceClasses = isDark ? 'text-xs text-white/60' : 'text-xs text-slate-500'
+
+  const unlinkButtonClasses = isDark
+    ? 'text-red-500  hover:text-red-500 hover:bg-red-400/10'
+    : 'text-red-500  hover:text-red-500 hover:bg-red-500'
+
   return (
     <div className="group">
-      <div className="flex items-center gap-3 px-3 py-2 bg-white/5 hover:bg-white/10 rounded-lg border border-white/10 hover:border-white/20 transition-all duration-300">
+      <div className={`flex items-center gap-3 px-3 py-2 rounded-lg border transition-all duration-300 ${cardClasses}`}>
         {/* Icon du réseau social */}
-        <div className="shrink-0 relative flex items-center justify-center w-8 h-8 bg-white/10 rounded-lg">
+        <div className={`shrink-0 relative flex items-center justify-center w-8 h-8 rounded-lg ${iconWrapperClasses}`}>
           {profile.icon}
         </div>
 
@@ -126,17 +146,17 @@ export default function ProfileCard({ type, showUnlink = false }: ProfileCardPro
                 href={profileUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-sm font-medium text-white hover:text-blue-400 truncate transition-colors"
+                className={`${usernameClasses} truncate transition-colors`}
               >
                 {profile.username}
               </a>
             ) : (
-              <p className="text-sm font-medium text-white truncate">
+              <p className={`${usernameClasses} truncate`}>
                 {profile.username}
               </p>
             )}
             {profile.instance && (
-              <span className="text-xs text-white/50 truncate">
+              <span className={`${instanceClasses} truncate`}>
                 @{profile.instance}
               </span>
             )}
@@ -147,7 +167,7 @@ export default function ProfileCard({ type, showUnlink = false }: ProfileCardPro
         <button
           onClick={handleUnlink}
           disabled={isUnlinking || isLastAccount}
-          className={`shrink-0 flex items-center gap-2 px-3 py-1.5 text-white/60 hover:text-red-400 hover:bg-red-400/10 rounded-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-white/60 ${
+          className={`shrink-0 flex items-center gap-2 px-3 py-1.5 rounded-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent ${unlinkButtonClasses} ${
             showUnlink ? 'inline-flex' : 'hidden group-hover:inline-flex'
           }`}
           title={isLastAccount ? t('errors.lastAccount') : t('unlinkButton', { provider: t(`providers.${type}`) })}
