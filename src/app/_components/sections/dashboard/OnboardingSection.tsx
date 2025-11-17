@@ -79,7 +79,7 @@ export default function OnboardingSection({
                 onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => {
                   e.currentTarget.style.backgroundColor = '#007bff';
                   e.currentTarget.style.color = '#ffffff';
-                  e.currentTarget.style.boxShadow = '0 0 30px #ff007f, inset 0 0 20px rgba(255, 0, 127, 0.3)';
+                  e.currentTarget.style.boxShadow = '0 0 30px #007bff, inset 0 0 20px rgba(255, 0, 127, 0.3)';
                 }}
                 onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => {
                   e.currentTarget.style.backgroundColor = 'transparent';
