@@ -561,9 +561,14 @@
 "accountSettings": "Configurações da conta",
 "testDmSection": "Testar mensagens diretas (DM)",
 "testDmDescription": "Você pode testar o recebimento de mensagens diretas no Bluesky para verificar se tudo está funcionando corretamente.",
-"notifications": {
-"title": "Notificações",
-"hqxNewsletter": {
+    "notifications": {
+      "title": "Notificações",
+      "columnTitles": {
+        "notifications": "Notificações",
+        "automations": "Recomendações automáticas",
+        "consents": "Consentimentos"
+      },
+      "hqxNewsletter": {
 "title": "Newsletter OpenPortability",
 "description": "Ser informado/a sobre as últimas atualizações e novos recursos da plataforma OpenPortability"
 },
