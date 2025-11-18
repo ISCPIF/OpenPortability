@@ -1,7 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 import NewsletterRequest from '@/app/_components/modales/NewsletterRequest';
-import NewsletterFirstSeen from '@/app/_components/modales/NewsLetterFirstSeen';
 import notificationIcon from '../../../../../public/newSVG/notif.svg';
 import { plex } from '@/app/fonts/plex';
 import { useTranslations } from 'next-intl';
@@ -14,7 +13,6 @@ type NewsletterSectionProps = {
   onUpdate: () => void;
   haveSeenNewsletter: boolean;
   newsletterData: any; // Données newsletter passées en props
-  onModalOpenChange?: (isOpen: boolean) => void;
 };
 
 export default function NewsletterSection({ 
@@ -23,8 +21,7 @@ export default function NewsletterSection({
   setShowModal, 
   onUpdate,
   haveSeenNewsletter,
-  newsletterData,
-  onModalOpenChange
+  newsletterData
 }: NewsletterSectionProps) {
   const t = useTranslations('dashboard');
   const { isDark } = useTheme();
@@ -55,10 +52,7 @@ export default function NewsletterSection({
         <motion.button
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
-          onClick={() => {
-            setShowModal(true);
-            if (onModalOpenChange) onModalOpenChange(true);
-          }}
+          onClick={() => setShowModal(true)}
           className={`group inline-flex items-center gap-2 sm:gap-3 transition-colors underline ${
             isDark
               ? 'text-indigo-200 hover:text-white decoration-indigo-500'
@@ -68,34 +62,6 @@ export default function NewsletterSection({
           <span className={`${plex.className} text-base sm:text-lg`}>{t('newsletter.subscribe')}</span>
         </motion.button>
       </div>
-      
-      {/* First seen newsletter modal */}
-      <AnimatePresence>
-        {!haveSeenNewsletter && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="relative my-4 w-full max-w-md md:max-w-3xl mx-auto"
-              >
-              <NewsletterFirstSeen
-                userId={userId}
-                newsletterData={newsletterData}
-                onClose={() => {
-                  onUpdate();
-                  if (onModalOpenChange) onModalOpenChange(false);
-                }}
-                onSubscribe={() => {
-                  setShowModal(false);
-                  onUpdate();
-                  if (onModalOpenChange) onModalOpenChange(false);
-                }}
-              />
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
       
       {/* Newsletter modal */}
       <AnimatePresence>
@@ -108,7 +74,6 @@ export default function NewsletterSection({
             onClick={(e) => {
               if (e.target === e.currentTarget) {
                 setShowModal(false);
-                if (onModalOpenChange) onModalOpenChange(false);
               }
             }}
           >
@@ -123,12 +88,10 @@ export default function NewsletterSection({
                 userId={userId}
                 onClose={() => {
                   setShowModal(false);
-                  if (onModalOpenChange) onModalOpenChange(false);
                 }}
                 onSubscribe={() => {
                   setShowModal(false);
                   onUpdate();
-                  if (onModalOpenChange) onModalOpenChange(false);
                 }}
               />
             </motion.div>

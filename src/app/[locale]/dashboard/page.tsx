@@ -10,6 +10,7 @@ import LoginSea from "@/app/_components/layouts/LoginSea";
 import DashboardLoginButtons from '@/app/_components/logins/DashboardLoginButtons';
 import { useDashboardState } from '@/hooks/useDashboardState';
 import NewsletterSection from '@/app/_components/sections/dashboard/NewsletterSection';
+import NewsLetterFirstSeen from '@/app/_components/modales/NewsLetterFirstSeen';
 import OnboardingSection from '@/app/_components/sections/dashboard/OnboardingSection';
 import TutorialSection from '@/app/_components/sections/dashboard/TutorialSection';
 import { useTheme } from '@/hooks/useTheme';
@@ -47,6 +48,12 @@ export default function DashboardPage() {
       router.push(`/${locale}/reconnect`);
     }
   }, [hasOnboarded, router, locale]);
+
+  useEffect(() => {
+    if (!session?.user) return;
+    const hasSeen = !!session.user.have_seen_newsletter;
+    setIsNewsletterFirstSeenOpen(!hasSeen || showNewsletterModal);
+  }, [session?.user, showNewsletterModal]);
 
   const handleNewsletterFirstSeenOpen = (isOpen: boolean) => {
     setIsNewsletterFirstSeenOpen(isOpen);
@@ -120,7 +127,23 @@ export default function DashboardPage() {
                     onUpdate={update}
                     haveSeenNewsletter={!!session.user.have_seen_newsletter}
                     newsletterData={newsletterData}
-                    onModalOpenChange={handleNewsletterFirstSeenOpen}
+                  />
+                )}
+
+                {session?.user?.id && (
+                  <NewsLetterFirstSeen
+                    userId={session.user.id}
+                    newsletterData={newsletterData}
+                    isOpen={isNewsletterFirstSeenOpen}
+                    onClose={() => {
+                      setIsNewsletterFirstSeenOpen(false);
+                      setShowNewsletterModal(false);
+                    }}
+                    onSubscribe={() => {
+                      setIsNewsletterFirstSeenOpen(false);
+                      setShowNewsletterModal(false);
+                      update();
+                    }}
                   />
                 )}
 
