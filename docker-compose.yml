@@ -1,57 +1,59 @@
 version: '3.8'
-
 services:
   app:
-      build:
-        context: .
-        dockerfile: Dockerfile
-      # user: "1001:1001"
-      env_file:
-        - .env.local
-      environment:
-        - NODE_ENV=development
-      restart: always
-      networks:
-        - app_network
-        - db_openportability_db_network
-      extra_hosts:
-        - "host.docker.internal:host-gateway"
-      ports:
-        - "3000:3000"
-      volumes:
-        # Mount entire directory but preserve container's node_modules
-        - ./:/app
-        - /app/node_modules
-        - /app/.next
-        - shared-tmp:/app/tmp
-        - app_logs:/app/logs
-      depends_on:
-        redis-init:
-          condition: service_completed_successfully
+    image: app
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    user: "node" 
+    env_file:
+      - .env.local
+    environment:
+      - NODE_ENV=development
+      - NEXT_TELEMETRY_DISABLED=1
+      - WATCHPACK_POLLING=true
+      - CHOKIDAR_USEPOLLING=true
+      - CHOKIDAR_INTERVAL=1000
+    restart: always
+    networks:
+      - app_network
+      - db_openportability_db_network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./:/app
+      - /app/node_modules
+      # - /app/.next
+      - shared-tmp:/app/tmp
+      - app_logs:/app/logs
+    depends_on:
+      - worker
 
-
-  # worker:
-  #   build:
-  #     context: ./worker
-  #     dockerfile: Dockerfile
-  #   # user: "1001:1001"
-  #   volumes:
-  #     - ./worker:/app
-  #     - /app/node_modules
-  #     - shared-tmp:/app/tmp
-  #     - app_logs:/app/logs
-  #   env_file:
-  #     - ./worker/.env
-  #   environment:
-  #     - NODE_ENV=development
-  #   networks:
-  #     - app_network
-  #     - supabase_network_helloquittex
-  #   extra_hosts:
-  #     - "host.docker.internal:host-gateway"
-  #   depends_on:
-  #     redis-init:
-  #       condition: service_completed_successfully
+  worker:
+    image: worker
+    build:
+      context: ./worker
+      dockerfile: Dockerfile.dev
+    user: "1000:1000"
+    volumes:
+      - ./worker:/app
+      - /app/node_modules
+      - shared-tmp:/app/tmp
+      - app_logs:/app/logs
+    env_file:
+      - ./worker/.env
+    environment:
+      - NODE_ENV=development
+      - NEXT_TELEMETRY_DISABLED=1
+      - WATCHPACK_POLLING=true
+      - CHOKIDAR_USEPOLLING=true
+    networks:
+      - app_network
+      - db_openportability_db_network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
   nginx:
     image: nginx:alpine
@@ -68,93 +70,12 @@ services:
       - app_network
     command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
 
-  redis:
-    image: redis:7-alpine
-    container_name: openportability_redis
-    restart: unless-stopped
-    networks:
-      - app_network
-    volumes:
-      - ./redis.conf:/usr/local/etc/redis/redis.conf:ro
-      - redis_data:/data
-    command: redis-server /usr/local/etc/redis/redis.conf
-    # Ne pas exposer le port en production pour la sécurité
-    # ports:
-    #   - "6379:6379"
-    healthcheck:
-      test: ["CMD", "redis-cli", "-a", "votre_mot_de_passe_redis_securise_ici", "ping"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
-
-  # Conteneur d'initialisation des mappings Redis
-  redis-init:
-    build:
-      context: ./redis
-      dockerfile: Dockerfile.init
-    env_file:
-      - redis/.env.redis
-    networks:
-      - app_network
-      # - supabase_network_helloquittex
-      - db_openportability_db_network
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    depends_on:
-      redis:
-        condition: service_healthy
-    restart: "no"  # Ne pas redémarrer automatiquement - c'est un job d'initialisation
-
-  # watcher:
-  #   build:
-  #     context: ./watcher
-  #     dockerfile: Dockerfile
-  #   environment:
-  #     - NODE_ENV=production
-  #   env_file:
-  #     - ./watcher/.env
-  #   restart: unless-stopped
-  #   networks:
-  #     - app_network
-  #     - supabase_network_helloquittex
-  #   extra_hosts:
-  #     - "host.docker.internal:host-gateway"
-  #   healthcheck:
-  #     test: ["CMD", "wget", "--spider", "-q", "host.docker.internal:54321"]
-  #     interval: 30s
-  #     timeout: 10s
-  #     retries: 3
-  #     start_period: 30s
-
-  # python_worker:
-  #   build:
-  #     context: ./python_worker
-  #     dockerfile: Dockerfile
-  #   volumes:
-  #     # - ./python_worker:/app
-  #     # - /app/node_modules
-  #     - ./python_worker/messages:/app/messages
-  #     - app_logs:/app/logs
-  #   env_file:
-  #     - ./python_worker/.env
-  #   environment:
-  #     - NODE_ENV=development
-  #   networks:
-  #     - app_network
-  #     - supabase_network_helloquittex
-  #   extra_hosts:
-  #     - "host.docker.internal:host-gateway"
-  #   depends_on:
-  #     - app
-
 networks:
   app_network:
     driver: bridge
   db_openportability_db_network:
     external: true
-    # name: db_openportability_db_network
-
+    name: db_openportability_db_network
 
 volumes:
   shared-tmp:
@@ -169,5 +90,3 @@ volumes:
       type: none
       device: /home/ubuntu/openportability_logs
       o: "bind,noexec"
-  redis_data:
-    driver: local
