@@ -20,7 +20,7 @@ export class RedisClientManager {
 
   private constructor() {
     const config: RedisConfig = {
-      host: process.env.REDIS_HOST || 'redis',
+      host: process.env.REDIS_HOST || 'openportability_redis',
       port: parseInt(process.env.REDIS_PORT || '6379'),
       password: process.env.REDIS_PASSWORD,
       db: parseInt(process.env.REDIS_DB || '0'),

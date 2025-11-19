@@ -39,6 +39,8 @@ export const GET = withValidation(
       const statsService = new StatsService(pgStatsRepository)
 
       const stats = await statsService.getUserStats(session.user.id, session.user.has_onboarded)
+
+      console.log("stats from api stats ->", stats)
       return NextResponse.json(stats)
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error))

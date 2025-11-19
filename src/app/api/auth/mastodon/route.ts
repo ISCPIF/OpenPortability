@@ -24,9 +24,9 @@ export const GET = withValidation(
         if (cachedInstances) {
           instancesList = JSON.parse(cachedInstances)
           
-          console.log(' [GET /api/auth/mastodon] Mastodon instances fetched from Redis', instancesList.length
-            , { instancesList }
-          )
+          // console.log(' [GET /api/auth/mastodon] Mastodon instances fetched from Redis', instancesList.length
+          //   , { instancesList }
+          // )
           return NextResponse.json({ instances: instancesList })
         }
       } catch (redisError) {

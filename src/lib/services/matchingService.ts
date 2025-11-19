@@ -25,17 +25,17 @@ export class MatchingService {
   }
 
   async getFollowableTargets(userId: string): Promise<MatchingResult> {
-    console.log('🚀 [MatchingService.getFollowableTargets] Début de la récupération des cibles pour userId:', userId);
+    // console.log('🚀 [MatchingService.getFollowableTargets] Début de la récupération des cibles pour userId:', userId);
     
     const PAGE_SIZE = 1000;
     let allMatches: MatchingTarget[] = [];
     let page = 0;
     let totalCount = 0;
 
-    console.log('📋 [MatchingService.getFollowableTargets] Configuration - PAGE_SIZE:', PAGE_SIZE);
+    // console.log('📋 [MatchingService.getFollowableTargets] Configuration - PAGE_SIZE:', PAGE_SIZE);
 
     // Première requête pour obtenir le total et la première page
-    console.log('📡 [MatchingService.getFollowableTargets] Appel repository.getFollowableTargets pour la première page...');
+    // console.log('📡 [MatchingService.getFollowableTargets] Appel repository.getFollowableTargets pour la première page...');
     const { data: firstPageMatches, error: firstPageError } = 
       await this.repository.getFollowableTargets(userId, PAGE_SIZE, 0);
 
@@ -44,8 +44,8 @@ export class MatchingService {
       throw new Error(`Failed to fetch first page: ${firstPageError}`);
     }
 
-    console.log('📊 [MatchingService.getFollowableTargets] Première page reçue - nombre d\'éléments:', firstPageMatches?.length || 0);
-    console.log('📊 [MatchingService.getFollowableTargets] Détail première page:', firstPageMatches);
+    // console.log('📊 [MatchingService.getFollowableTargets] Première page reçue - nombre d\'éléments:', firstPageMatches?.length || 0);
+    // console.log('📊 [MatchingService.getFollowableTargets] Détail première page:', firstPageMatches);
 
     if (!firstPageMatches || firstPageMatches.length === 0) {
       console.log('🚫 [MatchingService.getFollowableTargets] Aucune donnée trouvée - retour résultat vide');
@@ -64,15 +64,15 @@ export class MatchingService {
     totalCount = firstPageMatches[0]?.total_count || firstPageMatches.length;
     allMatches = [...firstPageMatches];
 
-    console.log('🔢 [MatchingService.getFollowableTargets] Total count détecté:', totalCount);
-    console.log('📄 [MatchingService.getFollowableTargets] Éléments ajoutés à allMatches:', allMatches.length);
+    // console.log('🔢 [MatchingService.getFollowableTargets] Total count détecté:', totalCount);
+    // console.log('📄 [MatchingService.getFollowableTargets] Éléments ajoutés à allMatches:', allMatches.length);
 
     // Calculate total pages based on total count
     const totalPages = Math.ceil(totalCount / PAGE_SIZE);
-    console.log('📚 [MatchingService.getFollowableTargets] Nombre total de pages calculé:', totalPages);
+    // console.log('📚 [MatchingService.getFollowableTargets] Nombre total de pages calculé:', totalPages);
     
     while (page < totalPages) {
-      console.log(`🔄 [MatchingService.getFollowableTargets] Récupération page ${page + 1}/${totalPages}...`);
+      // console.log(`🔄 [MatchingService.getFollowableTargets] Récupération page ${page + 1}/${totalPages}...`);
 
       const { data: matches, error: matchesError } = 
         await this.repository.getFollowableTargets(userId, PAGE_SIZE, page);
@@ -82,7 +82,7 @@ export class MatchingService {
         break;
       }
 
-      console.log(`📊 [MatchingService.getFollowableTargets] Page ${page + 1} reçue - éléments:`, matches?.length || 0);
+      // console.log(`📊 [MatchingService.getFollowableTargets] Page ${page + 1} reçue - éléments:`, matches?.length || 0);
 
       if (!matches || matches.length === 0) {
         console.log(`🚫 [MatchingService.getFollowableTargets] Page ${page + 1} vide - arrêt de la pagination`);
@@ -95,13 +95,13 @@ export class MatchingService {
       } else {
         const beforeLength = allMatches.length;
         allMatches = [...allMatches, ...matches];
-        console.log(`➕ [MatchingService.getFollowableTargets] Page ${page + 1} ajoutée - avant: ${beforeLength}, après: ${allMatches.length}`);
+        // console.log(`➕ [MatchingService.getFollowableTargets] Page ${page + 1} ajoutée - avant: ${beforeLength}, après: ${allMatches.length}`);
       }
 
       page++;
       // Safety check to prevent infinite loops
       if (allMatches.length >= totalCount) {
-        console.log('🛑 [MatchingService.getFollowableTargets] Limite de sécurité atteinte - arrêt');
+        // console.log('🛑 [MatchingService.getFollowableTargets] Limite de sécurité atteinte - arrêt');
         break;
       }
     }
@@ -109,9 +109,9 @@ export class MatchingService {
     const blueskyMatches = allMatches.filter(m => m.bluesky_handle).length;
     const mastodonMatches = allMatches.filter(m => m.mastodon_id).length;
 
-    console.log('📈 [MatchingService.getFollowableTargets] Statistiques finales:');
-    console.log('  - Total following:', totalCount);
-    console.log('  - Matched following:', allMatches.length);
+    // console.log('📈 [MatchingService.getFollowableTargets] Statistiques finales:');
+    // console.log('  - Total following:', totalCount);
+    // console.log('  - Matched following:', allMatches.length);
     // console.log('  - Bluesky matches:', blueskyMatches);
     // console.log('  - Mastodon matches:', mastodonMatches);
 
