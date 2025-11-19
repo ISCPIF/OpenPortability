@@ -23,32 +23,32 @@ export const pgStatsRepository = {
    */
   async getUserCompleteStats(userId: string, has_onboard: boolean): Promise<UserCompleteStats> {
     // 1. Essayer Redis d'abord
-    try {
-      const cacheKey = `user:stats:${userId}`
-      const cached = await redis.get(cacheKey)
+    // try { 
+    //   const cacheKey = `user:stats:${userId}`
+    //   const cached = await redis.get(cacheKey)
 
-      if (cached) {
-        logger.logInfo(
-          'Repository',
-          'pgStatsRepository.getUserCompleteStats',
-          'User stats served from Redis cache',
-          userId,
-          { context: 'Redis cache hit' }
-        )
-        return JSON.parse(cached) as UserCompleteStats
-      }
-    } catch (redisError) {
-      logger.logWarning(
-        'Repository',
-        'pgStatsRepository.getUserCompleteStats',
-        'Redis unavailable, fallback to DB',
-        userId,
-        {
-          context: 'Redis cache miss or error',
-          error: redisError instanceof Error ? redisError.message : 'Unknown Redis error',
-        }
-      )
-    }
+    //   if (cached) {
+    //     logger.logInfo(
+    //       'Repository',
+    //       'pgStatsRepository.getUserCompleteStats',
+    //       'User stats served from Redis cache',
+    //       userId,
+    //       { context: 'Redis cache hit' }
+    //     )
+    //     return JSON.parse(cached) as UserCompleteStats
+    //   }
+    // } catch (redisError) {
+    //   logger.logWarning(
+    //     'Repository',
+    //     'pgStatsRepository.getUserCompleteStats',
+    //     'Redis unavailable, fallback to DB',
+    //     userId,
+    //     {
+    //       context: 'Redis cache miss or error',
+    //       error: redisError instanceof Error ? redisError.message : 'Unknown Redis error',
+    //     }
+    //   )
+    // }
 
     // 2. Fallback vers DB (appel RPC via queryPublic)
     let data: any

@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import { authClient } from '@/lib/supabase';
 import logger from '@/lib/log_utils';
 import { z } from 'zod';
 import { withValidation } from '@/lib/validation/middleware';
+import { pgUserRepository } from '@/lib/repositories/auth/pg-user-repository';
 
 // Schéma pour la validation des requêtes POST
 const AutomaticReconnectSchema = z.object({
@@ -19,18 +19,7 @@ async function automaticReconnectHandler(
     const userId = session.user.id;
     const { automatic_reconnect } = data;
 
-    // Mettre à jour dans Supabase
-    const { error: updateError } = await authClient
-      .from('users')
-      .update({ automatic_reconnect })
-      .eq('id', userId);
-
-    if (updateError) {
-      logger.logError('API', 'POST /api/users/automatic-reconnect', updateError, userId, {
-        context: 'Updating automatic_reconnect setting'
-      });
-      return NextResponse.json({ error: 'Failed to update automatic_reconnect' }, { status: 500 });
-    }
+    await pgUserRepository.updateUser(userId, { automatic_reconnect });
 
     logger.logInfo('API', 'POST /api/users/automatic-reconnect', 'Automatic reconnect setting updated', userId, {
       automatic_reconnect

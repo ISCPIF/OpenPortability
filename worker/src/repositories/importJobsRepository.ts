@@ -67,7 +67,7 @@ export const importJobsRepository = {
       params.push(jobId)
 
       await queryPublic(
-        `UPDATE import_jobs 
+        `UPDATE public.import_jobs 
          SET ${updateFields.join(', ')}
          WHERE id = $${paramIndex}`,
         params
@@ -91,7 +91,7 @@ export const importJobsRepository = {
   ): Promise<void> {
     try {
       await queryPublic(
-        `UPDATE import_jobs 
+        `UPDATE public.import_jobs 
          SET stats = $1::jsonb, updated_at = $2
          WHERE id = $3`,
         [JSON.stringify(stats), new Date().toISOString(), jobId]
