@@ -12,7 +12,7 @@ export const pgUserRepository = {
   async getUser(userId: string): Promise<DBUser | null> {
     try {
       const result = await queryNextAuth<DBUser>(
-        'SELECT * FROM users WHERE id = $1',
+        'SELECT * FROM "next-auth".users WHERE id = $1',
         [userId]
       )
       return result.rows[0] || null
@@ -28,7 +28,7 @@ export const pgUserRepository = {
   async getUserByEmail(email: string): Promise<DBUser | null> {
     try {
       const result = await queryNextAuth<DBUser>(
-        'SELECT * FROM users WHERE email = $1',
+        'SELECT * FROM "next-auth".users WHERE email = $1',
         [email]
       )
       return result.rows[0] || null
@@ -55,7 +55,7 @@ export const pgUserRepository = {
 
       const column = columnMap[provider]
       const result = await queryNextAuth<DBUser>(
-        `SELECT * FROM users WHERE ${column} = $1`,
+        `SELECT * FROM "next-auth".users WHERE ${column} = $1`,
         [providerId]
       )
       return result.rows[0] || null
@@ -79,7 +79,7 @@ export const pgUserRepository = {
       const placeholders = fields.map((_, i) => `$${i + 1}`).join(', ')
       
       const sql = `
-        INSERT INTO users (${fields.join(', ')})
+        INSERT INTO "next-auth".users (${fields.join(', ')})
         VALUES (${placeholders})
         RETURNING *
       `
@@ -107,7 +107,7 @@ export const pgUserRepository = {
       const values = [userId, ...fields.map(field => updates[field as keyof DBUser])]
       
       const sql = `
-        UPDATE users
+        UPDATE "next-auth".users
         SET ${setClauses}, updated_at = NOW()
         WHERE id = $1
         RETURNING *
@@ -131,7 +131,7 @@ export const pgUserRepository = {
    */
   async deleteUser(userId: string): Promise<void> {
     try {
-      await queryNextAuth('DELETE FROM users WHERE id = $1', [userId])
+      await queryNextAuth('DELETE FROM "next-auth".users WHERE id = $1', [userId])
     } catch (error) {
       logger.logError('Repository', 'pgUserRepository.deleteUser', 'Error deleting user', userId, { error })
       throw error
