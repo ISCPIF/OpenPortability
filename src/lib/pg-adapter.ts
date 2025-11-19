@@ -357,7 +357,7 @@ export async function linkAccount(account: AdapterAccount): Promise<void> {
     token_type: account.token_type,
     scope: account.scope,
     id_token: account.id_token ? encrypt(account.id_token) : null,
-    session_state: account.session_state,
+    session_state: account.session_state == null ? null : String(account.session_state),
   })
 }
 
