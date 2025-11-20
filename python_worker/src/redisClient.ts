@@ -28,7 +28,7 @@ class RedisClientManager {
 
   private constructor() {
     const config: RedisConfig = {
-      host: process.env.REDIS_HOST || 'redis',
+      host: process.env.REDIS_HOST || 'openportability_redis',
       port: parseInt(process.env.REDIS_PORT || '6379'),
       password: process.env.REDIS_PASSWORD,
       db: parseInt(process.env.REDIS_DB || '0'),
@@ -186,6 +186,16 @@ class RedisClientManager {
       return await this.redis.lrem(key, count, value);
     } catch (error: unknown) {
       console.log(`❌ [Redis] LREM error on ${key}:`, error instanceof Error ? error.message : String(error));
+      return 0;
+    }
+  }
+
+  public async lpush(key: string, value: string): Promise<number> {
+    try {
+      await this.ensureConnection();
+      return await this.redis.lpush(key, value);
+    } catch (error: unknown) {
+      console.log(`❌ [Redis] LPUSH error on ${key}:`, error instanceof Error ? error.message : String(error));
       return 0;
     }
   }

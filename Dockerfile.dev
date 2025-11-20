@@ -1,23 +1,26 @@
-FROM node:18-alpine
+FROM node:24-alpine
+
 WORKDIR /app
 
-# Copier d'abord les fichiers de dépendances
-COPY package*.json ./
-
-# Installer les dépendances
-RUN npm install
-
-# Set environment variables
 ENV NODE_ENV=development
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV WATCHPACK_POLLING=true
+ENV CHOKIDAR_USEPOLLING=true
+ENV CHOKIDAR_INTERVAL=1000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-# Ne pas copier le code source ici car il sera monté comme volume
-# COPY . .
+# Copie EN TANT QUE ROOT d'abord
+COPY package*.json ./
 
-# Exposer le port
+# PUIS change les permissions ET l'utilisateur
+RUN chown -R node:node /app
+
+USER node
+
+# Maintenant npm install marche
+RUN npm install
+
 EXPOSE 3000
 
-# Utiliser npm run dev pour être cohérent avec docker-compose.dev.yml
-CMD ["npm", "run", "dev"]
+CMD ["npm", "run", "dev", "--", "--port", "3000", "--hostname", "0.0.0.0"]

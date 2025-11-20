@@ -248,12 +248,14 @@ export async function executePostgresCommandWithStdin(
 ): Promise<{ success: boolean; error?: string }> {
   return new Promise((resolve) => {
     const env = {
-      PGHOST: process.env.POSTGRES_HOST || 'localhost',
-      PGPORT: process.env.POSTGRES_PORT || '5432',
-      PGDATABASE: process.env.POSTGRES_DB || 'postgres',
+      PGHOST: 'postgres-db',  // Nom du container PostgreSQL (direct, pas pgbouncer)
+      PGPORT: '5432',  // Port interne du container PostgreSQL
+      PGDATABASE: 'nexus',
       PGUSER: process.env.POSTGRES_USER || 'postgres',
-      PGPASSWORD: process.env.POSTGRES_PASSWORD || 'postgres'
+      PGPASSWORD: process.env.POSTGRES_PASSWORD || 'mysecretpassword'
     };
+
+    console.log("ENV of the worker -->", env)
 
     console.log(`[Worker ${workerId}] 🕒 Using timeout: ${timeoutMs}ms (${Math.round(timeoutMs/1000)}s)`);
     const psqlProcess = spawn('psql', ['-v', 'ON_ERROR_STOP=1', '-X', '-q', '-c', sql], {

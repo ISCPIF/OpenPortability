@@ -1,11 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { StatsService } from '@/lib/services/statsServices';
-import { StatsRepository } from '@/lib/repositories/statsRepository';
-import logger from '@/lib/log_utils';
-import { withValidation } from '@/lib/validation/middleware';
-import { z } from 'zod';
-import { StatsQueryParamsSchema } from '@/lib/validation/schemas';
-// Removed MatchingService and direct Redis usage; caching is centralized in the repository
+import { NextRequest, NextResponse } from 'next/server'
+import { StatsService } from '@/lib/services/statsServices'
+import { pgStatsRepository } from '@/lib/repositories/public/pg-stats-repository'
+import logger from '@/lib/log_utils'
+import { withValidation } from '@/lib/validation/middleware'
+import { z } from 'zod'
+import { StatsQueryParamsSchema } from '@/lib/validation/schemas'
 
 // Endpoint GET refactorisé avec le middleware de validation
 export const GET = withValidation(
@@ -14,7 +13,7 @@ export const GET = withValidation(
   async (request: NextRequest, data: {}, session) => {
     try {
       if (!session?.user?.id) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
       }
 
       // Cas des utilisateurs non-onboarded:
@@ -30,25 +29,26 @@ export const GET = withValidation(
             },
             matches: {
               bluesky: { total: 0, hasFollowed: 0, notFollowed: 0 },
-              mastodon: { total: 0, hasFollowed: 0, notFollowed: 0 }
+              mastodon: { total: 0, hasFollowed: 0, notFollowed: 0 },
             },
-            updated_at: new Date().toISOString()
-          });
+            updated_at: new Date().toISOString(),
+          })
         }
       }
-      
-      const repository = new StatsRepository();
-      const statsService = new StatsService(repository);
 
-      const stats = await statsService.getUserStats(session.user.id, session.user.has_onboarded);       
-      return NextResponse.json(stats);
+      const statsService = new StatsService(pgStatsRepository)
+
+      const stats = await statsService.getUserStats(session.user.id, session.user.has_onboarded)
+
+      console.log("stats from api stats ->", stats)
+      return NextResponse.json(stats)
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error))
       logger.logError('API', 'GET /api/stats', err, session?.user?.id || 'anonymous', {
-        context: 'Failed to retrieve user stats'
-      });
-      
-      return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+        context: 'Failed to retrieve user stats',
+      })
+
+      return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
     }
   },
   {
@@ -56,6 +56,6 @@ export const GET = withValidation(
     applySecurityChecks: false, // Pas de données à valider pour GET
     skipRateLimit: true,
     validateQueryParams: true, // Activer explicitement la validation des paramètres d'URL
-    queryParamsSchema: StatsQueryParamsSchema // Utiliser le schéma de validation pour les paramètres d'URL
+    queryParamsSchema: StatsQueryParamsSchema, // Utiliser le schéma de validation pour les paramètres d'URL
   }
-);
+)
