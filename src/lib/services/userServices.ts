@@ -105,7 +105,7 @@ export class UserService {
       const activeConsents = await this.repository.getUserActiveConsents(userId);
       
       return {
-        email: user.email,
+        email: user.email ?? undefined,
         hqx_newsletter: activeConsents['email_newsletter'] || false,
         oep_accepted: activeConsents['oep_newsletter'] || false,
         research_accepted: activeConsents['research_participation'] || false,
