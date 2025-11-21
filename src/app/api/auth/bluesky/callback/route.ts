@@ -188,7 +188,7 @@ async function callbackHandler(request: NextRequest) {
     } else {
       const newUser = await pgUserRepository.createUser({
         name: profile.displayName || profile.handle,
-        email: 'none',
+        email: null,
         bluesky_id: profile.did,
         bluesky_username: profile.handle,
         bluesky_image: profile.avatar,
@@ -231,7 +231,7 @@ async function callbackHandler(request: NextRequest) {
       have_seen_newsletter: false,
       automatic_reconnect: false,
       name: profile.displayName || profile.handle,
-      email: 'none',
+      email: null,
       emailVerified: null,
     };
 
