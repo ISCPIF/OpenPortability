@@ -33,7 +33,7 @@ async function createMastodonApp(instance: string): Promise<MastodonAppCreds | n
       // TODO: limiter au strict nécessaire
       // https://docs.joinmastodon.org/api/oauth-scopes/#granular
       "scopes": "read write:follows",
-      "website": "https://app.beta.v2.helloquitx.com/"
+      "website": "https://openportability.org/"
     };
     
     try {

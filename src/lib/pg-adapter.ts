@@ -81,7 +81,7 @@ function dbUserToAdapterUser(user: DBUser): CustomAdapterUser {
   return {
     id: user.id,
     name: user.name,
-    email: "none",
+    email: user.email ?? '',
     emailVerified: null,
     has_onboarded: user.has_onboarded,
     hqx_newsletter: user.hqx_newsletter,
@@ -237,7 +237,7 @@ export async function createUser(
     have_seen_newsletter: false,
     research_accepted: false,
     automatic_reconnect: false,
-    email: 'none'
+    email: userData.email ?? undefined
   }
 
   const newUser = await pgUserRepository.createUser(userToCreate)
