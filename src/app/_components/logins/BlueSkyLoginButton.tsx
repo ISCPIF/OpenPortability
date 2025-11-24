@@ -4,6 +4,8 @@ import { motion, type Variants } from "framer-motion"
 import { SiBluesky } from 'react-icons/si'
 import { plex } from "@/app/fonts/plex"
 import { useTranslations } from 'next-intl'
+import { Button } from '@/app/_components/ui/Button'
+import { useTheme } from '@/hooks/useTheme'
 
 interface BlueSkyLoginButtonProps {
   onLoadingChange?: (isLoading: boolean) => void;
@@ -36,25 +38,55 @@ export default function BlueSkyLoginButton({
   onClick = () => {}
 }: BlueSkyLoginButtonProps) {
   const t = useTranslations('dashboardLoginButtons')
+  const { isDark } = useTheme()
 
   return (
-    <motion.button
+    <motion.div
       variants={itemVariants}
       initial="hidden"
       animate="visible"
       exit="exit"
-      onClick={onClick}
-      className={`flex items-center justify-center gap-2 w-full px-4 py-2 text-white 
-                 ${isSelected 
-                   ? 'bg-[#0074e0] ring-2 ring-sky-400/50' 
-                   : 'bg-[#0085FF] hover:bg-[#0074e0]'} 
-                 rounded-lg transition-all duration-200 ${plex.className} ${className}`}
-      disabled={isConnected}
+      className="w-full"
     >
-      <SiBluesky className="w-5 h-5" />
+      <Button 
+        onClick={onClick}
+        className="w-full px-8 py-6 tracking-widest border-2 transition-all duration-300 flex items-center justify-center gap-2"
+        style={{
+          backgroundColor: isDark ? 'transparent' : '#0074e0',
+          borderColor: '#0074e0',
+          color: '#ffffff',
+          boxShadow: isDark 
+            ? '0 0 15px rgba(255, 0, 127, 0.5), inset 0 0 15px rgba(255, 0, 127, 0.1)'
+            : '0 0 15px rgba(0, 116, 224, 0.3)',
+          fontFamily: 'monospace',
+        }}
+        onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => {
+          if (isDark) {
+            e.currentTarget.style.backgroundColor = '#0074e0';
+            e.currentTarget.style.color = '#ffffff';
+            e.currentTarget.style.boxShadow = '0 0 30px #0074e0, inset 0 0 20px rgba(255, 0, 127, 0.3)';
+          } else {
+            e.currentTarget.style.backgroundColor = '#0056b3';
+            e.currentTarget.style.boxShadow = '0 0 30px rgba(0, 116, 224, 0.6)';
+          }
+        }}
+        onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => {
+          if (isDark) {
+            e.currentTarget.style.backgroundColor = 'transparent';
+            e.currentTarget.style.color = '#ffffff';
+            e.currentTarget.style.boxShadow = '0 0 15px rgba(255, 0, 127, 0.5), inset 0 0 15px rgba(255, 0, 127, 0.1)';
+          } else {
+            e.currentTarget.style.backgroundColor = '#0074e0';
+            e.currentTarget.style.boxShadow = '0 0 15px rgba(0, 116, 224, 0.3)';
+          }
+        }}
+        disabled={isConnected}
+      >
+        <SiBluesky className="w-5 h-5" />
       <span>
         {isConnected ? t('connected') : t('services.bluesky')}
       </span>
-    </motion.button>
+      </Button>
+    </motion.div>
   )
 }

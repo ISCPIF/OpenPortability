@@ -9,10 +9,10 @@ import { plex } from "@/app/fonts/plex"
 import Link from "next/link"
 import LoginButtons from "@/app/_components/logins/LoginButtons"
 import LoadingIndicator from "@/app/_components/layouts/LoadingIndicator"
-import LoginSea from "@/app/_components/layouts/LoginSea"
-import Footer from "@/app/_components/layouts/Footer";
 import { useTranslations } from 'next-intl'
-import Header from "@/app/_components/layouts/Header"
+import { useTheme } from "@/hooks/useTheme"
+import logoBlanc from "@/../public/logo/logo-openport-blanc.svg"
+import logoRose from "@/../public/logos/logo-openport-rose.svg"
 
 export default function SignIn() {
   const { data: session, status } = useSession()
@@ -23,6 +23,10 @@ export default function SignIn() {
   const params = useParams()
   const locale = params.locale as string;
   const [error, setError] = useState<string | null>(null)
+  
+  // 🎨 Utiliser le hook useTheme pour accéder aux couleurs du thème
+  // Cela retourne : theme ('dark'|'light'), colors (objet avec toutes les couleurs), isDark (boolean), mounted (boolean)
+  const { colors, isDark, mounted } = useTheme()
 
 
   useEffect(() => {
@@ -37,40 +41,43 @@ export default function SignIn() {
     setIsLoading(loading)
   }
 
+  // Éviter le flash de contenu avant le montage du hook
+  if (!mounted) {
+    return null
+  }
+
   return (
-    <div className="min-h-screen bg-[#2a39a9] w-full">
-      <Header />
-      <div className="w-full">
-        <div className="flex flex-col text-center text-[#E2E4DF]">
-          {/* Sea background that takes full width */}
-          <LoginSea />
-          
-          {/* Login buttons positioned below the sea background */}
-          <div className="w-full max-w-md mx-auto px-4">
-            {(status === "loading" || isLoading) ? (
-              <div className="py-8">
-                <LoadingIndicator msg={t('loading')} />
-              </div>
-            ) : (
-              <div className="z-10">
-                <LoginButtons onLoadingChange={handleLoadingChange} />
-              </div>
-            )}
-            
-            {error && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="text-center text-sm text-red-600 mt-4"
-              >
-                {t(`errors.${error}`)}
-              </motion.div>
-            )}
-          </div>
+    <div className="w-full px-4">
+      <div className="mx-auto max-w-md flex flex-col items-center text-center gap-6">
+        <Image
+          src={isDark ? logoBlanc : logoRose}
+          alt="OpenPort Logo"
+          width={306}
+          height={82}
+          className="mx-auto sm:w-[200px] md:w-[280px] flex-shrink-0"
+          priority
+        />
+
+        <p className={`${plex.className} text-lg lg:text-xl my-1 lg:my-2`}>
+          {true
+            ? t('subtitle')
+            : (session?.user?.twitter_id ? t('embark') : t('embarkOrLogin'))}
+        </p>
+
+        <div className="w-full max-w-sm">
+          <LoginButtons onLoadingChange={handleLoadingChange} />
         </div>
-        <div className="mt-16">
-          <Footer />
-        </div>
+
+        {error && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="text-center text-sm"
+            style={{ color: isDark ? '#ff6b6b' : '#d32f2f' }}
+          >
+            {t(`errors.${error}`)}
+          </motion.div>
+        )}
       </div>
     </div>
   )
