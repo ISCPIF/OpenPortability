@@ -14,7 +14,7 @@ function getNextAuthPoolConfig() {
     password: process.env.POSTGRES_PASSWORD || 'mysecretpassword',
     max: 20,
     idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 2000,
+    connectionTimeoutMillis: 15000,
   }
 }
 
@@ -27,7 +27,7 @@ function getPublicPoolConfig() {
     password: process.env.POSTGRES_PASSWORD || 'mysecretpassword',
     max: 10,
     idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 2000,
+    connectionTimeoutMillis: 15000,
   }
 }
 
