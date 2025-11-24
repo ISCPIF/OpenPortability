@@ -1,15 +1,22 @@
 group "default" {
-  targets = ["app", "worker"]
+  targets = ["app", "worker", "watcher" ]
 }
 
 target "app" {
   context = "."
-  dockerfile = "Dockerfile.dev"
+  dockerfile = "Dockerfile.prod"
   tags = ["app"]
 }
 
 target "worker" {
   context = "worker"
-  dockerfile = "Dockerfile.dev"
+  dockerfile = "Dockerfile"
   tags = ["worker"]
 }
+
+target "watcher" {
+  context = "watcher"
+  dockerfile = "Dockerfile"
+  tags = ["watcher"]
+}
+
