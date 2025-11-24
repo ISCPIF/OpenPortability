@@ -3,8 +3,8 @@ import { pgAccountRepository } from '../repositories/auth/pg-account-repository'
 import { pgUserRepository } from '../repositories/auth/pg-user-repository';
 import { pgMastodonInstanceRepository } from '../repositories/auth/pg-mastodon-instance-repository';
 import { Provider, RefreshResult, TokenData, TokenUpdate } from '../types/account';
-import { supabaseAdapter } from '../supabase-adapter';
-import { supabase } from '../supabase';
+// import { supabaseAdapter } from '../supabase-adapter';
+// import { supabase } from '../supabase';
 import logger from '../log_utils';
 
 export class AccountService {
@@ -117,13 +117,7 @@ export class AccountService {
     }
 
 
-    // Récupérer l'instance Mastodon depuis le profil utilisateur
-    if (!supabaseAdapter?.getUser) {
-      console.error(' [AccountService.verifyAndRefreshMastodonToken] supabaseAdapter.getUser is not defined');
-      return { success: false, error: 'Internal configuration error', requiresReauth: true };
-    }
-
-    const user = await supabaseAdapter.getUser(userId);
+    const user = await pgUserRepository.getUser(userId);
     if (!user?.mastodon_instance) {
       console.warn(' [AccountService.verifyAndRefreshMastodonToken] No Mastodon instance found for user:', userId);
       return { success: false, error: 'No Mastodon instance found', requiresReauth: true };
