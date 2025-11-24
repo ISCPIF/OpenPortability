@@ -376,6 +376,11 @@
   "testDmDescription": "Puoi testare la ricezione di messaggi diretti su Bluesky per verificare che tutto funzioni correttamente.",
   "notifications": {
     "title": "Notifiche",
+    "columnTitles": {
+      "notifications": "Notifiche",
+      "automations": "Raccomandazioni automatiche",
+      "consents": "Consensi"
+    },
     "hqxNewsletter": {
       "title": "Newsletter OpenPortability",
       "description": "Essere informato/a degli ultimi aggiornamenti e nuove funzionalità della piattaforma OpenPortability"

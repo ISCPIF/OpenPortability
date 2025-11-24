@@ -7,14 +7,15 @@ import { useTranslations } from 'next-intl';
 import Header from '../../../_components/layouts/Header';
 import ErrorModal from "../../../_components/modales/ErrorModal";
 import Image from 'next/image';
-import seaBackground from '../../../../public/sea.svg';
 import { plex } from '../../../fonts/plex';
-import { motion, AnimatePresence } from 'framer-motion';
-import boat1 from '../../../../../public/boats/boat-1.svg';
+import { motion } from 'framer-motion';
 import { Loader2 } from 'lucide-react';
 import Footer from "@/app/_components/layouts/Footer";
-import logo from '../../../../../public/logo/logo-openport-blanc.svg';
+import logoBlanc from '../../../../../public/logo/logo-openport-blanc.svg';
+import logoRose from '../../../../../public/logos/logo-openport-rose.svg';
 import LoadingIndicator from '@/app/_components/layouts/LoadingIndicator';
+import { ParticulesBackground } from '@/app/_components/layouts/ParticulesBackground';
+import { useTheme } from '@/hooks/useTheme';
 
 interface JobStatus {
   status: 'pending' | 'processing' | 'completed' | 'failed';
@@ -54,6 +55,7 @@ export default function LargeFilesPage() {
   const searchParams = useSearchParams();
   const params = useParams();
   const t = useTranslations('largeFiles');
+  const { colors, isDark } = useTheme();
 
   const jobId = searchParams.get('jobId');
   const followerCount = parseInt(searchParams.get('followerCount') || '0', 10);
@@ -67,6 +69,22 @@ export default function LargeFilesPage() {
   const [reducedMotion, setReducedMotion] = useState(false);
   const [canUseWebGL, setCanUseWebGL] = useState(true);
   const [displayProgress, setDisplayProgress] = useState<number>(0);
+
+  const panelTextClass = isDark ? 'text-white' : 'text-slate-900';
+  const infoBannerClasses = isDark
+    ? 'bg-white/10 text-white'
+    : 'bg-white text-slate-900 shadow-[0_10px_30px_rgba(15,23,42,0.08)] border border-slate-200/80';
+  const progressBarBackgroundClass = isDark ? 'bg-white/15' : 'bg-slate-200';
+  const progressDividerClass = isDark ? 'bg-white/20' : 'bg-slate-300/70';
+  const progressLabelTextClass = isDark ? 'text-white/80' : 'text-slate-500';
+  const progressHintTextClass = isDark ? 'text-white/70' : 'text-slate-600';
+  const countdownTextClass = progressHintTextClass;
+  const errorAlertClasses = isDark
+    ? 'bg-red-500/20 text-red-300'
+    : 'bg-red-50 text-red-700 border border-red-200';
+  const progressPanelClasses = isDark
+    ? 'bg-slate-950/75 border-white/10 shadow-[0_25px_60px_rgba(0,0,0,0.45)]'
+    : 'bg-white border-slate-200 shadow-[0_25px_60px_rgba(15,23,42,0.12)]';
 
   // Vérifier l'authentification
   useEffect(() => {
@@ -207,7 +225,7 @@ export default function LargeFilesPage() {
       // Redirection après 10 secondes
       const redirectTimeout = setTimeout(() => {
         const locale = params.locale as string || 'fr';
-        router.push(`/${locale}/reconnect`);
+        // router.push(`/${locale}/reconnect`);
       }, 10000); // 10 secondes
 
       return () => {
@@ -289,10 +307,14 @@ export default function LargeFilesPage() {
 
   if (status === 'loading' || !session) {
     return (
-      <div className="min-h-screen bg-[#2a39a9] relative w-full m-auto">
-        <div className="container mx-auto py-12">
-          <div className="container flex flex-col m-auto text-center text-[#E2E4DF]">
-            <div className="m-auto relative my-32 lg:my-40">
+      <div
+        className="relative min-h-screen w-full"
+        style={{ backgroundColor: colors.background }}
+      >
+        <ParticulesBackground />
+        <div className="relative z-10 container mx-auto py-12">
+          <div className="flex flex-col text-center text-[#E2E4DF]">
+            <div className="m-auto my-32 lg:my-40">
               <LoadingIndicator msg={"Loading..."} />
             </div>
           </div>
@@ -302,12 +324,16 @@ export default function LargeFilesPage() {
   }
 
   return (
-    <>
-      <div className="min-h-screen bg-[#2a39a9] relative w-full max-w-[90rem] m-auto">
+    <div
+      className="relative min-h-screen overflow-hidden"
+      style={{ backgroundColor: colors.background }}
+    >
+      <ParticulesBackground />
+      <div className="relative z-10 flex min-h-screen flex-col">
         <Header />
         <div className="flex justify-center mt-8 mb-8">
           <Image
-            src={logo}
+            src={isDark ? logoBlanc : logoRose}
             alt={t('logo.alt')}
             width={306}
             height={125}
@@ -317,22 +343,24 @@ export default function LargeFilesPage() {
         </div>
 
         <div className="relative">
-          <div className="flex flex-col items-center justify-center p-8 mt-8">
+          <div className="flex flex-col items-center justify-center px-4 sm:px-6 lg:px-8 mt-8">
             {jobStatus && (
-              <div className="text-white">
+              <div className={`w-full max-w-3xl rounded-3xl border-2 p-6 sm:p-8 backdrop-blur-xl ${progressPanelClasses} ${panelTextClass}`}>
                 <div className="space-y-6">
                   {/* Message about contacts being downloaded */}
-                  <div className="text-center mb-6 px-4 py-3 bg-white/10 rounded-lg">
-                    <p className="text-white">{t('downloadingContacts')}</p>
+                  <div className={`text-center mb-6 px-4 py-3 rounded-lg ${infoBannerClasses}`}>
+                    <p>
+                      {t('downloadingContacts')}
+                    </p>
                   </div>
 
                   {/* Single Combined Progress Bar: 0–50% nodes, 50–100% edges */}
                   <div className="mb-6">
                     <div className="mb-2 flex items-center justify-between">
                       <span className="font-semibold">{phaseLabel}</span>
-                      <span className="text-xs text-white/80">{Math.round(displayProgress)}%</span>
+                      <span className={`text-xs ${progressLabelTextClass}`}>{Math.round(displayProgress)}%</span>
                     </div>
-                    <div className="w-full bg-white/15 rounded-full h-3 relative overflow-hidden">
+                    <div className={`w-full ${progressBarBackgroundClass} rounded-full h-3 relative overflow-hidden`}>
                       <motion.div
                         initial={false}
                         animate={{ width: `${Math.round(displayProgress)}%` }}
@@ -340,9 +368,9 @@ export default function LargeFilesPage() {
                         className="absolute left-0 top-0 bottom-0 bg-gradient-to-r from-blue-400 via-indigo-500 to-purple-500 rounded-full"
                       />
                       {/* 50% split marker */}
-                      <div className="absolute left-1/2 top-0 bottom-0 w-px bg-white/20" />
+                      <div className={`absolute left-1/2 top-0 bottom-0 w-px ${progressDividerClass}`} />
                     </div>
-                    <div className="mt-2 text-xs text-white/70 flex justify-between">
+                    <div className={`mt-2 text-xs flex justify-between ${progressHintTextClass}`}>
                       <span>{t('phase.nodes')} 0–50%</span>
                       <span>{t('phase.edges')} 50–100%</span>
                     </div>
@@ -367,23 +395,8 @@ export default function LargeFilesPage() {
 
                     {jobStatus.status === 'completed' && (
                       <>
-                        {/* <div className="grid grid-cols-2 gap-6 mt-6 text-center">
-                          <div className="p-4 bg-black/20 rounded-xl">
-                            <p className="text-3xl font-bold text-pink-400">
-                              {followerCount.toLocaleString()}
-                            </p>
-                            <p className="text-sm text-white/60 mt-1">{t('stats.followers')}</p>
-                          </div>
-                          <div className="p-4 bg-black/20 rounded-xl">
-                            <p className="text-3xl font-bold text-blue-400">
-                              {followingCount.toLocaleString()}
-                            </p>
-                            <p className="text-sm text-white/60 mt-1">{t('stats.following')}</p>
-                          </div>
-                        </div> */}
-
                         {/* Affichage du compte à rebours */}
-                        <div className="mt-4 text-center text-white/70">
+                        <div className={`mt-4 text-center ${countdownTextClass}`}>
                           <p>{t('redirecting')} {redirectCountdown}s</p>
                         </div>
                       </>
@@ -410,38 +423,19 @@ L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd
                     )}
 
                     {jobStatus.error && (
-                      <div className="mt-6 p-4 bg-red-500/20 text-red-300 rounded-xl">
+                      <div className={`mt-6 p-4 rounded-xl ${errorAlertClasses}`}>
                         {jobStatus.error}
                       </div>
                     )}
-
-                    {/* {jobStatus.status === 'completed' && (
-                      <motion.button
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        onClick={() => {
-                          const locale = params.locale as string || 'fr';
-                          router.push(`/${locale}/reconnect`);
-                        }}
-                        className="w-full mt-6 bg-white text-gray-800 py-3 px-4 rounded-xl
-                        hover:bg-gray-50 transition-all duration-200
-                        flex items-center justify-center space-x-2"
-                      >
-                        <span className={plex.className}>{t('button.dashboard')}</span>
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414
-L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
-                        </svg>
-                      </motion.button>
-                    )} */}
                   </div>
                 </div>
               </div>
             )}
           </div>
         </div>
+
+        <Footer />
       </div>
-      <Footer />
-    </>
+    </div>
   );
 }

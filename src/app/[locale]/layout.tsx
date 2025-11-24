@@ -8,6 +8,7 @@ import { MotionWrapper } from "../_components/layouts/MotionWrapper";
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
 import { Toaster } from 'sonner';
+import { ReactScanWrapper } from "../_components/layouts/ReactScanWrapper";
 
 const geistSans = localFont({
   src: "../fonts/GeistVF.woff",
@@ -49,16 +50,18 @@ export default async function RootLayout({ children, params }: Props) {
   return (
     <html lang={locale} className={`${inter.variable} ${spaceGrotesk.variable}`}>
       <body className={`${geistSans.variable} ${geistMono.variable} ${inter.className} antialiased bg-gray-800`}>
-        <NextIntlClientProvider messages={messages} locale={locale}>
-          <Providers session={session}>
-            <main className="min-h-screen">
-            <MotionWrapper>
-            {children}
-            </MotionWrapper>
-            </main>
-            <Toaster position="top-right" />
-          </Providers>
-        </NextIntlClientProvider>
+        <ReactScanWrapper>
+          <NextIntlClientProvider messages={messages} locale={locale}>
+            <Providers session={session}>
+              <main className="min-h-screen">
+              <MotionWrapper>
+              {children}
+              </MotionWrapper>
+              </main>
+              <Toaster position="top-right" />
+            </Providers>
+          </NextIntlClientProvider>
+        </ReactScanWrapper>
       </body>
     </html>
   );
