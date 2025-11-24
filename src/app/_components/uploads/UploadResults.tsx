@@ -3,7 +3,7 @@
 import { Ship, Users, Globe } from 'lucide-react';
 // import PartageButton from '../layouts/PartageButton';
 import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
+// import { supabase } from '@/lib/supabase';
 import { plex } from '../../fonts/plex';
 import { useTranslations } from 'next-intl';
 import { useSession } from "next-auth/react"

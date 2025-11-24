@@ -12,7 +12,7 @@ function getNextAuthPoolConfig() {
     database: process.env.POSTGRES_DB || 'nexus',
     user: process.env.POSTGRES_USER || 'postgres',
     password: process.env.POSTGRES_PASSWORD || 'mysecretpassword',
-    max: 20,
+    max: 60,
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 15000,
   }
@@ -25,7 +25,7 @@ function getPublicPoolConfig() {
     database: process.env.POSTGRES_DB || 'nexus',
     user: process.env.POSTGRES_USER || 'postgres',
     password: process.env.POSTGRES_PASSWORD || 'mysecretpassword',
-    max: 10,
+    max: 30,
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 15000,
   }
@@ -37,7 +37,7 @@ export const nextAuthPool = new Proxy({} as Pool, {
     if (!_nextAuthPool) {
       _nextAuthPool = new Pool(getNextAuthPoolConfig())
       _nextAuthPool.on('error', (err) => {
-        logger.logError('Database', 'nextAuthPool', 'Unexpected error on idle client', undefined, { error: err })
+        console.log('Database', 'nextAuthPool', 'Unexpected error on idle client', undefined, { error: err })
       })
     }
     return (_nextAuthPool as any)[prop]
@@ -49,7 +49,7 @@ export const publicPool = new Proxy({} as Pool, {
     if (!_publicPool) {
       _publicPool = new Pool(getPublicPoolConfig())
       _publicPool.on('error', (err) => {
-        logger.logError('Database', 'publicPool', 'Unexpected error on idle client', undefined, { error: err })
+        console.log('Database', 'publicPool', 'Unexpected error on idle client', undefined, { error: err })
       })
     }
     return (_publicPool as any)[prop]
@@ -69,7 +69,7 @@ export async function queryNextAuth<T extends QueryResultRow = any>(
     const result = await client.query<T>(text, params)
     const duration = Date.now() - start
     
-    logger.logDebug('Database', 'queryNextAuth', `Query executed in ${duration}ms`, undefined, {
+    console.log('Database', 'queryNextAuth', `Query executed in ${duration}ms`, undefined, {
       text,
       rows: result.rowCount,
       duration
@@ -77,7 +77,7 @@ export async function queryNextAuth<T extends QueryResultRow = any>(
     
     return result
   } catch (error) {
-    logger.logError('Database', 'queryNextAuth', 'Query failed', undefined, {
+    console.log('Database', 'queryNextAuth', 'Query failed', undefined, {
       text,
       params,
       error
@@ -101,7 +101,7 @@ export async function queryPublic<T extends QueryResultRow = any>(
     const result = await client.query<T>(text, params)
     const duration = Date.now() - start
     
-    logger.logDebug('Database', 'queryPublic', `Query executed in ${duration}ms`, undefined, {
+    console.log('Database', 'queryPublic', `Query executed in ${duration}ms`, undefined, {
       text,
       rows: result.rowCount,
       duration
@@ -109,7 +109,7 @@ export async function queryPublic<T extends QueryResultRow = any>(
     
     return result
   } catch (error) {
-    logger.logError('Database', 'queryPublic', 'Query failed', undefined, {
+   console.log('Database', 'queryPublic', 'Query failed', undefined, {
       text,
       params,
       error
@@ -133,7 +133,7 @@ export async function transactionNextAuth<T>(
     return result
   } catch (error) {
     await client.query('ROLLBACK')
-    logger.logError('Database', 'transactionNextAuth', 'Transaction failed and rolled back', undefined, { error })
+    console.log('Database', 'transactionNextAuth', 'Transaction failed and rolled back', undefined, { error })
     throw error
   } finally {
     client.release()
@@ -153,7 +153,7 @@ export async function transactionPublic<T>(
     return result
   } catch (error) {
     await client.query('ROLLBACK')
-    logger.logError('Database', 'transactionPublic', 'Transaction failed and rolled back', undefined, { error })
+    console.log('Database', 'transactionPublic', 'Transaction failed and rolled back', undefined, { error })
     throw error
   } finally {
     client.release()
@@ -168,7 +168,7 @@ export async function closePools(): Promise<void> {
   if (_publicPool) {
     await _publicPool.end()
   }
-  logger.logInfo('Database', 'closePools', 'All database pools closed')
+  console.log('Database', 'closePools', 'All database pools closed')
 }
 
 // Fonction pour vérifier la connexion
@@ -176,10 +176,10 @@ export async function checkConnection(): Promise<boolean> {
   try {
     await queryNextAuth('SELECT 1')
     await queryPublic('SELECT 1')
-    logger.logInfo('Database', 'checkConnection', 'Database connection successful')
+   console.log('Database', 'checkConnection', 'Database connection successful')
     return true
   } catch (error) {
-    logger.logError('Database', 'checkConnection', 'Database connection failed', undefined, { error })
+ console.log('Database', 'checkConnection', 'Database connection failed', undefined, { error })
     return false
   }
 }
