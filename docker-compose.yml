@@ -2,18 +2,11 @@ version: '3.8'
 services:
   app:
     image: app
-    build:
-      context: .
-      dockerfile: Dockerfile.dev
-    user: "node" 
     env_file:
       - .env.local
     environment:
-      - NODE_ENV=development
+      - NODE_ENV=production
       - NEXT_TELEMETRY_DISABLED=1
-      - WATCHPACK_POLLING=true
-      - CHOKIDAR_USEPOLLING=true
-      - CHOKIDAR_INTERVAL=1000
     restart: always
     networks:
       - app_network
@@ -23,8 +16,8 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - ./:/app
-      - /app/node_modules
+      # - ./:/app
+      # - /app/node_modules
       # - /app/.next
       - shared-tmp:/app/tmp
       - app_logs:/app/logs
@@ -38,17 +31,15 @@ services:
       dockerfile: Dockerfile.dev
     user: "1000:1000"
     volumes:
-      - ./worker:/app
-      - /app/node_modules
+      # - ./worker:/app
+      # - /app/node_modules
       - shared-tmp:/app/tmp
       - app_logs:/app/logs
     env_file:
       - ./worker/.env
     environment:
-      - NODE_ENV=development
+      - NODE_ENV=production
       - NEXT_TELEMETRY_DISABLED=1
-      - WATCHPACK_POLLING=true
-      - CHOKIDAR_USEPOLLING=true
     networks:
       - app_network
       - db_openportability_db_network
@@ -69,6 +60,25 @@ services:
     networks:
       - app_network
     command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
+
+  watcher:
+    image: watcher
+    environment:
+      - NODE_ENV=production
+    env_file:
+      - ./watcher/.env
+    restart: unless-stopped
+    networks:
+      - app_network
+      - db_openportability_db_network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "host.docker.internal:54321"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s   
 
 networks:
   app_network:
