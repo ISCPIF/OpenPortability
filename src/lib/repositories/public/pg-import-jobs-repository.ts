@@ -38,7 +38,7 @@ export const pgImportJobsRepository = {
     try {
       const res = await queryPublic<{ exists: boolean }>(
         `SELECT EXISTS (
-           SELECT 1 FROM import_jobs 
+           SELECT 1 FROM public.import_jobs 
            WHERE user_id = $1 AND status IN ('pending','processing')
          ) as exists`,
         [userId]
@@ -55,7 +55,7 @@ export const pgImportJobsRepository = {
       const res = await queryPublic<ImportJobRow>(
         `SELECT id, user_id, status, total_items, error_log, job_type,
                 file_paths, stats, created_at, updated_at, started_at, completed_at
-         FROM import_jobs
+         FROM public.import_jobs
          WHERE id = $1 AND user_id = $2
          LIMIT 1`,
         [jobId, userId]
@@ -75,7 +75,7 @@ export const pgImportJobsRepository = {
 
     try {
       const res = await queryPublic<ImportJobRow>(
-        `INSERT INTO import_jobs (user_id, status, total_items, job_type, file_paths, stats)
+        `INSERT INTO public.import_jobs (user_id, status, total_items, job_type, file_paths, stats)
          VALUES ($1, $2, $3, $4, $5::text[], $6::jsonb)
          RETURNING id, user_id, status, total_items, error_log, job_type,
                    file_paths, stats, created_at, updated_at, started_at, completed_at`,
