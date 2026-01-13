@@ -5,6 +5,7 @@
             "username": "@{username}"
         },
 "returnToDashboard": "Vai alla riconnessione",
+"reconnect": "Riconnessione",
 "settings": "Impostazioni e notifiche"
     },
     "connectedAccounts": {

@@ -8,13 +8,11 @@ import { useTranslations } from 'next-intl';
 import ErrorModal from "../../_components/modales/ErrorModal";
 import ConsentModal from "../../_components/modales/ConsentModal";
 import Header from '../../_components/layouts/Header';
-import * as zip from '@zip.js/zip.js';
 import { validateTwitterData, extractTargetFiles } from '../../_components/uploads/UploadButton';
 import Image from 'next/image';
-// import seaBackground from '../../../public/sea.svg'
-import { plex } from '../../fonts/plex';
+import { quantico } from '../../fonts/plex';
 import { motion } from 'framer-motion';
-import { AlertCircle, Play } from 'lucide-react';
+import { AlertCircle, Play, Upload, HelpCircle, Activity } from 'lucide-react';
 import Footer from "@/app/_components/layouts/Footer";
 import LoadingIndicator from '@/app/_components/layouts/LoadingIndicator';
 import SupportModal from '../../_components/modales/SupportModale';
@@ -22,7 +20,7 @@ import logoBlanc from '../../../../public/logo/logo-openport-blanc.svg';
 import logoRose from '../../../../public/logos/logo-openport-rose.svg';
 import { ParticulesBackground } from '@/app/_components/layouts/ParticulesBackground';
 import { useTheme } from '@/hooks/useTheme';
-import { Button } from '@/app/_components/ui/Button';
+import { useCommunityColors } from '@/hooks/useCommunityColors';
 
 const UploadButton = dynamic(() => import('../../_components/uploads/UploadButton'), {
   loading: () => <div className="animate-pulse bg-gray-200 h-12 w-48 rounded-lg"></div>,
@@ -50,23 +48,14 @@ export default function UploadPage() {
   const t = useTranslations('upload');
   const tuto = useTranslations('dashboard.tutorial');
   const tSupport = useTranslations('support');
+  const tLoaders = useTranslations('loaders');
   const { colors, isDark } = useTheme();
-  const headingColor = isDark ? 'text-white' : 'text-slate-900';
-  const accentColor = isDark ? 'text-indigo-200' : 'text-indigo-700';
-  const secondaryTextColor = isDark ? 'text-white/80' : 'text-slate-700';
-  const helpPanelClasses = isDark
-    ? 'bg-white/5 border-white/10 text-white'
-    : 'bg-slate-50 border-slate-200 text-slate-900';
-  const primaryAccent = '#ff007f';
-  const supportButtonShadow = isDark
-    ? '0 0 15px rgba(255, 0, 127, 0.4), inset 0 0 12px rgba(255, 0, 127, 0.18)'
-    : '0 0 12px rgba(255, 0, 127, 0.24), inset 0 0 10px rgba(255, 0, 127, 0.08)';
-  const tutorialSectionClasses = isDark
-    ? 'bg-gradient-to-b from-slate-950/95 via-slate-900/85 to-slate-950/95 border-white/10 text-white shadow-[0_20px_60px_rgba(0,0,0,0.55)]'
-    : 'bg-gradient-to-b from-white via-slate-50 to-white border-slate-200 text-slate-900 shadow-[0_30px_70px_rgba(15,23,42,0.15)]';
-  const tutorialLinkClasses = isDark
-    ? 'text-white hover:text-[#ff007f]'
-    : 'text-indigo-700 hover:text-pink-600';
+  const { colors: communityColors } = useCommunityColors();
+  
+  // Contrast color for loaders based on theme and palette
+  const contrastColor = isDark 
+    ? (communityColors[9] || communityColors[8] || '#fad541')
+    : (communityColors[0] || communityColors[1] || '#011959');
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -425,156 +414,187 @@ export default function UploadPage() {
 
   if (isLoading || isUploading) {
     return (
-      <div
-        className="relative min-h-screen w-full"
+      <div 
+        className="flex items-center justify-center h-screen"
         style={{ backgroundColor: colors.background }}
       >
         <ParticulesBackground />
-        <div className="relative z-10 container mx-auto py-12">
-          <div className="flex flex-col text-center text-[#E2E4DF]">
-            <div className="m-auto my-32 lg:my-40">
-              <LoadingIndicator
-                msg={isUploading ? t('loading-uploading') : t('loading-indic')}
-                textSize="base"
-              />
-            </div>
-          </div>
+        <div className="relative z-10 flex flex-col items-center gap-4">
+          <LoadingIndicator
+            msg={isUploading ? tLoaders('uploading') : tLoaders('upload')}
+            textSize="base"
+          />
         </div>
       </div>
     )
   }
 
   return (
-    <div
-      className="relative min-h-screen overflow-hidden"
-      style={{ backgroundColor: colors.background }}
-    >
+    <div className="relative min-h-screen overflow-hidden" style={{ backgroundColor: colors.background }}>
       <ParticulesBackground />
       <div className="relative z-10 flex min-h-screen flex-col">
         <Header />
-        <main className="flex-1 flex flex-col">
-          <div className="relative z-10">
-            <Image
-              src={isDark ? logoBlanc : logoRose}
-              alt={t('logo.alt')}
-              width={400}
-              height={200}
-              className="mx-auto"
-              priority
-            />
-          </div>
-
-          <div className="px-6 text-center mt-8 space-y-3">
-            <h2 className={`${plex.className} text-3xl sm:text-4xl font-bold ${headingColor}`}>
-              {t('title')}
-            </h2>
-            <p className={`${plex.className} text-base sm:text-lg font-semibold tracking-[0.4em] uppercase ${accentColor}`}>
-              {t('action')}
-            </p>
-          </div>
-
-          <div className="flex justify-center items-center p-12">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className={`w-full max-w-3xl mx-auto rounded-3xl border-2 p-8 backdrop-blur-xl shadow-lg transition-[box-shadow] duration-300 ${
-                isDark
-                  ? 'bg-slate-950/80 border-pink-500/30 shadow-[0_0_30px_rgba(255,0,127,0.25)]'
-                  : 'bg-white/95 border-pink-500/20 shadow-[0_20px_45px_rgba(17,24,39,0.15)]'
-              }`}
-            >
-              <div className="p-4">
-                <div className="space-y-4">
-                  <p className={`${plex.className} whitespace-pre-line text-left mb-6 text-base leading-relaxed ${secondaryTextColor}`}>
-                    {t('description')}
-                  </p>
-
-                  {!isUploading && (
-                    <div className="space-y-4">
-                      <UploadButton
-                        onFilesSelected={handleFilesSelected}
-                        onError={handleUploadError}
-                        onUploadComplete={() => {}}
-                      />
-                    </div>
-                  )}
-
-                  {isUploading && (
-                    <div className="flex items-center justify-center space-x-2 text-white">
-                      <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-white" />
-                      <p>{t('uploading')}</p>
-                    </div>
-                  )}
-                </div>
+        <main className={`${quantico.className} flex-1 flex flex-col items-center px-4 py-8`}>
+          
+          {/* Main Panel - Graph style */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className={`w-full max-w-xl backdrop-blur-sm rounded-xl border shadow-xl overflow-hidden ${
+              isDark 
+                ? 'bg-slate-900/95 border-slate-700/50' 
+                : 'bg-white/90 border-slate-200'
+            }`}
+          >
+            {/* Header */}
+            <div className={`px-6 pt-6 pb-4 border-b ${
+              isDark ? 'border-slate-700/50' : 'border-slate-200'
+            }`}>
+              <Image
+                src={isDark ? logoBlanc : logoRose}
+                alt={t('logo.alt')}
+                width={160}
+                height={48}
+                className="mx-auto mb-4 h-auto w-32 sm:w-40"
+                priority
+              />
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <Upload className="w-5 h-5 text-amber-400" />
+                <h2 className={`text-base sm:text-lg font-semibold tracking-wide ${
+                  isDark ? 'text-white' : 'text-slate-800'
+                }`}>
+                  {t('title')}
+                </h2>
               </div>
+              <div className="flex items-center justify-center gap-1.5">
+                <Activity className={`w-3 h-3 ${isDark ? 'text-emerald-500' : 'text-emerald-600'}`} />
+                <span className={`text-[10px] uppercase tracking-wider ${
+                  isDark ? 'text-emerald-500' : 'text-emerald-600'
+                }`}>
+                  {t('action')}
+                </span>
+              </div>
+            </div>
 
-              <div className={`rounded-2xl border p-4 mt-6 ${helpPanelClasses}`}>
-                <h3 className={`${plex.className} text-lg font-semibold mb-4 text-center uppercase tracking-[0.35em]`}>
-                  {t('helpModal.title')}
-                </h3>
-                <div className={`${plex.className} text-sm leading-relaxed text-justify space-y-4`}>
+            {/* Body */}
+            <div className="px-6 py-5 space-y-5">
+              {/* Description */}
+              <p className={`text-[13px] leading-relaxed whitespace-pre-line ${
+                isDark ? 'text-slate-300' : 'text-slate-600'
+              }`}>
+                {t('description')}
+              </p>
+
+              {/* Upload button */}
+              {!isUploading && (
+                <div className="space-y-4">
+                  <UploadButton
+                    onFilesSelected={handleFilesSelected}
+                    onError={handleUploadError}
+                    onUploadComplete={() => {}}
+                  />
+                </div>
+              )}
+
+              {isUploading && (
+                <div className="flex items-center justify-center gap-3 py-4">
+                  <div 
+                    className="w-5 h-5 border-2 border-t-transparent rounded-full animate-spin" 
+                    style={{ borderColor: contrastColor, borderTopColor: 'transparent' }}
+                  />
+                  <p className={`text-[13px] ${isDark ? 'text-white' : 'text-slate-800'}`}>{t('uploading')}</p>
+                </div>
+              )}
+
+              {/* Help section */}
+              <div className={`rounded-lg border p-4 space-y-3 ${
+                isDark 
+                  ? 'bg-slate-800/50 border-slate-700/30' 
+                  : 'bg-slate-50 border-slate-200'
+              }`}>
+                <div className="flex items-center gap-2">
+                  <HelpCircle className="w-4 h-4 text-blue-400" />
+                  <h3 className={`text-[13px] font-semibold ${
+                    isDark ? 'text-white' : 'text-slate-800'
+                  }`}>
+                    {t('helpModal.title')}
+                  </h3>
+                </div>
+                <div className={`text-[12px] leading-relaxed space-y-2 ${
+                  isDark ? 'text-slate-300' : 'text-slate-600'
+                }`}>
                   <p>{t('helpModal.description')}</p>
-                  <ol className="list-decimal list-inside space-y-2 text-left">
+                  <ol className={`list-decimal list-inside space-y-1 ${
+                    isDark ? 'text-slate-400' : 'text-slate-500'
+                  }`}>
                     {t.raw('helpModal.steps').map((step: string, index: number) => (
                       <li key={index}>{step}</li>
                     ))}
                   </ol>
-                  <p className="text-xs opacity-80">{t('helpModal.note')}</p>
+                  <p className={`text-[11px] ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{t('helpModal.note')}</p>
                 </div>
               </div>
 
+              {/* Support button */}
               {!isUploading && (
-                <div className="space-y-4 mt-12">
-                  <Button
-                    onClick={() => setShowSupportModal(true)}
-                    className={`${plex.className} w-full flex items-center justify-center gap-3 rounded-full border-2 px-8 py-4 uppercase tracking-[0.35em] transition-all duration-300`}
-                    style={{
-                      backgroundColor: 'transparent',
-                      borderColor: primaryAccent,
-                      color: isDark ? '#ffffff' : '#111827',
-                      boxShadow: supportButtonShadow
-                    }}
-                    onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => {
-                      e.currentTarget.style.backgroundColor = primaryAccent;
-                      e.currentTarget.style.color = '#ffffff';
-                      e.currentTarget.style.boxShadow = '0 0 25px rgba(255, 0, 127, 0.55)';
-                    }}
-                    onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => {
-                      e.currentTarget.style.backgroundColor = 'transparent';
-                      e.currentTarget.style.color = isDark ? '#ffffff' : '#111827';
-                      e.currentTarget.style.boxShadow = supportButtonShadow;
-                    }}
-                  >
-                    <AlertCircle className="w-5 h-5" />
-                    <span>{tSupport('modal.title')}</span>
-                  </Button>
-                </div>
+                <button
+                  onClick={() => setShowSupportModal(true)}
+                  className={`w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg border text-[12px] transition-all ${
+                    isDark 
+                      ? 'bg-slate-800/50 hover:bg-slate-700/50 border-slate-700/30 text-slate-300 hover:text-white' 
+                      : 'bg-slate-100 hover:bg-slate-200 border-slate-200 text-slate-600 hover:text-slate-800'
+                  }`}
+                >
+                  <AlertCircle className="w-4 h-4" />
+                  <span>{tSupport('modal.title')}</span>
+                </button>
               )}
-            </motion.div>
-          </div>
+            </div>
+          </motion.div>
+
+          {/* Tutorial Panel - Graph style */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className={`w-full max-w-xl mt-6 backdrop-blur-sm rounded-xl border shadow-xl overflow-hidden ${
+              isDark 
+                ? 'bg-slate-900/95 border-slate-700/50' 
+                : 'bg-white/90 border-slate-200'
+            }`}
+          >
+            <div className="px-6 py-5 flex flex-col items-center text-center space-y-3">
+              <div className="flex items-center gap-2">
+                <Play className="w-4 h-4 text-purple-400" />
+                <h3 className={`text-[13px] font-semibold ${
+                  isDark ? 'text-white' : 'text-slate-800'
+                }`}>
+                  {tuto('title')}
+                </h3>
+              </div>
+              <motion.a
+                href="https://vimeo.com/1044334098?share=copy"
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`inline-flex items-center gap-2 py-2 px-4 rounded-lg border text-[12px] transition-all ${
+                  isDark 
+                    ? 'bg-purple-600/20 hover:bg-purple-600/30 border-purple-500/30 text-purple-300 hover:text-purple-200' 
+                    : 'bg-purple-50 hover:bg-purple-100 border-purple-200 text-purple-600 hover:text-purple-700'
+                }`}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <Play className="w-4 h-4" />
+                <span className="font-medium">{tuto('watchVideo')}</span>
+              </motion.a>
+            </div>
+          </motion.div>
 
           <SupportModal
             isOpen={showSupportModal}
             onClose={() => setShowSupportModal(false)}
           />
         </main>
-
-        <section className={`w-full max-w-3xl mx-auto flex flex-col items-center text-center space-y-4 p-12 rounded-3xl border-2 backdrop-blur-xl transition-all duration-300 ${tutorialSectionClasses}`}>
-          <h3 className={`${plex.className} text-2xl font-semibold tracking-[0.4em] uppercase`}>
-            {tuto('title')}
-          </h3>
-          <motion.a
-            href="https://vimeo.com/1044334098?share=copy"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={`group inline-flex items-center gap-3 transition-colors ${tutorialLinkClasses}`}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-          >
-            <Play className="w-5 h-5" />
-            <span className={`${plex.className} text-lg font-semibold tracking-[0.4em] uppercase`}>{tuto('watchVideo')}</span>
-          </motion.a>
-        </section>
 
         <Footer />
       </div>

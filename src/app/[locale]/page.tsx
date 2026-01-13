@@ -15,9 +15,9 @@ export default async function Home() {
     redirect(`/${locale}/auth/signin`);
   }
   
-  if (!session.user.has_onboarded){
-    redirect(`/${locale}/dashboard`);
-  } else {
+  // if (!session.user.has_onboarded){
+  //   redirect(`/${locale}/dashboard`);
+  // } else {
     redirect(`/${locale}/reconnect`);
-  }
+  // }
 }

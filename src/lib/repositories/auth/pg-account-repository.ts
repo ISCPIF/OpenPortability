@@ -48,7 +48,7 @@ export const pgAccountRepository = {
   async getAccount(provider: string, providerAccountId: string): Promise<DBAccount | null> {
     try {
       const result = await queryNextAuth<DBAccount>(
-        'SELECT * FROM accounts WHERE provider = $1 AND provider_account_id = $2',
+        'SELECT * FROM "next-auth".accounts WHERE provider = $1 AND provider_account_id = $2',
         [provider, providerAccountId]
       )
       return result.rows[0] ? parseAccount(result.rows[0]) : null
@@ -65,11 +65,19 @@ export const pgAccountRepository = {
   /**
    * Récupère un compte par provider et user_id
    * Les tokens retournés sont DÉCRYPTÉS
+   * Priorise les comptes avec access_token valide, puis les plus récents
    */
   async getProviderAccount(provider: string, userId: string): Promise<DBAccount | null> {
     try {
+      // Order by: accounts with access_token first, then by most recent
       const result = await queryNextAuth<DBAccount>(
-        'SELECT * FROM accounts WHERE provider = $1 AND user_id = $2',
+        `SELECT * FROM "next-auth".accounts 
+         WHERE provider = $1 AND user_id = $2 
+         ORDER BY 
+           CASE WHEN access_token IS NOT NULL THEN 0 ELSE 1 END,
+           updated_at DESC NULLS LAST,
+           created_at DESC NULLS LAST
+         LIMIT 1`,
         [provider, userId]
       )
       if (!result.rows[0]) return null
@@ -90,7 +98,7 @@ export const pgAccountRepository = {
   async getAccountsByUserId(userId: string): Promise<DBAccount[]> {
     try {
       const result = await queryNextAuth<DBAccount>(
-        'SELECT * FROM accounts WHERE user_id = $1',
+        'SELECT * FROM "next-auth".accounts WHERE user_id = $1',
         [userId]
       )
       return result.rows.map(parseAccount)
@@ -116,7 +124,7 @@ export const pgAccountRepository = {
         .join(', ')
       
       const sql = `
-        INSERT INTO accounts (${fields.join(', ')})
+        INSERT INTO "next-auth".accounts (${fields.join(', ')})
         VALUES (${placeholders})
         ON CONFLICT (provider, provider_account_id)
         DO UPDATE SET ${updateClauses}, updated_at = NOW()
@@ -168,7 +176,7 @@ export const pgAccountRepository = {
       const values = [provider, providerAccountId, ...fields.map(field => encryptedTokens[field as keyof typeof encryptedTokens])]
       
       const sql = `
-        UPDATE accounts
+        UPDATE "next-auth".accounts
         SET ${setClauses}, updated_at = NOW()
         WHERE provider = $1 AND provider_account_id = $2
         RETURNING *
@@ -198,7 +206,7 @@ export const pgAccountRepository = {
   async deleteAccount(provider: string, providerAccountId: string): Promise<void> {
     try {
       await queryNextAuth(
-        'DELETE FROM accounts WHERE provider = $1 AND provider_account_id = $2',
+        'DELETE FROM "next-auth".accounts WHERE provider = $1 AND provider_account_id = $2',
         [provider, providerAccountId]
       )
     } catch (error) {
@@ -216,7 +224,7 @@ export const pgAccountRepository = {
    */
   async deleteAccountsByUserId(userId: string): Promise<void> {
     try {
-      await queryNextAuth('DELETE FROM accounts WHERE user_id = $1', [userId])
+      await queryNextAuth('DELETE FROM "next-auth".accounts WHERE user_id = $1', [userId])
     } catch (error) {
       logger.logError('Repository', 'pgAccountRepository.deleteAccountsByUserId', 'Error deleting accounts', userId, { error })
       throw error
