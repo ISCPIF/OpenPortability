@@ -1,7 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { plex } from '../../fonts/plex'
+import { quantico } from '../../fonts/plex'
 import { useTranslations } from 'next-intl'
 import Image from 'next/image'
 
@@ -11,7 +11,7 @@ import twitterIcon from '../../../../public/newSVG/X.svg'
 
 interface PartageButtonProps {
   onShare: (platform: string) => void;
-  onShowBlueSkyPreview?: () => void; // Nouvelle prop pour déclencher la modale
+  onShowBlueSkyPreview?: () => void;
   providers: {
     twitter?: boolean;
     bluesky?: boolean;
@@ -24,73 +24,86 @@ export default function PartageButton({ onShare, onShowBlueSkyPreview, providers
 
   const handleClick = (platform: string) => {
     if (platform === 'bluesky' && onShowBlueSkyPreview) {
-      // Si c'est BlueSky et qu'on a fourni la fonction pour afficher la prévisualisation
       onShowBlueSkyPreview()
     } else {
-      // Sinon, on utilise le comportement normal
       onShare(platform)
     }
   }
 
   return (
-    <div className="flex flex-wrap justify-center gap-4">
+    <div className="flex flex-wrap justify-center gap-3">
       {providers.mastodon && (
         <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
           onClick={() => handleClick('mastodon')}
-          className={`inline-flex items-center gap-2 px-6 py-3 
-                   bg-white hover:bg-gray-50
-                   text-[#2a39a9] font-semibold rounded-full transition-all duration-200 ${plex.className}`}
+          className={`group inline-flex items-center gap-3 px-5 py-3 
+                   rounded-2xl border border-purple-400/30 bg-purple-400/80
+                   text-white font-semibold uppercase tracking-wider text-sm
+                   shadow-[0_0_20px_rgba(168,85,247,0.25)] 
+                   hover:shadow-[0_0_30px_rgba(168,85,247,0.35)] hover:border-purple-300/50
+                   transition-all duration-300 ${quantico.className}`}
         >
-          <Image
-            src={mastodonIcon}
-            alt="Mastodon"
-            width={24}
-            height={24}
-            className="w-6 h-6"
-          />
-          {t('shareOn', { platform: 'Mastodon' })}
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/20 backdrop-blur-sm">
+            <Image
+              src={mastodonIcon}
+              alt="Mastodon"
+              width={20}
+              height={20}
+              className="w-5 h-5"
+            />
+          </div>
+          <span>{t('shareOn', { platform: 'Mastodon' })}</span>
         </motion.button>
       )}
 
       {providers.bluesky && (
         <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
           onClick={() => handleClick('bluesky')}
-          className={`inline-flex items-center gap-2 px-6 py-3 
-                   bg-white hover:bg-gray-50
-                   text-[#2a39a9] font-semibold rounded-full transition-all duration-200 ${plex.className}`}
+          className={`group inline-flex items-center gap-3 px-5 py-3 
+                   rounded-2xl border border-sky-400/30 bg-sky-400/80
+                   text-white font-semibold uppercase tracking-wider text-sm
+                   shadow-[0_0_20px_rgba(56,189,248,0.25)] 
+                   hover:shadow-[0_0_30px_rgba(56,189,248,0.35)] hover:border-sky-300/50
+                   transition-all duration-300 ${quantico.className}`}
         >
-          <Image
-            src={blueskyIcon}
-            alt="Bluesky"
-            width={24}
-            height={24}
-            className="w-6 h-6"
-          />
-          {t('shareOn', { platform: 'Bluesky' })}
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/20 backdrop-blur-sm">
+            <Image
+              src={blueskyIcon}
+              alt="Bluesky"
+              width={20}
+              height={20}
+              className="w-5 h-5"
+            />
+          </div>
+          <span>{t('shareOn', { platform: 'Bluesky' })}</span>
         </motion.button>
       )}
 
       {providers.twitter && (
         <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
           onClick={() => handleClick('twitter')}
-          className={`inline-flex items-center gap-2 px-6 py-3 
-                   bg-white hover:bg-gray-50
-                   text-[#2a39a9] font-semibold rounded-full transition-all duration-200 ${plex.className}`}
+          className={`group inline-flex items-center gap-3 px-5 py-3 
+                   rounded-2xl border border-slate-400/30 bg-slate-700/80
+                   text-white font-semibold uppercase tracking-wider text-sm
+                   shadow-[0_0_20px_rgba(100,116,139,0.25)] 
+                   hover:shadow-[0_0_30px_rgba(100,116,139,0.35)] hover:border-slate-400/50
+                   transition-all duration-300 ${quantico.className}`}
         >
-          <Image
-            src={twitterIcon}
-            alt="X"
-            width={24}
-            height={24}
-            className="w-6 h-6"
-          />
-          {t('shareOn', { platform: 'X' })}
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/20 backdrop-blur-sm">
+            <Image
+              src={twitterIcon}
+              alt="X"
+              width={20}
+              height={20}
+              className="w-5 h-5"
+            />
+          </div>
+          <span>{t('shareOn', { platform: 'X' })}</span>
         </motion.button>
       )}
     </div>

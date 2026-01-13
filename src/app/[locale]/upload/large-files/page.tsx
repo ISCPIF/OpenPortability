@@ -5,17 +5,18 @@ import { useSession } from 'next-auth/react';
 import { useRouter, useSearchParams, useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import Header from '../../../_components/layouts/Header';
-import ErrorModal from "../../../_components/modales/ErrorModal";
+
 import Image from 'next/image';
-import { plex } from '../../../fonts/plex';
+import { quantico } from '../../../fonts/plex';
 import { motion } from 'framer-motion';
-import { Loader2 } from 'lucide-react';
+import { Loader2, CheckCircle2, XCircle, Clock } from 'lucide-react';
 import Footer from "@/app/_components/layouts/Footer";
 import logoBlanc from '../../../../../public/logo/logo-openport-blanc.svg';
 import logoRose from '../../../../../public/logos/logo-openport-rose.svg';
 import LoadingIndicator from '@/app/_components/layouts/LoadingIndicator';
 import { ParticulesBackground } from '@/app/_components/layouts/ParticulesBackground';
 import { useTheme } from '@/hooks/useTheme';
+import { invalidateHashesCache } from '@/contexts/GraphDataContext';
 
 interface JobStatus {
   status: 'pending' | 'processing' | 'completed' | 'failed';
@@ -51,10 +52,12 @@ interface Stats {
 
 export default function LargeFilesPage() {
   const router = useRouter();
-  const { data: session, status } = useSession();
+  const { data: session, status, update } = useSession();
+
   const searchParams = useSearchParams();
   const params = useParams();
   const t = useTranslations('largeFiles');
+  const tLoaders = useTranslations('loaders');
   const { colors, isDark } = useTheme();
 
   const jobId = searchParams.get('jobId');
@@ -70,21 +73,6 @@ export default function LargeFilesPage() {
   const [canUseWebGL, setCanUseWebGL] = useState(true);
   const [displayProgress, setDisplayProgress] = useState<number>(0);
 
-  const panelTextClass = isDark ? 'text-white' : 'text-slate-900';
-  const infoBannerClasses = isDark
-    ? 'bg-white/10 text-white'
-    : 'bg-white text-slate-900 shadow-[0_10px_30px_rgba(15,23,42,0.08)] border border-slate-200/80';
-  const progressBarBackgroundClass = isDark ? 'bg-white/15' : 'bg-slate-200';
-  const progressDividerClass = isDark ? 'bg-white/20' : 'bg-slate-300/70';
-  const progressLabelTextClass = isDark ? 'text-white/80' : 'text-slate-500';
-  const progressHintTextClass = isDark ? 'text-white/70' : 'text-slate-600';
-  const countdownTextClass = progressHintTextClass;
-  const errorAlertClasses = isDark
-    ? 'bg-red-500/20 text-red-300'
-    : 'bg-red-50 text-red-700 border border-red-200';
-  const progressPanelClasses = isDark
-    ? 'bg-slate-950/75 border-white/10 shadow-[0_25px_60px_rgba(0,0,0,0.45)]'
-    : 'bg-white border-slate-200 shadow-[0_25px_60px_rgba(15,23,42,0.12)]';
 
   // Vérifier l'authentification
   useEffect(() => {
@@ -209,31 +197,60 @@ export default function LargeFilesPage() {
   })();
 
   // Redirection automatique après 10 secondes quand le job est terminé
-  useEffect(() => {
-    if (jobStatus?.status === 'completed') {
-      // Mise à jour du compteur à rebours
-      const countdownInterval = setInterval(() => {
-        setRedirectCountdown((prevCount) => {
-          if (prevCount <= 1) {
-            clearInterval(countdownInterval);
-            return 0;
+    useEffect(() => {
+      if (jobStatus?.status === 'completed') {
+        const countdownInterval = setInterval(() => {
+          setRedirectCountdown((prevCount) => {
+            if (prevCount <= 1) {
+              clearInterval(countdownInterval);
+              return 0;
+            }
+            return prevCount - 1;
+          });
+        }, 1000);
+
+        // Redirection après 10 secondes avec refresh de la session
+        const redirectTimeout = setTimeout(async () => {
+          // Invalidate hashes cache to force fresh fetch on reconnect page
+          await invalidateHashesCache();
+          
+          await update(); // Force le rechargement de la session
+          // Set flag for useReconnectState to know we came from LargeFilesPage
+          sessionStorage.setItem('fromLargeFiles', 'true');
+          
+          // Set view mode cookies to 'followings' so reconnect page opens on followings view
+          // IMPORTANT: Must update BOTH cookies because graph_ui_state takes priority in getInitialViewMode()
+          const expires = new Date();
+          expires.setDate(expires.getDate() + 30);
+          document.cookie = `graph_view_mode=followings; expires=${expires.toUTCString()}; path=/; SameSite=Lax`;
+          
+          // Also update graph_ui_state (preserving viewport if exists)
+          const existingUiCookie = document.cookie
+            .split('; ')
+            .find(row => row.startsWith('graph_ui_state='))
+            ?.split('=')[1];
+          let viewport = null;
+          if (existingUiCookie) {
+            try {
+              const parsed = JSON.parse(decodeURIComponent(existingUiCookie));
+              viewport = parsed?.viewport ?? null;
+            } catch {
+              // ignore malformed cookie
+            }
           }
-          return prevCount - 1;
-        });
-      }, 1000);
+          const uiState = JSON.stringify({ viewMode: 'followings', viewport: viewport || undefined });
+          document.cookie = `graph_ui_state=${encodeURIComponent(uiState)}; expires=${expires.toUTCString()}; path=/; SameSite=Lax`;
+          
+          const locale = params.locale as string || 'fr';
+          router.push(`/${locale}/reconnect`);
+        }, 10000); // 20 secondes
 
-      // Redirection après 10 secondes
-      const redirectTimeout = setTimeout(() => {
-        const locale = params.locale as string || 'fr';
-        // router.push(`/${locale}/reconnect`);
-      }, 10000); // 10 secondes
-
-      return () => {
-        clearTimeout(redirectTimeout);
-        clearInterval(countdownInterval);
-      };
-    }
-  }, [jobStatus?.status, router, params.locale]);
+        return () => {
+          clearTimeout(redirectTimeout);
+          clearInterval(countdownInterval);
+        };
+      }
+    }, [jobStatus?.status, router, params.locale, update]);
 
   // Prefers-reduced-motion + WebGL support detection
   useEffect(() => {
@@ -305,133 +322,181 @@ export default function LargeFilesPage() {
   const step2State: 'pending' | 'active' | 'done' = step1State === 'done' && !step2Done ? 'active' : (step2Done ? 'done' : 'pending');
   const step3State: 'pending' | 'active' | 'done' = (step2State === 'done' && !step3Done) ? 'active' : (step3Done ? 'done' : 'pending');
 
+  // Status icon helper
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'completed':
+        return <CheckCircle2 className="w-5 h-5 text-emerald-500" />;
+      case 'failed':
+        return <XCircle className="w-5 h-5 text-rose-500" />;
+      case 'processing':
+        return <Loader2 className="w-5 h-5 animate-spin text-rose-500" />;
+      default:
+        return <Clock className="w-5 h-5 text-slate-400" />;
+    }
+  };
+
+  // Status badge classes
+  const getStatusBadgeClasses = (status: string) => {
+    const base = 'inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium';
+    switch (status) {
+      case 'completed':
+        return `${base} ${isDark ? 'bg-emerald-500/20 text-emerald-300' : 'bg-emerald-50 text-emerald-700'}`;
+      case 'failed':
+        return `${base} ${isDark ? 'bg-rose-500/20 text-rose-300' : 'bg-rose-50 text-rose-700'}`;
+      case 'processing':
+        return `${base} ${isDark ? 'bg-rose-500/20 text-rose-300' : 'bg-rose-50 text-rose-700'}`;
+      default:
+        return `${base} ${isDark ? 'bg-slate-500/20 text-slate-300' : 'bg-slate-100 text-slate-600'}`;
+    }
+  };
+
   if (status === 'loading' || !session) {
     return (
-      <div
-        className="relative min-h-screen w-full"
+      <div 
+        className="flex items-center justify-center h-screen"
         style={{ backgroundColor: colors.background }}
       >
         <ParticulesBackground />
-        <div className="relative z-10 container mx-auto py-12">
-          <div className="flex flex-col text-center text-[#E2E4DF]">
-            <div className="m-auto my-32 lg:my-40">
-              <LoadingIndicator msg={"Loading..."} />
-            </div>
-          </div>
+        <div className="relative z-10 flex flex-col items-center gap-4">
+          <LoadingIndicator msg={tLoaders('largeFiles')} />
         </div>
       </div>
     );
   }
 
   return (
-    <div
-      className="relative min-h-screen overflow-hidden"
-      style={{ backgroundColor: colors.background }}
-    >
+    <div className="relative min-h-screen overflow-hidden" style={{ backgroundColor: colors.background }}>
       <ParticulesBackground />
       <div className="relative z-10 flex min-h-screen flex-col">
         <Header />
-        <div className="flex justify-center mt-8 mb-8">
+        
+        {/* Logo */}
+        <div className="flex justify-center mt-8 mb-6">
           <Image
             src={isDark ? logoBlanc : logoRose}
             alt={t('logo.alt')}
-            width={306}
-            height={125}
-            className="mx-auto"
+            width={200}
+            height={80}
+            className="mx-auto h-auto w-40 sm:w-48"
             priority
           />
         </div>
 
-        <div className="relative">
-          <div className="flex flex-col items-center justify-center px-4 sm:px-6 lg:px-8 mt-8">
-            {jobStatus && (
-              <div className={`w-full max-w-3xl rounded-3xl border-2 p-6 sm:p-8 backdrop-blur-xl ${progressPanelClasses} ${panelTextClass}`}>
-                <div className="space-y-6">
-                  {/* Message about contacts being downloaded */}
-                  <div className={`text-center mb-6 px-4 py-3 rounded-lg ${infoBannerClasses}`}>
-                    <p>
-                      {t('downloadingContacts')}
+        {/* Main content */}
+        <div className="flex-1 flex flex-col items-center justify-start px-4 sm:px-6 lg:px-8 pb-8">
+          {jobStatus && (
+            <div
+              className={`${quantico.className} w-full max-w-2xl rounded-xl border backdrop-blur-sm shadow-xl overflow-hidden ${
+                isDark 
+                  ? 'bg-slate-900/95 border-slate-700/50' 
+                  : 'bg-white/90 border-slate-200'
+              }`}
+            >
+              {/* Header with status */}
+              <div className={`flex items-center justify-between p-5 border-b ${
+                isDark ? 'border-slate-700/50' : 'border-slate-200'
+              }`}>
+                <h2 className={`text-[15px] font-semibold ${isDark ? 'text-white' : 'text-slate-800'}`}>
+                  {t('status.title')}
+                </h2>
+                <span className={getStatusBadgeClasses(jobStatus.status)}>
+                  {getStatusIcon(jobStatus.status)}
+                  {t(`status.${jobStatus.status}`)}
+                </span>
+              </div>
+
+              <div className="p-5 space-y-5">
+                {/* Info banner */}
+                <div className={`px-4 py-3 rounded-lg text-[12px] ${
+                  isDark 
+                    ? 'bg-slate-800/50 border border-slate-700/30 text-slate-300' 
+                    : 'bg-slate-50 border border-slate-200 text-slate-600'
+                }`}>
+                  <p>{t('downloadingContacts')}</p>
+                </div>
+
+                {/* Progress section */}
+                <div className="space-y-3">
+                  {/* Phase label and percentage */}
+                  <div className="flex items-center justify-between">
+                    <span className={`text-[13px] font-medium ${isDark ? 'text-white' : 'text-slate-700'}`}>
+                      {phaseLabel}
+                    </span>
+                    <span className={`text-[13px] font-semibold ${
+                      isDark ? 'text-amber-400' : 'text-amber-600'
+                    }`}>
+                      {Math.round(displayProgress)}%
+                    </span>
+                  </div>
+
+                  {/* Progress bar */}
+                  <div className={`w-full h-2 rounded-full overflow-hidden ${
+                    isDark ? 'bg-slate-700/50' : 'bg-slate-200'
+                  }`}>
+                    <motion.div
+                      initial={false}
+                      animate={{ width: `${Math.round(displayProgress)}%` }}
+                      transition={{ duration: jobStatus?.status === 'completed' ? 0.2 : animationDuration, ease: animationEase }}
+                      className="h-full bg-gradient-to-r from-rose-400 to-rose-500 rounded-full"
+                    />
+                  </div>
+
+                  {/* Phase hints */}
+                  <div className={`flex justify-between text-[10px] uppercase tracking-wider ${
+                    isDark ? 'text-slate-500' : 'text-slate-400'
+                  }`}>
+                    <span>{t('phase.nodes')} 0–50%</span>
+                    <span>{t('phase.edges')} 50–100%</span>
+                  </div>
+                </div>
+
+                {/* Completion message */}
+                {jobStatus.status === 'completed' && (
+                  <div className={`text-center p-4 rounded-lg border ${
+                    isDark 
+                      ? 'bg-emerald-500/10 border-emerald-500/30' 
+                      : 'bg-emerald-50 border-emerald-200'
+                  }`}>
+                    <CheckCircle2 className={`w-7 h-7 mx-auto mb-2 ${isDark ? 'text-emerald-400' : 'text-emerald-500'}`} />
+                    <p className={`text-[12px] font-medium ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`}>
+                      {t('redirecting')} {redirectCountdown}s
                     </p>
                   </div>
+                )}
 
-                  {/* Single Combined Progress Bar: 0–50% nodes, 50–100% edges */}
-                  <div className="mb-6">
-                    <div className="mb-2 flex items-center justify-between">
-                      <span className="font-semibold">{phaseLabel}</span>
-                      <span className={`text-xs ${progressLabelTextClass}`}>{Math.round(displayProgress)}%</span>
-                    </div>
-                    <div className={`w-full ${progressBarBackgroundClass} rounded-full h-3 relative overflow-hidden`}>
-                      <motion.div
-                        initial={false}
-                        animate={{ width: `${Math.round(displayProgress)}%` }}
-                        transition={{ duration: jobStatus?.status === 'completed' ? 0.2 : animationDuration, ease: animationEase }}
-                        className="absolute left-0 top-0 bottom-0 bg-gradient-to-r from-blue-400 via-indigo-500 to-purple-500 rounded-full"
-                      />
-                      {/* 50% split marker */}
-                      <div className={`absolute left-1/2 top-0 bottom-0 w-px ${progressDividerClass}`} />
-                    </div>
-                    <div className={`mt-2 text-xs flex justify-between ${progressHintTextClass}`}>
-                      <span>{t('phase.nodes')} 0–50%</span>
-                      <span>{t('phase.edges')} 50–100%</span>
-                    </div>
-                  </div>
-
-                  {/* Status and Stats */}
-                  <div className="mt-8">
-                    <div className="flex justify-between items-center mb-4">
-                      <span className="font-semibold">{t('status.title')}</span>
-                      <span className={`px-3 py-1 rounded-full text-sm
-                        ${jobStatus.status === 'completed' ? 'bg-green-500/20 text-green-300' :
-                          jobStatus.status === 'processing' ? 'bg-blue-500/20 text-blue-300' :
-                            jobStatus.status === 'failed' ? 'bg-red-500/20 text-red-300' :
-                              'bg-gray-500/20 text-gray-300'}`}
-                      >
-                        {jobStatus.status === 'processing' && (
-                          <Loader2 className="w-4 h-4 animate-spin inline-block mr-2" />
-                        )}
-                        {t(`status.${jobStatus.status}`)}
-                      </span>
-                    </div>
-
-                    {jobStatus.status === 'completed' && (
-                      <>
-                        {/* Affichage du compte à rebours */}
-                        <div className={`mt-4 text-center ${countdownTextClass}`}>
-                          <p>{t('redirecting')} {redirectCountdown}s</p>
-                        </div>
-                      </>
-                    )}
-
-                    {jobStatus.status === 'failed' && (
-                      <motion.button
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        onClick={() => {
-                          const locale = params.locale as string || 'fr';
-                          router.push(`/${locale}/upload`);
-                        }}
-                        className="w-full mt-6 bg-white text-gray-800 py-3 px-4 rounded-xl
-                        hover:bg-gray-50 transition-all duration-200
-                        flex items-center justify-center space-x-2"
-                      >
-                        <span className={plex.className}>{t('button.retryUpload', { default: 'Back to upload' })}</span>
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414
-L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
-                        </svg>
-                      </motion.button>
-                    )}
-
+                {/* Error state */}
+                {jobStatus.status === 'failed' && (
+                  <div className="space-y-4">
                     {jobStatus.error && (
-                      <div className={`mt-6 p-4 rounded-xl ${errorAlertClasses}`}>
+                      <div className={`p-4 rounded-lg border text-[12px] ${
+                        isDark 
+                          ? 'bg-rose-500/10 border-rose-500/30 text-rose-300' 
+                          : 'bg-rose-50 border-rose-200 text-rose-700'
+                      }`}>
                         {jobStatus.error}
                       </div>
                     )}
+                    <motion.button
+                      whileHover={{ scale: 1.005 }}
+                      whileTap={{ scale: 0.995 }}
+                      onClick={() => {
+                        const locale = params.locale as string || 'fr';
+                        router.push(`/${locale}/upload`);
+                      }}
+                      className={`w-full py-3 px-4 rounded-lg text-[13px] font-medium transition-all flex items-center justify-center gap-2 ${
+                        isDark
+                          ? 'bg-slate-800/50 hover:bg-slate-700/50 border border-slate-700/50 text-white'
+                          : 'bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-800'
+                      }`}
+                    >
+                      {t('button.retryUpload', { default: 'Back to upload' })}
+                    </motion.button>
                   </div>
-                </div>
+                )}
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
 
         <Footer />

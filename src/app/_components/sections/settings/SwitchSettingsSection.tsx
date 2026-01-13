@@ -1,12 +1,13 @@
 'use client';
 import { Switch } from '@headlessui/react';
 import { useTranslations } from 'next-intl';
-import { CheckCircle2, AlertTriangle } from 'lucide-react';
-import { plex } from '@/app/fonts/plex';
+import { CheckCircle2, AlertTriangle, Settings, Bell, Zap } from 'lucide-react';
+import { quantico } from '@/app/fonts/plex';
 import { ConsentType } from '@/hooks/useNewsLetter';
 import { useSession } from 'next-auth/react';
 import { toast } from 'sonner';
-import { useTheme } from '@/hooks/useTheme';
+import { useState, useEffect, useCallback } from 'react';
+import type { ChangeEvent, MouseEvent } from 'react';
 
 interface SwitchSettingsSectionProps {
   consents: { [key in ConsentType]?: boolean };
@@ -24,15 +25,15 @@ interface SwitchSettingsSectionProps {
 type DivClickEvent = { stopPropagation: () => void };
 
 const CustomToast = ({ platform, message, buttonText }: { platform: string; message: string; buttonText: string }) => (
-  <div className={`${plex.className} flex flex-col space-y-3 p-4 bg-[#d6356f] text-white rounded-lg`}>
+  <div className={`${quantico.className} flex flex-col space-y-3 p-4 bg-slate-800 border border-amber-500/30 text-white rounded-lg shadow-lg`}>
     <div className="flex items-center space-x-2">
-      <div className="w-2 h-2 bg-white rounded-full" />
-      <span className="font-medium text-white/90">{platform === 'bluesky' ? 'Bluesky' : 'Mastodon'}</span>
+      <div className="w-2 h-2 bg-amber-400 rounded-full" />
+      <span className="font-medium text-white text-[13px]">{platform === 'bluesky' ? 'Bluesky' : 'Mastodon'}</span>
     </div>
-    <p className="text-sm text-white/80">{message}</p>
+    <p className="text-[12px] text-slate-300">{message}</p>
     <button 
       onClick={() => window.location.href = '/dashboard'}
-      className="px-4 py-2 bg-white text-[#d6356f] rounded-md text-sm font-medium hover:bg-white/90 transition-colors"
+      className="px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-lg text-[12px] font-medium hover:from-amber-600 hover:to-orange-600 transition-all"
     >
       {buttonText}
     </button>
@@ -40,12 +41,12 @@ const CustomToast = ({ platform, message, buttonText }: { platform: string; mess
 );
 
 const WarningToast = ({ platform, message }: { platform: 'bluesky' | 'mastodon'; message: string }) => (
-  <div className={`${plex.className} flex flex-col space-y-3 p-4 bg-red-600 text-white rounded-lg`}>
+  <div className={`${quantico.className} flex flex-col space-y-3 p-4 bg-slate-800 border border-rose-500/30 text-white rounded-lg shadow-lg`}>
     <div className="flex items-center space-x-2">
-      <AlertTriangle className="w-5 h-5 text-white" />
-      <span className="font-medium text-white/90">{platform === 'bluesky' ? 'Bluesky' : 'Mastodon'} DM</span>
+      <AlertTriangle className="w-4 h-4 text-rose-400" />
+      <span className="font-medium text-white text-[13px]">{platform === 'bluesky' ? 'Bluesky' : 'Mastodon'} DM</span>
     </div>
-    <p className="text-sm text-white/90">{message}</p>
+    <p className="text-[12px] text-slate-300">{message}</p>
     <div className="flex items-center space-x-2">
       <a
         href={platform === 'bluesky' 
@@ -53,7 +54,7 @@ const WarningToast = ({ platform, message }: { platform: 'bluesky' | 'mastodon';
           : "https://mastodon.social/@openportability"}
         target="_blank"
         rel="noopener noreferrer"
-        className="px-4 py-2 bg-white text-red-600 rounded-md text-sm font-medium hover:bg-white/90 transition-colors"
+        className="px-4 py-2 bg-rose-500/20 border border-rose-500/30 text-rose-300 rounded-lg text-[11px] font-medium hover:bg-rose-500/30 transition-all"
       >
         {platform === 'bluesky' ? '@openportability.bsky.social' : '@OpenPortability@mastodon.social'}
       </a>
@@ -75,13 +76,49 @@ export default function SwitchSettingsSection({
 }: SwitchSettingsSectionProps) {
   const t = useTranslations('settings');
   const { data: session } = useSession();
-  const { isDark } = useTheme();
-
-  const neonPink = '#ff007f';
-  const neonBlue = '#007bff';
-  const columnBorderClass = isDark ? 'lg:border-white/10' : 'lg:border-slate-200';
-  const columnDividerShadow = isDark ? 'lg:shadow-[inset_20px_0_50px_rgba(15,23,42,0.35)]' : 'lg:shadow-[inset_20px_0_50px_rgba(15,23,42,0.08)]';
-  const columnHeadingClass = `${plex.className} text-xs tracking-[0.35em] uppercase mb-4 ${isDark ? 'text-white' : 'text-slate-900'}`;
+  
+  // Graph label consent state (separate from newsletter consents)
+  const [graphLabelConsent, setGraphLabelConsent] = useState<boolean>(false);
+  const [isLoadingGraphConsent, setIsLoadingGraphConsent] = useState(true);
+  
+  // Fetch current graph label consent on mount
+  useEffect(() => {
+    const fetchGraphConsent = async () => {
+      try {
+        const response = await fetch('/api/graph/consent_labels/user');
+        if (response.ok) {
+          const data = await response.json();
+          setGraphLabelConsent(data.consent_level === 'all_consent');
+        }
+      } catch (error) {
+        console.error('Failed to fetch graph consent:', error);
+      } finally {
+        setIsLoadingGraphConsent(false);
+      }
+    };
+    fetchGraphConsent();
+  }, []);
+  
+  // Handle graph label consent change
+  const handleGraphLabelConsentChange = useCallback(async (value: boolean) => {
+    try {
+      const response = await fetch('/api/graph/consent_labels', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ consent_level: value ? 'all_consent' : 'no_consent' }),
+      });
+      
+      if (response.ok) {
+        setGraphLabelConsent(value);
+        toast.success(t('consentUpdate.success') ?? 'Consent updated');
+      } else {
+        throw new Error('Failed to update consent');
+      }
+    } catch (error) {
+      console.error('Failed to update graph consent:', error);
+      toast.error(t('consentUpdate.error') ?? 'Failed to update consent');
+    }
+  }, [t]);
 
   const handleDMConsentChange = (platform: 'bluesky' | 'mastodon', value: boolean) => {
     if (!value) {
@@ -128,47 +165,17 @@ export default function SwitchSettingsSection({
     onChange: (value: boolean) => void,
     srText?: string
   ) => {
-    const borderColor = checked ? neonPink : neonBlue;
-    const textColor = checked ? neonPink : neonBlue;
-    const baseBg = isDark ? 'bg-slate-900/70' : 'bg-white/95';
-
     return (
       <div
-        className={`relative w-full rounded-2xl border-[1.5px] p-5 sm:p-6 transition-all duration-300 group cursor-pointer backdrop-blur-xl ${baseBg}`}
-        style={{
-          borderColor,
-          boxShadow: checked
-            ? '0 0 18px rgba(255,0,127,0.35), inset 0 0 18px rgba(255,0,127,0.08)'
-            : '0 0 18px rgba(0,123,255,0.25), inset 0 0 18px rgba(0,123,255,0.05)'
-        }}
+        className="relative w-full rounded-lg bg-slate-800/50 border border-slate-700/30 p-4 transition-all duration-200 cursor-pointer hover:bg-slate-800/70 hover:border-slate-600/50"
         onClick={() => onChange(!checked)}
       >
-        <div
-          className="absolute inset-x-4 top-0 h-px"
-          style={{
-            backgroundImage: `linear-gradient(90deg, ${borderColor}, transparent)`,
-            opacity: 0.5
-          }}
-        />
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-3">
           <div className="flex-1 min-w-0">
-            <h3
-              className={`${plex.className} tracking-[0.2em] text-xs sm:text-sm mb-2`}
-              style={{
-                color: textColor,
-                textShadow: `0 0 12px ${textColor}`,
-                fontFamily: 'monospace'
-              }}
-            >
+            <h3 className={`${quantico.className} text-[13px] font-medium mb-1.5 break-words ${checked ? 'text-amber-400' : 'text-white'}`}>
               {title}
             </h3>
-            <p
-              className="text-xs leading-relaxed break-words"
-              style={{
-                color: isDark ? 'rgba(255,255,255,0.65)' : 'rgba(15,23,42,0.7)',
-                fontFamily: 'monospace'
-              }}
-            >
+            <p className="text-[11px] text-slate-400 leading-relaxed break-words">
               {description}
             </p>
           </div>
@@ -181,43 +188,22 @@ export default function SwitchSettingsSection({
             <Switch
               checked={checked}
               onChange={onChange}
-              className="relative w-14 h-7 rounded-full transition-all duration-300"
-              style={{
-                backgroundColor: checked ? 'rgba(255,0,127,0.18)' : 'rgba(0,123,255,0.2)',
-                border: `2px solid ${borderColor}`,
-                boxShadow: checked
-                  ? '0 0 18px rgba(255,0,127,0.5), inset 0 0 12px rgba(255,0,127,0.25)'
-                  : '0 0 18px rgba(0,123,255,0.5), inset 0 0 12px rgba(0,123,255,0.2)'
-              }}
+              className={`relative w-11 h-6 rounded-full transition-all duration-200 ${checked ? 'bg-amber-500' : 'bg-slate-600'}`}
             >
               <span className="sr-only">{srText || title}</span>
               <span
-                className="absolute top-0.5 transition-all duration-300 w-5 h-5 rounded-full"
+                className="absolute top-0.5 transition-all duration-200 w-5 h-5 rounded-full bg-white shadow-sm"
                 style={{
                   left: checked ? 'calc(100% - 22px)' : '2px',
-                  backgroundColor: borderColor,
-                  boxShadow: `0 0 12px ${borderColor}, 0 0 25px ${borderColor}`
                 }}
               />
             </Switch>
           </div>
         </div>
-        <div className="flex items-center gap-2 mt-4 pt-3 border-t border-white/10">
-          <div
-            className="w-1.5 h-1.5 rounded-full animate-pulse"
-            style={{
-              backgroundColor: borderColor,
-              boxShadow: `0 0 8px ${borderColor}`
-            }}
-          />
-          <span
-            className="text-xs tracking-[0.3em]"
-            style={{
-              color: borderColor,
-              fontFamily: 'monospace'
-            }}
-          >
-            {checked ? '[ ACTIVE ]' : '[ DISABLED ]'}
+        <div className="flex items-center gap-2 mt-3 pt-2 border-t border-slate-700/30">
+          <div className={`w-1.5 h-1.5 rounded-full ${checked ? 'bg-emerald-400' : 'bg-slate-500'}`} />
+          <span className={`${quantico.className} text-[10px] ${checked ? 'text-emerald-400' : 'text-slate-500'}`}>
+            {checked ? t('active') ?? 'Active' : t('disabled') ?? 'Disabled'}
           </span>
         </div>
       </div>
@@ -225,54 +211,146 @@ export default function SwitchSettingsSection({
   };
 
   return (
-    <div className="grid gap-6 lg:grid-cols-3">
-      <div className={`space-y-4 lg:pr-6 ${columnDividerShadow}`}>
-        <p className={columnHeadingClass}>{t('notifications.columnTitles.notifications')}</p>
-        {renderSwitch(
-          'email_newsletter',
-          t('notifications.hqxNewsletter.title'),
-          t('notifications.hqxNewsletter.description'),
-          consents?.email_newsletter ?? false,
-          (value) => {
-            if (value && !consents?.email_newsletter) {
-              setShowEmailForm(true);
-            } else if (!value) {
-              onConsentChange('email_newsletter', false);
-              setShowEmailForm(false);
-            }
-          }
-        )}
+    <div className={quantico.className}>
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {/* Column 1: Consentement */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-2 mb-3">
+            <Settings className="w-4 h-4 text-blue-400" />
+            <p className="text-[11px] text-white uppercase tracking-wider font-medium">{t('notifications.columnTitles.consents')}</p>
+          </div>
+          {renderSwitch(
+            'research_participation',
+            t('notifications.research.title'),
+            t('notifications.research.description'),
+            consents?.research_participation ?? false,
+            (value) => onConsentChange('research_participation', value)
+          )}
 
-        {showEmailForm && (
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-5 space-y-4">
-            <div className="flex flex-col space-y-3">
-              <label htmlFor="email" className={`${plex.className} text-sm font-medium text-white`}>
-                {t('emailLabel')}
-              </label>
-              <input
-                type="email"
-                id="email"
-                value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value);
-                  setEmailError('');
-                }}
-                placeholder={t('emailPlaceholder')}
-                className={`w-full px-4 py-3 bg-white/5 border ${
-                  emailError ? 'border-red-500' : 'border-white/20'
-                } rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-[#d6356f] focus:border-transparent backdrop-blur-sm`}
-              />
-              {emailError && (
-                <p className="text-xs text-red-500 mt-1">{emailError}</p>
-              )}
-            </div>
+          {renderSwitch(
+            'graph_label_consent' as ConsentType,
+            t('notifications.graphLabel.title') ?? 'Display name on graph',
+            t('notifications.graphLabel.description') ?? 'Allow your name to be visible to other users on the graph visualization',
+            graphLabelConsent,
+            handleGraphLabelConsentChange
+          )}
+        </div>
+
+        {/* Column 2: Newsletter */}
+        <div className="space-y-3 xl:border-l xl:border-slate-700/30 xl:pl-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Bell className="w-4 h-4 text-purple-400" />
+            <p className="text-[11px] text-white uppercase tracking-wider font-medium">{t('notifications.columnTitles.notifications')}</p>
+          </div>
+          {renderSwitch(
+            'email_newsletter',
+            t('notifications.hqxNewsletter.title'),
+            t('notifications.hqxNewsletter.description'),
+            consents?.email_newsletter ?? false,
+            (value) => {
+              if (value && !consents?.email_newsletter) {
+                setShowEmailForm(true);
+              } else if (!value) {
+                onConsentChange('email_newsletter', false);
+                setShowEmailForm(false);
+              }
+            }
+          )}
+
+          {renderSwitch(
+            'oep_newsletter',
+            t('notifications.oepNewsletter.title'),
+            t('notifications.oepNewsletter.description'),
+            consents?.oep_newsletter ?? false,
+            (value) => onConsentChange('oep_newsletter', value)
+          )}
+        </div>
+
+        {/* Column 3: Recommandations */}
+        <div className="space-y-3 xl:border-l xl:border-slate-700/30 xl:pl-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Zap className="w-4 h-4 text-amber-400" />
+            <p className="text-[11px] text-white uppercase tracking-wider font-medium">{t('notifications.columnTitles.automations')}</p>
+          </div>
+          {renderSwitch(
+            'bluesky_dm',
+            t('notifications.blueskyDm.title'),
+            t('notifications.blueskyDm.description'),
+            consents?.bluesky_dm ?? false,
+            (value) => handleDMConsentChange('bluesky', value)
+          )}
+
+          {renderSwitch(
+            'mastodon_dm',
+            t('notifications.mastodonDm.title'),
+            t('notifications.mastodonDm.description'),
+            consents?.mastodon_dm ?? false,
+            (value) => handleDMConsentChange('mastodon', value)
+          )}
+        </div>
+      </div>
+
+      {showEmailForm && (
+        <div
+          className="mt-4 rounded-lg border border-slate-700/30 bg-slate-800/30 p-4 space-y-3"
+          onMouseDown={(e: MouseEvent<HTMLDivElement>) => {
+            e.stopPropagation();
+          }}
+          onClick={(e: MouseEvent<HTMLDivElement>) => {
+            e.stopPropagation();
+          }}
+        >
+          <div className="flex flex-col space-y-2">
+            <label htmlFor="email" className="text-[12px] font-medium text-slate-300">
+              {t('emailLabel')}
+            </label>
+            <input
+              type="email"
+              id="email"
+              value={email}
+              onMouseDown={(e: MouseEvent<HTMLInputElement>) => {
+                e.stopPropagation();
+              }}
+              onClick={(e: MouseEvent<HTMLInputElement>) => {
+                e.stopPropagation();
+              }}
+              onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                setEmail(e.target.value);
+                setEmailError('');
+              }}
+              placeholder={t('emailPlaceholder')}
+              className={`w-full px-3 py-2.5 text-[13px] rounded-lg bg-slate-800/50 border border-slate-700/30 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500/50 transition-all ${
+                emailError ? 'border-rose-500/50' : ''
+              }`}
+            />
+            {emailError && <p className="text-[11px] text-rose-400 mt-1">{emailError}</p>}
+          </div>
+          <div className="flex flex-col sm:flex-row gap-2 sm:justify-start">
             <button
-              onClick={async () => {
+              onMouseDown={(e: MouseEvent<HTMLButtonElement>) => {
+                e.stopPropagation();
+              }}
+              onClick={(e: MouseEvent<HTMLButtonElement>) => {
+                e.stopPropagation();
+                setShowEmailForm(false);
+                setEmailError('');
+              }}
+              disabled={isSubmittingEmail}
+              className="w-full sm:w-auto px-5 py-2 rounded-lg border border-slate-700/40 bg-slate-800/30 hover:bg-slate-800/50 disabled:opacity-50 transition-all text-slate-200 text-[12px] font-medium"
+            >
+              {t('cancel') ?? 'Fermer'}
+            </button>
+            <button
+              onMouseDown={(e: MouseEvent<HTMLButtonElement>) => {
+                e.stopPropagation();
+              }}
+              onClick={async (e: MouseEvent<HTMLButtonElement>) => {
+                e.stopPropagation();
                 if (!email.trim()) {
                   setEmailError(t('emailRequired'));
                   return;
                 }
-                
+
                 try {
                   await onConsentChange('email_newsletter', true);
                   await handleEmailSubmit();
@@ -281,56 +359,14 @@ export default function SwitchSettingsSection({
                 }
               }}
               disabled={isSubmittingEmail}
-              className={`${plex.className} w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-3 rounded-full disabled:opacity-50 transition-all font-medium`}
-              style={{
-                backgroundColor: neonPink,
-                boxShadow: '0 0 18px rgba(214,53,111,0.45)'
-              }}
+              className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2 rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 disabled:opacity-50 transition-all text-white text-[12px] font-medium"
             >
               <CheckCircle2 className="w-4 h-4" />
-              <span className="text-sm">{t('save')}</span>
+              <span>{t('save')}</span>
             </button>
           </div>
-        )}
-
-        {renderSwitch(
-          'oep_newsletter',
-          t('notifications.oepNewsletter.title'),
-          t('notifications.oepNewsletter.description'),
-          consents?.oep_newsletter ?? false,
-          (value) => onConsentChange('oep_newsletter', value)
-        )}
-      </div>
-
-      <div className={`space-y-4 lg:border-l lg:px-6 ${columnBorderClass} ${columnDividerShadow}`}>
-        <p className={columnHeadingClass}>{t('notifications.columnTitles.automations')}</p>
-        {renderSwitch(
-          'bluesky_dm',
-          t('notifications.blueskyDm.title'),
-          t('notifications.blueskyDm.description'),
-          consents?.bluesky_dm ?? false,
-          (value) => handleDMConsentChange('bluesky', value)
-        )}
-
-        {renderSwitch(
-          'mastodon_dm',
-          t('notifications.mastodonDm.title'),
-          t('notifications.mastodonDm.description'),
-          consents?.mastodon_dm ?? false,
-          (value) => handleDMConsentChange('mastodon', value)
-        )}
-      </div>
-
-      <div className={`space-y-4 lg:border-l lg:pl-6 ${columnBorderClass}`}>
-        <p className={columnHeadingClass}>{t('notifications.columnTitles.consents')}</p>
-        {renderSwitch(
-          'research_participation',
-          t('notifications.research.title'),
-          t('notifications.research.description'),
-          consents?.research_participation ?? false,
-          (value) => onConsentChange('research_participation', value)
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

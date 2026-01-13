@@ -3,6 +3,10 @@ import { NodeOAuthClient } from "@atproto/oauth-client-node";
 import { JoseKey } from "@atproto/jwk-jose";
 import logger from "../log_utils";
 
+// Singleton cache for OAuth client (avoid recreating on every request)
+let cachedClient: NodeOAuthClient | null = null;
+let cachedClientPromise: Promise<NodeOAuthClient> | null = null;
+
 // Types are not strictly required at runtime; using minimal any typing to avoid coupling
 // If available, you can import NodeSavedState / NodeSavedSession from the package types.
 
@@ -56,15 +60,63 @@ async function getKeyset() {
   return [key];
 }
 
-export async function createBlueskyOAuthClient() {
-  const baseUrl = resolveBaseUrl();
-  if (!baseUrl) {
-    throw new Error("Invalid NEXTAUTH_URL. It must be an https hostname (not an IP or localhost).");
+export async function createBlueskyOAuthClient(): Promise<NodeOAuthClient> {
+  // Return cached client if available
+  if (cachedClient) {
+    return cachedClient;
   }
-  const client = new NodeOAuthClient({
-    clientMetadata: getClientMetadata(baseUrl),
-    // The library will import keys internally. Provide importable JWK(s).
-    keyset: await getKeyset() as any,
+  
+  // If creation is in progress, wait for it
+  if (cachedClientPromise) {
+    return cachedClientPromise;
+  }
+  
+  // Create new client and cache it
+  cachedClientPromise = (async () => {
+    const baseUrl = resolveBaseUrl();
+    if (!baseUrl) {
+      throw new Error("Invalid NEXTAUTH_URL. It must be an https hostname (not an IP or localhost).");
+    }
+    const client = new NodeOAuthClient({
+      clientMetadata: getClientMetadata(baseUrl),
+      // The library will import keys internally. Provide importable JWK(s).
+      keyset: await getKeyset() as any,
+      // Request lock to prevent concurrent token refresh requests (required for DPoP)
+      // This prevents "credentials might get revoked" warnings and 401 errors
+      requestLock: async <T>(key: string, fn: () => PromiseLike<T> | T): Promise<T> => {
+      const { getRedis } = await import('../services/redisClient');
+      const redis = getRedis();
+      const lockKey = `bsky:lock:${key}`;
+      const lockValue = `${Date.now()}-${Math.random()}`;
+      const lockTTL = 10; // 10 seconds max lock time (short to avoid blocking)
+      
+      // Try to acquire lock (just once, don't block)
+      let acquired = false;
+      try {
+        // SET NX EX - only set if not exists, with expiry
+        const result = await redis.set(lockKey, lockValue, 'EX', lockTTL, 'NX');
+        acquired = result === 'OK';
+      } catch (e) {
+        // Redis error - proceed without lock
+        console.warn(`[BlueskyOAuth] Lock acquisition error for key: ${key}`, e);
+      }
+      
+      try {
+        return await fn();
+      } finally {
+        // Only release if we acquired and still own the lock
+        if (acquired) {
+          try {
+            const currentValue = await redis.get(lockKey);
+            if (currentValue === lockValue) {
+              await redis.del(lockKey);
+            }
+          } catch (e) {
+            // Ignore release errors
+          }
+        }
+      }
+    },
     stateStore: {
       async set(key: string, internalState: any): Promise<void> {
         const name = `oauth_state_${key}`;
@@ -232,5 +284,9 @@ export async function createBlueskyOAuthClient() {
       },
     },
   });
-  return client;
+    cachedClient = client;
+    return client;
+  })();
+  
+  return cachedClientPromise;
 }

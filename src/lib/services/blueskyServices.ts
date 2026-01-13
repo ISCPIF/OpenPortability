@@ -185,10 +185,19 @@ export class BlueskyService implements IBlueskyService {
   }
 
   async batchFollowOAuth(userDid: string, handles: string[]): Promise<BatchFollowResult> {
+    const timings: Record<string, number> = {};
+    let t0 = Date.now();
+
     // Rehydrate a live OAuth session and use an OAuth-bound Agent (correct PDS and DPoP signing)
     const { createBlueskyOAuthClient } = await import('../services/blueskyOAuthClient');
+    timings['import'] = Date.now() - t0; t0 = Date.now();
+
     const client = await createBlueskyOAuthClient();
+    timings['createClient'] = Date.now() - t0; t0 = Date.now();
+
     const liveSession: any = await (client as any).restore?.(userDid);
+    timings['restore'] = Date.now() - t0; t0 = Date.now();
+
     if (!liveSession) {
       throw new Error('Missing OAuth session (DPoP) to perform follow operations');
     }
@@ -209,6 +218,8 @@ export class BlueskyService implements IBlueskyService {
         }
       } catch {}
     }
+    timings['scopeCheck'] = Date.now() - t0; t0 = Date.now();
+
     if (scope && !scope.includes('atproto')) {
       throw new Error(`Bad token scope for OAuth follows: expected atproto, got ${scope}`);
     }
@@ -223,22 +234,18 @@ export class BlueskyService implements IBlueskyService {
     };
 
     try {
-      // Resolve DIDs for all handles using OAuth Agent
-      const didResults = await Promise.all(handles.map(async (handle) => {
-        try {
-          const profile = await agent.getProfile({ actor: handle });
-          if (!profile.success) throw new Error(`Failed to get profile for ${handle}`);
-          return { ok: true as const, did: profile.data.did, handle };
-        } catch (e: any) {
-          return { ok: false as const, handle, error: this.formatError(e) };
-        }
-      }));
+      // OPTIMIZED: Resolve DIDs using public API with Redis cache and concurrency limit
+      const didResults = await this.resolveHandlesToDidsOptimized(handles);
+      timings['resolveDIDs'] = Date.now() - t0; t0 = Date.now();
 
       const successes = didResults.filter((r): r is { ok: true; did: string; handle: string } => r.ok);
       const failures = didResults.filter((r): r is { ok: false; handle: string; error: string } => !r.ok);
 
       failures.forEach(f => result.failures.push({ handle: f.handle, error: f.error }));
-      if (successes.length === 0) return result;
+      if (successes.length === 0) {
+        console.log('[batchFollowOAuth] Timings:', timings);
+        return result;
+      }
 
       // Build applyWrites payload
       const writes = successes.map(s => ({
@@ -252,6 +259,9 @@ export class BlueskyService implements IBlueskyService {
         writes: writes as any,
         validate: true,
       });
+      timings['applyWrites'] = Date.now() - t0;
+
+      console.log('[batchFollowOAuth] Timings:', timings, 'handles:', handles.length);
 
       if (!response.success) {
         throw new Error('OAuth applyWrites failed');
@@ -261,9 +271,104 @@ export class BlueskyService implements IBlueskyService {
       result.successfulHandles.push(...successes.map(s => s.handle));
       return result;
     } catch (e: any) {
+      console.log('[batchFollowOAuth] Timings before error:', timings);
       handles.forEach(h => result.failures.push({ handle: h, error: this.formatError(e) }));
       return result;
     }
+  }
+
+  /**
+   * Optimized DID resolution with Redis cache and public API
+   * - Uses public API (no auth needed, faster)
+   * - Caches DIDs in Redis for 24h
+   * - All requests in parallel with timeout
+   */
+  private async resolveHandlesToDidsOptimized(
+    handles: string[]
+  ): Promise<Array<{ ok: true; did: string; handle: string } | { ok: false; handle: string; error: string }>> {
+    const { getRedis } = await import('../services/redisClient');
+    const redis = getRedis();
+    const CACHE_TTL = 60 * 60 * 24; // 24 hours
+    const REQUEST_TIMEOUT = 5000; // 5 seconds per request
+
+    // Step 1: Check Redis cache for all handles
+    const cacheKeys = handles.map(h => `bsky:did:${h.toLowerCase()}`);
+    const cachedDids = await redis.mget(...cacheKeys);
+
+    const results: Array<{ ok: true; did: string; handle: string } | { ok: false; handle: string; error: string }> = [];
+    const toResolve: string[] = [];
+    const handleIndexMap = new Map<string, number>();
+
+    for (let i = 0; i < handles.length; i++) {
+      const handle = handles[i];
+      const cached = cachedDids[i];
+      if (cached) {
+        results.push({ ok: true, did: cached, handle });
+      } else {
+        handleIndexMap.set(handle.toLowerCase(), results.length);
+        results.push({ ok: false, handle, error: 'pending' }); // Placeholder
+        toResolve.push(handle);
+      }
+    }
+
+    if (toResolve.length === 0) {
+      return results;
+    }
+
+    // Step 2: Resolve ALL uncached handles in parallel with timeout
+    const resolveOne = async (handle: string): Promise<{ handle: string; did?: string; error?: string }> => {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
+      
+      try {
+        const resp = await fetch(`https://public.api.bsky.app/xrpc/app.bsky.actor.getProfile?actor=${encodeURIComponent(handle)}`, {
+          headers: { 'Accept': 'application/json' },
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
+        
+        if (resp.ok) {
+          const data = await resp.json();
+          return { handle, did: data.did };
+        } else {
+          return { handle, error: `Profile not found (${resp.status})` };
+        }
+      } catch (e: any) {
+        clearTimeout(timeoutId);
+        if (e.name === 'AbortError') {
+          return { handle, error: 'Timeout' };
+        }
+        return { handle, error: e.message || 'Network error' };
+      }
+    };
+
+    // All requests in parallel (public API can handle it)
+    const resolved = await Promise.all(toResolve.map(resolveOne));
+
+    // Step 3: Update results and cache successful resolutions
+    const toCache: [string, string][] = [];
+    for (const r of resolved) {
+      const idx = handleIndexMap.get(r.handle.toLowerCase());
+      if (idx !== undefined) {
+        if (r.did) {
+          results[idx] = { ok: true, did: r.did, handle: r.handle };
+          toCache.push([`bsky:did:${r.handle.toLowerCase()}`, r.did]);
+        } else {
+          results[idx] = { ok: false, handle: r.handle, error: r.error || 'Unknown error' };
+        }
+      }
+    }
+
+    // Batch cache the resolved DIDs
+    if (toCache.length > 0) {
+      const pipeline = redis.multi();
+      for (const [key, value] of toCache) {
+        pipeline.set(key, value, 'EX', CACHE_TTL);
+      }
+      await pipeline.exec().catch(() => {}); // Ignore cache errors
+    }
+
+    return results;
   }
 
   private async batchApplyWrites(

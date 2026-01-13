@@ -345,77 +345,105 @@ export async function executePostgresCommandWithStdin(
 export async function preloadNodesOnce(
   nodesCSVContent: string,
   workerId: string,
-  onProgress?: (processed: number, total: number) => Promise<void> | void
+  onProgress?: (processed: number, total: number) => Promise<void>
 ): Promise<{ success: boolean; processed: number; error?: string }> {
   const lines = nodesCSVContent.trim().split('\n');
-  const header = lines[0] || 'twitter_id';
-  const ids = lines.slice(1);
-  const total = ids.length;
-  const chunkSize = 50_000; // process in ~50k rows per transaction
-  const totalChunks = Math.max(1, Math.ceil(total / chunkSize));
+  const header = 'twitter_id';
+
+  const rawIds: bigint[] = [];
+  let invalidLines = 0;
+  for (const line of lines.slice(1)) {
+    const cleaned = line
+      .trim()
+      .replace(/^"+|"+$/g, '')
+      .replace(/,$/, '');
+    if (!cleaned) continue;
+    if (!/^-?\d+$/.test(cleaned)) {
+      invalidLines += 1;
+      if (invalidLines <= 5) {
+        console.log(`[Worker ${workerId}] ⚠️ preloadNodesOnce: invalid twitter_id line skipped: ${JSON.stringify(line)}`);
+      }
+      continue;
+    }
+    rawIds.push(BigInt(cleaned));
+  }
+  if (invalidLines > 0) {
+    console.log(`[Worker ${workerId}] ⚠️ preloadNodesOnce: skipped ${invalidLines} invalid twitter_id lines`);
+  }
+  
+  // 1. Dédupliquer
+  const uniqueIds = [...new Set(rawIds)];
+  
+  // 2. 🔥 GROUPER PAR PARTITION
+  const partitions: Map<number, bigint[]> = new Map();
+  for (let i = 0; i < 8; i++) {
+    partitions.set(i, []);
+  }
+  
+  for (const id of uniqueIds) {
+    const partition = Number(id % 8n);
+    partitions.get(partition)!.push(id);
+  }
+
+  for (const [, partitionIds] of partitions) {
+    partitionIds.sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+  }
+  
+  console.log(`[Worker ${workerId}] 🔧 Grouped into partitions:`);
+  for (const [partNum, ids] of partitions) {
+    console.log(`  Partition ${partNum}: ${ids.length} IDs`);
+  }
+  
   let processed = 0;
-
-  console.log(`[Worker ${workerId}] 🔧 Preloading nodes once | Unique candidates: ~${total} | chunks=${totalChunks} (size=${chunkSize})`);
-
-  for (let i = 0; i < total; i += chunkSize) {
-    const end = Math.min(i + chunkSize, total);
-    const chunk = ids.slice(i, end);
-    const chunkCount = chunk.length;
-    if (chunkCount === 0) continue;
-
-    const baseTimeout = 180; // per-chunk
-    const scalingFactor = 5;
-    const maxTimeout = 1800; // 30min hard cap per chunk
-    const timeoutValue = Math.max(baseTimeout, Math.min(maxTimeout, baseTimeout + Math.floor(chunkCount / 1000) * scalingFactor));
-
-    // Optimisé pour grosse table avec pré-filtrage
-    const nodesTempTable = `temp_nodes_${Date.now()}_${i}`;
-    const newNodesTempTable = `new_nodes_${Date.now()}_${i}`;
+  const total = uniqueIds.length;
+  
+  // 3. 🔥 INSÉRER PARTITION PAR PARTITION
+  for (const [partNum, partitionIds] of partitions) {
+    if (partitionIds.length === 0) continue;
     
-    const sql = `
+    const chunkSize = 10_000;
+    const partitionChunks = Math.ceil(partitionIds.length / chunkSize);
+    
+    for (let i = 0; i < partitionIds.length; i += chunkSize) {
+      const chunk = partitionIds.slice(i, i + chunkSize);
+      
+      const timeoutValue = 300;
+      const nodesTempTable = `temp_nodes_p${partNum}_${Date.now()}_${i}`;
+      
+      const sql = `
 BEGIN;
 SET LOCAL statement_timeout TO '${timeoutValue}s';
 SET LOCAL synchronous_commit TO OFF;
-SET LOCAL work_mem = '2GB';
-SET LOCAL enable_partitionwise_join = on;
-SET LOCAL enable_partitionwise_aggregate = on;
+SET LOCAL work_mem = '256MB';
 
--- Créer la table temporaire pour les données brutes
 CREATE TEMP TABLE ${nodesTempTable} (twitter_id BIGINT) ON COMMIT DROP;
-
--- Charger les données
 COPY ${nodesTempTable} FROM STDIN WITH (FORMAT csv, HEADER true);
 
--- Pré-filtrage : garder seulement les IDs qui n'existent pas déjà
-CREATE TEMP TABLE ${newNodesTempTable} AS
-SELECT DISTINCT t.twitter_id 
-FROM ${nodesTempTable} t
-WHERE NOT EXISTS (
-    SELECT 1 FROM nodes n 
-    WHERE n.twitter_id = t.twitter_id
-);
-
--- Insert simple sans conflits (beaucoup plus rapide)
 INSERT INTO nodes (twitter_id)
-SELECT twitter_id FROM ${newNodesTempTable};
+SELECT twitter_id FROM ${nodesTempTable}
+ON CONFLICT (twitter_id) DO NOTHING;
 
 COMMIT;
 `;
 
-    const chunkCSV = `${header}\n${chunk.join('\n')}`;
-    const chunkIndex = Math.floor(i / chunkSize) + 1;
-    console.log(`[Worker ${workerId}] 🚀 Preload chunk ${chunkIndex}/${totalChunks} | rows=${chunkCount} | timeout=${timeoutValue}s | OPTIMIZED`);
-    const res = await executePostgresCommandWithStdin(sql, chunkCSV, workerId, timeoutValue * 1000);
-    if (!res.success) {
-      return { success: false, processed, error: `Chunk ${chunkIndex}/${totalChunks} failed: ${res.error}` };
-    }
-    processed += chunkCount;
-
-    // notify progress to caller
-    try {
+      const chunkCSV = `${header}\n${chunk.join('\n')}`;
+      const chunkIndex = Math.floor(i / chunkSize) + 1;
+      
+      const startTime = Date.now();
+      console.log(`[Worker ${workerId}] 🚀 Partition ${partNum} | Chunk ${chunkIndex}/${partitionChunks} | rows=${chunk.length}`);
+      
+      const res = await executePostgresCommandWithStdin(sql, chunkCSV, workerId, timeoutValue * 1000);
+      
+      const duration = Date.now() - startTime;
+      
+      if (!res.success) {
+        return { success: false, processed, error: `P${partNum} Chunk ${chunkIndex} failed: ${res.error}` };
+      }
+      
+      console.log(`[Worker ${workerId}] ✅ P${partNum} Chunk ${chunkIndex} done in ${duration}ms (~${Math.round(chunk.length / (duration / 1000))}/sec)`);
+      
+      processed += chunk.length;
       if (onProgress) await onProgress(processed, total);
-    } catch (cbErr) {
-      console.log(`[Worker ${workerId}] ⚠️ preloadNodesOnce progress callback error: ${String(cbErr)}`);
     }
   }
 

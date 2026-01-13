@@ -1,6 +1,22 @@
 import Redis from 'ioredis';
-import { supabase } from '@/lib/supabase';
 import logger from './log_utils';
+
+// ============================================================================
+// SINGLETON PATTERN POUR NEXT.JS
+// ============================================================================
+// En Next.js, les modules peuvent être rechargés (hot reload en dev, ou 
+// différentes invocations serverless en prod). Sans globalThis, chaque reload
+// crée une NOUVELLE connexion Redis sans fermer l'ancienne → accumulation de
+// connexions → logs "Connected to Redis" répétés → overhead serveur.
+//
+// globalThis persiste entre les reloads du module.
+// ============================================================================
+
+// Déclaration du type global pour TypeScript
+declare global {
+  // eslint-disable-next-line no-var
+  var __redisClient: RedisClient | undefined
+}
 
 // Configuration Redis sécurisée et optimisée
 const redisConfig = {
@@ -671,122 +687,27 @@ class RedisClient {
   }
 }
 
-// Instance singleton
-export const redis = new RedisClient();
+// Fonction pour obtenir le singleton Redis via globalThis
+function getRedisClient(): RedisClient {
+  if (!globalThis.__redisClient) {
+    logger.logInfo('Redis', 'Creating Redis singleton', 'New RedisClient instance created via globalThis');
+    globalThis.__redisClient = new RedisClient();
+  }
+  return globalThis.__redisClient;
+}
+
+// Export du singleton via getter (pour compatibilité avec le code existant)
+export const redis = new Proxy({} as RedisClient, {
+  get(_, prop) {
+    const client = getRedisClient();
+    const value = (client as any)[prop];
+    // Bind les méthodes au client pour conserver le contexte
+    return typeof value === 'function' ? value.bind(client) : value;
+  }
+});
 
 // Export du client brut pour les cas avancés (avec précaution)
 export const rawRedisClient = redis;
-
-/**
- * Charger tous les mappings depuis PostgreSQL vers Redis au démarrage
- * Cette fonction est appelée une seule fois au démarrage du serveur
- */
-export async function loadInitialMappingsToRedis(): Promise<void> {
-  try {
-    
-    // Attendre que Redis soit prêt
-    await redis.ensureConnection();
-
-    // Vérifier si Redis contient déjà des mappings
-    const existingBlueskyKeys = await redis.keys('twitter_to_bluesky:*');
-    const existingMastodonKeys = await redis.keys('twitter_to_mastodon:*');
-    
-    if (existingBlueskyKeys.length > 0 || existingMastodonKeys.length > 0) {
-      return;
-    }
-
-    // 1. Charger les correspondances Bluesky avec pagination
-    let blueskyTotal = 0;
-    let blueskyPage = 0;
-    const pageSize = 1000;
-    
-    while (true) {
-      const { data: blueskyUsers, error: blueskyError } = await supabase
-        .from('twitter_bluesky_users')
-        .select('twitter_id, bluesky_username, bluesky_id')
-        .range(blueskyPage * pageSize, (blueskyPage + 1) * pageSize - 1);
-
-      if (blueskyError) {
-        logger.logError('Redis', 'Failed to load Bluesky mappings', blueskyError, 'system', { 
-          blueskyPage, 
-          pageSize 
-        });
-        break;
-      }
-      
-      if (!blueskyUsers || blueskyUsers.length === 0) {
-        break; // Plus de données
-      }
-
-      const blueskyPipeline = redis.pipeline();
-      
-      for (const user of blueskyUsers) {
-        if (user.twitter_id && user.bluesky_username && user.bluesky_id) {
-          const key = `twitter_to_bluesky:${user.twitter_id}`;
-          const value = `${user.bluesky_username}|${user.bluesky_id}`;
-          blueskyPipeline.set(key, value);
-        }
-      }
-      
-      await blueskyPipeline.exec();
-      blueskyTotal += blueskyUsers.length;
-      blueskyPage++;
-      
-      
-      if (blueskyUsers.length < pageSize) {
-        break; // Dernière page
-      }
-    }
-
-    // 2. Charger les correspondances Mastodon avec pagination
-    let mastodonTotal = 0;
-    let mastodonPage = 0;
-    
-    while (true) {
-      const { data: mastodonUsers, error: mastodonError } = await supabase
-        .from('twitter_mastodon_users')
-        .select('twitter_id, mastodon_id, mastodon_username, mastodon_instance')
-        .range(mastodonPage * pageSize, (mastodonPage + 1) * pageSize - 1);
-
-      if (mastodonError) {
-        logger.logError('Redis', 'Failed to load Mastodon mappings', mastodonError, 'system', { 
-          mastodonPage, 
-          pageSize 
-        });
-        break;
-      }
-      
-      if (!mastodonUsers || mastodonUsers.length === 0) {
-        break; // Plus de données
-      }
-
-      const mastodonPipeline = redis.pipeline();
-      
-      for (const user of mastodonUsers) {
-        if (user.twitter_id && user.mastodon_id && user.mastodon_username && user.mastodon_instance) {
-          const key = `twitter_to_mastodon:${user.twitter_id}`;
-          const value = `${user.mastodon_id}|${user.mastodon_username}|${user.mastodon_instance}`;
-          mastodonPipeline.set(key, value);
-        }
-      }
-      
-      await mastodonPipeline.exec();
-      mastodonTotal += mastodonUsers.length;
-      mastodonPage++;
-            
-      if (mastodonUsers.length < pageSize) {
-        break; // Dernière page
-      }
-    }
-
-
-  } catch (error) {
-    const errorString = error instanceof Error ? error.message : String(error);
-    logger.logError('Redis', 'Failed to load initial mappings to Redis', errorString, 'system');
-    // Ne pas faire échouer le démarrage du serveur si Redis n'est pas disponible
-    // Le fallback SQL fonctionnera toujours
-  }
-}
 
 // NE PAS charger automatiquement les mappings au démarrage du module
 // Cette fonction doit être appelée explicitement au démarrage du serveur
