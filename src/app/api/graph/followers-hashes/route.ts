@@ -1,0 +1,67 @@
+import { NextResponse } from 'next/server';
+import { pgMatchingRepository } from '@/lib/repositories/public/pg-matching-repository';
+import { withValidation } from "@/lib/validation/middleware"
+import { z } from "zod"
+
+// Schéma vide car cet endpoint n'a pas besoin de données d'entrée
+const EmptySchema = z.object({}).strict()
+
+async function getFollowersHandler(_request: Request, _data: z.infer<typeof EmptySchema>, session: any) {
+  try {
+    if (!session?.user?.id) {
+      console.log('📊 [get_followers] Unauthorized access attempt');
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const userId = session.user.id;
+    const hasOnboarded = session.user?.has_onboarded ?? false;
+    const twitterId = session.user?.twitter_id?.toString();
+
+    console.log('📊 [get_followers] Fetching follower hashes for user:', userId, { hasOnboarded, hasTwitterId: !!twitterId });
+
+    let hashes: string[] = [];
+    let totalCount = 0;
+
+    if (hasOnboarded) {
+      // Onboarded user: get followers from sources_followers using user UUID directly
+      const { data } = await pgMatchingRepository.getFollowerHashesForSourceUuid(userId);
+      hashes = data || [];
+      totalCount = hashes.length;
+    } else if (twitterId) {
+      // Non-onboarded user: get sources (people who follow them) from sources_targets using RPC
+      const { data } = await pgMatchingRepository.getSourcesOfTargetWithHashes(twitterId);
+      if (data) {
+        hashes = data.hashes;
+        totalCount = data.total_count;
+      }
+    }
+
+    console.log('📊 [get_followers] Retrieved', hashes.length, 'follower hashes for user:', userId);
+
+    return NextResponse.json({
+      hashes,
+      timestamp: Date.now(), // Server timestamp for cache validation
+      stats: {
+        total_in_graph: hashes.length,
+        total_count: totalCount,
+      }
+    });
+
+  } catch (error) {
+    const userId = session?.user?.id || 'unknown';
+    const err = error instanceof Error ? error : new Error(String(error))
+    console.log('📊 [get_followers] Error:', err, userId);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+// Configuration du middleware de validation
+export const GET = withValidation(
+  EmptySchema,
+  getFollowersHandler,
+  {
+    requireAuth: true,
+    applySecurityChecks: false,
+    skipRateLimit: false
+  }
+)

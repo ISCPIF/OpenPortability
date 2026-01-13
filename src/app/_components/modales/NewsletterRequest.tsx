@@ -1,20 +1,23 @@
 'use client';
 
-import React, { useState } from 'react';
+import { useState, ChangeEvent } from 'react';
 import { useTranslations } from 'next-intl';
-import { motion } from 'framer-motion';
 import { Mail } from 'lucide-react';
-import { plex } from '@/app/fonts/plex';
 import { isValidEmail } from '@/lib/utils';
+import { useTheme } from '@/hooks/useTheme';
+import { ModalShell, ModalHeader, ModalBody, ModalFooter } from './ModalShell';
+import { Button } from '../ui/Button';
 
 interface NewsletterRequestProps {
   userId: string;
+  isOpen: boolean;
   onSubscribe?: () => void;
-  onClose?: () => void;
+  onClose: () => void;
 }
 
-export default function NewsletterRequest({ userId, onSubscribe, onClose }: NewsletterRequestProps) {
+export default function NewsletterRequest({ userId, isOpen, onSubscribe, onClose }: NewsletterRequestProps) {
   const t = useTranslations('dashboard.newsletter');
+  const { isDark } = useTheme();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [email, setEmail] = useState('');
@@ -45,7 +48,6 @@ export default function NewsletterRequest({ userId, onSubscribe, onClose }: News
       const data = await response.json();
       
       if (!response.ok) {
-        // Si l'erreur a une structure détaillée
         if (data.error && typeof data.error === 'object') {
           throw new Error(data.error.details || 'Failed to update newsletter preferences');
         }
@@ -53,7 +55,7 @@ export default function NewsletterRequest({ userId, onSubscribe, onClose }: News
       }
 
       onSubscribe?.();
-      onClose?.();
+      onClose();
     } catch (error) {
       console.error('Error updating newsletter preferences:', error);
       setError(error instanceof Error ? error.message : 'An error occurred');
@@ -63,77 +65,92 @@ export default function NewsletterRequest({ userId, onSubscribe, onClose }: News
   };
 
   return (
-    <>
-      {/* Overlay avec backdrop blur */}
-      <div 
-        className="fixed inset-0 bg-[#2a39a9]/50 backdrop-blur-sm z-40"
-        onClick={onClose}
-      />
-      
-      {/* Modal */}
-      <div className="fixed inset-0 flex items-center justify-center z-50 px-4">
-        <div 
-          className="bg-white rounded-2xl shadow-lg p-6 max-w-lg w-full mx-auto"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div className="space-y-6">
-            <div>
-              <h2 className={`${plex.className} text-xl font-semibold text-gray-900`}>
-                {t('title')}
-              </h2>
-              <p className={`${plex.className} mt-2 text-sm text-gray-600`}>
-                {t('description')}
-              </p>
-            </div>
+    <ModalShell
+      isOpen={isOpen}
+      onClose={onClose}
+      theme={isDark ? 'dark' : 'light'}
+      size="md"
+      ariaLabel={t('title')}
+    >
+      <ModalHeader className="text-center">
+        <div className={`mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full ${
+          isDark ? 'bg-rose-500/20' : 'bg-rose-100'
+        }`}>
+          <Mail className={`h-6 w-6 ${isDark ? 'text-rose-400' : 'text-rose-500'}`} />
+        </div>
+        <h2 className={`text-xl font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>
+          {t('title')}
+        </h2>
+        <p className={`mt-2 text-sm ${isDark ? 'text-white/70' : 'text-slate-600'}`}>
+          {t('description')}
+        </p>
+      </ModalHeader>
 
-            <div className="space-y-4">
-              <div>
-                <label className={`${plex.className} block text-sm font-medium text-gray-900 mb-1`}>
-                  {t('emailLabel')}
-                </label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 h-5 w-5" />
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder={t('emailPlaceholder')}
-                    className="w-full pl-10 pr-3 py-2 border border-gray-300 text-gray-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#d6356f] focus:border-transparent placeholder:text-gray-500"
-                  />
-                </div>
-              </div>
-
-              {error && (
-                <div className={`${plex.className} text-red-600 text-sm p-3 bg-red-50 rounded-lg`}>
-                  {error}
-                </div>
-              )}
-            </div>
-
-            <div className="flex justify-end space-x-3">
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={onClose}
-                className={`${plex.className} px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500`}
-              >
-                {t('cancel')}
-              </motion.button>
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={handleSubmit}
-                disabled={isLoading}
-                className={`${plex.className} px-4 py-2 text-sm font-medium text-white bg-[#d6356f] rounded-lg hover:bg-[#b02c5c] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#d6356f] ${
-                  isLoading ? 'opacity-75 cursor-not-allowed' : ''
+      <ModalBody>
+        <div className="space-y-4">
+          <div>
+            <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-white/80' : 'text-slate-700'}`}>
+              {t('emailLabel')} <span className="text-rose-500">*</span>
+            </label>
+            <div className="relative">
+              <Mail className={`absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 ${
+                isDark ? 'text-white/40' : 'text-slate-400'
+              }`} />
+              <input
+                type="email"
+                value={email}
+                onChange={(e: ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
+                placeholder={t('emailPlaceholder')}
+                className={`w-full pl-10 pr-4 py-2.5 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-rose-500 ${
+                  isDark
+                    ? 'border border-white/20 bg-slate-900 text-white placeholder:text-white/40'
+                    : 'border border-slate-200 bg-white text-slate-800 placeholder:text-slate-500'
                 }`}
-              >
-                {isLoading ? t('saving') : t('save')}
-              </motion.button>
+              />
             </div>
           </div>
+
+          {error && (
+            <div className={`text-sm p-3 rounded-lg ${
+              isDark ? 'text-rose-300 bg-rose-500/20' : 'text-rose-600 bg-rose-50'
+            }`}>
+              {error}
+            </div>
+          )}
         </div>
-      </div>
-    </>
+      </ModalBody>
+
+      <ModalFooter className="flex-col sm:flex-row sm:justify-end gap-3">
+        <button
+          type="button"
+          onClick={onClose}
+          className={`px-4 py-2 text-sm font-medium rounded-lg transition ${
+            isDark
+              ? 'text-white/70 hover:text-white hover:bg-white/10'
+              : 'text-slate-600 hover:text-slate-800 hover:bg-slate-100'
+          }`}
+        >
+          {t('cancel')}
+        </button>
+        <Button
+          onClick={handleSubmit}
+          disabled={isLoading}
+          className={`px-6 py-2 text-sm font-semibold rounded-lg transition disabled:opacity-50 ${
+            isDark
+              ? 'bg-rose-500 hover:bg-rose-600 text-white'
+              : 'bg-rose-500 hover:bg-rose-600 text-white'
+          }`}
+        >
+          {isLoading ? (
+            <span className="flex items-center justify-center gap-2">
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+              {t('saving')}
+            </span>
+          ) : (
+            t('save')
+          )}
+        </Button>
+      </ModalFooter>
+    </ModalShell>
   );
 }

@@ -1,6 +1,23 @@
 import Redis from 'ioredis';
 import logger from './log_utils';
 
+// ============================================================================
+// SINGLETON PATTERN POUR NEXT.JS
+// ============================================================================
+// En Next.js, les modules peuvent être rechargés (hot reload en dev, ou 
+// différentes invocations serverless en prod). Sans globalThis, chaque reload
+// crée une NOUVELLE connexion Redis sans fermer l'ancienne → accumulation de
+// connexions → logs "Connected to Redis" répétés → overhead serveur.
+//
+// globalThis persiste entre les reloads du module.
+// ============================================================================
+
+// Déclaration du type global pour TypeScript
+declare global {
+  // eslint-disable-next-line no-var
+  var __redisClient: RedisClient | undefined
+}
+
 // Configuration Redis sécurisée et optimisée
 const redisConfig = {
   host: process.env.REDIS_HOST || 'openportability_redis',
@@ -670,12 +687,27 @@ class RedisClient {
   }
 }
 
-// Instance singleton
-export const redis = new RedisClient();
+// Fonction pour obtenir le singleton Redis via globalThis
+function getRedisClient(): RedisClient {
+  if (!globalThis.__redisClient) {
+    logger.logInfo('Redis', 'Creating Redis singleton', 'New RedisClient instance created via globalThis');
+    globalThis.__redisClient = new RedisClient();
+  }
+  return globalThis.__redisClient;
+}
+
+// Export du singleton via getter (pour compatibilité avec le code existant)
+export const redis = new Proxy({} as RedisClient, {
+  get(_, prop) {
+    const client = getRedisClient();
+    const value = (client as any)[prop];
+    // Bind les méthodes au client pour conserver le contexte
+    return typeof value === 'function' ? value.bind(client) : value;
+  }
+});
 
 // Export du client brut pour les cas avancés (avec précaution)
 export const rawRedisClient = redis;
-
 
 // NE PAS charger automatiquement les mappings au démarrage du module
 // Cette fonction doit être appelée explicitement au démarrage du serveur

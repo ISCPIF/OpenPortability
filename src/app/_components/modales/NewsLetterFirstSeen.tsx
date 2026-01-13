@@ -1,22 +1,30 @@
 'use client'
 
-import { useState, memo, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { X, ChevronDown } from 'lucide-react'
+import { useState, memo, useEffect, ChangeEvent } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
 import { useTranslations } from 'next-intl'
 import Image from 'next/image'
-import Badge from '../../../../public/v2/HQX-badge.svg'
-import { usePathname } from 'next/navigation'
-import { Globe } from 'lucide-react'
-import { isValidEmail } from '@/lib/utils'
-import { Switch } from '@headlessui/react'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+import { ChevronDown, Globe } from 'lucide-react'
+import { Switch } from '@headlessui/react'
+import { cn } from '../ui/utils'
+import { ModalShell, ModalHeader, ModalBody, ModalFooter } from './ModalShell'
+import { quantico } from '@/app/fonts/plex'
+
+import logoBlanc from '@/../public/logo/logo-openport-blanc.svg'
+import logoRose from '@/../public/logos/logo-openport-rose.svg'
+import blueskyIcon from '@/../public/newSVG/BS.svg'
+import mastodonIcon from '@/../public/newSVG/masto.svg'
+import { isValidEmail } from '@/lib/utils'
+import { useTheme } from '@/hooks/useTheme'
 
 interface NewsLetterFirstSeenProps {
   userId: string
   newsletterData: any
   onSubscribe?: () => void
   onClose?: () => void
+  isOpen?: boolean
 }
 
 const NewsletterLink = memo(({ href, children }: { href: string; children: React.ReactNode }) => (
@@ -24,13 +32,106 @@ const NewsletterLink = memo(({ href, children }: { href: string; children: React
     href={href}
     target="_blank"
     rel="noopener noreferrer"
-    className="text-[#46489B] font-bold hover:underline"
+    className="text-rose-600 dark:text-rose-400 font-medium hover:underline"
   >
     {children}
   </a>
 ));
 
 NewsletterLink.displayName = 'NewsletterLink';
+
+// Glass panel toggle component - consistent with SwitchSettingsSection style
+function ConsentToggleSimple({
+  label,
+  description,
+  checked,
+  onChange,
+  isDark,
+  compact = false,
+  icon,
+}: {
+  label: string
+  description?: React.ReactNode
+  checked: boolean
+  onChange: (value: boolean) => void
+  isDark: boolean
+  compact?: boolean
+  icon?: React.ReactNode
+}) {
+  return (
+    <div
+      className={cn(
+        'relative w-full rounded-lg p-3 transition-all duration-200 cursor-pointer',
+        isDark
+          ? 'bg-slate-800/50 border border-slate-700/30 hover:bg-slate-800/70 hover:border-slate-600/50'
+          : 'bg-slate-100/80 border border-slate-200 hover:bg-slate-200/80 hover:border-slate-300',
+        checked && (isDark ? 'border-amber-500/50 bg-amber-500/10' : 'border-amber-400 bg-amber-50'),
+        compact && 'p-2.5'
+      )}
+      onClick={() => onChange(!checked)}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e: React.KeyboardEvent) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          onChange(!checked)
+        }
+      }}
+    >
+      <div className="flex items-start gap-3">
+        <Switch
+          checked={checked}
+          onChange={onChange}
+          className={cn(
+            'relative mt-0.5 h-5 w-9 flex-shrink-0 rounded-full transition-colors',
+            checked
+              ? 'bg-amber-500'
+              : isDark ? 'bg-slate-600' : 'bg-slate-300'
+          )}
+        >
+          <span
+            className={cn(
+              'absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform',
+              checked && 'translate-x-4'
+            )}
+          />
+        </Switch>
+        <div className="flex-1 min-w-0 flex items-center gap-2">
+          {icon && <span className="flex-shrink-0">{icon}</span>}
+          <div>
+            <span className={cn(
+              `${quantico.className} text-[13px] font-medium block`,
+              checked ? 'text-amber-400' : (isDark ? 'text-white' : 'text-slate-800'),
+              compact && 'text-[11px]'
+            )}>
+              {label}
+            </span>
+            {description && (
+              <span className={cn(
+                'text-[11px] mt-0.5 block leading-relaxed',
+                isDark ? 'text-slate-400' : 'text-slate-600'
+              )}>
+                {description}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+      <div className="flex items-center gap-2 mt-2 pt-2 border-t border-slate-700/30">
+        <div className={cn(
+          'w-1.5 h-1.5 rounded-full',
+          checked ? 'bg-emerald-400' : 'bg-slate-500'
+        )} />
+        <span className={cn(
+          `${quantico.className} text-[10px]`,
+          checked ? 'text-emerald-400' : 'text-slate-500'
+        )}>
+          {checked ? 'Active' : 'Disabled'}
+        </span>
+      </div>
+    </div>
+  )
+}
 
 // Shared helper to ensure a single in-flight language fetch across components
 const ensureLanguagePreference = async (userId: string | undefined, currentLocale: string) => {
@@ -72,14 +173,20 @@ const ensureLanguagePreference = async (userId: string | undefined, currentLocal
   return lang as string;
 };
 
-export default function NewsLetterFirstSeen({ userId, newsletterData, onSubscribe, onClose }: NewsLetterFirstSeenProps) {
-  const { updateMultipleConsents } = newsletterData;
+export default function NewsLetterFirstSeen({
+  userId,
+  newsletterData,
+  onSubscribe,
+  onClose,
+  isOpen = true,
+}: NewsLetterFirstSeenProps) {
+  const { updateMultipleConsents } = newsletterData
   
   const [email, setEmail] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [isLanguageOpen, setIsLanguageOpen] = useState(false)
-  
+
   // États locaux pour les consentements
   const [localConsents, setLocalConsents] = useState({
     email_newsletter: false,
@@ -92,6 +199,42 @@ export default function NewsLetterFirstSeen({ userId, newsletterData, onSubscrib
   
   const t = useTranslations('firstSeen')
   const pathname = usePathname()
+  const { isDark, colors } = useTheme()
+
+  const descriptionLines = t
+    .raw('description')
+    .split('\n')
+    .map((line: string) => line.trim())
+    .filter(Boolean)
+  const splitIndex = Math.ceil(descriptionLines.length / 2)
+  const descriptionColumns = (
+    descriptionLines.length > 4
+      ? [descriptionLines.slice(0, splitIndex), descriptionLines.slice(splitIndex)]
+      : [descriptionLines]
+  ).filter((column) => column.length > 0)
+
+  const renderDescriptionLine = (line: string, key: string) => {
+    const parts: string[] = line.split(/\{(lien)\}/)
+    return (
+      <p key={key} className="text-[0.8rem] sm:text-[0.9rem]">
+        {parts.map((part: string, index: number) => {
+          if (part === 'lien') {
+            return (
+              <Link
+                key={`${key}-link-${index}`}
+                href={`/${currentLocale}/privacy_policy`}
+                className="font-semibold text-[inherit] underline decoration-dashed decoration-1 underline-offset-4"
+                style={{ color: colors.secondary }}
+              >
+                {t('privacyPolicyLink')}
+              </Link>
+            )
+          }
+          return <span key={`${key}-part-${index}`}>{part}</span>
+        })}
+      </p>
+    )
+  }
 
   const languages = [
     { code: 'fr', name: 'FR' },
@@ -100,43 +243,38 @@ export default function NewsLetterFirstSeen({ userId, newsletterData, onSubscrib
     { code: 'it', name: 'IT' },
     { code: 'de', name: 'DE' },
     { code: 'sv', name: 'SV' },
-    { code: 'pt', name: 'PT'},
+    { code: 'pt', name: 'PT' },
   ]
-  
+
   const currentLocale = pathname.split('/')[1]
 
-  // Vérifier et sauvegarder la langue à la connexion
+  // Vérifier et sauvegarder la langue à la connexion + hydrater les valeurs existantes
   useEffect(() => {
-    ensureLanguagePreference(userId, currentLocale);
-   }, [userId, currentLocale]);
+    ensureLanguagePreference(userId, currentLocale)
+  }, [userId, currentLocale])
 
-  const switchLanguage = async (locale: string) => {
-    const newPath = pathname.replace(`/${currentLocale}`, `/${locale}`)
-    
-    // Si un userId est fourni, sauvegarder la préférence
-    if (userId) {
-      try {
-        await fetch('/api/users/language', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ language: locale }),
-        });
-        // Mettre à jour le localStorage avec la nouvelle langue
-        localStorage.setItem(`user_language_${userId}`, locale);
-      } catch (error) {
-        console.error('Error saving language preference:', error);
-      }
+  useEffect(() => {
+    if (!newsletterData) return
+    if (newsletterData.email) {
+      setEmail(newsletterData.email)
     }
-    
-    window.location.href = newPath
-  }
+    if (newsletterData.consents) {
+      setLocalConsents((prev) => ({
+        ...prev,
+        ...newsletterData.consents,
+      }))
+    }
+  }, [newsletterData])
 
   const handleLocalConsentChange = (type: string, value: boolean) => {
     setLocalConsents(prev => ({
       ...prev,
       [type]: value,
+      // Si on active personalized_support, on active aussi les DMs par défaut
+      ...(type === 'personalized_support' && value ? {
+        bluesky_dm: true,
+        mastodon_dm: true
+      } : {}),
       // Si on désactive personalized_support, on désactive aussi les DMs
       ...(type === 'personalized_support' && !value ? {
         bluesky_dm: false,
@@ -145,314 +283,383 @@ export default function NewsLetterFirstSeen({ userId, newsletterData, onSubscrib
     }))
   }
 
+  const switchLanguage = async (locale: string) => {
+    if (locale === currentLocale) return
+    const newPath = pathname.replace(`/${currentLocale}`, `/${locale}`)
+
+    if (userId) {
+      try {
+        await fetch('/api/users/language', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ language: locale }),
+        })
+        localStorage.setItem(`user_language_${userId}`, locale)
+      } catch (err) {
+        console.error('Error saving language preference:', err)
+      }
+    }
+
+    window.location.href = newPath
+  }
+
   const handleSubmit = async () => {
-    // Vérifier l'email si newsletter est activée
-    if (localConsents.email_newsletter && (!email || !isValidEmail(email))) {
-      setError(t('newsletter.errors.missingEmail'))
+    if (localConsents.email_newsletter && !isValidEmail(email)) {
+      setError(t('newsletter.invalidEmail') ?? 'Invalid email')
       return
     }
 
-    setIsLoading(true)
-    setError('')
+    const consentPayload = Object.entries(localConsents).map(([type, value]) => ({
+      type: type as keyof typeof localConsents,
+      value,
+    }))
 
-    try {
-      // Préparer le tableau de tous les consentements avec leur valeur
-      const consentsToUpdate = Object.entries(localConsents).map(([type, value]) => ({
-        type: type as string,
-        value
-      }))
-
-      const response = await fetch('/api/newsletter/request', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          consents: consentsToUpdate,
-          ...(localConsents.email_newsletter ? { email } : {})
-        })
-      })
-
-      const data = await response.json()
-
-      if (response.ok && data.success) {
-        onSubscribe?.()
-        onClose?.()
-      } else {
-        // Afficher l'erreur spécifique de l'API
-        const errorMessage = data.error?.message || t('newsletter.errors.updateFailed')
-        if (data.error?.code === '23505') {
-          setError(t('newsletter.errors.emailExists'))
-        } else {
-          setError(errorMessage)
-        }
-      }
-    } catch (err) {
-      console.error('Error updating consents:', err)
-      setError(t('newsletter.errors.updateFailed'))
-    } finally {
-      setIsLoading(false)
-    }
+    await updateMultipleConsents(
+      consentPayload,
+      localConsents.email_newsletter ? email : undefined
+    )
+    onSubscribe?.()
+    onClose?.()
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white rounded-lg p-8 max-w-2xl w-full mx-4 relative">
-        {/* Language selector */}
-        <div className="absolute top-4 right-4 flex items-center space-x-2">
-          <button
-            onClick={() => setIsLanguageOpen(!isLanguageOpen)}
-            className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100 transition-colors"
-          >
-            <Globe className="w-5 h-5 text-gray-600" aria-hidden="true" />
-            <span className="text-sm text-gray-600">
-              {languages.find(lang => lang.code === currentLocale)?.name}
-            </span>
-            <ChevronDown
-              className={`w-4 h-4 text-gray-400 transition-transform duration-200 
-                ${isLanguageOpen ? 'rotate-180' : ''}`}
-            />
-          </button>
+    <ModalShell
+      isOpen={isOpen ?? false}
+      onClose={() => onClose?.()}
+      theme={isDark ? 'dark' : 'light'}
+      size="xl"
+      closeOnOverlayClick={false}
+      closeOnEscape={false}
+      showCloseButton={false}
+      ariaLabel={t('title')}
+      className="!max-w-4xl"
+    >
+      {/* Language selector in header area */}
+      <div className="absolute top-4 right-4 z-10">
+        <button
+          onClick={() => setIsLanguageOpen(!isLanguageOpen)}
+          className={`${quantico.className} flex items-center gap-2 rounded-lg border px-3 py-1.5 text-[10px] font-medium uppercase tracking-wider transition ${
+            isDark
+              ? 'border-slate-700/50 bg-slate-800/50 text-white/80 hover:border-slate-600/50 hover:bg-slate-800/70'
+              : 'border-slate-200 bg-slate-100 text-slate-600 hover:border-slate-300 hover:bg-slate-200'
+          }`}
+        >
+          <Globe className="w-3.5 h-3.5" aria-hidden="true" />
+          <span>{languages.find(lang => lang.code === currentLocale)?.name}</span>
+          <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${isLanguageOpen ? 'rotate-180' : ''}`} />
+        </button>
 
+        <AnimatePresence>
+          {isLanguageOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              className={`absolute right-0 mt-2 w-28 overflow-hidden rounded-lg border shadow-xl z-20 ${
+                isDark ? 'border-slate-700/50 bg-slate-900/95 backdrop-blur-sm' : 'border-slate-200 bg-white'
+              }`}
+            >
+              {languages.map((lang) => (
+                <button
+                  key={lang.code}
+                  onClick={() => {
+                    switchLanguage(lang.code)
+                    setIsLanguageOpen(false)
+                  }}
+                  className={`${quantico.className} w-full px-4 py-2 text-[11px] text-left transition ${
+                    isDark ? 'hover:bg-slate-800/50' : 'hover:bg-slate-100'
+                  } ${
+                    currentLocale === lang.code 
+                      ? (isDark ? 'bg-slate-800/70 text-amber-400 font-medium' : 'bg-slate-100 text-amber-600 font-medium')
+                      : (isDark ? 'text-white' : 'text-slate-700')
+                  }`}
+                >
+                  {lang.name}
+                </button>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
+      <ModalHeader className="text-center pt-2">
+        {/* <Image
+          src={isDark ? logoBlanc : logoRose}
+          alt="OpenPort Logo"
+          width={160}
+          height={48}
+          className="mx-auto mb-3 h-auto w-32 sm:w-40"
+          priority
+        /> */}
+        <h2 className={`${quantico.className} text-base sm:text-lg font-medium ${isDark ? 'text-white' : 'text-slate-900'}`}>
+          {t('title')}
+        </h2>
+      </ModalHeader>
+
+      <ModalBody className="space-y-4">
+        {/* Description */}
+        <div
+          className={`rounded-lg border px-4 py-3 text-[12px] leading-relaxed ${
+            isDark ? 'border-slate-700/30 bg-slate-800/50 text-slate-300' : 'border-slate-200 bg-slate-100/80 text-slate-700'
+          }`}
+        >
+          <div className={`grid grid-cols-1 gap-3 text-left ${descriptionColumns.length > 1 ? 'sm:grid-cols-2 sm:gap-5' : ''}`}>
+            {descriptionColumns.map((columnLines: string[], columnIndex: number) => (
+              <div key={`description-column-${columnIndex}`} className="space-y-2">
+                {columnLines.map((line: string, lineIndex: number) =>
+                  renderDescriptionLine(line, `description-${columnIndex}-${lineIndex}`)
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Consent toggles - Grid 2x2 on desktop, column on mobile */}
+        <div className={`rounded-lg border p-4 ${isDark ? 'border-slate-700/30 bg-slate-800/30' : 'border-slate-200 bg-slate-50/50'}`}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* Row 1: research (left) + personalized support (right) */}
+            <ConsentToggleSimple
+              label={t('newsletter.researchConsent')}
+              checked={localConsents.research_participation}
+              onChange={(value: boolean) => handleLocalConsentChange('research_participation', value)}
+              isDark={isDark}
+            />
+
+
+            <ConsentToggleSimple
+              label="OEP Newsletter"
+              description={
+                <span>
+                  {t.raw('newsletter.consent').split(/\{(link_oep)\}/).map((part: string, index: number) => {
+                    if (part === 'link_oep') {
+                      return (
+                        <NewsletterLink key="oep" href="https://onestpret.com">
+                          On est Prêt
+                        </NewsletterLink>
+                      )
+                    }
+                    return <span key={index}>{part}</span>
+                  })}
+                </span>
+              }
+              checked={localConsents.oep_newsletter}
+              onChange={(value: boolean) => handleLocalConsentChange('oep_newsletter', value)}
+              isDark={isDark}
+            />
+{/* Row 2: email newsletter (left) + OEP (right) */}
+            <ConsentToggleSimple
+              label={t('newsletter.subtitle')}
+              checked={localConsents.email_newsletter}
+              onChange={(value: boolean) => handleLocalConsentChange('email_newsletter', value)}
+              isDark={isDark}
+            />
+            
+             <ConsentToggleSimple
+              label={t('newsletter.personalizedSupport')}
+              checked={localConsents.personalized_support}
+              onChange={(value: boolean) => handleLocalConsentChange('personalized_support', value)}
+              isDark={isDark}
+            />
+          </div>
+
+          {/* Email input - full width below grid */}
           <AnimatePresence>
-            {isLanguageOpen && (
+            {localConsents.email_newsletter && (
               <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="absolute right-0 top-full mt-1 w-32 origin-top-right bg-white rounded-lg shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="overflow-hidden mt-4"
               >
-                <div className="py-1">
-                  {languages.map((lang) => (
-                    <button
-                      key={lang.code}
-                      onClick={() => {
-                        switchLanguage(lang.code);
-                        setIsLanguageOpen(false);
-                      }}
-                      className={`w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2
-                        ${currentLocale === lang.code ? 'bg-gray-50' : ''}`}
-                    >
-                      <span>{lang.name}</span>
-                    </button>
-                  ))}
+                <div className={`rounded-lg border p-3 ${isDark ? 'border-slate-700/30 bg-slate-900/50' : 'border-slate-200 bg-white'}`}>
+                  <label className={`${quantico.className} text-[10px] font-medium uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                    {t('newsletter.emailLabel')} <span className="text-amber-500">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    placeholder={t('newsletter.emailPlaceholder')}
+                    className={`${quantico.className} mt-2 w-full rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:ring-2 ${
+                      isDark
+                        ? 'border border-slate-700/50 bg-slate-800/50 text-white placeholder:text-slate-500 focus:ring-amber-500/50'
+                        : 'border border-slate-200 bg-white text-slate-800 placeholder:text-slate-400 focus:ring-amber-500/50'
+                    }`}
+                    value={email}
+                    onChange={(e: ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
+                    required
+                  />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* DM options - shown when personalized support is enabled */}
+          <AnimatePresence>
+            {localConsents.personalized_support && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="overflow-hidden mt-4"
+              >
+                <div className={`rounded-lg border p-3 ${isDark ? 'border-slate-700/30 bg-slate-900/50' : 'border-slate-200 bg-white'}`}>
+                  <p className={`${quantico.className} text-[10px] font-medium uppercase tracking-wider mb-3 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                    Canaux de contact
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <ConsentToggleSimple
+                      label={t('newsletter.blueskyDM')}
+                      checked={localConsents.bluesky_dm}
+                      onChange={(value: boolean) => handleLocalConsentChange('bluesky_dm', value)}
+                      isDark={isDark}
+                      compact
+                      icon={<Image src={blueskyIcon} alt="Bluesky" width={18} height={18} />}
+                    />
+                    <ConsentToggleSimple
+                      label={t('newsletter.mastodonDM')}
+                      checked={localConsents.mastodon_dm}
+                      onChange={(value: boolean) => handleLocalConsentChange('mastodon_dm', value)}
+                      isDark={isDark}
+                      compact
+                      icon={<Image src={mastodonIcon} alt="Mastodon" width={18} height={18} />}
+                    />
+                  </div>
                 </div>
               </motion.div>
             )}
           </AnimatePresence>
         </div>
 
-        <div className="flex flex-col items-center gap-1">
-          <Image
-            src={Badge}
-            alt="Logo"
-            width={80}
-            height={80}
-            className="mb-1"
-          />
+        {error && (
+          <p className={`${quantico.className} text-[12px] text-rose-500 text-center`}>{error}</p>
+        )}
+      </ModalBody>
 
-          <div className="text-center">
-            <h2 className="text-2xl font-semibold mb-2 text-black">{t('title')}</h2>
-            <div className="text-sm text-gray-600 text-center">
-              {t.raw('description').split('\n').map((line: string, index: number) => {
-                const parts: string[] = line.split(/\{(lien)\}/);
-                return (
-                  <p key={index} className="mb-3">
-                    {parts.map((part: string, partIndex: number) => {
-                      if (part === 'lien') {
-                        return (
-                          <Link 
-                            key={partIndex}
-                            href={`/${currentLocale}/privacy_policy`} 
-                            className="text-blue-600 hover:underline"
-                          >
-                            {t('privacyPolicyLink')}
-                          </Link>
-                        );
-                      }
-                      return <span key={partIndex}>{part}</span>;
-                    })}
-                  </p>
-                );
-              })}
-            </div>
-          </div>
+      <ModalFooter className="flex-col items-center gap-3 pt-4">
+        <button
+          type="button"
+          className={`${quantico.className} text-[12px] transition ${
+            isDark 
+              ? 'text-slate-500 hover:text-slate-300' 
+              : 'text-slate-500 hover:text-slate-700'
+          }`}
+          onClick={() => onClose?.()}
+        >
+          {t('dismiss')}
+        </button>
+        <button
+          className={`${quantico.className} w-full max-w-xs px-6 py-2.5 text-[13px] font-medium rounded-lg transition disabled:opacity-50 ${
+            isDark
+              ? 'bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white shadow-lg shadow-rose-500/20'
+              : 'bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white shadow-lg shadow-rose-500/20'
+          }`}
+          onClick={handleSubmit}
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <span className="flex items-center justify-center gap-2">
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+              {t('newsletter.loading') ?? 'Loading...'}
+            </span>
+          ) : (
+            t('cta')
+          )}
+        </button>
+      </ModalFooter>
+    </ModalShell>
+  )
+}
 
-          <div className="w-full max-w-xl bg-gray-100 p-6 rounded-lg space-y-4">
-            <div className="flex items-center space-x-3">
-              <Switch
-                checked={localConsents.research_participation}
-                onChange={(value) => handleLocalConsentChange('research_participation', value)}
-                className={`${
-                  localConsents.research_participation ? 'bg-blue-600' : 'bg-gray-200'
-                } relative inline-flex h-[24px] w-[44px] shrink-0 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2`}
-              >
-                <span
-                  className={`${
-                    localConsents.research_participation ? 'translate-x-[22px]' : 'translate-x-[2px]'
-                  } inline-block h-[20px] w-[20px] transform rounded-full bg-white transition-transform`}
-                />
-              </Switch>
-              <span className="text-sm text-gray-700">
-                {t('newsletter.researchConsent')}
-              </span>
-            </div>
+function LanguageSelector({
+  languages,
+  currentLocale,
+  isOpen,
+  onToggle,
+  onSelect,
+}: {
+  languages: { code: string; name: string }[]
+  currentLocale: string
+  isOpen: boolean
+  onToggle: () => void
+  onSelect: (locale: string) => void
+}) {
+  return (
+    <div className="absolute right-6 top-6">
+      <button
+        onClick={onToggle}
+        className="flex items-center gap-2 rounded-full border border-white/20 px-3 py-1 text-xs uppercase tracking-widest text-white/80 transition hover:border-white/40"
+      >
+        <Globe className="h-4 w-4" aria-hidden="true" />
+        <span>{languages.find((lang) => lang.code === currentLocale)?.name}</span>
+        <ChevronDown className={cn('h-3.5 w-3.5 transition-transform', isOpen ? 'rotate-180' : '')} />
+      </button>
 
-            <div className="space-y-2 text-sm">
-              <div className="flex items-center space-x-3">
-                <Switch
-                  checked={localConsents.email_newsletter}
-                  onChange={(value) => handleLocalConsentChange('email_newsletter', value)}
-                  className={`${
-                    localConsents.email_newsletter ? 'bg-blue-600' : 'bg-gray-200'
-                  } relative inline-flex h-[24px] w-[44px] shrink-0 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2`}
-                >
-                  <span
-                    className={`${
-                      localConsents.email_newsletter ? 'translate-x-[22px]' : 'translate-x-[2px]'
-                    } inline-block h-[20px] w-[20px] transform rounded-full bg-white transition-transform`}
-                  />
-                </Switch>
-                <span className="text-sm text-gray-700">
-                  {t('newsletter.subtitle')}
-                </span>
-              </div>
-
-              {localConsents.email_newsletter && (
-                <div className="mt-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {t('newsletter.emailLabel')} <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="email"
-                    placeholder={t('newsletter.emailPlaceholder')}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
-                </div>
-              )}
-            </div>
-
-            <div className="flex items-center space-x-3">
-              <Switch
-                checked={localConsents.personalized_support}
-                onChange={(value) => handleLocalConsentChange('personalized_support', value)}
-                className={`${
-                  localConsents.personalized_support ? 'bg-blue-600' : 'bg-gray-200'
-                } relative inline-flex h-[24px] w-[44px] shrink-0 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2`}
-              >
-                <span
-                  className={`${
-                    localConsents.personalized_support ? 'translate-x-[22px]' : 'translate-x-[2px]'
-                  } inline-block h-[20px] w-[20px] transform rounded-full bg-white transition-transform`}
-                />
-              </Switch>
-              <span className="text-sm text-gray-700">
-                {t('newsletter.personalizedSupport')}
-              </span>
-            </div>
-
-            {localConsents.personalized_support && (
-              <div className="ml-8 space-y-3">
-                <div className="flex items-center space-x-3">
-                  <Switch
-                    checked={localConsents.bluesky_dm}
-                    onChange={(value) => handleLocalConsentChange('bluesky_dm', value)}
-                    className={`${
-                      localConsents.bluesky_dm ? 'bg-blue-600' : 'bg-gray-200'
-                    } relative inline-flex h-[24px] w-[44px] shrink-0 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2`}
-                  >
-                    <span
-                      className={`${
-                        localConsents.bluesky_dm ? 'translate-x-[22px]' : 'translate-x-[2px]'
-                      } inline-block h-[20px] w-[20px] transform rounded-full bg-white transition-transform`}
-                    />
-                  </Switch>
-                  <span className="text-sm text-gray-700">
-                    {t('newsletter.blueskyDM')}
-                  </span>
-                </div>
-
-                <div className="flex items-center space-x-3">
-                  <Switch
-                    checked={localConsents.mastodon_dm}
-                    onChange={(value) => handleLocalConsentChange('mastodon_dm', value)}
-                    className={`${
-                      localConsents.mastodon_dm ? 'bg-blue-600' : 'bg-gray-200'
-                    } relative inline-flex h-[24px] w-[44px] shrink-0 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2`}
-                  >
-                    <span
-                      className={`${
-                        localConsents.mastodon_dm ? 'translate-x-[22px]' : 'translate-x-[2px]'
-                      } inline-block h-[20px] w-[20px] transform rounded-full bg-white transition-transform`}
-                    />
-                  </Switch>
-                  <span className="text-sm text-gray-700">
-                    {t('newsletter.mastodonDM')}
-                  </span>
-                </div>
-              </div>
-            )}
-
-            <div className="flex items-center space-x-3">
-              <Switch
-                checked={localConsents.oep_newsletter}
-                onChange={(value) => handleLocalConsentChange('oep_newsletter', value)}
-                className={`${
-                  localConsents.oep_newsletter ? 'bg-blue-600' : 'bg-gray-200'
-                } relative inline-flex h-[24px] w-[44px] shrink-0 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2`}
-              >
-                <span
-                  className={`${
-                    localConsents.oep_newsletter ? 'translate-x-[22px]' : 'translate-x-[2px]'
-                  } inline-block h-[20px] w-[20px] transform rounded-full bg-white transition-transform`}
-                />
-              </Switch>
-              <span className="text-sm text-gray-700">
-                {t.raw('newsletter.consent').split(/\{(link_oep)\}/).map((part: string, index: number) => {
-                  if (part === 'link_oep') {
-                    return (
-                      <NewsletterLink key="oep" href="https://onestpret.com">
-                        On est Prêt
-                      </NewsletterLink>
-                    );
-                  }
-                  return <span key={index}>{part}</span>;
-                })}
-              </span>
-            </div>
-
-            {error && (
-              <p className="text-red-500 text-sm mt-2">{error}</p>
-            )}
-          </div>
-
-          <button
-            onClick={handleSubmit}
-            disabled={isLoading}
-            className="mt-2 px-6 py-3 bg-[#46489B] text-white rounded-lg font-semibold hover:bg-opacity-90 
-                      transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            className="absolute right-0 mt-2 w-32 overflow-hidden rounded-xl border border-white/10 bg-[#050814]/95 shadow-xl"
           >
-            {isLoading ? (
-              <span className="flex items-center justify-center gap-2">
-                <span className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></span>
-                Loading...
-              </span>
-            ) : (
-              t('cta')
-            )}
-          </button>
-
-          <button
-            // onClick={}
-            className="text-gray-500 hover:text-gray-700 text-sm"
-          >
-            {t('dismiss')}
-          </button>
-        </div>
-      </div>
+            {languages.map((lang) => (
+              <button
+                key={lang.code}
+                onClick={() => onSelect(lang.code)}
+                className={cn(
+                  'flex w-full items-center justify-between px-4 py-2 text-sm text-white/80 transition hover:bg-white/5',
+                  currentLocale === lang.code && 'bg-white/10 text-white',
+                )}
+              >
+                <span>{lang.name}</span>
+              </button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
+  )
+}
+
+function ConsentToggle({
+  label,
+  checked,
+  onChange,
+  isDark,
+}: {
+  label: React.ReactNode
+  checked: boolean
+  onChange: (value: boolean) => void
+  isDark: boolean
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => onChange(!checked)}
+      className={cn(
+        'flex w-full items-center justify-between gap-4 rounded-xl border px-4 py-3 text-left transition',
+        isDark
+          ? 'border-white/10 bg-white/5 hover:border-white/40'
+          : 'border-slate-200 bg-white hover:border-indigo-200',
+      )}
+    >
+      <span className="text-sm font-medium">{label}</span>
+      <Switch
+        checked={checked}
+        onChange={onChange}
+        className={cn(
+          'relative h-6 w-11 rounded-full border transition',
+          checked
+            ? 'border-transparent bg-gradient-to-r from-indigo-500 to-pink-500'
+            : 'border-current/20 bg-muted',
+        )}
+      >
+        <span
+          className={cn(
+            'absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform',
+            checked ? 'translate-x-5' : 'translate-x-0.5',
+          )}
+        />
+      </Switch>
+    </button>
   )
 }

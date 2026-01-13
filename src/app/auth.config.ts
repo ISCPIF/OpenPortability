@@ -107,6 +107,18 @@ export const authConfig = {
           const isDid = typeof account.providerAccountId === 'string' && account.providerAccountId.startsWith('did:')
 
           if (isDid) {
+            // Vérifier si un autre utilisateur a déjà ce compte Bluesky
+            const { pgUserRepository } = await import('@/lib/repositories/auth/pg-user-repository');
+            const existingUser = await pgUserRepository.getUserByProviderId('bluesky', account.providerAccountId);
+
+            if (existingUser && existingUser.id !== session.user.id) {
+              logger.logError('Auth', 'signIn', 'This Bluesky account is already linked to another user', session.user.id, {
+                existingUserId: existingUser.id,
+                blueskyId: account.providerAccountId
+              });
+              return '/auth/error?error=BlueskyAccountAlreadyLinked';
+            }
+
             await pgAdapter.linkAccount({
               userId: session.user.id,
               type: account.type as AdapterAccountType,
@@ -128,6 +140,21 @@ export const authConfig = {
             });
           }
         }
+
+        // Si on essaie de lier un compte Twitter
+        if (session?.user?.id && account.provider === 'twitter') {
+          const { pgUserRepository } = await import('@/lib/repositories/auth/pg-user-repository');
+          const existingUser = await pgUserRepository.getUserByProviderId('twitter', account.providerAccountId);
+
+          if (existingUser && existingUser.id !== session.user.id) {
+            logger.logError('Auth', 'signIn', 'This Twitter account is already linked to another user', session.user.id, {
+              existingUserId: existingUser.id,
+              twitterId: account.providerAccountId
+            });
+            return '/auth/error?error=TwitterAccountAlreadyLinked';
+          }
+        }
+
         return true;
       } catch (error) {
         const err = error instanceof Error ? error.message : String(error);

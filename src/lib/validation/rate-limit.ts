@@ -61,6 +61,19 @@ export const RATE_LIMIT_CONFIGS: Record<string, RateLimitConfig> = {
     identifier: 'userId',
     message: 'Too many follow requests. Please wait before sending more.'
   },
+  '/api/migrate/lasso_found': {
+    windowMs: 5 * 60 * 1000,
+    maxRequests: 50,          // Lasso selection queries
+    identifier: 'ip',         // Public endpoint (no auth required)
+    skipAuth: true,
+    message: 'Too many lasso requests. Please wait before sending more.'
+  },
+  '/api/migrate/send_follow_lasso': {
+    windowMs: 5 * 60 * 1000,
+    maxRequests: 100,         // Batch follow processing
+    identifier: 'userId',
+    message: 'Too many lasso follow requests. Please wait before sending more.'
+  },
   '/api/upload': {
     windowMs: 5 * 60 * 1000,  // 5 minutes
     maxRequests: 5,           // 5 uploads par 5 minutes
@@ -84,6 +97,44 @@ export const RATE_LIMIT_CONFIGS: Record<string, RateLimitConfig> = {
     maxRequests: 20,          // 20 requêtes par 5 minutes
     identifier: 'userId',
     message: 'Too many network requests. Please wait before fetching your network again.'
+  },
+  '/api/graph/followers-hashes': {
+    windowMs: 5 * 60 * 1000,
+    maxRequests: 30,          // Graph data fetching
+    identifier: 'userId',
+    message: 'Too many requests. Please wait before fetching again.'
+  },
+  '/api/graph/followings-hashes': {
+    windowMs: 5 * 60 * 1000,
+    maxRequests: 30,          // Graph data fetching
+    identifier: 'userId',
+    message: 'Too many requests. Please wait before fetching again.'
+  },
+  '/api/graph/highlights': {
+    windowMs: 1 * 60 * 1000,
+    maxRequests: 60,          // Lightweight status updates after follow actions
+    identifier: 'userId',
+    message: 'Too many highlight requests. Please wait before updating again.'
+  },
+  '/api/graph/names_labels': {
+    windowMs: 5 * 60 * 1000,
+    maxRequests: 20,          // Public labels endpoint
+    identifier: 'ip',
+    skipAuth: true,
+    message: 'Too many requests. Please wait before fetching again.'
+  },
+  '/api/stats/lasso': {
+    windowMs: 5 * 60 * 1000,
+    maxRequests: 30,          // Stats fetching
+    identifier: 'userId',
+    message: 'Too many stats requests. Please wait before fetching again.'
+  },
+  '/api/mosaic/sql': {
+    windowMs: 24 * 60 * 60 * 1000,  // 24 heures
+    maxRequests: 5,                  // 5 requêtes max (résultat stocké en IndexedDB)
+    identifier: 'ip',
+    skipAuth: true,
+    message: 'Too many database queries. Graph data is cached locally - please clear your browser cache if you need to reload.'
   },
   
   // Configuration par défaut

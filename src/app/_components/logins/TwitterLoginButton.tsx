@@ -1,10 +1,13 @@
 'use client'
 
+import { useState } from 'react'
 import { signIn } from "next-auth/react"
-import { motion, type Variants } from "framer-motion"
+import { motion } from "framer-motion"
 import { FaXTwitter } from 'react-icons/fa6'
-import { plex } from "@/app/fonts/plex"
+import { quantico } from "@/app/fonts/plex"
 import { useTranslations } from 'next-intl'
+import { useTheme } from '@/hooks/useTheme'
+import { Loader2, Zap, CheckCircle2 } from 'lucide-react'
 
 interface TwitterLoginButtonProps {
   onLoadingChange?: (isLoading: boolean) => void;
@@ -14,21 +17,6 @@ interface TwitterLoginButtonProps {
   onClick?: () => void;
 }
 
-const itemVariants: Variants = {
-  hidden: { opacity: 0, y: -8, scale: 0.95 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    scale: 1,
-    transition: {
-      type: 'spring',
-      stiffness: 400,
-      damping: 30
-    }
-  },
-  exit: { opacity: 0, y: -8, scale: 0.95 }
-}
-
 export default function TwitterLoginButton({
   onLoadingChange = () => { },
   isConnected = false,
@@ -36,14 +24,17 @@ export default function TwitterLoginButton({
   className = "",
   onClick
 }: TwitterLoginButtonProps) {
+  const [isLoading, setIsLoading] = useState(false)
   const t = useTranslations('dashboardLoginButtons')
+  const { isDark } = useTheme()
 
   const handleSignIn = async () => {
     try {
+      setIsLoading(true)
       onLoadingChange(true)
       const result = await signIn("twitter", {
         redirect: false,
-        callbackUrl: '/dashboard'
+        callbackUrl: '/reconnect'
       })
 
       if (result?.error) {
@@ -66,28 +57,51 @@ export default function TwitterLoginButton({
     } catch (error) {
       console.error("Error during Twitter sign in:", error)
     } finally {
+      setIsLoading(false)
       onLoadingChange(false)
     }
   }
 
   return (
-    <motion.button
-      variants={itemVariants}
-      initial="hidden"
-      animate="visible"
-      exit="exit"
-      onClick={onClick ?? handleSignIn}
-      className={`flex items-center justify-center gap-2 w-full px-4 py-2 text-white 
-                  ${isSelected 
-                    ? 'bg-black ring-2 ring-white/30'
-                    : 'bg-[#282729] border border-white hover:bg-gray-600'}
-                  rounded-lg transition-colors ${plex.className} ${className}`}
-      disabled={isConnected}
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -12 }}
+      className="w-full"
     >
-      <FaXTwitter className="w-5 h-5" />
-      <span>
-        {isConnected ? t('connected') : t('services.twitter')}
-      </span>
-    </motion.button>
+      <motion.button
+        whileHover={{ scale: 1.01 }}
+        whileTap={{ scale: 0.99 }}
+        onClick={onClick ?? handleSignIn}
+        disabled={isConnected || isLoading}
+        className={`${quantico.className} group relative w-full rounded-2xl border border-zinc-700 bg-zinc-900 p-5 text-left transition-all duration-300 shadow-[0_0_25px_rgba(255,255,255,0.08)] hover:shadow-[0_0_35px_rgba(255,255,255,0.12)] hover:border-zinc-600 disabled:opacity-70 disabled:cursor-not-allowed`}
+      >
+
+        <div className="relative flex items-center gap-4">
+          {/* Icon */}
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm">
+            <FaXTwitter className="h-6 w-6 text-white" />
+          </div>
+
+          {/* Content */}
+          <div className="flex-1">
+            <p className="text-base font-semibold text-white">
+              {isConnected ? t('connected') : t('services.twitter')}
+            </p>
+          </div>
+
+          {/* Action indicator */}
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm transition-transform group-hover:scale-110">
+            {isLoading ? (
+              <Loader2 className="h-5 w-5 text-white animate-spin" />
+            ) : isConnected ? (
+              <CheckCircle2 className="h-5 w-5 text-white" />
+            ) : (
+              <Zap className="h-5 w-5 text-white" />
+            )}
+          </div>
+        </div>
+      </motion.button>
+    </motion.div>
   )
 }
