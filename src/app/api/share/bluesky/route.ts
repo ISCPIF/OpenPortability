@@ -10,7 +10,9 @@ import logger from '@/lib/log_utils';
 
 // Schéma de validation pour le partage sur Bluesky
 const BlueskyShareSchema = z.object({
-  text: z.string().min(1, "Text can't be empty").max(2000, "Text can't exceed 2000 characters")
+  text: z.string().min(1, "Text can't be empty").max(2000, "Text can't exceed 2000 characters"),
+  imageUrl: z.string().optional(), // URL de l'image à joindre (chemin relatif depuis /public)
+  imageAlt: z.string().max(1000).optional() // Texte alternatif pour l'image
 }).strict();
 
 // Type pour les données validées
@@ -63,8 +65,62 @@ async function blueskyShareHandler(req: Request, data: BlueskyShareRequest, sess
           );
         }
         
+        // Si une image est fournie, l'uploader d'abord
+        let embed: { $type: string; images: Array<{ alt: string; image: { $type: string; ref: { $link: string }; mimeType: string; size: number } }> } | undefined;
+        
+        if (data.imageUrl) {
+          try {
+            // Construire l'URL absolue de l'image
+            const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+            const imageFullUrl = `${baseUrl}${data.imageUrl.startsWith('/') ? '' : '/'}${data.imageUrl}`;
+            
+            // Télécharger l'image
+            const imageResponse = await fetch(imageFullUrl);
+            if (!imageResponse.ok) {
+              throw new Error(`Failed to fetch image: ${imageResponse.status}`);
+            }
+            
+            const imageBuffer = await imageResponse.arrayBuffer();
+            const uint8Array = new Uint8Array(imageBuffer);
+            
+            // Déterminer le type MIME
+            const contentType = imageResponse.headers.get('content-type') || 'image/jpeg';
+            
+            // Uploader le blob sur Bluesky
+            const uploadResponse = await agent.uploadBlob(uint8Array, {
+              encoding: contentType
+            });
+            
+            // Créer l'embed avec l'image
+            // Cast blob to expected type - ATProto BlobRef includes $type internally
+            const blob = uploadResponse.data.blob as unknown as {
+              $type: string;
+              ref: { $link: string };
+              mimeType: string;
+              size: number;
+            };
+            embed = {
+              $type: 'app.bsky.embed.images',
+              images: [{
+                alt: data.imageAlt || 'Image partagée',
+                image: blob
+              }]
+            };
+            
+            logger.logInfo('API', 'POST /api/share/bluesky', 'Image uploaded successfully', session.user.id, {
+              blobSize: uint8Array.length,
+              mimeType: contentType
+            });
+          } catch (imageError) {
+            const imgErr = imageError instanceof Error ? imageError : new Error(String(imageError));
+            logger.logWarning('API', 'POST /api/share/bluesky', `Failed to upload image: ${imgErr.message}`, session.user.id);
+            // Continuer sans l'image si l'upload échoue
+          }
+        }
+        
         const result = await agent.post({
             text: text,
+            embed: embed,
             createdAt: new Date().toISOString()
         });
         

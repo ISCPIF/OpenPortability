@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { signIn } from "next-auth/react"
 import { SiMastodon } from 'react-icons/si'
-import { plex } from "@/app/fonts/plex"
-import { ChevronDown, Plus, Search, X } from 'lucide-react'
+import { quantico } from "@/app/fonts/plex"
+import { Loader2, AlertCircle, Globe, ArrowRight, CheckCircle2 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
+import { useTheme } from '@/hooks/useTheme'
 
 interface MastodonLoginButtonProps {
   onLoadingChange?: (loading: boolean) => void
@@ -15,33 +16,6 @@ interface MastodonLoginButtonProps {
   onClick?: () => void
   showForm?: boolean
   instances: string[]
-  // prompt?: string
-}
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0 },
-  exit: { opacity: 0, y: -20 }
-}
-
-const formVariants = {
-  hidden: { opacity: 0, scale: 0.95 },
-  visible: {
-    opacity: 1,
-    scale: 1,
-    transition: {
-      type: "spring",
-      stiffness: 300,
-      damping: 30
-    }
-  },
-  exit: {
-    opacity: 0,
-    scale: 0.95,
-    transition: {
-      duration: 0.2
-    }
-  }
 }
 
 export default function MastodonLoginButton({
@@ -55,42 +29,21 @@ export default function MastodonLoginButton({
   instances = []
 }: MastodonLoginButtonProps) {
   const [instanceText, setInstanceText] = useState('')
-  const [searchTerm, setSearchTerm] = useState('')
   const [instanceError, setInstanceError] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+  const [isFocused, setIsFocused] = useState(false)
   const t = useTranslations('dashboardLoginButtons')
-
-
-  // useEffect(() => {
-  //   const fetchInstances = async () => {
-  //     try {
-  //       const response = await fetch('/api/auth/mastodon')
-  //       const data = await response.json()
-  //       if (data.success) {
-  //         setInstances(data.instances)
-  //       }
-  //     } catch (error) {
-  //       console.error('Error fetching Mastodon instances:', error)
-  //     }
-  //   }
-
-  //   if (showForm) {
-  //     fetchInstances()
-  //   }
-  // }, [showForm])
+  const { isDark } = useTheme()
 
   const validateInstance = (instance: string): boolean => {
     setInstanceError('')
-
-    // Enlever les espaces
     instance = instance.trim()
 
-    // Vérifier que ce n'est pas vide
     if (!instance) {
       setInstanceError(t('services.mastodon.error.required'))
       return false
     }
 
-    // Vérification basique du hostname de l’instance
     const hostnameRegex = /^[a-zA-Z0-9][a-zA-Z0-9\.\-]+$/;
     if (!hostnameRegex.test(instance)) {
       setInstanceError(t('services.mastodon.error.invalid_format'))
@@ -103,19 +56,19 @@ export default function MastodonLoginButton({
   const handleSignIn = async (instance: string) => {
     if (!instance) return
 
-    // Pour une instance personnalisée, on valide
     if (!instances.includes(instance) && !validateInstance(instance)) {
       return
     }
 
     try {
+      setIsLoading(true)
       onLoadingChange(true)
       const callbackUrl = window.location.pathname.includes('/reconnect') ? '/reconnect' : '/dashboard'
 
       const result = await signIn("mastodon", {
         redirect: false,
         callbackUrl: callbackUrl
-      }, { instance: instance.trim()})
+      }, { instance: instance.trim() })
 
       if (result?.error) {
         onError(result.error)
@@ -126,92 +79,155 @@ export default function MastodonLoginButton({
       console.error("Error during Mastodon sign in:", error)
       onError(t('services.mastodon.error.unreachable'))
     } finally {
+      setIsLoading(false)
       onLoadingChange(false)
     }
   }
 
+  // Button mode (showForm = false)
   if (!showForm) {
     return (
-      <motion.button
-        variants={itemVariants}
-        initial="hidden"
-        animate="visible"
-        exit="exit"
-        onClick={onClick}
-        className={`flex items-center justify-center gap-2 w-full px-4 py-2.5 text-white 
-                   ${isSelected
-            ? 'bg-[#4c32b5] ring-2 ring-purple-400/50'
-            : 'bg-[#563ACC] hover:bg-[#4c32b5]'} 
-                   rounded-xl transition-all duration-200 ${plex.className} ${className}
-                   hover:shadow-lg hover:shadow-purple-500/20`}
-        disabled={isConnected}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -12 }}
+        className="w-full"
       >
-        <SiMastodon className="w-5 h-5" />
-        <span className="font-medium">
-          {isConnected ? t('connected') : t('services.mastodon.title')}
-        </span>
-        <ChevronDown
-          className={`w-4 h-4 transition-transform duration-300 ${isSelected ? 'rotate-180' : ''}`}
-        />
-      </motion.button>
+        <motion.button
+          whileHover={{ scale: 1.01 }}
+          whileTap={{ scale: 0.99 }}
+          onClick={onClick}
+          disabled={isConnected}
+          className={`${quantico.className} group relative w-full rounded-2xl border border-violet-500/30 bg-[#6364FF] p-5 text-left transition-all duration-300 shadow-[0_0_25px_rgba(99,100,255,0.25)] hover:shadow-[0_0_35px_rgba(99,100,255,0.35)] hover:border-violet-400/50 disabled:opacity-70 disabled:cursor-not-allowed`}
+        >
+
+          <div className="relative flex items-center gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm">
+              <SiMastodon className="h-6 w-6 text-white" />
+            </div>
+
+            <div className="flex-1">
+              <p className="text-base font-semibold text-white">
+                {isConnected ? t('connected') : t('services.mastodon.title')}
+              </p>
+            </div>
+
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm transition-transform group-hover:scale-110">
+              {isConnected ? (
+                <CheckCircle2 className="h-5 w-5 text-white" />
+              ) : (
+                <ArrowRight className={`h-5 w-5 text-white transition-transform ${isSelected ? 'rotate-90' : ''}`} />
+              )}
+            </div>
+          </div>
+        </motion.button>
+      </motion.div>
     )
   }
 
+  // Form mode (showForm = true)
+  const inputClasses = isDark
+    ? 'bg-white/5 border-white/20 text-white placeholder-white/40 focus:border-violet-400'
+    : 'bg-slate-50 border-slate-200 text-slate-900 placeholder-slate-400 focus:border-violet-500'
+
   return (
-    <div
-      className={`px-4 py-4 bg-white rounded-2xl shadow-xl text-sm text-gray-800`}
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="w-full space-y-5"
     >
-      <div className="">
-        <datalist id="known_instances">
-          {instances.map((instance, index) => (
-            <option key={index} value={instance} />
-          ))}
-        </datalist>
-        <form onSubmit={() => handleSignIn(instanceText)}>
+      {/* Header */}
+      <div className="flex items-center gap-3">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 shadow-lg shadow-violet-500/25">
+          <SiMastodon className="h-5 w-5 text-white" />
+        </div>
+        <div>
+          <h3 className={`${quantico.className} text-base font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>
+            {t('services.mastodon.title')}
+          </h3>
+          <p className={`text-xs ${isDark ? 'text-white/60' : 'text-slate-500'}`}>
+            Enter your instance to connect
+          </p>
+        </div>
+      </div>
+
+      <form onSubmit={(e: React.FormEvent) => { e.preventDefault(); handleSignIn(instanceText) }} className="space-y-4">
+        {/* Instance input */}
+        <div className="space-y-2">
+          <label className={`${quantico.className} block text-xs font-medium uppercase tracking-wider ${isDark ? 'text-white/70' : 'text-slate-600'}`}>
+            {t('services.mastodon.instance')}
+          </label>
           <div className="relative">
-            <p>
-              {t('services.mastodon.instance')}
-            </p>
+            <div className={`absolute left-4 top-1/2 -translate-y-1/2 ${isDark ? 'text-white/40' : 'text-slate-400'}`}>
+              <Globe className="h-4 w-4" />
+            </div>
             <input
-              type="text" list="known_instances"
+              type="text"
+              list="known_instances"
               value={instanceText}
-              onChange={(e) => {
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                 setInstanceError('')
-                const instanceName = e.target.value?.trim();
+                const instanceName = e.target.value?.trim()
                 validateInstance(instanceName)
                 setInstanceText(e.target.value)
               }}
-              className={`w-full px-4 py-3 my-3 bg-gray-50 border rounded-xl 
-                              text-gray-800 placeholder-gray-500 
-                              focus:ring-2 focus:outline-none 
-                              ${instanceError
-                  ? 'border-red-300 focus:border-red-400 focus:ring-red-400/20'
-                  : 'border-gray-200 focus:border-purple-400 focus:ring-purple-400/20'
-                }`}
+              onFocus={() => setIsFocused(true)}
+              onBlur={() => setIsFocused(false)}
+              placeholder="mastodon.social"
+              className={`${quantico.className} w-full pl-11 pr-4 py-3 rounded-xl border-2 transition-all duration-200 outline-none ${inputClasses} ${instanceError ? 'border-red-500' : ''}`}
+              disabled={isLoading}
             />
-            {instanceError && (
-              <p
-                className="mt-2 text-sm text-red-600"
-              >
-                {instanceError}
-              </p>
+            {isFocused && !instanceError && (
+              <motion.div
+                layoutId="mastodon-focus-ring"
+                className="absolute inset-0 rounded-xl border-2 border-violet-400 pointer-events-none"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+              />
             )}
           </div>
+          <datalist id="known_instances">
+            {instances.map((instance, index) => (
+              <option key={index} value={instance} />
+            ))}
+          </datalist>
+        </div>
 
-          <button
-            type="submit"
-            className="w-full py-3 px-4 bg-purple-600 hover:bg-purple-700 
-                            text-white font-medium rounded-xl shadow-lg 
-                            shadow-purple-600/20 hover:shadow-purple-600/30 
-                            disabled:bg-purple-200
-                             flex items-center justify-center gap-2"
-            disabled={!instanceText || !!instanceError}
-          >
-            <SiMastodon className="w-5 h-5" />
-            {t('services.mastodon.connect')}
-          </button>
-        </form>
-      </div>
-    </div>
+        {/* Error */}
+        <AnimatePresence>
+          {instanceError && (
+            <motion.div
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              className={`flex items-center gap-3 p-3 rounded-xl ${isDark ? 'bg-red-500/20 border border-red-500/30' : 'bg-red-50 border border-red-200'}`}
+            >
+              <AlertCircle className={`w-4 h-4 flex-shrink-0 ${isDark ? 'text-red-400' : 'text-red-500'}`} />
+              <p className={`${quantico.className} text-sm ${isDark ? 'text-red-300' : 'text-red-600'}`}>{instanceError}</p>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Submit */}
+        <motion.button
+          type="submit"
+          whileHover={{ scale: 1.01 }}
+          whileTap={{ scale: 0.99 }}
+          disabled={isLoading || !instanceText || !!instanceError}
+          className={`${quantico.className} w-full flex items-center justify-center gap-3 px-5 py-3.5 rounded-xl font-medium transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed bg-gradient-to-r from-violet-500 via-purple-500 to-fuchsia-500 text-white shadow-lg shadow-violet-500/25 hover:shadow-violet-500/40`}
+        >
+          {isLoading ? (
+            <Loader2 className="w-5 h-5 animate-spin" />
+          ) : (
+            <>
+              <span>{t('services.mastodon.connect')}</span>
+              <ArrowRight className="w-4 h-4" />
+            </>
+          )}
+        </motion.button>
+      </form>
+    </motion.div>
   )
 }

@@ -10,6 +10,8 @@ import { withValidation } from '@/lib/validation/middleware'
 import { SendFollowRequestSchema, MatchingAccountSchema } from '@/lib/validation/schemas'
 import { z } from 'zod'
 import { StatsRepository } from '@/lib/repositories/statsRepository'
+import { checkRateLimit, consumeRateLimit } from '@/lib/services/rateLimitService'
+import { pgMatchingRepository } from '@/lib/repositories/public/pg-matching-repository'
 
 // Use the schema-inferred type to match the incoming payload shape
 type AccountToFollow = z.infer<typeof MatchingAccountSchema>;
@@ -48,6 +50,12 @@ export const POST = withValidation(
         bluesky: null as any,
         mastodon: null as any
       }
+      
+      // Track successful node_ids for coord_hash lookup at the end
+      const successfulNodeIds: { bluesky: string[]; mastodon: string[] } = {
+        bluesky: [],
+        mastodon: []
+      };
 
       if (blueskyAccount) {
         const blueskyAccounts = accounts.filter((acc: any) => {
@@ -59,6 +67,30 @@ export const POST = withValidation(
         
         if (blueskyAccounts.length > 0) {
           try {
+            // Check rate limit before attempting follows
+            const rateLimitCheck = await checkRateLimit(userId, blueskyAccounts.length)
+            if (!rateLimitCheck.allowed) {
+              logger.logWarning('API', 'POST /api/migrate/send_follow', `Rate limit exceeded: ${rateLimitCheck.reason}`, userId)
+              return NextResponse.json({
+                error: 'Rate limit exceeded',
+                rateLimited: true,
+                reason: rateLimitCheck.reason,
+                maxFollowsAllowed: rateLimitCheck.maxFollowsAllowed,
+                retryAfterSeconds: rateLimitCheck.retryAfterSeconds,
+              }, { status: 429 })
+            }
+
+            // Verify Bluesky token is valid before attempting follows
+            const blueskyTokenCheck = await accountService.verifyAndRefreshBlueskyToken(userId)
+            if (!blueskyTokenCheck.success) {
+              logger.logWarning('API', 'POST /api/migrate/send_follow', 'Bluesky token invalid, requires reauth', userId)
+              return NextResponse.json({
+                error: 'Bluesky authentication required',
+                requiresReauth: true,
+                providers: ['bluesky'],
+              }, { status: 401 })
+            }
+
             const blueskyHandles = blueskyAccounts.map((acc: any) => acc.bluesky_handle!)
 
             const isOAuth = (blueskyAccount.token_type && String(blueskyAccount.token_type).toUpperCase() === 'DPOP')
@@ -87,6 +119,12 @@ export const POST = withValidation(
                 failureCount: results.bluesky.failures.length,
                 errors: results.bluesky.failures.map((f: any) => f.error)
               });
+            }
+
+            // Consume rate limit points for successful follows only
+            const successfulFollowCount = blueskyAccounts.length - results.bluesky.failures.length;
+            if (successfulFollowCount > 0) {
+              await consumeRateLimit(userId, successfulFollowCount);
             }
 
             // Group accounts by type
@@ -141,13 +179,28 @@ export const POST = withValidation(
                   .filter((id: any): id is string => !!id && id.trim().length > 0);
                   
                 if (successTargetIds.length > 0) {
-                  await matchingService.updateFollowStatusBatch(
-                    userId,
-                    successTargetIds,
-                    'bluesky',
-                    true,
-                    undefined
-                  );
+                  // Track for coord_hash lookup
+                  successfulNodeIds.bluesky.push(...successTargetIds);
+                  
+                  // Pour les utilisateurs onboarded, mettre à jour sources_targets
+                  if (session.user.has_onboarded) {
+                    await matchingService.updateFollowStatusBatch(
+                      userId,
+                      successTargetIds,
+                      'bluesky',
+                      true,
+                      undefined
+                    );
+                  } else if (session.user.twitter_id) {
+                    // Pour les utilisateurs non-onboarded, mettre à jour sources_followers
+                    await matchingService.updateSourcesFollowersByNodeIds(
+                      session.user.twitter_id.toString(),
+                      successTargetIds,
+                      'bluesky',
+                      true,
+                      undefined
+                    );
+                  }
                 }
               }
               
@@ -162,14 +215,27 @@ export const POST = withValidation(
                     .filter((f: any) => failedTargets.some((acc: any) => acc.bluesky_handle === f.handle))
                     .map((f: any) => f.error)
                     .join('; ');
-                    
-                  await matchingService.updateFollowStatusBatch(
-                    userId,
-                    failedTargetIds,
-                    'bluesky',
-                    false,
-                    errorMessage
-                  );
+                  
+                  // Pour les utilisateurs onboarded, mettre à jour sources_targets avec success=false
+                  if (session.user.has_onboarded) {
+                    await matchingService.updateFollowStatusBatch(
+                      userId,
+                      failedTargetIds,
+                      'bluesky',
+                      false,
+                      errorMessage
+                    );
+                  } else if (session.user.twitter_id) {
+                    // Pour les utilisateurs non-onboarded, marquer comme "suivi" même si échec
+                    // pour les retirer de pending (ils ne reviendront pas dans la liste)
+                    await matchingService.updateSourcesFollowersByNodeIds(
+                      session.user.twitter_id.toString(),
+                      failedTargetIds,
+                      'bluesky',
+                      true, // Mark as followed even on failure to remove from pending
+                      errorMessage
+                    );
+                  }
                 }
               }
             }
@@ -198,6 +264,17 @@ export const POST = withValidation(
 
         if (mastodonAccounts.length > 0) {
           try {
+            // Verify Mastodon token is valid before attempting follows
+            const mastodonTokenCheck = await accountService.verifyAndRefreshMastodonToken(userId)
+            if (!mastodonTokenCheck.success) {
+              logger.logWarning('API', 'POST /api/migrate/send_follow', 'Mastodon token invalid, requires reauth', userId)
+              return NextResponse.json({
+                error: 'Mastodon authentication required',
+                requiresReauth: true,
+                providers: ['mastodon'],
+              }, { status: 401 })
+            }
+
             const mastodonTargets = mastodonAccounts.map((acc: any) => ({
               username: acc.mastodon_username!,
               instance: acc.mastodon_instance!,
@@ -215,6 +292,11 @@ export const POST = withValidation(
                 failureCount: results.mastodon.failures.length,
                 errors: results.mastodon.failures.map((f: any) => f.error)
               });
+            }
+            else
+            {
+              console.log('Mastodon follows succeeded');
+              console.log(results.mastodon);
             }
 
             // Group accounts by type
@@ -286,13 +368,28 @@ export const POST = withValidation(
                   .filter((id: any): id is string => !!id && id.trim().length > 0);
                   
                 if (successTargetIds.length > 0) {
-                  await matchingService.updateFollowStatusBatch(
-                    userId,
-                    successTargetIds,
-                    'mastodon',
-                    true,
-                    undefined
-                  );
+                  // Track for coord_hash lookup
+                  successfulNodeIds.mastodon.push(...successTargetIds);
+                  
+                  // Pour les utilisateurs onboarded, mettre à jour sources_targets
+                  if (session.user.has_onboarded) {
+                    await matchingService.updateFollowStatusBatch(
+                      userId,
+                      successTargetIds,
+                      'mastodon',
+                      true,
+                      undefined
+                    );
+                  } else if (session.user.twitter_id) {
+                    // Pour les utilisateurs non-onboarded, mettre à jour sources_followers
+                    await matchingService.updateSourcesFollowersByNodeIds(
+                      session.user.twitter_id.toString(),
+                      successTargetIds,
+                      'mastodon',
+                      true,
+                      undefined
+                    );
+                  }
                 }
               }
               
@@ -312,17 +409,33 @@ export const POST = withValidation(
                     })
                     .map((f: any) => f.error)
                     .join('; ');
-                    
-                  await matchingService.updateFollowStatusBatch(
-                    userId,
-                    failedTargetIds,
-                    'mastodon',
-                    false,
-                    errorMessage
-                  );
+                  
+                  // Pour les utilisateurs onboarded, mettre à jour sources_targets avec success=false
+                  if (session.user.has_onboarded) {
+                    await matchingService.updateFollowStatusBatch(
+                      userId,
+                      failedTargetIds,
+                      'mastodon',
+                      false,
+                      errorMessage
+                    );
+                  } else if (session.user.twitter_id) {
+                    // Pour les utilisateurs non-onboarded, marquer comme "suivi" même si échec
+                    // pour les retirer de pending (ils ne reviendront pas dans la liste)
+                    await matchingService.updateSourcesFollowersByNodeIds(
+                      session.user.twitter_id.toString(),
+                      failedTargetIds,
+                      'mastodon',
+                      true, // Mark as followed even on failure to remove from pending
+                      errorMessage
+                    );
+                  }
                 }
               }
             }
+
+            console.log('Mastodon follows completed');
+            console.log(results.mastodon);
           } catch (mastodonError) {
             const err = mastodonError instanceof Error ? mastodonError : new Error(String(mastodonError))
             logger.logError('API', 'POST /api/migrate/send_follow', err, userId, {
@@ -346,7 +459,65 @@ export const POST = withValidation(
         })
       }
 
-      return NextResponse.json(results)
+      // Get coord_hashes for successful follows (for client-side cache update)
+      let coordHashes: { bluesky: string[]; mastodon: string[] } = { bluesky: [], mastodon: [] };
+      const allSuccessfulNodeIds = [...new Set([...successfulNodeIds.bluesky, ...successfulNodeIds.mastodon])];
+      
+      console.log('📊 [send_follow] Successful node_ids:', {
+        bluesky: successfulNodeIds.bluesky.length,
+        mastodon: successfulNodeIds.mastodon.length,
+        total: allSuccessfulNodeIds.length
+      });
+      
+      if (allSuccessfulNodeIds.length > 0) {
+        try {
+          const { data: hashMap, error: hashError } = await pgMatchingRepository.getCoordHashesByNodeIds(allSuccessfulNodeIds);
+          console.log('📊 [send_follow] getCoordHashesByNodeIds result:', {
+            hashMapSize: hashMap?.size || 0,
+            error: hashError
+          });
+          if (hashMap) {
+            // Map node_ids to coord_hashes for each platform
+            coordHashes.bluesky = successfulNodeIds.bluesky
+              .map(nodeId => hashMap.get(nodeId))
+              .filter((hash): hash is string => !!hash);
+            coordHashes.mastodon = successfulNodeIds.mastodon
+              .map(nodeId => hashMap.get(nodeId))
+              .filter((hash): hash is string => !!hash);
+            console.log('📊 [send_follow] coordHashes mapped:', {
+              bluesky: coordHashes.bluesky.length,
+              mastodon: coordHashes.mastodon.length
+            });
+          }
+        } catch (hashError) {
+          // Non-critical error, log and continue
+          console.warn('Failed to get coord_hashes for cache update:', hashError);
+        }
+      }
+
+      // Format response with detailed failure info
+      const formattedResults = {
+        bluesky: results.bluesky ? {
+          succeeded: results.bluesky.succeeded || 0,
+          failed: results.bluesky.failures?.length || 0,
+          failures: results.bluesky.failures?.map((f: any) => ({
+            handle: f.handle || 'unknown',
+            error: f.error || 'Unknown error'
+          })) || [],
+          coordHashes: coordHashes.bluesky
+        } : null,
+        mastodon: results.mastodon ? {
+          succeeded: results.mastodon.succeeded || 0,
+          failed: results.mastodon.failures?.length || 0,
+          failures: results.mastodon.failures?.map((f: any) => ({
+            handle: f.handle || 'unknown',
+            error: f.error || 'Unknown error'
+          })) || [],
+          coordHashes: coordHashes.mastodon
+        } : null
+      }
+
+      return NextResponse.json(formattedResults)
     } catch (error) {
       const userId = session?.user?.id || 'unknown';
       const err = error instanceof Error ? error : new Error(String(error))

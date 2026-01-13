@@ -3,8 +3,9 @@
 import { useSession } from 'next-auth/react'
 import ProfileCard from './ProfileCard'
 import { motion } from 'framer-motion'
-import { IoCheckmarkCircle } from 'react-icons/io5'
 import { useTranslations } from 'next-intl'
+import { Link2, CheckCircle2 } from 'lucide-react'
+import { quantico } from '@/app/fonts/plex'
 
 export default function ConnectedAccounts() {
   const { data: session } = useSession()
@@ -31,52 +32,55 @@ export default function ConnectedAccounts() {
     : connectedServices[0]
 
   return (
-    <div className="relative w-full max-w-2xl mx-auto">
-      {/* Badge de succès */}
-      {/* <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-10">
-        <div className="flex items-center gap-2 bg-green-500/10 backdrop-blur-sm px-4 py-1.5 rounded-full border border-green-500/20">
-          <IoCheckmarkCircle className="text-green-400 size-5" />
-          <span className="text-xs font-medium text-green-400">{t('connected')}</span>
-        </div>
-      </div> */}
-
-      {/* Container principal - Style plus moderne et épuré */}
-      <div className="relative p-6 bg-black/40 backdrop-blur-xl rounded-2xl border border-white/10">
-        {/* Message de statut */}
-        <div className="mb-6">
-          <h2 className="text-lg font-medium text-white mb-1">
-            {t('yourAccounts')}
-          </h2>
-          <p className="text-sm text-white/60">
-            {t('connectedWith', { services: formattedServices })}
-          </p>
+    <div className={`${quantico.className} relative w-full`}>
+      {/* Container principal - Graph panel style */}
+      <div className="relative overflow-hidden p-5 sm:p-6 rounded-xl bg-slate-900/95 backdrop-blur-sm border border-slate-700/50 shadow-xl">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-700/50">
+          <div className="flex items-center gap-2">
+            <Link2 className="w-4 h-4 text-blue-400" />
+            <h2 className="text-[13px] font-semibold text-white">
+              {t('yourAccounts')}
+            </h2>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+            <span className="text-[10px] text-emerald-400 uppercase tracking-wider">
+              {t('connected')}
+            </span>
+          </div>
         </div>
 
-        {/* Cartes de profil */}
+        {/* Status message */}
+        <p className="text-[11px] text-slate-400 mb-4">
+          {t('connectedWith', { services: formattedServices })}
+        </p>
+
+        {/* Profile cards */}
         <div className="space-y-2">
           {hasTwitter && (
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3 }}
+              transition={{ duration: 0.2 }}
             >
               <ProfileCard type="twitter" showUnlink={true} />
             </motion.div>
           )}
           {hasBluesky && (
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: 0.1 }}
+              transition={{ duration: 0.2, delay: 0.05 }}
             >
               <ProfileCard type="bluesky" showUnlink={true} />
             </motion.div>
           )}
           {hasMastodon && (
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: 0.2 }}
+              transition={{ duration: 0.2, delay: 0.1 }}
             >
               <ProfileCard type="mastodon" showUnlink={true} />
             </motion.div>

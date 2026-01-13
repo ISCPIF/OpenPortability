@@ -82,6 +82,26 @@ export class MatchingRepository {
   }
 
   /**
+   * Met à jour le statut de suivi dans sources_followers pour un utilisateur non-onboarded
+   * basé sur les node_id des cibles
+   */
+  async updateSourcesFollowersByNodeIds(
+    followerTwitterId: string,
+    targetNodeIds: string[],
+    platform: 'bluesky' | 'mastodon',
+    success: boolean,
+    error?: string
+  ): Promise<void> {
+    return pgMatchingRepository.updateSourcesFollowersByNodeIds(
+      followerTwitterId,
+      targetNodeIds,
+      platform,
+      success,
+      error
+    )
+  }
+
+  /**
    * @deprecated Use pgMatchingRepository.getSourcesFromFollower() instead
    */
   async getSourcesFromFollower(

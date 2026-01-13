@@ -4,7 +4,8 @@
       "profile": {
         "username": "@{username}"
       },
-      "returnToDashboard": "Vers la reconnexion",
+      "returnToDashboard": "Vers la carte sociale",
+      "reconnect": "Reconnexion",
       "settings" : "Réglages et notifications"
     },
     "connectedAccounts": {
@@ -191,6 +192,11 @@
     },
     "logoCNRS": {
       "alt": "CNRS, Centre national de la recherche scientifique"
+    },
+    "discoverLink": {
+      "prefix": "Juste curieux ?",
+      "link": "Explorez le graphe social",
+      "suffix": "sans vous connecter"
     }
   },
   "dashboard": {
@@ -329,6 +335,9 @@
     }
   },
 "settings": {
+    "active": "Actif",
+    "disabled": "Désactivé",
+    "loadingSettings": "Chargement des paramètres...",
     "logout": "Déconnexion",
     "invalidEmail": "Email invalide",
     "updateSuccess" : "Préférences mises à jour",
@@ -383,6 +392,11 @@
     },
     "notifications": {
       "title": "Notifications",
+      "columnTitles": {
+        "notifications": "Notifications",
+        "automations": "Recommandations automatiques",
+        "consents": "Consentements"
+      },
       "hqxNewsletter": {
         "title": "Newsletter OpenPortability",
         "description": "Être informé.e des dernières mises a jour et nouvelles fonctionnalités de la plateforme OpenPortability"
@@ -412,6 +426,10 @@
       "research": {
         "title": "Programme de recherche CNRS",
         "description": "Je souhaite partager avec le CNRS mon graphe de connexions à des fins de recherche. Il sera traité de manière aggrégée. Aucune donnée personnelle ne sera rendue publique."
+      },
+      "graphLabel": {
+        "title": "Afficher mon nom sur le graphe",
+        "description": "Autoriser l'affichage de votre nom aux autres utilisateurs sur la visualisation du graphe en mode Discover."
       }
     },
     "emailLabel" : "Entrez votre adresse email (obligatoire)",
@@ -629,6 +647,15 @@
     },
     "close": "Fermer"
   },
+  "loginModal": {
+    "title": "Authentification requise",
+    "noAccountsTitle": "Connectez un compte social",
+    "noAccountsMessage": "Pour voir votre réseau personnel et vos followers, veuillez connecter au moins un compte Bluesky ou Mastodon.",
+    "expiredTitle": "Session expirée",
+    "expiredMessage": "Votre session {providers} a expiré. Veuillez vous reconnecter pour accéder à votre réseau personnel et vos followers.",
+    "message": "Veuillez vous authentifier pour continuer.",
+    "skipButton": "Continuer avec la vue globale uniquement"
+  },
   "SuccessAutomaticReconnexion": {
     "congratulations": "Bravo",
     "secondObjective": "Vous vous êtes reconnecté à {count} comptes. Invitez vos contacts à faire de même !",
@@ -673,8 +700,168 @@
   },
   "blueskyPreviewModale": {
   "shareOn": "Partager sur {platform}",
-  "previewTitle": "Prévisualiser votre post sur {platform}",
-  "publish": "Publier",
-  "cancel": "Annuler"
+    "previewTitle": "Prévisualiser votre post sur {platform}",
+    "publish": "Publier",
+    "cancel": "Annuler"
+  },
+  "migrationSuccess": {
+    "title": "Reconnexion terminée !",
+    "lassoTitle": "Découverte terminée !",
+    "subtitle": "Vous avez suivi {succeeded} comptes sur {total}",
+    "lassoSubtitle": "Vous avez trouvé {succeeded} nouveaux comptes grâce à OpenPortability",
+    "tabs": {
+      "summary": "Résumé",
+      "errors": "Erreurs ({count})"
+    },
+    "followed": "Suivis",
+    "total": "Total",
+    "failed": "Échoués",
+    "failedLabel": "échoué(s)",
+    "sharePrompt": "Partagez votre reconnexion avec votre réseau !",
+    "shareMessage": "Je viens de me reconnecter avec {succeeded} comptes sur {total} grâce à @OpenPortability ! 🎉 Rejoignez le mouvement : https://openportability.org",
+    "close": "Fermer"
+  },
+  "reconnectDashboard": {
+    "loading": {
+      "graph": "Chargement du graphe...",
+      "initializing": "Initialisation du graphe...",
+      "personalNetwork": "Chargement de votre réseau..."
+    },
+    "mobileNotice": {
+      "title": "Pour une expérience optimale",
+      "message": "Utilisez OpenPortability sur un ordinateur pour explorer le graphe interactif et découvrir votre réseau.",
+      "cta": "Continuer sur ordinateur"
+    }
+  },
+  "communityColorPicker": {
+    "title": "Couleurs des communautés",
+    "palette": "Palette",
+    "changePalette": "Changer",
+    "hidePalettes": "Masquer",
+    "communities": "Couleurs",
+    "pointSize": "Taille des points",
+    "resetPointSize": "Réinitialiser",
+    "clickToCustomize": "Cliquez sur une couleur pour la personnaliser",
+    "changeColorOf": "Changer la couleur de {label}",
+    "resetThisColor": "Réinitialiser cette couleur",
+    "resetAllColors": "Réinitialiser toutes les couleurs"
+  },
+  "floatingDiscoverPanel": {
+    "header": "Mode Découverte",
+    "message": "Pour explorer tout le potentiel d'OpenPortability, importez votre archive Twitter/X pour retrouver vos connexions sur Bluesky et Mastodon.",
+    "uploadButton": "Importer mon archive",
+    "uploadSubtext": "Retrouvez votre réseau sur OpenPortability",
+    "featuresTitle": "Ce que vous débloquerez",
+    "feature1": "Voir vos abonnements mis en évidence sur le graphe",
+    "feature2": "Vous reconnecter avec votre réseau sur Bluesky & Mastodon",
+    "feature3": "Suivre votre progression de migration"
+  },
+  "floatingAccountsPanel": {
+    "header": "Comptes",
+    "selected": "{count} sélectionnés",
+    "tabs": {
+      "pending": "En attente",
+      "connected": "Connectés",
+      "ignored": "Ignorés",
+      "lasso": "Lasso"
+    },
+    "search": {
+      "placeholder": "Rechercher des comptes..."
+    },
+    "actions": {
+      "ignore": "Ignorer ({count})",
+      "follow": "Suivre ({count})",
+      "restore": "Restaurer ({count})"
+    },
+    "lasso": {
+      "membersSelected": "{count} membres sélectionnés",
+      "clearSelection": "Effacer la sélection",
+      "moreMembers": "+{count} autres membres",
+      "bluesky": "Bluesky:",
+      "mastodon": "Mastodon:",
+      "following": "En cours...",
+      "followMembers": "Suivre {count} membres",
+      "connectedAccounts": "{count} connectés via lasso",
+      "noConnections": "Aucune connexion lasso",
+      "moreConnections": "+{count} autres connexions"
+    },
+    "empty": "Aucun compte trouvé",
+    "status": {
+      "active": "Actif"
+    },
+    "pagination": {
+      "prev": "Préc",
+      "next": "Suiv"
+    },
+    "reconnectButton": "Se reconnecter à tous les comptes",
+    "missingPlatform": {
+      "bluesky": "+{count} comptes sur Bluesky → Connecter",
+      "mastodon": "+{count} comptes sur Mastodon → Connecter"
+    }
+  },
+  "discoverPage": {
+    "title": "Découvrir",
+    "stats": "Statistiques",
+    "graphNodes": "Nœuds du graphe",
+    "nodes": "{count} nœuds",
+    "users": "Utilisateurs inscrits",
+    "registeredLinks": "Liens enregistrés",
+    "recreatedLinks": "Liens recréés",
+    "selected": "{count} sélectionnés",
+    "resetView": "Réinitialiser la vue",
+    "loginForMore": "Se connecter pour plus",
+    "loading": "Chargement..."
+  },
+  "introOverlay": {
+    "skip": "Passer l'intro",
+    "next": "Suivant",
+    "start": "C'est parti !",
+    "step1": {
+      "title": "Explorez le graphe social",
+      "description": "Naviguez parmi 650 000+ comptes Twitter/X visualisés par leurs connexions. Chaque point représente un compte, coloré par communauté.",
+      "controls": "Molette = Zoom\nClic + Glisser = Déplacer\nClic = Sélectionner"
+    },
+    "step2": {
+      "title": "Trois modes de vue",
+      "description": "Basculez entre Découvrir (explorer tout), Abonnements (vos suivis) et Abonnés (vos followers). Votre réseau personnel est mis en évidence quand vous sélectionnez un mode."
+    },
+    "step3": {
+      "title": "Sélection au lasso",
+      "description": "Dessinez une sélection autour des comptes pour découvrir qui ils sont. Parfait pour explorer les communautés !",
+      "controls": "Cliquez sur l'outil Lasso dans la barre d'outils\nDessinez autour des comptes\nLes stats apparaissent dans le panneau"
+    },
+    "step4": {
+      "title": "Panneau de reconnexion",
+      "description": "Le panneau de droite affiche les comptes avec lesquels vous pouvez vous reconnecter sur Bluesky et Mastodon. Sélectionnez et cliquez 'Reconnecter' pour les suivre."
+    }
+  },
+  "consentLabelModal": {
+    "title": "Afficher votre nom sur le graphe",
+    "description": "Choisissez qui peut voir votre nom affiché sur le graphe social. Vous pouvez modifier ce paramètre à tout moment.",
+    "options": {
+      "noConsent": {
+        "title": "Garder mon nom privé",
+        "description": "Votre nom ne sera affiché sur le graphe pour personne."
+      },
+      "followersOfFollowers": {
+        "title": "Visible pour mon réseau",
+        "description": "Votre nom sera visible par les personnes qui suivent vos abonnés (réseau étendu)."
+      },
+      "allConsent": {
+        "title": "Visible par tous",
+        "description": "Votre nom sera affiché sur le graphe pour tous les visiteurs."
+      }
+    },
+    "later": "Décider plus tard",
+    "save": "Enregistrer",
+    "saving": "Enregistrement..."
+  },
+  "loaders": {
+    "reconnect": "Chargement de votre réseau...",
+    "upload": "Préparation de l'import...",
+    "uploading": "Import en cours...",
+    "largeFiles": "Traitement de vos fichiers...",
+    "dashboard": "Chargement du tableau de bord...",
+    "settings": "Chargement des paramètres..."
   }
 }

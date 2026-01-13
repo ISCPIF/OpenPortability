@@ -1,94 +1,64 @@
-version: '3.8'
-
+# =============================================================================
+# Docker Compose - DEVELOPMENT OVERRIDE
+# =============================================================================
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+#
+# Ou build + run:
+#   docker buildx bake && docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+# =============================================================================
 services:
   app:
+    image: app:dev
     build:
       context: .
       dockerfile: Dockerfile.dev
-    env_file:
-      - .env.local
+    user: "${UID:-1000}:${GID:-1000}"
     environment:
       - NODE_ENV=development
+      - NEXT_CONFIG_FILE=./next.config.dev.js
       - WATCHPACK_POLLING=true
       - CHOKIDAR_USEPOLLING=true
       - NEXT_WEBPACK_USEPOLLING=1
-      - NEXT_PUBLIC_FORCE_REBUILD=true
-    ports:
-      - "3000:3000"
+    # Volumes pour hot-reload en dev
     volumes:
       - ./:/app:delegated
-      - /app/node_modules
-      - /app/.next
+      - node_modules:/app/node_modules
+      - next_cache:/app/.next
       - shared-tmp:/app/tmp
-    networks:
-      - app_network
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+      - app_logs:/app/logs
     command: npm run dev
     stdin_open: true
     tty: true
 
   worker:
+    image: worker:dev
     build:
       context: ./worker
-      dockerfile: Dockerfile
-    volumes:
-      - ./worker:/app
-      - /app/node_modules
-      - shared-tmp:/app/tmp
+      dockerfile: Dockerfile.dev
+    user: "${UID:-1000}:${GID:-1000}"
     env_file:
       - ./worker/.env
     environment:
       - NODE_ENV=development
     networks:
-      - app_network
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    depends_on:
-      - app
+      - default
+      - db_openportability_db_network
+    # Volumes pour hot-reload en dev
+    volumes:
+      - ./worker:/app
+      - worker_node_modules:/app/node_modules
+      - shared-tmp:/app/tmp
+      - app_logs:/app/logs
     command: npm run dev
 
-  nginx:
-    image: nginx:alpine
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/certs:/etc/nginx/certs:ro
-    depends_on:
-      - app
-    networks:
-      - app_network
-    command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
-
-
-  watcher:
-    build: 
-      context: ./watcher
-      dockerfile: Dockerfile
-    environment:
-      - NODE_ENV=development
-    env_file:
-      - ./watcher/.env
-    volumes:
-      - ./watcher:/app
-      - /app/node_modules
-    networks:
-      - app_network
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "host.docker.internal:54321"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
-    command: npm run dev
-
-networks:
-  app_network:
-    driver: bridge
-
+# Volumes nommés pour éviter les problèmes de permissions
 volumes:
-  shared-tmp:
+  node_modules:
+  next_cache:
+  worker_node_modules:
+
+# Networks
+networks:
+  db_openportability_db_network:
+    external: true

@@ -7,6 +7,8 @@ import { motion } from 'framer-motion';
 import { useTranslations } from 'next-intl';
 import { Upload, Loader2, CheckCircle, XCircle } from 'lucide-react';
 import { plex } from '../../fonts/plex';
+import { Button } from '@/app/_components/ui/Button';
+import { useTheme } from '@/hooks/useTheme';
 import {
   ExtractedFile,
   TwitterData,
@@ -141,9 +143,12 @@ const UploadButton = ({ onUploadComplete, onError, onFilesSelected, filesToProce
   const [unzipProgress, setUnzipProgress] = useState<UnzipProgress[]>([]);
   const [selectedFiles, setSelectedFiles] = useState<FileList | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [isHoveringButton, setIsHoveringButton] = useState(false);
   const maxRetries = 3;
   const dropZoneRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const t = useTranslations('uploadButton');
+  const { isDark } = useTheme();
 
   useEffect(() => {
     const handleUnzipProgress = (event: CustomEvent<UnzipProgress[]>) => {
@@ -236,7 +241,7 @@ const UploadButton = ({ onUploadComplete, onError, onFilesSelected, filesToProce
   };
 
   return (
-    <div 
+    <div
       ref={dropZoneRef}
       className={`w-full max-w-md mx-auto ${plex.className} relative`}
       onDragEnter={handleDragEnter}
@@ -245,6 +250,7 @@ const UploadButton = ({ onUploadComplete, onError, onFilesSelected, filesToProce
       onDrop={handleDrop}
     >
       <input
+        ref={fileInputRef}
         type="file"
         onChange={(e) => {
           const files = e.target.files;
@@ -258,36 +264,67 @@ const UploadButton = ({ onUploadComplete, onError, onFilesSelected, filesToProce
         className="hidden"
         id="file-upload"
       />
-      <motion.label
-        htmlFor="file-upload"
-        whileHover={{ scale: 1.02 }}
-        whileTap={{ scale: 0.98 }}
-        className={`
-          w-full px-6 py-4 flex items-center justify-center gap-3
-          text-white text-lg font-bold cursor-pointer text-sm
-          border border-blue-600 rounded-xl
-          bg-blue-600
-          shadow-lg hover:shadow-xl
-          transition-all duration-300
-          disabled:from-gray-400 disabled:to-gray-500 
-          disabled:cursor-not-allowed
-          ${isUploading ? 'pointer-events-none' : ''}
-          ${isDragging ? 'ring-2 ring-white ring-opacity-50' : ''}
-          relative z-10
-        `}
+      <Button
+        variant="outline"
+        type="button"
+        disabled={isUploading}
+        onClick={() => {
+          if (!isUploading) {
+            fileInputRef.current?.click();
+          }
+        }}
+        onMouseEnter={() => setIsHoveringButton(true)}
+        onMouseLeave={() => setIsHoveringButton(false)}
+        className={`w-full rounded-2xl border-2 px-8 py-8 text-xs sm:text-sm font-semibold tracking-[0.12em] uppercase flex items-center justify-center gap-3 transition-all duration-300 h-auto min-h-[4rem] ${
+          isUploading ? 'opacity-70' : ''
+        } ${isDragging ? 'ring-2 ring-white/60 ring-offset-2' : ''}`}
+        style={{
+          backgroundColor: isDark
+            ? isHoveringButton
+              ? '#ffffff'
+              : 'transparent'
+            : isHoveringButton
+              ? '#1a1a1a'
+              : '#000000',
+          borderColor: isDark ? '#ffffff' : '#000000',
+          color: isDark
+            ? isHoveringButton
+              ? '#000000'
+              : '#ffffff'
+            : '#ffffff',
+          boxShadow: isDark
+            ? isHoveringButton
+              ? '0 0 30px #007bff, inset 0 0 20px rgba(0,123,255,0.3)'
+              : '0 0 15px rgba(0,123,255,0.5), inset 0 0 15px rgba(0,123,255,0.1)'
+            : isHoveringButton
+              ? '0 0 30px rgba(0,0,0,0.6)'
+              : '0 0 15px rgba(0,0,0,0.3)',
+          fontFamily: 'monospace',
+          transition: 'background-color 200ms ease, box-shadow 200ms ease, border-color 200ms ease, color 200ms ease'
+        }}
       >
-        {isUploading ? (
-          <Loader2 className="w-5 h-5 animate-spin" />
-        ) : (
-          <Upload className="w-5 h-5" />
-        )}
-        {isUploading ? t('uploadInProgress') : t('clickOrDrop')}
-      </motion.label>
+        <motion.span
+          whileHover={{ scale: 1.01 }}
+          whileTap={{ scale: 0.985 }}
+          className="flex w-full flex-wrap items-center justify-center gap-3 cursor-pointer text-center"
+        >
+          {isUploading ? (
+            <Loader2 className="w-5 h-5 animate-spin" />
+          ) : (
+            <Upload className="w-5 h-5" />
+          )}
+          <span className="w-full px-6 text-center text-[0.7rem] sm:text-sm leading-snug whitespace-normal break-words">
+            {isUploading ? t('uploadInProgress') : t('clickOrDrop')}
+          </span>
+        </motion.span>
+      </Button>
 
       {/* Overlay de drop */}
       {isDragging && (
-        <div className="absolute inset-0 bg-blue-600/20 backdrop-blur-sm rounded-xl border-2 border-white border-dashed flex items-center justify-center z-20">
-          <p className="text-white text-lg font-medium">{t('dropHere')}</p>
+        <div className="absolute inset-0 rounded-2xl border-2 border-dashed border-pink-400/60 bg-pink-500/15 backdrop-blur-sm flex items-center justify-center z-20">
+          <p className="text-white text-base font-medium uppercase tracking-[0.3em]">
+            {t('dropHere')}
+          </p>
         </div>
       )}
 
@@ -303,13 +340,19 @@ const UploadButton = ({ onUploadComplete, onError, onFilesSelected, filesToProce
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: index * 0.1 }}
-              className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20"
+              className={`rounded-2xl border p-4 backdrop-blur-lg ${
+                isDark ? 'bg-slate-900/50 border-white/10' : 'bg-white/90 border-slate-200'
+              }`}
             >
               <div className="flex justify-between items-center mb-2">
-                <span className="text-sm font-medium text-gray-100">{progress.fileName}</span>
-                <span className="text-sm font-medium text-gray-100">{progress.progress}%</span>
+                <span className={`text-xs font-semibold tracking-[0.3em] uppercase ${isDark ? 'text-white/80' : 'text-slate-700'}`}>
+                  {progress.fileName}
+                </span>
+                <span className={`text-xs font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                  {progress.progress}%
+                </span>
               </div>
-              <div className="w-full bg-gray-700/50 rounded-full h-2 overflow-hidden">
+              <div className={`w-full rounded-full h-2 overflow-hidden ${isDark ? 'bg-white/10' : 'bg-slate-200'}`}>
                 <motion.div
                   initial={{ width: 0 }}
                   animate={{ width: `${progress.progress}%` }}
@@ -324,7 +367,7 @@ const UploadButton = ({ onUploadComplete, onError, onFilesSelected, filesToProce
                 <motion.p 
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  className="text-sm text-red-400 mt-2"
+                  className="text-xs text-red-400 mt-2"
                 >
                   {progress.message}
                 </motion.p>

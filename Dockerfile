@@ -95,6 +95,22 @@ WORKDIR /app
 # Set ownership of the working directory
 RUN chown -R node:node /app
 
+# ============================================
+# Build embedding-atlas from local source
+# ============================================
+# Copy embedding-atlas source first (for caching)
+COPY --chown=node:node embedding-atlas ./embedding-atlas
+
+# Build embedding-atlas packages (as root, then fix permissions)
+WORKDIR /app/embedding-atlas
+RUN npm install && npm run build && chown -R node:node /app/embedding-atlas
+
+# Go back to app directory
+WORKDIR /app
+
+# ============================================
+# Install app dependencies
+# ============================================
 # Copy dependency files with correct ownership
 COPY --chown=node:node package*.json ./
 
@@ -103,7 +119,6 @@ RUN mkdir -p node_modules && chown -R node:node node_modules
 
 # Switch to non-root user
 USER node
-
 
 RUN npm install
 

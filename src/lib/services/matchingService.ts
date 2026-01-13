@@ -25,17 +25,12 @@ export class MatchingService {
   }
 
   async getFollowableTargets(userId: string): Promise<MatchingResult> {
-    // console.log('🚀 [MatchingService.getFollowableTargets] Début de la récupération des cibles pour userId:', userId);
-    
     const PAGE_SIZE = 1000;
     let allMatches: MatchingTarget[] = [];
     let page = 0;
     let totalCount = 0;
 
-    // console.log('📋 [MatchingService.getFollowableTargets] Configuration - PAGE_SIZE:', PAGE_SIZE);
-
     // Première requête pour obtenir le total et la première page
-    // console.log('📡 [MatchingService.getFollowableTargets] Appel repository.getFollowableTargets pour la première page...');
     const { data: firstPageMatches, error: firstPageError } = 
       await this.repository.getFollowableTargets(userId, PAGE_SIZE, 0);
 
@@ -44,11 +39,7 @@ export class MatchingService {
       throw new Error(`Failed to fetch first page: ${firstPageError}`);
     }
 
-    // console.log('📊 [MatchingService.getFollowableTargets] Première page reçue - nombre d\'éléments:', firstPageMatches?.length || 0);
-    // console.log('📊 [MatchingService.getFollowableTargets] Détail première page:', firstPageMatches);
-
     if (!firstPageMatches || firstPageMatches.length === 0) {
-      console.log('🚫 [MatchingService.getFollowableTargets] Aucune donnée trouvée - retour résultat vide');
       return {
         following: [],
         stats: {
@@ -64,16 +55,10 @@ export class MatchingService {
     totalCount = firstPageMatches[0]?.total_count || firstPageMatches.length;
     allMatches = [...firstPageMatches];
 
-    // console.log('🔢 [MatchingService.getFollowableTargets] Total count détecté:', totalCount);
-    // console.log('📄 [MatchingService.getFollowableTargets] Éléments ajoutés à allMatches:', allMatches.length);
-
     // Calculate total pages based on total count
     const totalPages = Math.ceil(totalCount / PAGE_SIZE);
-    // console.log('📚 [MatchingService.getFollowableTargets] Nombre total de pages calculé:', totalPages);
     
     while (page < totalPages) {
-      // console.log(`🔄 [MatchingService.getFollowableTargets] Récupération page ${page + 1}/${totalPages}...`);
-
       const { data: matches, error: matchesError } = 
         await this.repository.getFollowableTargets(userId, PAGE_SIZE, page);
       
@@ -82,26 +67,19 @@ export class MatchingService {
         break;
       }
 
-      // console.log(`📊 [MatchingService.getFollowableTargets] Page ${page + 1} reçue - éléments:`, matches?.length || 0);
-
       if (!matches || matches.length === 0) {
-        console.log(`🚫 [MatchingService.getFollowableTargets] Page ${page + 1} vide - arrêt de la pagination`);
         break;
       }
 
       if (page === 0) {
-        console.log('⏭️ [MatchingService.getFollowableTargets] Page 0 déjà ajoutée précédemment');
         // First page already added above
       } else {
-        const beforeLength = allMatches.length;
         allMatches = [...allMatches, ...matches];
-        // console.log(`➕ [MatchingService.getFollowableTargets] Page ${page + 1} ajoutée - avant: ${beforeLength}, après: ${allMatches.length}`);
       }
 
       page++;
       // Safety check to prevent infinite loops
       if (allMatches.length >= totalCount) {
-        // console.log('🛑 [MatchingService.getFollowableTargets] Limite de sécurité atteinte - arrêt');
         break;
       }
     }
@@ -109,13 +87,7 @@ export class MatchingService {
     const blueskyMatches = allMatches.filter(m => m.bluesky_handle).length;
     const mastodonMatches = allMatches.filter(m => m.mastodon_id).length;
 
-    // console.log('📈 [MatchingService.getFollowableTargets] Statistiques finales:');
-    // console.log('  - Total following:', totalCount);
-    // console.log('  - Matched following:', allMatches.length);
-    // console.log('  - Bluesky matches:', blueskyMatches);
-    // console.log('  - Mastodon matches:', mastodonMatches);
-
-    const result = {
+    return {
       following: allMatches,
       stats: {
         total_following: totalCount,
@@ -124,9 +96,6 @@ export class MatchingService {
         mastodon_matches: mastodonMatches
       }
     };
-    
-    // console.log('✅ [MatchingService.getFollowableTargets] Résultat final construit:', result);
-    return result;
   }
 
   async getSourcesFromFollower(twitterId: string): Promise<MatchingResult> {
@@ -239,28 +208,23 @@ export class MatchingService {
         error
       );
       
-      // 2. Rafraîchir les stats utilisateur (remplace le trigger PostgreSQL)
+      // 2. Log the update (stats refresh removed - frontend handles it via /api/stats)
       console.log('updateFollowStatusBatch - success:', success, 'error:', error, 'targetIds.length:', targetIds.length);
       
-      if (success) {
-        console.log('Success path - refreshing user stats');
-        await this.statsService.refreshUserStats(userId, true);
-      }
-      else if (!success && error && targetIds.length > 0) {
+      // NOTE: Stats refresh removed from here for performance.
+      // The frontend calls /api/stats after migration which handles cache refresh.
+      // This avoids blocking the follow operation with slow RPC calls.
+      
+      if (!success && error && targetIds.length > 0) {
         console.log('Error path - marking nodes as unavailable');
-        console.log('Marking nodes as unavailable', `Platform: ${platform}, Error: ${error}, TargetIds: ${JSON.stringify(targetIds)}`, "system");
         try {
           await this.repository.markNodesAsUnavailableBatch(targetIds, platform, error);
           console.log('Successfully marked nodes as unavailable', `Count: ${targetIds.length}`, "system");
-          await this.statsService.refreshUserStats(userId, true);
-
         } catch (markError) {
           // Log l'erreur mais ne fait pas échouer toute l'opération
           const markErrorString = markError instanceof Error ? markError.message : String(markError);
           console.log('Failed to mark nodes as unavailable:', markErrorString, "system");
         }
-      } else {
-        console.log('No action taken - success:', success, 'error:', !!error, 'targetIds.length:', targetIds.length);
       }
   } catch (error) {
     const errorString = error instanceof Error ? error.message : String(error);
@@ -318,6 +282,32 @@ export class MatchingService {
       return this.repository.ignoreTarget(userId, targetTwitterId);
     } else {
       return this.repository.unignoreTarget(userId, targetTwitterId);
+    }
+  }
+
+  /**
+   * Met à jour le statut de suivi dans sources_followers pour un utilisateur non-onboarded
+   * Utilisé quand l'utilisateur suit des comptes via leur node_id (twitter_id des cibles)
+   */
+  async updateSourcesFollowersByNodeIds(
+    followerTwitterId: string,
+    targetNodeIds: string[],
+    platform: 'bluesky' | 'mastodon',
+    success: boolean,
+    error?: string
+  ): Promise<void> {
+    try {
+      await this.repository.updateSourcesFollowersByNodeIds(
+        followerTwitterId,
+        targetNodeIds,
+        platform,
+        success,
+        error
+      );
+    } catch (error) {
+      const errorString = error instanceof Error ? error.message : String(error);
+      logger.logError('Failed to update sources followers by node IDs:', errorString, "system");
+      throw new Error('Failed to update sources followers by node IDs');
     }
   }
 }

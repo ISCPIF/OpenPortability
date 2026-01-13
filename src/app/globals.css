@@ -3,6 +3,48 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Custom scrollbar for modals - Light theme */
+.modal-scrollbar-light::-webkit-scrollbar {
+  width: 8px;
+}
+.modal-scrollbar-light::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+.modal-scrollbar-light::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+.modal-scrollbar-light::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Custom scrollbar for modals - Dark theme */
+.modal-scrollbar-dark::-webkit-scrollbar {
+  width: 8px;
+}
+.modal-scrollbar-dark::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+}
+.modal-scrollbar-dark::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+.modal-scrollbar-dark::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Firefox scrollbar support */
+.modal-scrollbar-light {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 #f1f5f9;
+}
+.modal-scrollbar-dark {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) rgba(255, 255, 255, 0.05);
+}
+
 @font-face {
   font-family: 'SyneTactile';
   src: url('/fonts/SyneTactile-Regular.ttf') format('truetype');

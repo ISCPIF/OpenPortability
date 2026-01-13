@@ -58,6 +58,8 @@ async function refreshHandler(_request: Request, _data: z.infer<typeof EmptySche
     }
 
     // Tout s'est bien passé
+    console.log("RESULTSSSS")
+    console.log(results);
     logger.logInfo('API', 'POST /api/auth/refresh', 'Tokens refreshed successfully', session.user.id)
     return NextResponse.json({ 
       success: true,

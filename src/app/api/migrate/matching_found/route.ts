@@ -28,21 +28,39 @@ async function matchingFoundHandler(_request: Request, _data: z.infer<typeof Emp
       // CORRIGÉ: Convertir en string pour éviter la perte de précision JavaScript
       const twitterIdString = session.user.twitter_id.toString();
       result = await matchingService.getSourcesFromFollower(twitterIdString);
+      
+      // Normaliser le format MatchedFollower[] vers MatchingTarget[]
+      // pour que FloatingAccountsPanel puisse afficher les comptes
+      if (result?.following) {
+        result.following = result.following.map((item: any) => ({
+          // Normaliser node_id (peut être source_twitter_id pour non-onboarded)
+          node_id: item.node_id || item.source_twitter_id?.toString() || '',
+          bluesky_handle: item.bluesky_handle || null,
+          mastodon_handle: item.mastodon_handle || null,
+          mastodon_username: item.mastodon_username || null,
+          mastodon_instance: item.mastodon_instance || null,
+          mastodon_id: item.mastodon_id || null,
+          // Normaliser les flags de follow (différents noms selon le type)
+          has_follow_bluesky: item.has_follow_bluesky ?? item.has_been_followed_on_bluesky ?? false,
+          has_follow_mastodon: item.has_follow_mastodon ?? item.has_been_followed_on_mastodon ?? false,
+          // Include followed_at timestamps to distinguish "never tried" from "tried and failed"
+          followed_at_bluesky: item.followed_at_bluesky || null,
+          followed_at_mastodon: item.followed_at_mastodon || null,
+          dismissed: item.dismissed ?? false,
+        }));
+      }
     } else {
       result = await matchingService.getFollowableTargets(session.user.id);
+      console.log("Matching found: ",result.following.length);
     }
     
-    // Adapter le format de réponse selon le type de résultat
-    const responseData = (result && (result as any).following) ? {
-      // Si result a une propriété 'following', on retourne la structure complète
-      matches: result
-    } : {
-      // Si result est un tableau direct, on l'encapsule dans un objet avec 'following'
-      matches: {
-        following: Array.isArray(result) ? result : [],
+    // Retourner le résultat normalisé
+    const responseData = {
+      matches: result || {
+        following: [],
         stats: {
-          total_following: Array.isArray(result) ? result.length : 0,
-          matched_following: Array.isArray(result) ? result.length : 0,
+          total_following: 0,
+          matched_following: 0,
           bluesky_matches: 0,
           mastodon_matches: 0
         }

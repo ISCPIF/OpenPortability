@@ -1,0 +1,51 @@
+# =============================================================================
+# Docker Compose - PRODUCTION
+# =============================================================================
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#   
+# Ou avec le script:
+#   ./deploy.sh prod
+# =============================================================================
+
+version: '3.8'
+
+services:
+  app:
+    image: app:prod
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
+    environment:
+      - NODE_ENV=production
+      - NEXT_CONFIG_FILE=./next.config.prod.js
+    restart: always
+    # Pas de volumes en prod (image self-contained)
+    volumes:
+      - shared-tmp:/app/tmp
+      - app_logs:/app/logs
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  worker:
+    image: worker:prod
+    build:
+      context: ./worker
+      dockerfile: Dockerfile.prod
+    environment:
+      - NODE_ENV=production
+    restart: always
+    # Pas de volumes source en prodd
+    volumes:
+      - shared-tmp:/app/tmp
+      - app_logs:/app/logs
+
+  nginx:
+    restart: always
+    # Configuration nginx identique
+
+# Pas besoin de redéfinir networks et volumes (hérités de docker-compose.yml)
