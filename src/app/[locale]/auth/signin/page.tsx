@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import Image from "next/image"
 import { useEffect, useState } from "react"
 import { useRouter, useSearchParams, useParams } from "next/navigation"
-import { plex } from "@/app/fonts/plex"
+import { plex, quantico } from "@/app/fonts/plex"
 import Link from "next/link"
 import LoginButtons from "@/app/_components/logins/LoginButtons"
 import LoadingIndicator from "@/app/_components/layouts/LoadingIndicator"
@@ -58,7 +58,7 @@ export default function SignIn() {
           priority
         />
 
-        <p className={`${plex.className} text-lg lg:text-xl my-1 lg:my-2`}>
+        <p className={`${quantico.className} text-lg lg:text-xl my-1 lg:my-2 ${isDark ? 'text-white' : 'text-black'}`}>
           {true
             ? t('subtitle')
             : (session?.user?.twitter_id ? t('embark') : t('embarkOrLogin'))}
@@ -78,6 +78,27 @@ export default function SignIn() {
             {t(`errors.${error}`)}
           </motion.div>
         )}
+
+        {/* Discover link - explore without signing in */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="mt-4 pt-4 border-t border-opacity-20"
+          style={{ borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }}
+        >
+          <p className="text-sm" style={{ color: isDark ? 'rgba(255,255,255,0.6)' : 'rgba(0,0,0,0.6)' }}>
+            {t('discoverLink.prefix')}{' '}
+            <Link 
+              href={`/${locale}/discover`}
+              className="font-medium underline underline-offset-2 hover:no-underline transition-all"
+              style={{ color: isDark ? '#ec4899' : '#db2777' }}
+            >
+              {t('discoverLink.link')}
+            </Link>
+            {' '}{t('discoverLink.suffix')}
+          </p>
+        </motion.div>
       </div>
     </div>
   )

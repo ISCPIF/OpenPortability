@@ -5,6 +5,7 @@
       "username": "@{username}"
     },
     "returnToDashboard": "Återgå",
+    "reconnect": "Socialt nätverk",
     "settings": "Inställningar och aviseringar"
   },
   "connectedAccounts": {

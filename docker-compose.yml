@@ -1,13 +1,26 @@
-version: '3.8'
+# =============================================================================
+# Docker Compose - BASE CONFIGURATION
+# =============================================================================
+# Usage:
+#   Development: docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+#   Production:  docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# Ou simplement (utilise les images pré-buildées):
+#   docker compose up        # Utilise les images par défaut (dev)
+# =============================================================================
 services:
+  # ---------------------------------------------------------------------------
+  # App (Next.js)
+  # ---------------------------------------------------------------------------
   app:
-    image: app
+    image: ${APP_IMAGE:-app:dev}
+    user: "1000:1000"
     env_file:
       - .env.local
     environment:
-      - NODE_ENV=production
+      - NODE_ENV=${NODE_ENV:-development}
       - NEXT_TELEMETRY_DISABLED=1
-    restart: always
+    restart: unless-stopped
     networks:
       - app_network
       - db_openportability_db_network
@@ -16,36 +29,35 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      # - ./:/app
-      # - /app/node_modules
-      # - /app/.next
       - shared-tmp:/app/tmp
       - app_logs:/app/logs
-    depends_on:
-      - worker
+    # depends_on:
+    #   - worker
 
+  # ---------------------------------------------------------------------------
+  # Worker (Background jobs)
+  # ---------------------------------------------------------------------------
   worker:
-    image: worker
-    build:
-      context: ./worker
-      dockerfile: Dockerfile.dev
+    image: ${WORKER_IMAGE:-worker:dev}
     user: "1000:1000"
-    volumes:
-      # - ./worker:/app
-      # - /app/node_modules
-      - shared-tmp:/app/tmp
-      - app_logs:/app/logs
     env_file:
       - ./worker/.env
     environment:
-      - NODE_ENV=production
+      - NODE_ENV=${NODE_ENV:-development}
       - NEXT_TELEMETRY_DISABLED=1
+    restart: unless-stopped
     networks:
       - app_network
       - db_openportability_db_network
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    volumes:
+      - shared-tmp:/app/tmp
+      - app_logs:/app/logs
 
+  # ---------------------------------------------------------------------------
+  # Nginx (Reverse proxy)
+  # ---------------------------------------------------------------------------
   nginx:
     image: nginx:alpine
     ports:
@@ -55,31 +67,18 @@ services:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/certs:/etc/nginx/certs:ro
       - ./nginx/auth:/etc/nginx/auth:ro
+      - ./nginx/security.conf:/etc/nginx/security.conf:ro
+      - ./nginx/logs:/var/log/nginx
     depends_on:
       - app
     networks:
       - app_network
+    restart: unless-stopped
     command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
 
-  watcher:
-    image: watcher
-    environment:
-      - NODE_ENV=production
-    env_file:
-      - ./watcher/.env
-    restart: unless-stopped
-    networks:
-      - app_network
-      - db_openportability_db_network
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "host.docker.internal:54321"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s   
-
+# =============================================================================
+# Networks
+# =============================================================================
 networks:
   app_network:
     driver: bridge
@@ -87,6 +86,9 @@ networks:
     external: true
     name: db_openportability_db_network
 
+# =============================================================================
+# Volumes
+# =============================================================================
 volumes:
   shared-tmp:
     driver: local

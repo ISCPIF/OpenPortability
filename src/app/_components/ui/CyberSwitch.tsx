@@ -16,6 +16,7 @@ interface CyberSwitchProps {
   size?: "base" | "compact"
   statusTextOn?: string
   statusTextOff?: string
+  tone?: 'dark' | 'light'
 }
 
 const sizePadding: Record<NonNullable<CyberSwitchProps["size"]>, string> = {
@@ -34,9 +35,11 @@ export function CyberSwitch({
   size = "base",
   statusTextOn = "[ ACTIVE ]",
   statusTextOff = "[ DISABLED ]",
+  tone = 'dark',
 }: CyberSwitchProps) {
   const borderColor = accentColor
   const bgGlow = checked ? `${accentColor}33` : "rgba(59,130,246,0.15)"
+  const isLight = tone === 'light'
 
   const handleToggle = () => {
     if (disabled) return
@@ -66,7 +69,7 @@ export function CyberSwitch({
         boxShadow: checked
           ? `0 0 25px ${borderColor}55, inset 0 0 18px ${borderColor}22`
           : "0 0 18px rgba(59,130,246,0.35), inset 0 0 18px rgba(59,130,246,0.15)",
-        backgroundColor: "rgba(5,8,20,0.7)",
+        backgroundColor: isLight ? "rgba(255,255,255,0.92)" : "rgba(5,8,20,0.7)",
         backdropFilter: "blur(16px)",
       }}
     >
@@ -81,10 +84,10 @@ export function CyberSwitch({
       <div className="relative flex flex-col gap-4">
         <div className="space-y-2">
           <p
-            className="text-[0.65rem] uppercase tracking-[0.4em] text-white"
+            className="text-[0.55rem] uppercase tracking-[0.15em] sm:text-[0.65rem] sm:tracking-[0.4em]"
             style={{
-              color: checked ? borderColor : "rgba(226,232,240,0.8)",
-              textShadow: `0 0 12px ${checked ? borderColor : "rgba(148,163,184,0.5)"}`,
+              color: checked ? borderColor : isLight ? "rgba(15,23,42,0.75)" : "rgba(226,232,240,0.8)",
+              textShadow: `0 0 12px ${checked ? borderColor : (isLight ? "rgba(148,163,184,0.3)" : "rgba(148,163,184,0.5)")}`,
               fontFamily: "monospace",
             }}
           >
@@ -92,8 +95,11 @@ export function CyberSwitch({
           </p>
           {description && (
             <div
-              className="text-xs leading-relaxed text-white/70"
-              style={{ fontFamily: "monospace" }}
+              className="text-[0.7rem] leading-relaxed sm:text-xs"
+              style={{
+                fontFamily: "monospace",
+                color: isLight ? "rgba(15,23,42,0.7)" : "rgba(226,232,240,0.7)",
+              }}
             >
               {description}
             </div>
@@ -102,9 +108,9 @@ export function CyberSwitch({
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div
-            className="flex items-center gap-2 text-[0.6rem] uppercase tracking-[0.4em]"
+            className="flex items-center gap-2 text-[0.55rem] uppercase tracking-[0.15em] sm:text-[0.6rem] sm:tracking-[0.4em]"
             style={{
-              color: checked ? borderColor : "rgba(226,232,240,0.6)",
+              color: checked ? borderColor : isLight ? "rgba(15,23,42,0.65)" : "rgba(226,232,240,0.6)",
               fontFamily: "monospace",
             }}
           >
@@ -128,10 +134,16 @@ export function CyberSwitch({
               className="relative h-7 w-14 rounded-full border-2 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
               style={{
                 borderColor,
-                backgroundColor: checked ? `${borderColor}33` : "rgba(59,130,246,0.2)",
+                backgroundColor: checked
+                  ? `${borderColor}33`
+                  : isLight
+                    ? "rgba(148,163,184,0.25)"
+                    : "rgba(59,130,246,0.2)",
                 boxShadow: checked
                   ? `0 0 18px ${borderColor}77, inset 0 0 10px ${borderColor}33`
-                  : "0 0 18px rgba(59,130,246,0.35), inset 0 0 10px rgba(59,130,246,0.2)",
+                  : isLight
+                    ? "0 0 18px rgba(148,163,184,0.3), inset 0 0 10px rgba(148,163,184,0.2)"
+                    : "0 0 18px rgba(59,130,246,0.35), inset 0 0 10px rgba(59,130,246,0.2)",
               }}
               onClick={(event) => event.stopPropagation()}
             >

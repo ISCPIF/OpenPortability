@@ -1,11 +1,11 @@
 'use client'
 
-import { motion, type Variants } from "framer-motion"
+import { motion } from "framer-motion"
 import { SiBluesky } from 'react-icons/si'
 import { plex } from "@/app/fonts/plex"
 import { useTranslations } from 'next-intl'
-import { Button } from '@/app/_components/ui/Button'
 import { useTheme } from '@/hooks/useTheme'
+import { ArrowRight, CheckCircle2 } from 'lucide-react'
 
 interface BlueSkyLoginButtonProps {
   onLoadingChange?: (isLoading: boolean) => void;
@@ -13,21 +13,6 @@ interface BlueSkyLoginButtonProps {
   isSelected?: boolean;
   className?: string;
   onClick?: () => void;
-}
-
-const itemVariants: Variants = {
-  hidden: { opacity: 0, y: -8, scale: 0.95 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    scale: 1,
-    transition: {
-      type: 'spring',
-      stiffness: 400,
-      damping: 30
-    }
-  },
-  exit: { opacity: 0, y: -8, scale: 0.95 }
 }
 
 export default function BlueSkyLoginButton({
@@ -42,51 +27,39 @@ export default function BlueSkyLoginButton({
 
   return (
     <motion.div
-      variants={itemVariants}
-      initial="hidden"
-      animate="visible"
-      exit="exit"
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -12 }}
       className="w-full"
     >
-      <Button 
+      <motion.button
+        whileHover={{ scale: 1.01 }}
+        whileTap={{ scale: 0.99 }}
         onClick={onClick}
-        className="w-full px-8 py-6 tracking-widest border-2 transition-all duration-300 flex items-center justify-center gap-2"
-        style={{
-          backgroundColor: isDark ? 'transparent' : '#0074e0',
-          borderColor: '#0074e0',
-          color: '#ffffff',
-          boxShadow: isDark 
-            ? '0 0 15px rgba(255, 0, 127, 0.5), inset 0 0 15px rgba(255, 0, 127, 0.1)'
-            : '0 0 15px rgba(0, 116, 224, 0.3)',
-          fontFamily: 'monospace',
-        }}
-        onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => {
-          if (isDark) {
-            e.currentTarget.style.backgroundColor = '#0074e0';
-            e.currentTarget.style.color = '#ffffff';
-            e.currentTarget.style.boxShadow = '0 0 30px #0074e0, inset 0 0 20px rgba(255, 0, 127, 0.3)';
-          } else {
-            e.currentTarget.style.backgroundColor = '#0056b3';
-            e.currentTarget.style.boxShadow = '0 0 30px rgba(0, 116, 224, 0.6)';
-          }
-        }}
-        onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => {
-          if (isDark) {
-            e.currentTarget.style.backgroundColor = 'transparent';
-            e.currentTarget.style.color = '#ffffff';
-            e.currentTarget.style.boxShadow = '0 0 15px rgba(255, 0, 127, 0.5), inset 0 0 15px rgba(255, 0, 127, 0.1)';
-          } else {
-            e.currentTarget.style.backgroundColor = '#0074e0';
-            e.currentTarget.style.boxShadow = '0 0 15px rgba(0, 116, 224, 0.3)';
-          }
-        }}
         disabled={isConnected}
+        className={`${plex.className} group relative w-full rounded-2xl border border-sky-500/30 bg-[#0085FF] p-5 text-left transition-all duration-300 shadow-[0_0_25px_rgba(0,133,255,0.25)] hover:shadow-[0_0_35px_rgba(0,133,255,0.35)] hover:border-sky-400/50 disabled:opacity-70 disabled:cursor-not-allowed`}
       >
-        <SiBluesky className="w-5 h-5" />
-      <span>
-        {isConnected ? t('connected') : t('services.bluesky')}
-      </span>
-      </Button>
+
+        <div className="relative flex items-center gap-4">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm">
+            <SiBluesky className="h-6 w-6 text-white" />
+          </div>
+
+          <div className="flex-1">
+            <p className="text-base font-semibold text-white">
+              {isConnected ? t('connected') : t('services.bluesky')}
+            </p>
+          </div>
+
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm transition-transform group-hover:scale-110">
+            {isConnected ? (
+              <CheckCircle2 className="h-5 w-5 text-white" />
+            ) : (
+              <ArrowRight className={`h-5 w-5 text-white transition-transform ${isSelected ? 'rotate-90' : ''}`} />
+            )}
+          </div>
+        </div>
+      </motion.button>
     </motion.div>
   )
 }

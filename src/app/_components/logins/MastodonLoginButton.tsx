@@ -1,11 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { signIn } from "next-auth/react"
 import { SiMastodon } from 'react-icons/si'
-import { plex } from "@/app/fonts/plex"
-import { ChevronDown, Plus, Search, X } from 'lucide-react'
+import { quantico } from "@/app/fonts/plex"
+import { Loader2, AlertCircle, Globe, ArrowRight, CheckCircle2 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
-import { Button } from '@/app/_components/ui/Button'
 import { useTheme } from '@/hooks/useTheme'
 
 interface MastodonLoginButtonProps {
@@ -17,33 +16,6 @@ interface MastodonLoginButtonProps {
   onClick?: () => void
   showForm?: boolean
   instances: string[]
-  // prompt?: string
-}
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0 },
-  exit: { opacity: 0, y: -20 }
-}
-
-const formVariants = {
-  hidden: { opacity: 0, scale: 0.95 },
-  visible: {
-    opacity: 1,
-    scale: 1,
-    transition: {
-      type: "spring",
-      stiffness: 300,
-      damping: 30
-    }
-  },
-  exit: {
-    opacity: 0,
-    scale: 0.95,
-    transition: {
-      duration: 0.2
-    }
-  }
 }
 
 export default function MastodonLoginButton({
@@ -57,43 +29,21 @@ export default function MastodonLoginButton({
   instances = []
 }: MastodonLoginButtonProps) {
   const [instanceText, setInstanceText] = useState('')
-  const [searchTerm, setSearchTerm] = useState('')
   const [instanceError, setInstanceError] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+  const [isFocused, setIsFocused] = useState(false)
   const t = useTranslations('dashboardLoginButtons')
   const { isDark } = useTheme()
 
-
-  // useEffect(() => {
-  //   const fetchInstances = async () => {
-  //     try {
-  //       const response = await fetch('/api/auth/mastodon')
-  //       const data = await response.json()
-  //       if (data.success) {
-  //         setInstances(data.instances)
-  //       }
-  //     } catch (error) {
-  //       console.error('Error fetching Mastodon instances:', error)
-  //     }
-  //   }
-
-  //   if (showForm) {
-  //     fetchInstances()
-  //   }
-  // }, [showForm])
-
   const validateInstance = (instance: string): boolean => {
     setInstanceError('')
-
-    // Enlever les espaces
     instance = instance.trim()
 
-    // Vérifier que ce n'est pas vide
     if (!instance) {
       setInstanceError(t('services.mastodon.error.required'))
       return false
     }
 
-    // Vérification basique du hostname de l’instance
     const hostnameRegex = /^[a-zA-Z0-9][a-zA-Z0-9\.\-]+$/;
     if (!hostnameRegex.test(instance)) {
       setInstanceError(t('services.mastodon.error.invalid_format'))
@@ -106,19 +56,19 @@ export default function MastodonLoginButton({
   const handleSignIn = async (instance: string) => {
     if (!instance) return
 
-    // Pour une instance personnalisée, on valide
     if (!instances.includes(instance) && !validateInstance(instance)) {
       return
     }
 
     try {
+      setIsLoading(true)
       onLoadingChange(true)
       const callbackUrl = window.location.pathname.includes('/reconnect') ? '/reconnect' : '/dashboard'
 
       const result = await signIn("mastodon", {
         redirect: false,
         callbackUrl: callbackUrl
-      }, { instance: instance.trim()})
+      }, { instance: instance.trim() })
 
       if (result?.error) {
         onError(result.error)
@@ -129,150 +79,155 @@ export default function MastodonLoginButton({
       console.error("Error during Mastodon sign in:", error)
       onError(t('services.mastodon.error.unreachable'))
     } finally {
+      setIsLoading(false)
       onLoadingChange(false)
     }
   }
 
+  // Button mode (showForm = false)
   if (!showForm) {
     return (
       <motion.div
-        variants={itemVariants}
-        initial="hidden"
-        animate="visible"
-        exit="exit"
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -12 }}
         className="w-full"
       >
-        <Button 
+        <motion.button
+          whileHover={{ scale: 1.01 }}
+          whileTap={{ scale: 0.99 }}
           onClick={onClick}
-          className="w-full px-8 py-6 tracking-widest border-2 transition-all duration-300 flex items-center justify-center gap-2"
-          style={{
-            backgroundColor: isDark ? 'transparent' : '#7c3aed',
-            borderColor: '#7c3aed',
-            color: '#ffffff',
-            boxShadow: isDark 
-              ? '0 0 15px rgba(0, 123, 255, 0.3), 0 0 15px rgba(255, 0, 127, 0.3)'
-              : '0 0 15px rgba(124, 58, 237, 0.3)',
-            fontFamily: 'monospace',
-          }}
-          onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => {
-            if (isDark) {
-              e.currentTarget.style.backgroundImage = '#6d28d9';
-              e.currentTarget.style.color = '#ffffff';
-              e.currentTarget.style.boxShadow = '0 0 30px #007bff, 0 0 30px #ff007f';
-            } else {
-              e.currentTarget.style.backgroundColor = '#6d28d9';
-              e.currentTarget.style.boxShadow = '0 0 30px rgba(124, 58, 237, 0.6)';
-            }
-          }}
-          onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => {
-            if (isDark) {
-              e.currentTarget.style.backgroundImage = 'none';
-              e.currentTarget.style.color = '#ffffff';
-              e.currentTarget.style.boxShadow = '0 0 15px rgba(0, 123, 255, 0.3), 0 0 15px rgba(255, 0, 127, 0.3)';
-            } else {
-              e.currentTarget.style.backgroundColor = '#7c3aed';
-              e.currentTarget.style.boxShadow = '0 0 15px rgba(124, 58, 237, 0.3)';
-            }
-          }}
           disabled={isConnected}
+          className={`${quantico.className} group relative w-full rounded-2xl border border-violet-500/30 bg-[#6364FF] p-5 text-left transition-all duration-300 shadow-[0_0_25px_rgba(99,100,255,0.25)] hover:shadow-[0_0_35px_rgba(99,100,255,0.35)] hover:border-violet-400/50 disabled:opacity-70 disabled:cursor-not-allowed`}
         >
-          <SiMastodon className="w-5 h-5" />
-        <span className="font-medium">
-          {isConnected ? t('connected') : t('services.mastodon.title')}
-        </span>        </Button>
+
+          <div className="relative flex items-center gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm">
+              <SiMastodon className="h-6 w-6 text-white" />
+            </div>
+
+            <div className="flex-1">
+              <p className="text-base font-semibold text-white">
+                {isConnected ? t('connected') : t('services.mastodon.title')}
+              </p>
+            </div>
+
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm transition-transform group-hover:scale-110">
+              {isConnected ? (
+                <CheckCircle2 className="h-5 w-5 text-white" />
+              ) : (
+                <ArrowRight className={`h-5 w-5 text-white transition-transform ${isSelected ? 'rotate-90' : ''}`} />
+              )}
+            </div>
+          </div>
+        </motion.button>
       </motion.div>
     )
   }
 
+  // Form mode (showForm = true)
+  const inputClasses = isDark
+    ? 'bg-white/5 border-white/20 text-white placeholder-white/40 focus:border-violet-400'
+    : 'bg-slate-50 border-slate-200 text-slate-900 placeholder-slate-400 focus:border-violet-500'
+
   return (
-    <div className="w-full">
-      <datalist id="known_instances">
-        {instances.map((instance, index) => (
-          <option key={index} value={instance} />
-        ))}
-      </datalist>
-      <form onSubmit={() => handleSignIn(instanceText)} className="space-y-4">
-        <div className="relative">
-          <label className={`${plex.className} block text-sm font-medium mb-2`}
-            style={{ color: isDark ? '#ffffff' : '#000000' }}>
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="w-full space-y-5"
+    >
+      {/* Header */}
+      <div className="flex items-center gap-3">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 shadow-lg shadow-violet-500/25">
+          <SiMastodon className="h-5 w-5 text-white" />
+        </div>
+        <div>
+          <h3 className={`${quantico.className} text-base font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>
+            {t('services.mastodon.title')}
+          </h3>
+          <p className={`text-xs ${isDark ? 'text-white/60' : 'text-slate-500'}`}>
+            Enter your instance to connect
+          </p>
+        </div>
+      </div>
+
+      <form onSubmit={(e: React.FormEvent) => { e.preventDefault(); handleSignIn(instanceText) }} className="space-y-4">
+        {/* Instance input */}
+        <div className="space-y-2">
+          <label className={`${quantico.className} block text-xs font-medium uppercase tracking-wider ${isDark ? 'text-white/70' : 'text-slate-600'}`}>
             {t('services.mastodon.instance')}
           </label>
-          <input
-            type="text"
-            list="known_instances"
-            value={instanceText}
-            onChange={(e) => {
-              setInstanceError('')
-              const instanceName = e.target.value?.trim();
-              validateInstance(instanceName)
-              setInstanceText(e.target.value)
-            }}
-            placeholder="mastodon.social"
-            className={`${plex.className} w-full px-4 py-3 border-2 rounded-lg transition-all duration-300 tracking-wide
-              ${isDark 
-                ? 'bg-transparent text-white placeholder-white-600 border-[#7c3aed]'
-                : 'bg-[#ffffff] text-black placeholder-white/60 border-[#7c3aed]'
-              }
-              ${instanceError
-                ? 'border-red-500 focus:border-red-500'
-                : isDark
-                  ? 'focus:border-[#7c3aed] focus:shadow-[0_0_15px_rgba(124,58,237,0.5)]'
-                  : 'focus:border-[#6d28d9] focus:shadow-[0_0_15px_rgba(124,58,237,0.3)]'
-              }
-              focus:outline-none`}
-            style={{
-              fontFamily: 'monospace'
-            }}
-          />
-          {instanceError && (
-            <p className={`${plex.className} mt-2 text-sm font-medium`}
-              style={{ color: '#ef4444' }}>
-              {instanceError}
-            </p>
-          )}
+          <div className="relative">
+            <div className={`absolute left-4 top-1/2 -translate-y-1/2 ${isDark ? 'text-white/40' : 'text-slate-400'}`}>
+              <Globe className="h-4 w-4" />
+            </div>
+            <input
+              type="text"
+              list="known_instances"
+              value={instanceText}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                setInstanceError('')
+                const instanceName = e.target.value?.trim()
+                validateInstance(instanceName)
+                setInstanceText(e.target.value)
+              }}
+              onFocus={() => setIsFocused(true)}
+              onBlur={() => setIsFocused(false)}
+              placeholder="mastodon.social"
+              className={`${quantico.className} w-full pl-11 pr-4 py-3 rounded-xl border-2 transition-all duration-200 outline-none ${inputClasses} ${instanceError ? 'border-red-500' : ''}`}
+              disabled={isLoading}
+            />
+            {isFocused && !instanceError && (
+              <motion.div
+                layoutId="mastodon-focus-ring"
+                className="absolute inset-0 rounded-xl border-2 border-violet-400 pointer-events-none"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+              />
+            )}
+          </div>
+          <datalist id="known_instances">
+            {instances.map((instance, index) => (
+              <option key={index} value={instance} />
+            ))}
+          </datalist>
         </div>
 
-        <button
+        {/* Error */}
+        <AnimatePresence>
+          {instanceError && (
+            <motion.div
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              className={`flex items-center gap-3 p-3 rounded-xl ${isDark ? 'bg-red-500/20 border border-red-500/30' : 'bg-red-50 border border-red-200'}`}
+            >
+              <AlertCircle className={`w-4 h-4 flex-shrink-0 ${isDark ? 'text-red-400' : 'text-red-500'}`} />
+              <p className={`${quantico.className} text-sm ${isDark ? 'text-red-300' : 'text-red-600'}`}>{instanceError}</p>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Submit */}
+        <motion.button
           type="submit"
-          className={`${plex.className} w-full py-3 px-4 border-2 rounded-lg transition-all duration-300 
-            flex items-center justify-center gap-2 tracking-widest font-medium disabled:opacity-50`}
-          style={{
-            backgroundColor: isDark ? 'transparent' : '#7c3aed',
-            borderColor: '#7c3aed',
-            color: isDark ? '#7c3aed' : '#ffffff',
-            boxShadow: isDark 
-              ? '0 0 15px rgba(124, 58, 237, 0.3)'
-              : '0 0 15px rgba(124, 58, 237, 0.3)',
-            fontFamily: 'monospace'
-          }}
-          onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => {
-            if (!instanceText || instanceError) return;
-            if (isDark) {
-              e.currentTarget.style.backgroundColor = '#7c3aed';
-              e.currentTarget.style.color = '#ffffff';
-              e.currentTarget.style.boxShadow = '0 0 30px rgba(124, 58, 237, 0.6)';
-            } else {
-              e.currentTarget.style.backgroundColor = '#6d28d9';
-              e.currentTarget.style.boxShadow = '0 0 30px rgba(124, 58, 237, 0.6)';
-            }
-          }}
-          onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => {
-            if (!instanceText || instanceError) return;
-            if (isDark) {
-              e.currentTarget.style.backgroundColor = 'transparent';
-              e.currentTarget.style.color = '#7c3aed';
-              e.currentTarget.style.boxShadow = '0 0 15px rgba(124, 58, 237, 0.3)';
-            } else {
-              e.currentTarget.style.backgroundColor = '#7c3aed';
-              e.currentTarget.style.boxShadow = '0 0 15px rgba(124, 58, 237, 0.3)';
-            }
-          }}
-          disabled={!instanceText || !!instanceError}
+          whileHover={{ scale: 1.01 }}
+          whileTap={{ scale: 0.99 }}
+          disabled={isLoading || !instanceText || !!instanceError}
+          className={`${quantico.className} w-full flex items-center justify-center gap-3 px-5 py-3.5 rounded-xl font-medium transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed bg-gradient-to-r from-violet-500 via-purple-500 to-fuchsia-500 text-white shadow-lg shadow-violet-500/25 hover:shadow-violet-500/40`}
         >
-          <SiMastodon className="w-5 h-5" />
-          {t('services.mastodon.connect')}
-        </button>
+          {isLoading ? (
+            <Loader2 className="w-5 h-5 animate-spin" />
+          ) : (
+            <>
+              <span>{t('services.mastodon.connect')}</span>
+              <ArrowRight className="w-4 h-4" />
+            </>
+          )}
+        </motion.button>
       </form>
-    </div>
+    </motion.div>
   )
 }

@@ -10,15 +10,17 @@ ENV CHOKIDAR_INTERVAL=1000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-# Copie EN TANT QUE ROOT d'abord
+# Copie package files
 COPY package*.json ./
 
-# PUIS change les permissions ET l'utilisateur
-RUN chown -R node:node /app
+# Créer les dossiers nécessaires avec les bonnes permissions
+# Ces dossiers seront les points de montage des volumes
+RUN mkdir -p /app/.next /app/node_modules /app/tmp /app/logs \
+    && chown -R node:node /app
 
 USER node
 
-# Maintenant npm install marche
+# Installer les dépendances
 RUN npm install
 
 EXPOSE 3000

@@ -1,0 +1,59 @@
+# =============================================================================
+# PRODUCTION DOCKERFILE - OPTIMIZED
+# Utilise le mode standalone de Next.js (pas besoin de node_modules)
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Stage 1: Builder (deps + build dans le même stage pour éviter copie lente)
+# -----------------------------------------------------------------------------
+FROM node:24-alpine AS builder
+
+WORKDIR /app
+
+# Copy dependency files first (pour le cache Docker)
+COPY package*.json ./
+
+# Génère un package-lock dans l'image (si absent) puis installe les deps
+RUN npm install --package-lock-only && npm ci
+
+# Copy source files
+COPY . .
+
+# Set production environment for build
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV NEXT_CONFIG_FILE=./next.config.prod.js
+
+# Build the application (generates .next/standalone)
+RUN npm run build
+
+# -----------------------------------------------------------------------------
+# Stage 3: Production Runner (MINIMAL)
+# -----------------------------------------------------------------------------
+FROM node:24-alpine AS runner
+
+WORKDIR /app
+
+# Production environment
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
+
+# Create non-root user
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs
+
+# Copy standalone build (includes node_modules nécessaires)
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+
+# Copy static files
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/public ./public
+
+USER nextjs
+
+EXPOSE 3000
+
+# Standalone mode uses server.js directly (faster startup)
+CMD ["node", "server.js"]

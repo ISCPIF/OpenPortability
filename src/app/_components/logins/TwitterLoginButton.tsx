@@ -1,12 +1,13 @@
 'use client'
 
+import { useState } from 'react'
 import { signIn } from "next-auth/react"
-import { motion, type Variants } from "framer-motion"
+import { motion } from "framer-motion"
 import { FaXTwitter } from 'react-icons/fa6'
-import { plex } from "@/app/fonts/plex"
+import { quantico } from "@/app/fonts/plex"
 import { useTranslations } from 'next-intl'
-import { Button } from '@/app/_components/ui/Button'
 import { useTheme } from '@/hooks/useTheme'
+import { Loader2, Zap, CheckCircle2 } from 'lucide-react'
 
 interface TwitterLoginButtonProps {
   onLoadingChange?: (isLoading: boolean) => void;
@@ -16,21 +17,6 @@ interface TwitterLoginButtonProps {
   onClick?: () => void;
 }
 
-const itemVariants: Variants = {
-  hidden: { opacity: 0, y: -8, scale: 0.95 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    scale: 1,
-    transition: {
-      type: 'spring',
-      stiffness: 400,
-      damping: 30
-    }
-  },
-  exit: { opacity: 0, y: -8, scale: 0.95 }
-}
-
 export default function TwitterLoginButton({
   onLoadingChange = () => { },
   isConnected = false,
@@ -38,15 +24,17 @@ export default function TwitterLoginButton({
   className = "",
   onClick
 }: TwitterLoginButtonProps) {
+  const [isLoading, setIsLoading] = useState(false)
   const t = useTranslations('dashboardLoginButtons')
   const { isDark } = useTheme()
 
   const handleSignIn = async () => {
     try {
+      setIsLoading(true)
       onLoadingChange(true)
       const result = await signIn("twitter", {
         redirect: false,
-        callbackUrl: '/dashboard'
+        callbackUrl: '/reconnect'
       })
 
       if (result?.error) {
@@ -69,57 +57,51 @@ export default function TwitterLoginButton({
     } catch (error) {
       console.error("Error during Twitter sign in:", error)
     } finally {
+      setIsLoading(false)
       onLoadingChange(false)
     }
   }
 
   return (
     <motion.div
-      variants={itemVariants}
-      initial="hidden"
-      animate="visible"
-      exit="exit"
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -12 }}
       className="w-full"
     >
-      <Button 
+      <motion.button
+        whileHover={{ scale: 1.01 }}
+        whileTap={{ scale: 0.99 }}
         onClick={onClick ?? handleSignIn}
-        className="w-full px-8 py-6 tracking-widest border-2 transition-all duration-300 flex items-center justify-center gap-2"
-        style={{
-          backgroundColor: isDark ? 'transparent' : '#000000',
-          borderColor: isDark ? '#ffffff' : '#000000',
-          color: '#ffffff',
-          boxShadow: isDark 
-            ? '0 0 15px rgba(0,123,255,0.5), inset 0 0 15px rgba(0,123,255,0.1)'
-            : '0 0 15px rgba(0,0,0,0.3)',
-          fontFamily: 'monospace',
-        }}
-        onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => {
-          if (isDark) {
-            e.currentTarget.style.backgroundColor = '#ffffff';
-            e.currentTarget.style.color = '#000000';
-            e.currentTarget.style.boxShadow = '0 0 30px #007bff, inset 0 0 20px rgba(0,123,255,0.3)';
-          } else {
-            e.currentTarget.style.backgroundColor = '#1a1a1a';
-            e.currentTarget.style.boxShadow = '0 0 30px rgba(0,0,0,0.6)';
-          }
-        }}
-        onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => {
-          if (isDark) {
-            e.currentTarget.style.backgroundColor = 'transparent';
-            e.currentTarget.style.color = '#ffffff';
-            e.currentTarget.style.boxShadow = '0 0 15px rgba(0,123,255,0.5), inset 0 0 15px rgba(0,123,255,0.1)';
-          } else {
-            e.currentTarget.style.backgroundColor = '#000000';
-            e.currentTarget.style.boxShadow = '0 0 15px rgba(0,0,0,0.3)';
-          }
-        }}
-        disabled={isConnected}
+        disabled={isConnected || isLoading}
+        className={`${quantico.className} group relative w-full rounded-2xl border border-zinc-700 bg-zinc-900 p-5 text-left transition-all duration-300 shadow-[0_0_25px_rgba(255,255,255,0.08)] hover:shadow-[0_0_35px_rgba(255,255,255,0.12)] hover:border-zinc-600 disabled:opacity-70 disabled:cursor-not-allowed`}
       >
-        <FaXTwitter className="w-5 h-5" />
-      <span>
-        {isConnected ? t('connected') : t('services.twitter')}
-      </span>
-            </Button>
+
+        <div className="relative flex items-center gap-4">
+          {/* Icon */}
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm">
+            <FaXTwitter className="h-6 w-6 text-white" />
+          </div>
+
+          {/* Content */}
+          <div className="flex-1">
+            <p className="text-base font-semibold text-white">
+              {isConnected ? t('connected') : t('services.twitter')}
+            </p>
+          </div>
+
+          {/* Action indicator */}
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm transition-transform group-hover:scale-110">
+            {isLoading ? (
+              <Loader2 className="h-5 w-5 text-white animate-spin" />
+            ) : isConnected ? (
+              <CheckCircle2 className="h-5 w-5 text-white" />
+            ) : (
+              <Zap className="h-5 w-5 text-white" />
+            )}
+          </div>
+        </div>
+      </motion.button>
     </motion.div>
   )
 }

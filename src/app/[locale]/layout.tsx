@@ -31,6 +31,11 @@ const spaceGrotesk = Space_Grotesk({
 export const metadata: Metadata = {
   title: "OpenPortability",
   description: "Libérez vos espaces numériques",
+  icons: {
+    icon: '/favicon.ico',
+    shortcut: '/favicon.svg',
+    apple: '/favicon.svg',
+  },
 };
 
 async function getSession() {

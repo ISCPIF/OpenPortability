@@ -3,32 +3,28 @@
 import { useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { BskyAgent } from '@atproto/api';
-import { motion, AnimatePresence, easeOut } from 'framer-motion';
-import { Loader2, AlertCircle, User } from 'lucide-react';
-import { plex } from '@/app/fonts/plex';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Loader2, AlertCircle, AtSign, ArrowRight } from 'lucide-react';
+import { quantico } from '@/app/fonts/plex';
 import { SiBluesky } from "react-icons/si";
 import { useTranslations, useLocale } from 'next-intl';
+import { useTheme } from '@/hooks/useTheme';
 
 interface BlueSkyLoginProps {
   onLoginComplete?: (agent: BskyAgent) => void;
+  userId?: string; // Pass userId for account linking
 }
 
-export default function BlueSkyLogin({ onLoginComplete }: BlueSkyLoginProps) {
+export default function BlueSkyLogin({ onLoginComplete, userId }: BlueSkyLoginProps) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
   const t = useTranslations('blueskyLogin');
   const locale = useLocale();
+  const { isDark } = useTheme();
 
   const identifierRef = useRef<HTMLInputElement>(null);
-  // Password no longer needed for OAuth flow
-  const passwordRef = useRef<HTMLInputElement>(null);
-
-  const clearSensitiveData = useCallback(() => {
-    if (passwordRef.current) {
-      passwordRef.current.value = '';
-    }
-  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,8 +41,12 @@ export default function BlueSkyLogin({ onLoginComplete }: BlueSkyLoginProps) {
         throw new Error(t('form.errors.missingFields'));
       }
 
-      // Kick off OAuth flow: redirect to our authorize endpoint with the handle and state
-      const state = window.location.pathname; // preserve current path (e.g., to return after auth)
+      // Encode state with pathname and userId for account linking
+      const stateData = {
+        redirect: window.location.pathname,
+        userId: userId || undefined
+      };
+      const state = btoa(JSON.stringify(stateData));
       const url = `/api/auth/bluesky/oauth?handle=${encodeURIComponent(identifier)}&state=${encodeURIComponent(state)}`;
       window.location.href = url;
 
@@ -54,95 +54,98 @@ export default function BlueSkyLogin({ onLoginComplete }: BlueSkyLoginProps) {
       setError(err instanceof Error ? err.message : t('form.errors.default'));
     } finally {
       setIsLoading(false);
-      clearSensitiveData();
     }
   };
 
-  const containerVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: { duration: 0.4, ease: easeOut }
-    },
-    exit: {
-      opacity: 0,
-      y: -20,
-      transition: { duration: 0.3 }
-    }
-  };
-
-  const inputVariants = {
-    focus: { scale: 1.02, transition: { duration: 0.2 } },
-    blur: { scale: 1, transition: { duration: 0.2 } }
-  };
+  const inputClasses = isDark
+    ? 'bg-white/5 border-white/20 text-white placeholder-white/40 focus:border-sky-400'
+    : 'bg-slate-50 border-slate-200 text-slate-900 placeholder-slate-400 focus:border-sky-500';
 
   return (
     <motion.div
-      variants={containerVariants}
-      initial="hidden"
-      animate="visible"
-      exit="exit"
-      className="w-full max-w-md mx-auto backdrop-blur-lg bg-white p-8 rounded-2xl shadow-xl"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="w-full p-6 space-y-5"
     >
-      <div className="flex flex-col items-center gap-6 mb-8">
-        <h2 className={`${plex.className} text-xl font-bold bg-gradient-to-r from-sky-400 via-blue-500 to-purple-500 text-transparent bg-clip-text`}>
-          {t('title')}
-        </h2>
+      {/* Header */}
+      <div className="flex items-center gap-3">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-sky-400 to-blue-500 shadow-lg shadow-sky-500/25">
+          <SiBluesky className="h-5 w-5 text-white" />
+        </div>
+        <div>
+          <h3 className={`${quantico.className} text-base font-semibold ${isDark ? 'text-white' : 'text-slate-900'}`}>
+            {t('title')}
+          </h3>
+          <p className={`text-xs ${isDark ? 'text-white/60' : 'text-slate-500'}`}>
+            Enter your handle to authenticate
+          </p>
+        </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="space-y-5">
-          <div>
-            <label htmlFor="identifier" className={`${plex.className} block text-sm font-medium text-gray-800 mb-2`}>
-              {t('form.identifier.label')} <span className="text-sm text-gray-500">({t('form.identifier.placeholder')})</span>
-            </label>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Input */}
+        <div className="space-y-2">
+          <label htmlFor="identifier" className={`${quantico.className} block text-xs font-medium uppercase tracking-wider ${isDark ? 'text-white/70' : 'text-slate-600'}`}>
+            {t('form.identifier.label')}
+          </label>
+          <div className="relative">
+            <div className={`absolute left-4 top-1/2 -translate-y-1/2 ${isDark ? 'text-white/40' : 'text-slate-400'}`}>
+              <AtSign className="h-4 w-4" />
+            </div>
             <input
               ref={identifierRef}
               type="text"
               id="identifier"
-              className={`${plex.className} w-full pl-11 pr-4 py-3 bg-white/10 border-2 border-gray-300/20 rounded-xl
-                           focus:ring-2 focus:ring-sky-400 focus:border-transparent
-                           placeholder-gray-400 text-black transition-all duration-200`}
+              placeholder={t('form.identifier.placeholder')}
+              onFocus={() => setIsFocused(true)}
+              onBlur={() => setIsFocused(false)}
+              className={`${quantico.className} w-full pl-11 pr-4 py-3 rounded-xl border-2 transition-all duration-200 outline-none ${inputClasses}`}
               disabled={isLoading}
             />
+            {isFocused && (
+              <motion.div
+                layoutId="focus-ring"
+                className="absolute inset-0 rounded-xl border-2 border-sky-400 pointer-events-none"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+              />
+            )}
           </div>
-
-          {/* Password field removed for OAuth flow */}
         </div>
 
+        {/* Error */}
         <AnimatePresence>
           {error && (
             <motion.div
-              initial={{ opacity: 0, y: -10 }}
+              initial={{ opacity: 0, y: -8 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="flex items-center gap-3 p-4 rounded-xl bg-red-500/20 border border-red-500/30 text-black"
+              exit={{ opacity: 0, y: -8 }}
+              className={`flex items-center gap-3 p-3 rounded-xl ${isDark ? 'bg-red-500/20 border border-red-500/30' : 'bg-red-50 border border-red-200'}`}
             >
-              <AlertCircle className="w-5 h-5 flex-shrink-0" />
-              <p className={`${plex.className} text-sm`}>{error}</p>
+              <AlertCircle className={`w-4 h-4 flex-shrink-0 ${isDark ? 'text-red-400' : 'text-red-500'}`} />
+              <p className={`${quantico.className} text-sm ${isDark ? 'text-red-300' : 'text-red-600'}`}>{error}</p>
             </motion.div>
           )}
         </AnimatePresence>
 
+        {/* Submit */}
         <motion.button
           type="submit"
-          whileHover={{ scale: 1.02, backgroundSize: "200%" }}
-          whileTap={{ scale: 0.98 }}
+          whileHover={{ scale: 1.01 }}
+          whileTap={{ scale: 0.99 }}
           disabled={isLoading}
-          className={`w-full flex items-center justify-center gap-3 px-6 py-4
-                     bg-gradient-to-r from-sky-400 via-blue-500 to-sky-400 bg-[length:200%_100%]
-                     rounded-xl text-white font-medium
-                     transition-all duration-300 shadow-lg hover:shadow-sky-500/30
-                     disabled:opacity-50 disabled:cursor-not-allowed
-                     ${plex.className}`}
+          className={`${quantico.className} w-full flex items-center justify-center gap-3 px-5 py-3.5 rounded-xl font-medium transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed bg-gradient-to-r from-sky-400 via-blue-500 to-indigo-500 text-white shadow-lg shadow-sky-500/25 hover:shadow-sky-500/40`}
         >
           {isLoading ? (
             <Loader2 className="w-5 h-5 animate-spin" />
           ) : (
-            <SiBluesky className="w-5 h-5" />
+            <>
+              <span>{t('form.submit')}</span>
+              <ArrowRight className="w-4 h-4" />
+            </>
           )}
-          <span className="text-lg">{t('form.submit')}</span>
         </motion.button>
       </form>
     </motion.div>

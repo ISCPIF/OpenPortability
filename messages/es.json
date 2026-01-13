@@ -346,6 +346,7 @@
             "username": "@{username}"
         },
         "returnToDashboard": "Volver a la reconexión",
+        "reconnect": "Reconexión",
         "settings": "Configuración y notificaciones"
     },
     "connectedAccounts": {

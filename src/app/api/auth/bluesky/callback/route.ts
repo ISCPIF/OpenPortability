@@ -49,6 +49,22 @@ async function callbackHandler(request: NextRequest) {
     // Complete OAuth flow and get session
     const { session, state } = await client.callback(searchParams);
     
+    // Parse state to extract userId for account linking
+    let stateUserId: string | undefined;
+    let redirectPath: string | undefined;
+    if (state) {
+      try {
+        const stateData = JSON.parse(atob(state));
+        stateUserId = stateData.userId;
+        redirectPath = stateData.redirect;
+        console.log('[Bluesky OAuth Callback] Parsed state:', { stateUserId, redirectPath });
+      } catch (e) {
+        // Legacy state format (just the path)
+        redirectPath = state;
+        console.log('[Bluesky OAuth Callback] Legacy state format:', { redirectPath });
+      }
+    }
+    
     const did = (session as any)?.sub;
     if (!did) {
       console.error('[Bluesky OAuth Callback] Missing DID in session');
@@ -97,32 +113,44 @@ async function callbackHandler(request: NextRequest) {
     let profileFetched = false;
 
     if (typeof dpopFetch === 'function') {
-      try {
-        const origin = 'https://bsky.social';
-        const url = new URL('/xrpc/app.bsky.actor.getProfile', origin);
-        url.searchParams.set('actor', did);
-        const resp = await dpopFetch(url.toString());
-                
-        if (resp.ok) {
-          const profileData = await resp.json();          
-          profile = {
-            did: profileData.did || did,
-            handle: profileData.handle,
-            displayName: profileData.displayName,
-            avatar: profileData.avatar,
-          };
-          profileFetched = true;
-          handle = profileData.handle; // Update handle for token storage
-        } else {
-          const errorText = await resp.text();
-          console.error('[dpopFetch] Failed:', {
-            status: resp.status,
-            statusText: resp.statusText,
-            body: errorText
-          });
+      // Retry logic for DPoP nonce issues (server may return 401 on first request)
+      const maxRetries = 3;
+      for (let attempt = 0; attempt < maxRetries && !profileFetched; attempt++) {
+        try {
+          const origin = 'https://bsky.social';
+          const url = new URL('/xrpc/app.bsky.actor.getProfile', origin);
+          url.searchParams.set('actor', did);
+          const resp = await dpopFetch(url.toString());
+                  
+          if (resp.ok) {
+            const profileData = await resp.json();          
+            profile = {
+              did: profileData.did || did,
+              handle: profileData.handle,
+              displayName: profileData.displayName,
+              avatar: profileData.avatar,
+            };
+            profileFetched = true;
+            handle = profileData.handle; // Update handle for token storage
+            console.log('[dpopFetch] Success on attempt', attempt + 1);
+          } else {
+            const errorText = await resp.text();
+            console.warn(`[dpopFetch] Attempt ${attempt + 1}/${maxRetries} failed:`, {
+              status: resp.status,
+              statusText: resp.statusText,
+              body: errorText.substring(0, 200)
+            });
+            // Wait before retry (exponential backoff)
+            if (attempt < maxRetries - 1) {
+              await new Promise(resolve => setTimeout(resolve, 500 * Math.pow(2, attempt)));
+            }
+          }
+        } catch (error: any) {
+          console.warn(`[dpopFetch] Attempt ${attempt + 1}/${maxRetries} error:`, error.message);
+          if (attempt < maxRetries - 1) {
+            await new Promise(resolve => setTimeout(resolve, 500 * Math.pow(2, attempt)));
+          }
         }
-      } catch (error: any) {
-        console.error('[dpopFetch] Error:', error.message);
       }
     }
 
@@ -146,9 +174,31 @@ async function callbackHandler(request: NextRequest) {
       }
     }
     // Continue with user account linking
+    // Priority: 1) userId from state (passed from frontend), 2) current session, 3) undefined
     const currentSession = await auth()
-    let userId = currentSession?.user?.id || undefined
+    let userId = stateUserId || currentSession?.user?.id || undefined
+    
+    console.log('[Bluesky OAuth Callback] User ID resolution:', {
+      stateUserId,
+      sessionUserId: currentSession?.user?.id,
+      resolvedUserId: userId
+    });
+    
     const existingUser = await pgBlueskyRepository.getUserByBlueskyId(did)
+
+    // Check if this Bluesky account is already linked to ANOTHER user
+    if (existingUser && userId && existingUser.id !== userId) {
+      console.error('[Bluesky OAuth Callback] Account already linked to another user:', {
+        existingUserId: existingUser.id,
+        currentUserId: userId,
+        blueskyDid: did
+      });
+      // Redirect to error page - use NEXTAUTH_URL for correct domain
+      const baseUrl = process.env.NEXTAUTH_URL || request.nextUrl.origin;
+      const errorUrl = new URL('/auth/error', baseUrl);
+      errorUrl.searchParams.set('error', 'BlueskyAccountAlreadyLinked');
+      return NextResponse.redirect(errorUrl);
+    }
 
     if (existingUser) {
       userId = existingUser.id

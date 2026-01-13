@@ -1,8 +1,8 @@
 FROM node:18-alpine
 WORKDIR /app
 
-# Install bash
-RUN apk add --no-cache bash
+# Install bash and postgresql-client (for psql COPY operations)
+RUN apk add --no-cache bash postgresql-client
 
 COPY package*.json ./
 COPY . .
