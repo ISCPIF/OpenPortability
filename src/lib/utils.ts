@@ -18,7 +18,19 @@ export function isValidEmail(email : string) {
   return EMAIL_REGEXP.test(email);
 }
 
-export const handleShare = async (text: string, platform: string, session: any, update?: () => void, setIsShared?: (value: boolean) => void) => {
+export interface ShareOptions {
+  imageUrl?: string;  // Chemin relatif depuis /public (ex: '/share_image.jpeg')
+  imageAlt?: string;  // Texte alternatif pour l'image
+}
+
+export const handleShare = async (
+  text: string, 
+  platform: string, 
+  session: any, 
+  update?: () => void, 
+  setIsShared?: (value: boolean) => void,
+  options?: ShareOptions
+) => {
   if (update) {
     update();
   }
@@ -33,14 +45,16 @@ export const handleShare = async (text: string, platform: string, session: any, 
     const textWithoutUrl = text.replace(/➡️ https:\/\/OpenPortability\.org.*$/, '➡️ https://OpenPortability.org');
     
     if (platform === 'bluesky') {
-      // Utiliser l'API pour poster directement sur BlueSky
+      // Utiliser l'API pour poster directement sur BlueSky (avec image optionnelle)
       const response = await fetch('/api/share/bluesky', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          text: textWithoutUrl
+          text: textWithoutUrl,
+          imageUrl: options?.imageUrl,
+          imageAlt: options?.imageAlt
         })
       });
 
@@ -61,10 +75,37 @@ export const handleShare = async (text: string, platform: string, session: any, 
         console.error('❌ No Mastodon instance found for user');
         return;
       }
-      // Remove any protocol prefix from the instance
-      const instance = session.user.mastodon_instance.replace(/^https?:\/\//, '');
-      url = `https://${instance}/share?text=${encodeURIComponent(textWithoutUrl)}`;
-      window.open(url, '_blank');
+      
+      // Si une image est fournie, utiliser l'API pour poster avec l'image
+      if (options?.imageUrl) {
+        const response = await fetch('/api/share/mastodon', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            text: textWithoutUrl,
+            imageUrl: options.imageUrl,
+            imageAlt: options.imageAlt
+          })
+        });
+
+        const result = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(result.error || 'Failed to share to Mastodon');
+        }
+        
+        // Ouvrir le post dans une nouvelle fenêtre si possible
+        if (result.url) {
+          window.open(result.url, '_blank');
+        }
+      } else {
+        // Sans image, utiliser le Web Intent classique
+        const instance = session.user.mastodon_instance.replace(/^https?:\/\//, '');
+        url = `https://${instance}/share?text=${encodeURIComponent(textWithoutUrl)}`;
+        window.open(url, '_blank');
+      }
     } else {
       const platformUrls = {
         twitter: 'https://twitter.com',

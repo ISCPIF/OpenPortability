@@ -26,72 +26,64 @@ export class AccountService {
       return { success: false, error: 'Missing tokens', requiresReauth: true };
     }
 
-    // Bluesky OAuth tokens are DPoP-bound and not compatible with BskyAgent.resumeSession (which expects app-password session tokens)
-    // Instead, check for the persisted OAuth session in Redis using the DID and validate minimal scope.
     try {
       const did: string = account.provider_account_id;
-      const handleGuess = did.includes('.') ? did.split('.')[0] : did;
 
-      // Attempt to read the OAuth session saved by blueskyOAuthClient's sessionStore
+      // Check if session exists in Redis (required for OAuth client to work)
       const { getRedis } = await import('../services/redisClient');
       const redis = getRedis();
       const redisKey = `bsky:session:${did}`;
       const raw = await redis.get(redisKey);
 
       if (!raw) {
-        console.warn(' [AccountService.verifyAndRefreshBlueskyToken] No OAuth session found in Redis for DID:', did);
+        logger.logWarning('Security', `No OAuth session found in Redis for DID: ${did}`, userId);
         return { 
           success: false, 
-          error: 'Missing OAuth session (DPoP)',
+          error: 'Missing OAuth session in Redis',
           requiresReauth: true 
         };
       }
 
+      // Parse session to check scope
       const sessionData = JSON.parse(raw);
       const tokenSet = sessionData?.tokenSet || {};
       const scope: string | undefined = tokenSet.scope;
-      const tokenType: string | undefined = tokenSet.token_type;
 
       // Validate expected minimal scope
-      // We request "atproto transition:generic" in client metadata. If scope is missing or different, make it explicit.
       if (!scope || !scope.includes('atproto')) {
-        console.error(' [AccountService.verifyAndRefreshBlueskyToken] Token scope invalid or missing', { userId, did, scope, tokenType });
+        logger.logError('Security', `Token scope invalid: ${scope ?? 'none'}`, userId);
         return {
           success: false,
-          error: `Bad token scope: expected atproto scope, got ${scope ?? 'none'} (type=${tokenType ?? 'unknown'})`,
+          error: 'Invalid token scope',
           requiresReauth: true,
         };
       }
 
-      // Optional: make a lightweight authenticated call using dpopFetch to ensure the session works
-      const dpopFetch = sessionData?.dpopFetch;
-      if (typeof dpopFetch === 'function') {
-        try {
-          const origin = 'https://bsky.social';
-          const url = new URL('/xrpc/app.bsky.actor.getProfile', origin);
-          url.searchParams.set('actor', did);
-          const resp = await dpopFetch(url.toString());
-          if (!resp.ok) {
-            const body = await resp.text();
-            console.warn(' [AccountService.verifyAndRefreshBlueskyToken] dpopFetch non-OK', { status: resp.status, body });
-            return {
-              success: false,
-              error: `OAuth session invalid (status ${resp.status})`,
-              requiresReauth: true,
-            };
-          }
-        } catch (e: any) {
-          console.warn(' [AccountService.verifyAndRefreshBlueskyToken] dpopFetch failed', { message: e?.message });
-          return {
-            success: false,
-            error: 'OAuth session check failed',
-            requiresReauth: true,
-          };
-        }
+      // Sync tokens if mismatch between DB and Redis
+      const redisAccessToken = tokenSet.access_token;
+      const redisRefreshToken = tokenSet.refresh_token;
+      
+      if (redisAccessToken !== account.access_token || redisRefreshToken !== account.refresh_token) {
+        sessionData.tokenSet.access_token = account.access_token;
+        sessionData.tokenSet.refresh_token = account.refresh_token;
+        await redis.set(redisKey, JSON.stringify(sessionData), 'EX', 60 * 60 * 24 * 30); // 30 days
       }
+
+      // NOTE: Active verification with getProfile was removed because dpopFetch
+      // often fails with 401 even with valid tokens due to DPoP nonce issues.
+      // The actual follow operations will fail gracefully if the token is invalid.
+      // 
+      // We've verified:
+      // 1. Account exists in DB with tokens
+      // 2. Session exists in Redis with correct scope
+      // 3. Tokens are synced between DB and Redis
+      //
+      // This is sufficient for most cases. If the token is truly invalid,
+      // the batchFollowOAuth call will fail and return appropriate errors.
+
       return { success: true };
     } catch (error: any) {
-      logger.logError('Security', 'Token refresh failed:', error.message);
+      logger.logError('Security', 'Token verification failed:', error.message);
       return { 
         success: false, 
         error: error.message,

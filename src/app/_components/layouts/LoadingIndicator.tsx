@@ -1,68 +1,42 @@
 'use client';
 
-import { useState } from "react"
-import Image from 'next/image';
-import { motion, AnimatePresence } from "framer-motion"
-
-import { plex } from '@/app/fonts/plex';
-
-import compass from '../../../../public/compass/loader-compass.svg';
-import needle from '../../../../public/compass/needle.svg';
-
-function randomRange(min: number, max: number) {
-  return min + Math.random() * (max - min);
-}
+import { useTheme } from '@/hooks/useTheme';
+import { useCommunityColors } from '@/hooks/useCommunityColors';
 
 interface LoadingIndicatorProps {
   msg: string;
   textSize?: 'sm' | 'base';
+  color?: string; // Custom color from palette (overrides auto-detection)
 }
 
-export default function LoadingIndicator({ msg, textSize = 'sm' }: LoadingIndicatorProps) {
-  const [nextAngle, setNextAngle] = useState(0);
+export default function LoadingIndicator({ msg, textSize = 'sm', color }: LoadingIndicatorProps) {
+  const { isDark } = useTheme();
+  const { colors: communityColors } = useCommunityColors();
+  
+  // Use community colors from cookie/palette if no custom color provided
+  // For contrast: use light color on dark theme, dark color on light theme
+  const paletteColor = isDark 
+    ? (communityColors[9] || communityColors[8] || '#fad541')
+    : (communityColors[0] || communityColors[1] || '#011959');
+  
+  const spinnerColor = color || paletteColor;
+  const textColor = color || paletteColor;
+  
   return (
-    <div className="w-60 h-56 p-10 text-center bg-white rounded-[30px] flex flex-col z-10 relative">
-      <div className="m-auto">
-        <Image
-          src={compass}
-          alt=""
-          width={85}
-          height={87}
-          className=""
-        />
-        <motion.div
-          className="h-fit w-fit"
-          style={{
-            originX: 0.49,
-            originY: 0.48,
-            position: "relative",
-            top: "-53px",
-            left: "22px"
-          }}
-          transition={{
-            delay: randomRange(0.5, 1),
-            visualDuration: randomRange(0.3, 0.5),
-            type: "spring",
-            bounce: randomRange(0.5, 0.8),
-            ease: 'linear',
-          }}
-          animate={{ rotateZ: nextAngle }}
-          exit={{ rotateZ: 0 }}
-          onAnimationComplete={() => {
-            setNextAngle(Math.random() * 360);
-          }}
-        >
-          <Image
-            src={needle}
-            alt=""
-            width={42}
-            height={19}
-            style={{}}
-            className="relative"
-          />
-        </motion.div>
-      </div>
-      <p className={`${plex.className} text-[#2A39A9] font-bold text-${textSize} ${textSize === 'base' ? 'max-w-[200px] mx-auto' : ''}`}>
+    <div className="flex flex-col items-center gap-4">
+      <div 
+        className="w-10 h-10 border-3 rounded-full animate-spin" 
+        style={{ 
+          borderLeftColor: spinnerColor,
+          borderRightColor: spinnerColor,
+          borderBottomColor: spinnerColor,
+          borderTopColor: 'transparent'
+        }}
+      />
+      <p 
+        className={`font-mono tracking-wider ${textSize === 'base' ? 'text-base' : 'text-sm'}`}
+        style={{ color: textColor }}
+      >
         {msg}
       </p>
     </div>

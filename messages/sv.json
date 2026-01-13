@@ -5,6 +5,7 @@
       "username": "@{username}"
     },
     "returnToDashboard": "Återgå",
+    "reconnect": "Socialt nätverk",
     "settings": "Inställningar och aviseringar"
   },
   "connectedAccounts": {
@@ -373,9 +374,14 @@
 "accountSettings": "Kontoinställningar",
 "testDmSection": "Testa direktmeddelanden (DM)",
 "testDmDescription": "Du kan testa mottagandet av direktmeddelanden på Bluesky för att verifiera att allt fungerar korrekt.",
-"notifications": {
-"title": "Aviseringar",
-"hqxNewsletter": {
+  "notifications": {
+    "title": "Aviseringar",
+    "columnTitles": {
+      "notifications": "Aviseringar",
+      "automations": "Automatiska rekommendationer",
+      "consents": "Samtycken"
+    },
+    "hqxNewsletter": {
 "title": "OpenPortability Nyhetsbrev",
 "description": "Bli informerad om de senaste uppdateringarna och nya funktionerna på OpenPortability-plattformen"
 },

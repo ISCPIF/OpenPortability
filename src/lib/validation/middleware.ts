@@ -544,16 +544,17 @@ export function withValidation<Out, In = Out>(
 
 /**
  * Version simplifiée pour les endpoints publics
+ * Supports Zod schemas with different input/output types (e.g., with .default())
  */
-export function withPublicValidation<T>(
-  schema: z.ZodSchema<T>,
-  handler: (request: NextRequest, validatedData: T) => Promise<NextResponse>,
+export function withPublicValidation<TOutput, TInput = TOutput>(
+  schema: z.ZodType<TOutput, z.ZodTypeDef, TInput>,
+  handler: (request: NextRequest, validatedData: TOutput) => Promise<NextResponse>,
   options: Omit<ValidationOptions, 'requireAuth'> = {}
 ) {
   
   return withValidation(
-    schema,
-    async (req, data) => handler(req, data),
+    schema as unknown as z.ZodSchema<TOutput>,
+    async (req, data) => handler(req, data as TOutput),
     { ...options, requireAuth: false }
   );
 }

@@ -1,139 +1,142 @@
 'use client'
 
-import { Suspense, useEffect } from 'react'
 import dynamic from 'next/dynamic'
+import { useEffect, useState } from 'react'
+import { useTranslations } from 'next-intl'
+import { useSession } from 'next-auth/react'
 
 import Header from '@/app/_components/layouts/Header'
-import LoadingIndicator from '@/app/_components/layouts/LoadingIndicator'
 import Footer from '@/app/_components/layouts/Footer'
-import StatsReconnexion from '@/app/_components/reconnection/StatsReconnexion'
 import { useReconnectState } from '@/hooks/useReconnectState'
-import MigrateSea from '@/app/_components/layouts/MigrateSea'
+import { useTheme } from '@/hooks/useTheme'
+import { useCommunityColors } from '@/hooks/useCommunityColors'
+import { GraphDataProvider } from '@/contexts/GraphDataContext'
+import { useNewsletter } from '@/hooks/useNewsLetter'
+import NewsLetterFirstSeen from '@/app/_components/modales/NewsLetterFirstSeen'
 
-// Nouveau composant conteneur pour gérer la logique conditionnelle
-import ReconnectContainer from '@/app/_components/sections/reconnect/ReconnectContainer'
+// Loading component with theme-aware colors
+function ReconnectLoader() {
+  const { isDark } = useTheme()
+  const { colors: communityColors } = useCommunityColors()
+  const t = useTranslations('loaders')
+  
+  // For contrast: use light color on dark theme, dark color on light theme
+  const contrastColor = isDark 
+    ? (communityColors[9] || communityColors[8] || '#fad541')
+    : (communityColors[0] || communityColors[1] || '#011959')
+  
+  return (
+    <div 
+      className="flex items-center justify-center h-screen"
+      style={{ backgroundColor: isDark ? '#0a0f1f' : '#f8fafc' }}
+    >
+      <div className="flex flex-col items-center gap-4">
+        <div 
+          className="w-8 h-8 border-2 rounded-full animate-spin" 
+          style={{ 
+            borderLeftColor: contrastColor,
+            borderRightColor: contrastColor,
+            borderBottomColor: contrastColor,
+            borderTopColor: 'transparent'
+          }}
+        />
+      </div>
+    </div>
+  )
+}
 
-// Dynamic imports for heavy components
-
-const MigrateStats = dynamic(() => import('@/app/_components/layouts/MigrateStats'), {
-  loading: () => <div className="animate-pulse bg-blue-900/50 h-24" />
-})
+// Dynamic import for graph dashboard (heavy component)
+const ReconnectGraphDashboard = dynamic(
+  () => import('@/app/_components/graph/ReconnectGraphDashboard').then(mod => ({ default: mod.ReconnectGraphDashboard })),
+  { 
+    loading: () => <ReconnectLoader />,
+    ssr: false 
+  }
+)
 
 export default function ReconnectPage() {
   const {
     session,
     stats,
-    globalStats,
     mastodonInstances,
-    isLoading,
-    setIsLoading,
-    showOptions,
+    isMigrating,
+    setIsMigrating,
     isAutomaticReconnect,
-    accountsToProcess,
     migrationResults,
-    missingProviders,
-    isReconnectionComplete,
     handleAutomaticReconnection,
-    handleManualReconnection,
     handleStartMigration,
-    refreshStats,
-    setAccountsToProcess
+    setAccountsToProcess,
+    toggleAutomaticReconnect,
+    followingList,
+    selectedAccounts,
+    invalidTokenProviders,
+    setInvalidTokenProviders,
+    selectedBreakdown,
   } = useReconnectState()
 
-  // // Forcer un rafraîchissement des statistiques au chargement initial
+  const { update } = useSession()
+  const newsletterData = useNewsletter()
+  
+  // Newsletter first seen modal state
+  const [isNewsletterFirstSeenOpen, setIsNewsletterFirstSeenOpen] = useState(false)
+
+  // Invalidate matching network cache on page mount to force fresh fetch
+  // This ensures we get updated data when returning from upload page
   useEffect(() => {
-    // Forcer le rechargement des données au premier rendu
-    const loadInitialData = async () => {
-      await refreshStats();
-    };
-    
-    loadInitialData();
-  }, [refreshStats]);
+    if (typeof window !== 'undefined' && (window as any).__matchingNetworkState) {
+      console.log('🔄 [ReconnectPage] Invalidating matching network cache on mount');
+      (window as any).__matchingNetworkState.fetched = false;
+      (window as any).__matchingNetworkState.data = null;
+      (window as any).__matchingNetworkState.promise = null;
+    }
+  }, []);
 
+  // Show newsletter modal if user hasn't seen it yet
+  useEffect(() => {
+    if (!session?.user) return
+    const hasSeen = !!session.user.have_seen_newsletter
+    setIsNewsletterFirstSeenOpen(!hasSeen)
+  }, [session?.user])
 
-  // Ne bloquer que sur isLoading et stats, pas sur globalStats
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-[#2a39a9] relative w-full  m-auto">
-        <div className="container mx-auto py-12">
-          <div className="container flex flex-col m-auto text-center text-[#E2E4DF]">
-            <div className="m-auto relative my-32 lg:my-40">
-              <LoadingIndicator msg="Loading..." />
-            </div>
-          </div>
-        </div>
-      </div>
-    )
-  }
   return (
-    <div className="min-h-screen bg-[#E8E9E4]">
-      <div className="relative z-40 bg-[#E8E9E4]">
+    <GraphDataProvider>
+      <div className="relative w-full h-screen overflow-hidden">
+        <ReconnectGraphDashboard
+          session={session}
+          stats={stats}
+          accountsToProcess={followingList}
+          setAccountsToProcess={setAccountsToProcess}
+          isAutomaticReconnect={isAutomaticReconnect}
+          isMigrating={isMigrating}
+          migrationResults={migrationResults}
+          onStartMigration={handleStartMigration}
+          onToggleAutomaticReconnect={toggleAutomaticReconnect}
+          onStartAutomaticReconnection={handleAutomaticReconnection}
+          onStopMigration={() => setIsMigrating(false)}
+          selectedAccountsCount={selectedAccounts.size}
+          mastodonInstances={mastodonInstances}
+          invalidTokenProviders={invalidTokenProviders}
+          onClearInvalidTokenProviders={() => setInvalidTokenProviders([])}
+          selectedBreakdown={selectedBreakdown}
+        />
+        
         <Header />
-      </div>
-      
-      <div className="bg-[#2a39a9] min-h-[calc(100vh-64px)]"> 
-        <div className="flex flex-col text-center text-[#E2E4DF]">
-          {/* Sea background that takes full width */}
-          <Suspense fallback={<div className="animate-pulse bg-blue-900/50 h-[600px]" />}>
-            <MigrateSea />
-          </Suspense>
-        </div>
-
-        <div className="relative w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="relative z-10 -mt-16 sm:-mt-24">
-            <Suspense fallback={<div className="animate-pulse bg-blue-900/50 h-24" />}>
-              <MigrateStats 
-                stats={stats} 
-                session={{
-                  user: {
-                    twitter_username: session?.user?.twitter_username ?? "",
-                    bluesky_username: session?.user?.bluesky_username ?? "",
-                    mastodon_username: session?.user?.mastodon_username ?? ""
-                  }
-                }}
-                simpleView={!session?.user?.bluesky_username && !session?.user?.mastodon_username}                
-              />
-            </Suspense>
-          </div>
-
-          {/* Composant conteneur qui gère l'affichage conditionnel */}
-          <ReconnectContainer
-            session={session}
-            stats={stats}
-            globalStats={globalStats}
-            mastodonInstances={mastodonInstances}
-            isLoading={isLoading}
-            setIsLoading={setIsLoading}
-            isAutomaticReconnect={isAutomaticReconnect}
-            showOptions={showOptions}
-            isReconnectionComplete={isReconnectionComplete}
-            missingProviders={missingProviders}
-            accountsToProcess={accountsToProcess}
-            setAccountsToProcess={setAccountsToProcess}
-            migrationResults={migrationResults}
-            handleAutomaticReconnection={handleAutomaticReconnection}
-            handleManualReconnection={handleManualReconnection}
-            handleStartMigration={handleStartMigration}
-            refreshStats={refreshStats}
-          />
-
-          {/* Statistiques globales */}
-          <div className="w-full flex justify-center my-8">
-            <div className="w-full">
-              {globalStats ? (
-                <StatsReconnexion globalStats={globalStats} />
-              ) : (
-                <div className="animate-pulse bg-blue-900/50 h-24" />
-              )}
-            </div>
-          </div>
-         
-        </div>
-        {/* {session?.user?.have_seen_newsletter && (
-          <NewsLetterConsentsUpdate userId={session.user.id} />
-        )} */}
         <Footer />
+        
+        {/* Newsletter First Seen Modal - shown if user hasn't seen it yet */}
+        {session?.user?.id && (
+          <NewsLetterFirstSeen
+            userId={session.user.id}
+            newsletterData={newsletterData}
+            isOpen={isNewsletterFirstSeenOpen}
+            onClose={() => setIsNewsletterFirstSeenOpen(false)}
+            onSubscribe={() => {
+              setIsNewsletterFirstSeenOpen(false)
+              update()
+            }}
+          />
+        )}
       </div>
-    </div>
+    </GraphDataProvider>
   )
 }

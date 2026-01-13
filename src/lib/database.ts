@@ -59,10 +59,10 @@ function getNextAuthPool(): Pool {
       console.log('Database', 'nextAuthPool', 'Unexpected error on idle client', undefined, { error: err.message })
     })
     globalThis.__nextAuthPool.on('connect', () => {
-      console.log('Database', 'nextAuthPool', 'New client connected')
+      // console.log('Database', 'nextAuthPool', 'New client connected')
     })
     globalThis.__nextAuthPool.on('remove', () => {
-      console.log('Database', 'nextAuthPool', 'Client removed from pool')
+      // console.log('Database', 'nextAuthPool', 'Client removed from pool')
     })
   }
   return globalThis.__nextAuthPool
@@ -76,10 +76,10 @@ function getPublicPool(): Pool {
       console.log('Database', 'publicPool', 'Unexpected error on idle client', undefined, { error: err.message })
     })
     globalThis.__publicPool.on('connect', () => {
-      console.log('Database', 'publicPool', 'New client connected')
+      // console.log('Database', 'publicPool', 'New client connected')
     })
     globalThis.__publicPool.on('remove', () => {
-      console.log('Database', 'publicPool', 'Client removed from pool')
+      // console.log('Database', 'publicPool', 'Client removed from pool')
     })
   }
   return globalThis.__publicPool
@@ -116,11 +116,7 @@ export async function queryNextAuth<T extends QueryResultRow = any>(
     const result = await client.query<T>(text, params)
     const duration = Date.now() - start
     
-    console.log('Database', 'queryNextAuth', `Query executed in ${duration}ms`, undefined, {
-      text,
-      rows: result.rowCount,
-      duration
-    })
+   
     
     return result
   } catch (error) {
@@ -147,12 +143,6 @@ export async function queryPublic<T extends QueryResultRow = any>(
     await client.query('SET search_path TO public')
     const result = await client.query<T>(text, params)
     const duration = Date.now() - start
-    
-    console.log('Database', 'queryPublic', `Query executed in ${duration}ms`, undefined, {
-      text,
-      rows: result.rowCount,
-      duration
-    })
     
     return result
   } catch (error) {

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Background -->
+  <rect width="32" height="32" fill="#000000"/>
+  
+  <!-- Letter O -->
+  <circle cx="11" cy="16" r="7" fill="#e94560" stroke="#ffffff" stroke-width="3"/>
+  
+  <!-- Letter P -->
+  <path d="M 20 8 L 20 24" stroke="#0f3460" stroke-width="3" stroke-linecap="round"/>
+  <path d="M 20 8 L 26 8 Q 29 8 29 11.5 Q 29 15 26 15 L 20 15" 
+        fill="none" stroke="#0f3460" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
