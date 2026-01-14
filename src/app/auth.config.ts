@@ -332,18 +332,29 @@ export const authConfig = {
       // This will be rewrited on the fly later on
       issuer: "https://mastodon.space",
       profile(profile: MastodonProfile) {
-        
-        return {
-          id: profile.id,
-          name: profile.display_name,
-          provider: 'mastodon',
-          profile: profile,
-          has_onboarded: false,
-          hqx_newsletter: false,
-          oep_accepted: false,
-          have_seen_newsletter: false,
-          research_accepted: false,
-          automatic_reconnect: false
+        try {
+          // Si le profil est invalide
+          if (!profile || !profile.id) {
+            logger.logError("Auth", "mastodon.profile", "Invalid Mastodon profile", undefined, { profile });
+            throw new Error("INVALID_MASTODON_PROFILE");
+          }
+
+          return {
+            id: profile.id,
+            name: profile.display_name,
+            provider: 'mastodon',
+            profile: profile,
+            has_onboarded: false,
+            hqx_newsletter: false,
+            oep_accepted: false,
+            have_seen_newsletter: false,
+            research_accepted: false,
+            automatic_reconnect: false
+          }
+        } catch (error) {
+          const err = error instanceof Error ? error.message : String(error);
+          logger.logError("Auth", "mastodon.profile", err, undefined, { profileId: profile?.id });
+          throw error;
         }
     }})
   ],
