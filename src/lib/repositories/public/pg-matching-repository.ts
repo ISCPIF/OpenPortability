@@ -1150,9 +1150,9 @@ export const pgMatchingRepository = {
            COUNT(*) as count
          FROM public.sources_targets st
          INNER JOIN "next-auth".users u ON u.id = st.source_id
-         INNER JOIN graph_nodes_03_11_25 gn ON gn.twitter_id = u.twitter_id
+         INNER JOIN graph_nodes_03_11_25 gn ON gn.id = u.twitter_id
          WHERE st.node_id IN (
-           SELECT id FROM graph_nodes_03_11_25 WHERE twitter_id = $1
+           SELECT id FROM graph_nodes_03_11_25 WHERE id = $1
          )
          GROUP BY (gn.community % 10)
          ORDER BY count DESC`,
