@@ -135,9 +135,12 @@ const IDB_STORE_NAME = 'graph_data';
 
 // Cache TTL: different for nodes vs labels vs hashes
 const CACHE_TTL_NODES_MS = 24 * 60 * 60 * 1000; // 24 hours for base nodes (stable data)
-const CACHE_TTL_LABELS_MS = 5 * 60 * 1000; // 5 minutes for labels (consent can change)
+const CACHE_TTL_LABELS_MS = 5 * 60 * 1000; // 5 minutes for labels cache validity
 const CACHE_TTL_FOLLOWER_HASHES_MS = 24 * 60 * 60 * 1000; // 24 hours for follower hashes (rarely changes)
 const CACHE_TTL_FOLLOWING_HASHES_MS = 30 * 60 * 1000; // 30 minutes for following hashes (changes after follow)
+
+// Polling interval for cross-client sync (labels + node_type changes)
+const SYNC_POLL_INTERVAL_MS = 30 * 1000; // 30 seconds
 
 // IndexedDB helper class
 class GraphIndexedDB {
@@ -474,6 +477,69 @@ export function GraphDataProvider({ children }: GraphDataProviderProps) {
   // Auto-load data from IndexedDB cache on mount (for instant display)
   useEffect(() => {
     const loadCachedData = async () => {
+      // ALWAYS check labels version on mount, even if labels are already loaded in memory
+      // This handles the case where user was on another page when cache was invalidated
+      console.log('🔄 [Labels Mount] Checking server version... (labelsLoaded:', globalGraphState.personalLabelsLoaded, ', localVersion:', labelsVersionRef.current, ')');
+      try {
+        const versionResponse = await fetch('/api/graph/refresh-labels-cache', {
+          method: 'GET',
+          headers: { 'Cache-Control': 'no-cache' },
+        });
+        if (versionResponse.ok) {
+          const versionData = await versionResponse.json();
+          const serverVersion = versionData.version || 0;
+          console.log('🔄 [Labels Mount] Server version:', serverVersion, ', local version:', labelsVersionRef.current);
+          
+          // If we have labels in memory, check if they're stale
+          if (globalGraphState.personalLabelsLoaded) {
+            console.log('🔄 [Labels Mount] Labels already loaded, comparing versions...');
+            // If local version is 0, it means labels were loaded from old cache without version
+            // In this case, we need to check against IndexedDB cache version
+            let effectiveLocalVersion = labelsVersionRef.current;
+            if (effectiveLocalVersion === 0) {
+              // Try to get version from IndexedDB cache
+              try {
+                const cached = await graphIDB.load<{ version?: number }>(CACHE_KEYS.PERSONAL_LABELS);
+                effectiveLocalVersion = cached?.data?.version || cached?.timestamp || 0;
+                console.log('🔄 [Labels Mount] Got version from IndexedDB cache:', effectiveLocalVersion);
+              } catch {
+                // Ignore
+              }
+            }
+            
+            if (serverVersion > effectiveLocalVersion) {
+              console.log('🔄 [Labels Mount] Memory cache stale! (server:', serverVersion, '> local:', effectiveLocalVersion, '), invalidating...');
+              // Invalidate memory and IndexedDB cache
+              globalGraphState.personalLabelsLoaded = false;
+              globalGraphState.personalLabelMap = {};
+              globalGraphState.personalFloatingLabels = [];
+              await graphIDB.delete(CACHE_KEYS.PERSONAL_LABELS);
+              setPersonalLabelMapState({});
+              setPersonalFloatingLabelsState([]);
+              setIsPersonalLabelsLoaded(false);
+              personalLabelsPromiseRef.current = null;
+            } else {
+              console.log('🔄 [Labels Mount] Memory cache still valid');
+              // Update version ref if it was 0
+              if (labelsVersionRef.current === 0 && effectiveLocalVersion > 0) {
+                labelsVersionRef.current = effectiveLocalVersion;
+              }
+            }
+          } else {
+            console.log('🔄 [Labels Mount] No labels in memory yet, will load from cache/API');
+          }
+          // Update version ref for future comparisons
+          if (serverVersion > 0) {
+            labelsVersionRef.current = serverVersion;
+          }
+        } else {
+          console.log('🔄 [Labels Mount] Version check failed, response not ok');
+        }
+      } catch (err) {
+        console.log('🔄 [Labels Mount] Version check error:', err);
+        // If version check fails, continue with existing cache
+      }
+      
       // Check if graph nodes version has changed (member nodes updated)
       // If changed, invalidate the base nodes cache
       const { changed: versionChanged } = await checkGraphNodesVersion();
@@ -538,17 +604,42 @@ export function GraphDataProvider({ children }: GraphDataProviderProps) {
       }
 
       // Load personal labels from cache if not already loaded
+      // But first check server version to ensure cache is still valid
       if (!globalGraphState.personalLabelsLoaded) {
         try {
-          const cached = await graphIDB.load<{ labelMap: Record<string, string>; floatingLabels: FloatingLabel[] }>(CACHE_KEYS.PERSONAL_LABELS);
+          const cached = await graphIDB.load<{ labelMap: Record<string, string>; floatingLabels: FloatingLabel[]; version?: number }>(CACHE_KEYS.PERSONAL_LABELS);
           if (cached && graphIDB.isCacheValidForLabels(cached.timestamp)) {
-            globalGraphState.personalLabelMap = cached.data.labelMap;
-            globalGraphState.personalFloatingLabels = cached.data.floatingLabels;
-            globalGraphState.personalLabelsLoaded = true;
-            setPersonalLabelMapState(cached.data.labelMap);
-            setPersonalFloatingLabelsState(cached.data.floatingLabels);
-            setIsPersonalLabelsLoaded(true);
-            graphDataEvents.emit('personalLabelsUpdated');
+            // Check server version before using cache
+            let serverVersion = 0;
+            try {
+              const versionResponse = await fetch('/api/graph/refresh-labels-cache', {
+                method: 'GET',
+                headers: { 'Cache-Control': 'no-cache' },
+              });
+              if (versionResponse.ok) {
+                const versionData = await versionResponse.json();
+                serverVersion = versionData.version || 0;
+              }
+            } catch {
+              // If version check fails, use cache anyway
+            }
+            
+            // Only use cache if server version matches or we couldn't check
+            const cachedVersion = cached.data.version || cached.timestamp;
+            if (serverVersion === 0 || serverVersion <= cachedVersion) {
+              globalGraphState.personalLabelMap = cached.data.labelMap;
+              globalGraphState.personalFloatingLabels = cached.data.floatingLabels;
+              globalGraphState.personalLabelsLoaded = true;
+              setPersonalLabelMapState(cached.data.labelMap);
+              setPersonalFloatingLabelsState(cached.data.floatingLabels);
+              setIsPersonalLabelsLoaded(true);
+              labelsVersionRef.current = serverVersion || cachedVersion;
+              graphDataEvents.emit('personalLabelsUpdated');
+            } else {
+              // Cache is stale, delete it so fetchPersonalLabels will get fresh data
+              console.log('🔄 [Labels] Cache stale (server:', serverVersion, 'cache:', cachedVersion, '), will fetch fresh');
+              await graphIDB.delete(CACHE_KEYS.PERSONAL_LABELS);
+            }
           }
         } catch (err) {
           console.warn('💾 [IndexedDB] Failed to auto-load personal labels:', err);
@@ -646,26 +737,220 @@ export function GraphDataProvider({ children }: GraphDataProviderProps) {
     loadCachedData();
   }, [calculateBounds]);
 
-  // Auto-refresh labels every 5 minutes when page stays open
+  // Poll server for labels version changes every 30 seconds
+  // This allows other clients' consent changes to propagate to all browsers
+  // Polling is paused when the tab is not visible to save resources
+  const labelsVersionRef = useRef<number>(0);
+  
   useEffect(() => {
-    const refreshInterval = setInterval(async () => {
-      // Only refresh if labels were already loaded (user is actively using the page)
-      if (globalGraphState.personalLabelsLoaded) {
-        
-        // Reset the loaded flag to force a fresh fetch
-        globalGraphState.personalLabelsLoaded = false;
-        personalLabelsPromiseRef.current = null;
-        
-        // Delete old cache
-        await graphIDB.delete(CACHE_KEYS.PERSONAL_LABELS);
-        
-        // Trigger a fresh fetch (will be called by components that need it)
-        // We don't call fetchPersonalLabels directly here to avoid circular deps
-        setIsPersonalLabelsLoaded(false);
+    const checkLabelsVersion = async () => {
+      // Skip polling if tab is not visible
+      if (document.visibilityState !== 'visible') {
+        return;
       }
-    }, CACHE_TTL_LABELS_MS);
+      
+      try {
+        const response = await fetch('/api/graph/refresh-labels-cache', {
+          method: 'GET',
+          headers: { 'Cache-Control': 'no-cache' },
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          const serverVersion = data.version || 0;
 
-    return () => clearInterval(refreshInterval);
+          // First successful poll: initialize local version reference.
+          // We don't refetch on init; we only refetch when the server version increases later.
+          if (labelsVersionRef.current === 0) {
+            labelsVersionRef.current = serverVersion;
+            return;
+          }
+
+        if (serverVersion > labelsVersionRef.current) {
+          console.log('🔄 [Labels Sync] Server version changed, refetching labels...');
+                    
+          // Reset the loaded flag to force a fresh fetch
+          globalGraphState.personalLabelsLoaded = false;
+          globalGraphState.personalLabelMap = {};
+          globalGraphState.personalFloatingLabels = [];
+          personalLabelsPromiseRef.current = null;
+                    
+          // Delete old cache
+          await graphIDB.delete(CACHE_KEYS.PERSONAL_LABELS);
+                    
+          // Reset state
+          setPersonalLabelMapState({});
+          setPersonalFloatingLabelsState([]);
+          setIsPersonalLabelsLoaded(false);
+                    
+          // Fetch fresh labels from server
+          try {
+            const labelsResponse = await fetch('/api/graph/consent_labels', {
+              method: 'GET',
+              headers: { 'Content-Type': 'application/json' },
+            });
+                      
+            if (labelsResponse.ok) {
+              const labelsData = await labelsResponse.json();
+              if (labelsData.success) {
+                const labelMap = labelsData.labelMap || {};
+                const floatingLabels: FloatingLabel[] = (labelsData.floatingLabels || []).map((label: any) => ({
+                  coord_hash: label.coord_hash,
+                  x: label.x,
+                  y: label.y,
+                  text: label.text,
+                  priority: label.priority,
+                  level: label.level,
+                }));
+                          
+                globalGraphState.personalLabelMap = labelMap;
+                globalGraphState.personalFloatingLabels = floatingLabels;
+                globalGraphState.personalLabelsLoaded = true;
+                setPersonalLabelMapState(labelMap);
+                setPersonalFloatingLabelsState(floatingLabels);
+                setIsPersonalLabelsLoaded(true);
+                          
+                // Save to IndexedDB cache with version
+                graphIDB.save(CACHE_KEYS.PERSONAL_LABELS, { labelMap, floatingLabels, version: serverVersion }).catch(() => {});
+                          
+                console.log(`🔄 [Labels Sync] Refetched ${Object.keys(labelMap).length} labels`);
+              }
+            }
+          } catch (fetchError) {
+            console.warn('Failed to refetch labels:', fetchError);
+          }
+                    
+          graphDataEvents.emit('personalLabelsUpdated');
+        }
+          
+        // Update our version reference (always, even on first poll)
+        labelsVersionRef.current = serverVersion;
+      }
+    } catch (error) {
+        // Silent fail - polling should not break the app
+        console.warn('Failed to check labels version:', error);
+      }
+    };
+    
+    // Check immediately on mount to get initial version
+    checkLabelsVersion();
+    
+    // Then poll every 30 seconds for cross-client sync
+    const pollInterval = setInterval(checkLabelsVersion, SYNC_POLL_INTERVAL_MS);
+
+    // Also check when tab becomes visible again (user returns to tab)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        checkLabelsVersion();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      clearInterval(pollInterval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
+
+  // Poll server for node_type changes every 30 seconds
+  // This allows consent changes to propagate node_type (generic ↔ member) to all browsers
+  // Polling is paused when the tab is not visible to save resources
+  const nodeTypeVersionRef = useRef<number>(0);
+  
+  useEffect(() => {
+    const checkNodeTypeChanges = async () => {
+      // Skip polling if tab is not visible
+      if (document.visibilityState !== 'visible') {
+        return;
+      }
+      
+      console.log('🔄 [NodeType Poll] Checking... (baseNodesLoaded:', globalGraphState.baseNodesLoaded, ', count:', globalGraphState.baseNodes.length, ', localVersion:', nodeTypeVersionRef.current, ')');
+      
+      // Only check if base nodes are loaded
+      if (!globalGraphState.baseNodesLoaded || globalGraphState.baseNodes.length === 0) {
+        console.log('🔄 [NodeType Poll] Skipping - base nodes not loaded yet');
+        return;
+      }
+      
+      try {
+        const response = await fetch(`/api/graph/node-type-changes?since=${nodeTypeVersionRef.current}`, {
+          method: 'GET',
+          headers: { 'Cache-Control': 'no-cache' },
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          const serverVersion = data.version || 0;
+          const changes = data.changes || [];
+          console.log('🔄 [NodeType Poll] Server version:', serverVersion, ', changes:', changes.length);
+          
+          // Apply changes to baseNodes in memory
+          if (changes.length > 0) {
+            console.log('🔄 [NodeType Poll] Applying', changes.length, 'changes:', changes);
+            let hasUpdates = false;
+            const updatedNodes = globalGraphState.baseNodes.map(node => {
+              const change = changes.find((c: { coord_hash: string; node_type: string }) => c.coord_hash === node.id);
+              if (change && node.nodeType !== change.node_type) {
+                hasUpdates = true;
+                console.log('🔄 [NodeType Poll] Updating node', node.id, 'from', node.nodeType, 'to', change.node_type);
+                return { ...node, nodeType: change.node_type as 'member' | 'generic' };
+              }
+              return node;
+            });
+            
+            if (hasUpdates) {
+              console.log('🔄 [NodeType Poll] Applied updates, refreshing state');
+              globalGraphState.baseNodes = updatedNodes;
+              setBaseNodesState(updatedNodes);
+              
+              // Also update IndexedDB cache with new node_type values
+              const cachedNodes: CachedGraphNode[] = updatedNodes.map(node => ({
+                coord_hash: node.id,
+                label: node.label,
+                x: node.x,
+                y: node.y,
+                community: node.community,
+                degree: node.degree,
+                tier: node.tier,
+                nodeType: node.nodeType,
+                graphLabel: node.graphLabel || undefined,
+                description: node.description || undefined,
+              }));
+              graphIDB.save(CACHE_KEYS.BASE_NODES, cachedNodes).catch(err => {
+                console.warn('💾 [IndexedDB] Failed to update base nodes cache:', err);
+              });
+              
+              graphDataEvents.emit('baseNodesUpdated');
+            }
+          }
+          
+          // Update our version reference
+          nodeTypeVersionRef.current = serverVersion;
+        }
+      } catch (error) {
+        // Silent fail - polling should not break the app
+        console.warn('Failed to check node_type changes:', error);
+      }
+    };
+    
+    // Check immediately on mount to get initial version
+    checkNodeTypeChanges();
+    
+    // Then poll every 30 seconds for cross-client sync
+    const pollInterval = setInterval(checkNodeTypeChanges, SYNC_POLL_INTERVAL_MS);
+
+    // Also check when tab becomes visible again (user returns to tab)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        checkNodeTypeChanges();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      clearInterval(pollInterval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, []);
 
   // Set base nodes and update global state
@@ -795,15 +1080,15 @@ export function GraphDataProvider({ children }: GraphDataProviderProps) {
         // === LOD Phase 1: Load high-degree nodes first ===
         const startTime = performance.now();
         
-        // LEFT JOIN with users_with_name_consent + public_accounts to get description for tooltip on hover
+        // LEFT JOIN with users_with_name_consent (all members) + public_accounts (only for public accounts' description)
         const sqlPhase1 = `
           SELECT g.label, g.x, g.y, g.community, g.degree, g.tier, g.node_type, pa.raw_description AS description
           FROM postgres_db.public.graph_nodes_03_11_25 g
           LEFT JOIN postgres_db.public.users_with_name_consent u
             ON g.id = u.twitter_id
-            AND u.is_public_account = true
           LEFT JOIN postgres_db.public.public_accounts pa
             ON pa.twitter_id = u.twitter_id
+            AND u.is_public_account = true
           WHERE g.degree >= ${LOD_DEGREE_THRESHOLD}
             AND g.community != 8
         `;
@@ -840,15 +1125,15 @@ export function GraphDataProvider({ children }: GraphDataProviderProps) {
         // === LOD Phase 2: Load remaining nodes in background ===
         const startTimePhase2 = performance.now();
         
-        // LEFT JOIN with users_with_name_consent + public_accounts to get description for tooltip on hover
+        // LEFT JOIN with users_with_name_consent (all members) + public_accounts (only for public accounts' description)
         const sqlPhase2 = `
           SELECT g.label, g.x, g.y, g.community, g.degree, g.tier, g.node_type, pa.raw_description AS description
           FROM postgres_db.public.graph_nodes_03_11_25 g
           LEFT JOIN postgres_db.public.users_with_name_consent u
             ON g.id = u.twitter_id
-            AND u.is_public_account = true
           LEFT JOIN postgres_db.public.public_accounts pa
             ON pa.twitter_id = u.twitter_id
+            AND u.is_public_account = true
           WHERE g.degree < ${LOD_DEGREE_THRESHOLD}
             AND g.community != 8
         `;
@@ -963,8 +1248,9 @@ export function GraphDataProvider({ children }: GraphDataProviderProps) {
           setPersonalFloatingLabelsState(floatingLabels);
           setIsPersonalLabelsLoaded(true);
                     
-          // Save to IndexedDB cache (with coord_hash, no twitter_id)
-          graphIDB.save(CACHE_KEYS.PERSONAL_LABELS, { labelMap, floatingLabels }).catch(err => {
+          // Save to IndexedDB cache with current version (with coord_hash, no twitter_id)
+          const currentVersion = labelsVersionRef.current || Date.now();
+          graphIDB.save(CACHE_KEYS.PERSONAL_LABELS, { labelMap, floatingLabels, version: currentVersion }).catch(err => {
             console.warn('💾 [IndexedDB] Failed to cache personal labels:', err);
           });
           

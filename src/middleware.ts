@@ -12,6 +12,12 @@ const intlMiddleware = createMiddleware({
   localePrefix: 'always'
 });
 
+// List of deprecated cookies to delete (added 2026-01-14)
+// These cookies were migrated to sessionStorage or are no longer needed
+const DEPRECATED_COOKIES = [
+  'hqx_lasso_selection',  // Migrated to sessionStorage for GDPR compliance
+];
+
 // Middleware handler
 export default function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -32,7 +38,20 @@ export default function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  return intlMiddleware(request);
+  // Get response from intl middleware
+  const response = intlMiddleware(request);
+
+  // Delete deprecated cookies by setting them with expired date
+  for (const cookieName of DEPRECATED_COOKIES) {
+    if (request.cookies.has(cookieName)) {
+      response.cookies.set(cookieName, '', {
+        expires: new Date(0),
+        path: '/',
+      });
+    }
+  }
+
+  return response;
 }
 
 // Add matcher configuration to limit middleware execution

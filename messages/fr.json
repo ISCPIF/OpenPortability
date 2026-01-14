@@ -4,8 +4,8 @@
       "profile": {
         "username": "@{username}"
       },
-      "returnToDashboard": "Vers la carte sociale",
-      "reconnect": "Reconnexion",
+      "returnToDashboard": "Dashboard",
+      "reconnect": "Carte sociale",
       "settings" : "Réglages et notifications"
     },
     "connectedAccounts": {
