@@ -477,20 +477,20 @@ export const pgGraphNodesRepository = {
         }
       }
 
-      // 1. Désactiver les consentements précédents
-      await queryPublic(
-        `UPDATE consent_names
-         SET is_active = false, updated_at = CURRENT_TIMESTAMP
-         WHERE user_id = $1 AND is_active = true`,
-        [userId]
-      )
-
-      // 2. Insérer le nouveau consentement
+      // Upsert atomique : insert ou update si un consentement actif existe déjà
       const insertResult = await queryPublic<{ id: string }>(
         `INSERT INTO consent_names(
           user_id, consent_value, ip_address, user_agent, ip_address_full, is_active, consent_timestamp, created_at, updated_at
         )
         VALUES ($1, $2, $3, $4, $5, true, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        ON CONFLICT (user_id) WHERE is_active = true
+        DO UPDATE SET
+          consent_value = EXCLUDED.consent_value,
+          ip_address = EXCLUDED.ip_address,
+          user_agent = EXCLUDED.user_agent,
+          ip_address_full = EXCLUDED.ip_address_full,
+          consent_timestamp = CURRENT_TIMESTAMP,
+          updated_at = CURRENT_TIMESTAMP
         RETURNING id`,
         [userId, consentValue, firstIpAddress, metadata?.user_agent || null, fullIpAddressChain]
       )

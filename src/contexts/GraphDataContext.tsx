@@ -679,7 +679,6 @@ export function GraphDataProvider({ children }: GraphDataProviderProps) {
   }, []);
 
   // Helper to parse Arrow table into nodes
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const parseArrowToNodes = useCallback((arrowTable: Table<any>): { loadedNodes: GraphNode[]; cachedNodes: CachedGraphNode[] } => {
     const loadedNodes: GraphNode[] = [];
     const cachedNodes: CachedGraphNode[] = [];
