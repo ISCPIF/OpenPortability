@@ -101,6 +101,9 @@ export default function SwitchSettingsSection({
   
   // Handle graph label consent change
   const handleGraphLabelConsentChange = useCallback(async (value: boolean) => {
+    // Optimistic UI: update state immediately
+    setGraphLabelConsent(value);
+    
     try {
       const response = await fetch('/api/graph/consent_labels', {
         method: 'POST',
@@ -109,12 +112,17 @@ export default function SwitchSettingsSection({
       });
       
       if (response.ok) {
-        setGraphLabelConsent(value);
         toast.success(t('consentUpdate.success') ?? 'Consent updated');
+        // Trigger server-side cache refresh in background (fire-and-forget)
+        fetch('/api/graph/refresh-labels-cache', { method: 'POST' }).catch(() => {});
       } else {
+        // Revert on error
+        setGraphLabelConsent(!value);
         throw new Error('Failed to update consent');
       }
     } catch (error) {
+      // Revert on error
+      setGraphLabelConsent(!value);
       console.error('Failed to update graph consent:', error);
       toast.error(t('consentUpdate.error') ?? 'Failed to update consent');
     }
@@ -257,6 +265,85 @@ export default function SwitchSettingsSection({
             }
           )}
 
+          {/* Mobile only: email form inline after newsletter switch */}
+          {showEmailForm && (
+            <div
+              className="md:hidden rounded-lg border border-slate-700/30 bg-slate-800/30 p-4 space-y-3"
+              onMouseDown={(e: MouseEvent<HTMLDivElement>) => {
+                e.stopPropagation();
+              }}
+              onClick={(e: MouseEvent<HTMLDivElement>) => {
+                e.stopPropagation();
+              }}
+            >
+              <div className="flex flex-col space-y-2">
+                <label htmlFor="email-mobile" className="text-[12px] font-medium text-slate-300">
+                  {t('emailLabel')}
+                </label>
+                <input
+                  type="email"
+                  id="email-mobile"
+                  value={email}
+                  onMouseDown={(e: MouseEvent<HTMLInputElement>) => {
+                    e.stopPropagation();
+                  }}
+                  onClick={(e: MouseEvent<HTMLInputElement>) => {
+                    e.stopPropagation();
+                  }}
+                  onChange={(e: ChangeEvent<HTMLInputElement>) => {
+                    setEmail(e.target.value);
+                    setEmailError('');
+                  }}
+                  placeholder={t('emailPlaceholder')}
+                  className={`w-full px-3 py-2.5 text-[13px] rounded-lg bg-slate-800/50 border border-slate-700/30 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500/50 transition-all ${
+                    emailError ? 'border-rose-500/50' : ''
+                  }`}
+                />
+                {emailError && <p className="text-[11px] text-rose-400 mt-1">{emailError}</p>}
+              </div>
+              <div className="flex flex-col gap-2">
+                <button
+                  onMouseDown={(e: MouseEvent<HTMLButtonElement>) => {
+                    e.stopPropagation();
+                  }}
+                  onClick={(e: MouseEvent<HTMLButtonElement>) => {
+                    e.stopPropagation();
+                    setShowEmailForm(false);
+                    setEmailError('');
+                  }}
+                  disabled={isSubmittingEmail}
+                  className="w-full px-5 py-2 rounded-lg border border-slate-700/40 bg-slate-800/30 hover:bg-slate-800/50 disabled:opacity-50 transition-all text-slate-200 text-[12px] font-medium"
+                >
+                  {t('cancel') ?? 'Fermer'}
+                </button>
+                <button
+                  onMouseDown={(e: MouseEvent<HTMLButtonElement>) => {
+                    e.stopPropagation();
+                  }}
+                  onClick={async (e: MouseEvent<HTMLButtonElement>) => {
+                    e.stopPropagation();
+                    if (!email.trim()) {
+                      setEmailError(t('emailRequired'));
+                      return;
+                    }
+
+                    try {
+                      await onConsentChange('email_newsletter', true);
+                      await handleEmailSubmit();
+                    } catch (error) {
+                      console.error('Error updating email newsletter consent:', error);
+                    }
+                  }}
+                  disabled={isSubmittingEmail}
+                  className="w-full flex items-center justify-center gap-2 px-5 py-2 rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 disabled:opacity-50 transition-all text-white text-[12px] font-medium"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>{t('save')}</span>
+                </button>
+              </div>
+            </div>
+          )}
+
           {renderSwitch(
             'oep_newsletter',
             t('notifications.oepNewsletter.title'),
@@ -290,9 +377,10 @@ export default function SwitchSettingsSection({
         </div>
       </div>
 
+      {/* Desktop only: email form at bottom */}
       {showEmailForm && (
         <div
-          className="mt-4 rounded-lg border border-slate-700/30 bg-slate-800/30 p-4 space-y-3"
+          className="hidden md:block mt-4 rounded-lg border border-slate-700/30 bg-slate-800/30 p-4 space-y-3"
           onMouseDown={(e: MouseEvent<HTMLDivElement>) => {
             e.stopPropagation();
           }}
@@ -325,7 +413,7 @@ export default function SwitchSettingsSection({
             />
             {emailError && <p className="text-[11px] text-rose-400 mt-1">{emailError}</p>}
           </div>
-          <div className="flex flex-col sm:flex-row gap-2 sm:justify-start">
+          <div className="flex flex-row gap-2 justify-start">
             <button
               onMouseDown={(e: MouseEvent<HTMLButtonElement>) => {
                 e.stopPropagation();
@@ -336,7 +424,7 @@ export default function SwitchSettingsSection({
                 setEmailError('');
               }}
               disabled={isSubmittingEmail}
-              className="w-full sm:w-auto px-5 py-2 rounded-lg border border-slate-700/40 bg-slate-800/30 hover:bg-slate-800/50 disabled:opacity-50 transition-all text-slate-200 text-[12px] font-medium"
+              className="w-auto px-5 py-2 rounded-lg border border-slate-700/40 bg-slate-800/30 hover:bg-slate-800/50 disabled:opacity-50 transition-all text-slate-200 text-[12px] font-medium"
             >
               {t('cancel') ?? 'Fermer'}
             </button>
@@ -359,7 +447,7 @@ export default function SwitchSettingsSection({
                 }
               }}
               disabled={isSubmittingEmail}
-              className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2 rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 disabled:opacity-50 transition-all text-white text-[12px] font-medium"
+              className="w-auto flex items-center justify-center gap-2 px-5 py-2 rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 disabled:opacity-50 transition-all text-white text-[12px] font-medium"
             >
               <CheckCircle2 className="w-4 h-4" />
               <span>{t('save')}</span>

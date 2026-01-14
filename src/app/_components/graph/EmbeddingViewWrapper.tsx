@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 
 interface Label {
   x: number;
@@ -19,6 +19,14 @@ interface ViewportState {
   y: number;
   scale: number; // zoom level (embedding-atlas uses 'scale' not 'k')
 }
+
+// Viewport limits - prevent user from zooming/panning too far
+const MIN_SCALE = 0.01; // Minimum zoom level (zoomed out)
+const MAX_SCALE = 60;   // Maximum zoom level (zoomed in)
+const MIN_X = -50;      // Minimum x coordinate (left boundary)
+const MAX_X = 50;       // Maximum x coordinate (right boundary)
+const MIN_Y = -50;      // Minimum y coordinate (top boundary)
+const MAX_Y = 50;       // Maximum y coordinate (bottom boundary)
 
 interface EmbeddingViewWrapperProps {
   data: any;
@@ -58,6 +66,59 @@ export function EmbeddingViewWrapper(props: EmbeddingViewWrapperProps) {
   onRangeSelectionRef.current = props.onRangeSelection;
   onSelectionRef.current = props.onSelection;
   onViewportStateRef.current = props.onViewportState;
+
+  // Refs for zoom clamping
+  const isClampingRef = useRef(false);
+  const clampTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastValidScaleRef = useRef<number>(1);
+
+  // Clamped viewport state handler - intercepts and clamps before passing to parent
+  const handleClampedViewportState = useCallback((state: ViewportState) => {
+    // If we're currently clamping, ignore this callback to prevent loops
+    if (isClampingRef.current) {
+      return;
+    }
+
+    // Clamp all values to limits
+    const clampedScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, state.scale));
+    const clampedX = Math.max(MIN_X, Math.min(MAX_X, state.x));
+    const clampedY = Math.max(MIN_Y, Math.min(MAX_Y, state.y));
+    const needsClamp = clampedScale !== state.scale || clampedX !== state.x || clampedY !== state.y;
+
+    if (needsClamp) {
+      // Set clamping flag to ignore subsequent callbacks
+      isClampingRef.current = true;
+      
+      // Clear any existing timeout
+      if (clampTimeoutRef.current) {
+        clearTimeout(clampTimeoutRef.current);
+      }
+
+      const clampedState: ViewportState = { x: clampedX, y: clampedY, scale: clampedScale };
+      
+      // Force update embedding-atlas immediately
+      if (viewRef.current?.update) {
+        try {
+          viewRef.current.update({ viewportState: clampedState });
+        } catch (err) {
+          // Ignore errors
+        }
+      }
+
+      // Notify parent of clamped state
+      onViewportStateRef.current?.(clampedState);
+      lastValidScaleRef.current = clampedScale;
+
+      // Reset clamping flag after a delay to allow embedding-atlas to settle
+      clampTimeoutRef.current = setTimeout(() => {
+        isClampingRef.current = false;
+      }, 100);
+    } else {
+      // No clamping needed, pass through to parent
+      lastValidScaleRef.current = state.scale;
+      onViewportStateRef.current?.(state);
+    }
+  }, []);
 
   const variant: EmbeddingVariant = props.variant ?? 'standard';
 
@@ -145,9 +206,8 @@ export function EmbeddingViewWrapper(props: EmbeddingViewWrapperProps) {
       onSelectionRef.current?.(data);
     };
     
-    const stableOnViewportState = (state: ViewportState) => {
-      onViewportStateRef.current?.(state);
-    };
+    // Use clamped handler instead of direct passthrough
+    const stableOnViewportState = handleClampedViewportState;
     
     const viewProps: any = {
       data: props.data,
@@ -200,10 +260,15 @@ export function EmbeddingViewWrapper(props: EmbeddingViewWrapperProps) {
     return () => {
       view.destroy?.();
       viewRef.current = null;
+      // Cleanup clamp timeout
+      if (clampTimeoutRef.current) {
+        clearTimeout(clampTimeoutRef.current);
+      }
     };
   // Note: We use refs for onSelection and onRangeSelection to avoid recreating the view when callbacks change
   // selectionLocked is kept as dependency because it changes the view behavior
-  }, [SelectedEmbeddingClass, props.width, props.height, props.data?.x?.length, props.onReady, props.theme?.backgroundColor, props.selectionLocked]);
+  // handleClampedViewportState is stable (useCallback with empty deps)
+  }, [SelectedEmbeddingClass, props.width, props.height, props.data?.x?.length, props.onReady, props.theme?.backgroundColor, props.selectionLocked, handleClampedViewportState]);
   // Update existing view when content/config props change
   // Note: We wrap in try-catch to avoid WeakMap errors from embedding-atlas
   useEffect(() => {

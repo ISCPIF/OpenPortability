@@ -20,6 +20,9 @@ const nextConfig = {
   // Transpile embedding-atlas to avoid minification issues with its toolbar
   transpilePackages: ['embedding-atlas'],
 
+  // Désactiver le minifier SWC pour permettre à Webpack/Terser de gérer la minification
+  swcMinify: false,
+
   experimental: {
     staleTimes: {
       dynamic: 30,  // 30 secondes pour les pages dynamiques
@@ -38,15 +41,37 @@ const nextConfig = {
       delete config.module.generator.asset;
     }
 
-    // Fix pour embedding-atlas: désactiver la minification côté client
-    // La minification/mangling de SWC casse les boutons lasso/sélection de la toolbar
-    // Car embedding-atlas utilise des noms de classes/fonctions en interne
-    // Next.js ne supporte pas l'exclusion de modules spécifiques de la minification
-    // Impact: bundle ~1.3-1.5x plus gros après gzip (acceptable pour cette app)
+    // Fix pour embedding-atlas: isoler dans son propre chunk chargé dynamiquement
+    // et exclure ce module spécifique de la minification via Terser.
     // https://github.com/vercel/next.js/issues/59594
-    // https://github.com/vercel/next.js/discussions/39160
     if (!isServer) {
-      config.optimization.minimize = false;
+      const TerserPlugin = require('terser-webpack-plugin');
+
+      // Forcer embedding-atlas dans son propre chunk pour le lazy loading
+      config.optimization.splitChunks = {
+        ...config.optimization.splitChunks,
+        cacheGroups: {
+          ...config.optimization.splitChunks?.cacheGroups,
+          embeddingAtlas: {
+            test: /[\\/]node_modules[\\/]embedding-atlas[\\/]/,
+            name: 'embedding-atlas',
+            chunks: 'async', // uniquement pour les imports dynamiques
+            priority: 50,
+            enforce: true,
+          },
+        },
+      };
+
+      // Utiliser Terser et exclure embedding-atlas de la minification
+      config.optimization.minimizer = [
+        new TerserPlugin({
+          exclude: /[\\/]node_modules[\\/]embedding-atlas[\\/]/,
+          terserOptions: {
+            compress: true,
+            mangle: true,
+          },
+        }),
+      ];
     }
 
     // Ignore les warnings de duckdb-wasm
@@ -79,6 +104,12 @@ const nextConfig = {
         { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
       ],
     },
+  ],
+
+  // Rewrites pour les favicons avec préfixe locale (évite 404 sur /fr/favicon.svg)
+  rewrites: async () => [
+    { source: '/:locale/favicon.svg', destination: '/favicon.svg' },
+    { source: '/:locale/favicon.ico', destination: '/favicon.ico' },
   ],
 
   output: 'standalone',

@@ -118,6 +118,8 @@ interface FloatingLassoSelectionPanelProps {
   onHighlightNode?: (node: { x: number; y: number; label: string; description: string | null; community: number | null }) => void;
   // View mode to show/hide search tab
   viewMode?: 'discover' | 'followings' | 'followers';
+  // Labels version to trigger re-fetch when labels change (cross-client sync)
+  labelsVersion?: number;
 }
 
 export function FloatingLassoSelectionPanel({
@@ -137,6 +139,7 @@ export function FloatingLassoSelectionPanel({
   onShowLassoHelp,
   onHighlightNode,
   viewMode = 'discover',
+  labelsVersion = 0,
 }: FloatingLassoSelectionPanelProps) {
   const [isExpanded, setIsExpanded] = useState(true);
   const [currentPage, setCurrentPage] = useState(0);
@@ -301,7 +304,7 @@ export function FloatingLassoSelectionPanel({
     };
 
     fetchEnrichedNodes();
-  }, [lassoMembers]);
+  }, [lassoMembers, labelsVersion]);
 
   // Paginate
   const paginatedNodes = useMemo(() => {

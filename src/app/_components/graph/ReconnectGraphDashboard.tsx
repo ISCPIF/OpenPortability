@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
 import { useTheme } from '@/hooks/useTheme';
 import { usePersonalNetwork } from '@/hooks/usePersonalNetwork';
-import { useGraphData } from '@/contexts/GraphDataContext';
+import { useGraphData, graphDataEvents } from '@/contexts/GraphDataContext';
 import { FloatingStatsPanel } from './panels/FloatingStatsPanel';
 import { FloatingAccountsPanel } from './panels/FloatingAccountsPanel';
 import { FloatingDiscoverPanel } from './panels/FloatingDiscoverPanel';
@@ -276,15 +276,17 @@ export function ReconnectGraphDashboard({
   const [showConsentModal, setShowConsentModal] = useState(false);
   
   // Show consent modal after intro is dismissed (or immediately if intro was already seen)
+  // On mobile, we don't wait for graph to render (graph is not loaded on mobile)
   useEffect(() => {
-    if (isGraphRendered && shouldShowConsentModal && !showIntroOverlay && !showConsentModal) {
+    const isReady = isMobile || isGraphRendered;
+    if (isReady && shouldShowConsentModal && !showIntroOverlay && !showConsentModal) {
       // Small delay after intro dismissal
       const timer = setTimeout(() => {
         setShowConsentModal(true);
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, [isGraphRendered, shouldShowConsentModal, showIntroOverlay]);
+  }, [isMobile, isGraphRendered, shouldShowConsentModal, showIntroOverlay]);
   
   const setConsentSeenCookie = useCallback(() => {
     if (typeof document === 'undefined') return;
@@ -302,50 +304,50 @@ export function ReconnectGraphDashboard({
     setConsentSeenCookie();
   }, [setConsentSeenCookie]);
   
-  const LASSO_COOKIE_NAME = 'hqx_lasso_selection';
-  const LASSO_COOKIE_EXPIRY_DAYS = 1;
+  const LASSO_STORAGE_KEY = 'hqx_lasso_selection';
   
-  // Helper to get/set cookies for lasso selection
-  const getLassoCookie = useCallback((): string[] | null => {
-    if (typeof document === 'undefined') return null;
-    const value = `; ${document.cookie}`;
-    const parts = value.split(`; ${LASSO_COOKIE_NAME}=`);
-    if (parts.length === 2) {
-      const cookieValue = parts.pop()?.split(';').shift();
-      if (cookieValue) {
-        try {
-          return JSON.parse(decodeURIComponent(cookieValue));
-        } catch {
-          return null;
-        }
+  // Helper to get/set sessionStorage for lasso selection (RGPD compliant - no cookies)
+  const getLassoSelection = useCallback((): string[] | null => {
+    if (typeof window === 'undefined') return null;
+    try {
+      const value = sessionStorage.getItem(LASSO_STORAGE_KEY);
+      if (value) {
+        return JSON.parse(value);
       }
+    } catch {
+      return null;
     }
     return null;
   }, []);
   
-  const setLassoCookie = useCallback((nodeIds: string[]) => {
-    if (typeof document === 'undefined') return;
-    const expires = new Date();
-    expires.setTime(expires.getTime() + LASSO_COOKIE_EXPIRY_DAYS * 24 * 60 * 60 * 1000);
-    document.cookie = `${LASSO_COOKIE_NAME}=${encodeURIComponent(JSON.stringify(nodeIds))};expires=${expires.toUTCString()};path=/;SameSite=Lax`;
+  const setLassoSelection = useCallback((nodeIds: string[]) => {
+    if (typeof window === 'undefined') return;
+    try {
+      sessionStorage.setItem(LASSO_STORAGE_KEY, JSON.stringify(nodeIds));
+    } catch {
+      // Ignore storage errors
+    }
   }, []);
   
-  const deleteLassoCookie = useCallback(() => {
-    if (typeof document === 'undefined') return;
-    document.cookie = `${LASSO_COOKIE_NAME}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
+  const deleteLassoSelection = useCallback(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      sessionStorage.removeItem(LASSO_STORAGE_KEY);
+    } catch {
+      // Ignore storage errors
+    }
   }, []);
   
-  // Wrapper to save lasso selection to cookie when it changes
+  // Wrapper to save lasso selection to sessionStorage when it changes
   const setLassoSelectedMembers = useCallback((members: GraphNode[]) => {
     setLassoSelectedMembersState(members);
     if (members.length > 0) {
-      // Save node IDs to cookie
       const nodeIds = members.map(m => m.id);
-      setLassoCookie(nodeIds);
+      setLassoSelection(nodeIds);
     } else {
-      deleteLassoCookie();
+      deleteLassoSelection();
     }
-  }, [setLassoCookie, deleteLassoCookie]);
+  }, [setLassoSelection, deleteLassoSelection]);
 
   // Theme colors for background
   const { colors } = useTheme();
@@ -523,26 +525,27 @@ export function ReconnectGraphDashboard({
   // Les nœuds viennent de Mosaic (DuckDB)
   const baseNodes = mosaicNodes;
   
-  // Restore lasso selection from cookie when nodes are loaded
+  // Restore lasso selection from sessionStorage when nodes are loaded
   useEffect(() => {
     if (baseNodes.length > 0 && !isLassoSelectionLoaded) {
-      const savedNodeIds = getLassoCookie();
+      const savedNodeIds = getLassoSelection();
       if (savedNodeIds && savedNodeIds.length > 0) {
         // Find the nodes by ID
-        const nodeMap = new Map(baseNodes.map(n => [n.id, n]));
-        const restoredNodes = savedNodeIds
-          .map(id => nodeMap.get(id))
-          .filter((n): n is GraphNode => n !== undefined);
-        
+        const nodeMap = new Map(baseNodes.map((n: GraphNode) => [n.id, n]));
+        const restoredNodes: GraphNode[] = [];
+        for (const id of savedNodeIds) {
+          const node = nodeMap.get(id);
+          if (node) restoredNodes.push(node);
+        }
         if (restoredNodes.length > 0) {
           setLassoSelectedMembersState(restoredNodes);
         }
-        // Delete cookie after restoring
-        deleteLassoCookie();
+        // Delete from sessionStorage after restoring
+        deleteLassoSelection();
       }
       setIsLassoSelectionLoaded(true);
     }
-  }, [baseNodes.length, isLassoSelectionLoaded, getLassoCookie, deleteLassoCookie]);
+  }, [baseNodes.length, isLassoSelectionLoaded, getLassoSelection, deleteLassoSelection]);
 
   // Callback pour récupérer les nœuds depuis Mosaic
   const handleMosaicNodesReady = useCallback((nodes: GraphNode[]) => {
@@ -557,6 +560,11 @@ export function ReconnectGraphDashboard({
 
   // Callback to reset the graph view (forces remount of EmbeddingView)
   const handleResetView = useCallback(() => {
+    // Clear viewport cookies so the view resets to default position
+    if (typeof document !== 'undefined') {
+      document.cookie = 'graph_viewport_state=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+      document.cookie = 'graph_ui_state=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    }
     setViewResetKey(prev => prev + 1);
   }, []);
 
@@ -585,6 +593,32 @@ export function ReconnectGraphDashboard({
     hasFetchedLassoStats.current = true;
     fetchLassoStats();
   }, [session?.user?.id, viewMode, lassoLoading, lassoStats, fetchLassoStats]);
+
+  // State to track labels version for triggering lasso panel refresh
+  const [labelsVersion, setLabelsVersion] = useState(0);
+
+  // Listen for label changes and refresh lasso stats when labels are updated
+  // This ensures the lasso panel shows updated data when another user changes their consent
+  useEffect(() => {
+    const handleLabelsUpdated = () => {
+      console.log('🔄 [LassoPanel] Labels updated, incrementing version to trigger refresh...');
+      
+      // Increment version to trigger re-fetch in FloatingLassoSelectionPanel
+      setLabelsVersion(v => v + 1);
+      
+      // Also refresh lasso stats if there's a selection
+      if (lassoSelectedMembers.length > 0) {
+        console.log('🔄 [LassoPanel] Lasso selection exists, refreshing stats...');
+        fetchLassoStats();
+      }
+    };
+
+    graphDataEvents.on('personalLabelsUpdated', handleLabelsUpdated);
+    
+    return () => {
+      graphDataEvents.off('personalLabelsUpdated', handleLabelsUpdated);
+    };
+  }, [fetchLassoStats, lassoSelectedMembers.length]);
   
   
   // Wrapper for onStartMigration that updates graph highlights after completion
@@ -1008,6 +1042,7 @@ export function ReconnectGraphDashboard({
             onShowLassoHelp={handleShowLassoHelp}
             onHighlightNode={setHighlightedSearchNode}
             viewMode={viewMode}
+            labelsVersion={labelsVersion}
           />
         </div>
       )}

@@ -71,6 +71,8 @@ export function withInternalValidation<T>(
       const INTERNAL_API_KEY = process.env.INTERNAL_API_KEY;
       const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET;
 
+      console.log("webhook internal secret ->", INTERNAL_API_KEY, WEBHOOK_SECRET)
+
       if (!INTERNAL_API_KEY || !WEBHOOK_SECRET) {
         return NextResponse.json(
           { error: 'Missing keys for internal security' },
@@ -79,6 +81,7 @@ export function withInternalValidation<T>(
       }
       // 1. Vérifier l'API Key
       const apiKey = request.headers.get('X-API-Key');
+      console.log('apiKey from db : ', apiKey)
       if (!apiKey) {
         return NextResponse.json(
           { error: 'Missing X-API-Key header' },

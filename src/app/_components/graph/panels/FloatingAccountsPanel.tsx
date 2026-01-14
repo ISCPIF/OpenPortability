@@ -213,30 +213,28 @@ export function FloatingAccountsPanel({
     return relevantMatches.filter(m => m.dismissed).length;
   }, [relevantMatches]);
 
-  // Count EXCLUSIVE accounts available on platforms NOT connected (to show connection prompts)
-  // Exclusive = only on that platform, not on both
+  // Count ALL accounts available on platforms NOT connected (to show connection prompts)
+  // Shows total count of accounts with handles on each platform
   const missingPlatformCounts = useMemo(() => {
-    let blueskyExclusive = 0;
-    let mastodonExclusive = 0;
+    let blueskyTotal = 0;
+    let mastodonTotal = 0;
 
     matches.forEach(m => {
       if (m.dismissed) return;
       const hasBs = !!m.bluesky_handle;
       const hasMasto = hasMastodonAccount(m);
       
-      // Count Bluesky-exclusive accounts (has Bluesky but NOT Mastodon)
-      // Only if user hasn't connected Bluesky
-      if (!hasBluesky && hasBs && !hasMasto) {
-        blueskyExclusive++;
+      // Count ALL accounts with Bluesky handle (if user hasn't connected Bluesky)
+      if (!hasBluesky && hasBs) {
+        blueskyTotal++;
       }
-      // Count Mastodon-exclusive accounts (has Mastodon but NOT Bluesky)
-      // Only if user hasn't connected Mastodon
-      if (!hasMastodon && hasMasto && !hasBs) {
-        mastodonExclusive++;
+      // Count ALL accounts with Mastodon handle (if user hasn't connected Mastodon)
+      if (!hasMastodon && hasMasto) {
+        mastodonTotal++;
       }
     });
 
-    return { blueskyAvailable: blueskyExclusive, mastodonAvailable: mastodonExclusive };
+    return { blueskyAvailable: blueskyTotal, mastodonAvailable: mastodonTotal };
   }, [matches, hasBluesky, hasMastodon]);
 
   // Filter matches based on current tab
@@ -555,8 +553,8 @@ export function FloatingAccountsPanel({
               </button>
             ) : null}
 
-            {/* Missing platform prompts - Show when user has one platform but not the other */}
-            {filter === 'pending' && (hasBluesky || hasMastodon) && (
+            {/* Missing platform prompts - Show when user is missing a platform connection */}
+            {filter === 'pending' && (
               <>
                 {/* Bluesky not connected but has accounts */}
                 {!hasBluesky && missingPlatformCounts.blueskyAvailable > 0 && (

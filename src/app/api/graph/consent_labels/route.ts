@@ -4,6 +4,12 @@ import logger from '@/lib/log_utils';
 import { withValidation, withPublicValidation } from '@/lib/validation/middleware';
 import { z } from 'zod';
 import { auth } from '@/app/auth';
+import { redis } from '@/lib/redis';
+
+// Redis keys for node_type changes sync
+const NODE_TYPE_CHANGES_KEY = 'graph:node-type-changes';
+const NODE_TYPE_VERSION_KEY = 'graph:node-type-version';
+const NODE_TYPE_CHANGES_TTL = 3600; // 1 hour
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 60; // Cache for 1 minute (shorter than names_labels since it's user-specific)
@@ -150,6 +156,7 @@ async function updateConsentLabelsHandler(
 ) {
   try {
     const userId = session?.user?.id;
+    const twitterId = session?.user?.twitter_id;
 
     if (!userId) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
@@ -171,6 +178,46 @@ async function updateConsentLabelsHandler(
       validatedData.consent_level,
       { ip_address, user_agent }
     );
+
+    // Record node_type change for cross-client sync
+    // Get user's coord_hash from graph_nodes to broadcast the change
+    if (twitterId) {
+      try {
+        const nodeInfo = await pgGraphNodesRepository.getNodeCoordHashByTwitterId(twitterId);
+        if (nodeInfo?.coord_hash) {
+          const newNodeType = validatedData.consent_level === 'no_consent' ? 'generic' : 'member';
+          const now = Date.now();
+          
+          const change = JSON.stringify({
+            coord_hash: nodeInfo.coord_hash,
+            node_type: newNodeType,
+            timestamp: now,
+          });
+          
+          // Record change in Redis for other clients to pick up
+          await Promise.all([
+            redis.lpush(NODE_TYPE_CHANGES_KEY, change),
+            redis.set(NODE_TYPE_VERSION_KEY, now.toString()),
+            redis.expire(NODE_TYPE_CHANGES_KEY, NODE_TYPE_CHANGES_TTL),
+          ]);
+          
+          logger.logInfo(
+            'API',
+            'POST /api/graph/consent_labels',
+            `Recorded node_type change: ${nodeInfo.coord_hash} → ${newNodeType}`,
+            userId
+          );
+        }
+      } catch (nodeError) {
+        // Don't fail the request if we can't record the change
+        logger.logWarning(
+          'API',
+          'POST /api/graph/consent_labels',
+          `Failed to record node_type change: ${nodeError instanceof Error ? nodeError.message : String(nodeError)}`,
+          userId
+        );
+      }
+    }
 
     return NextResponse.json({
       success: true,

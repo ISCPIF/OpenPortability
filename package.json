@@ -79,7 +79,8 @@
     "postcss": "^8.5.6",
     "tailwindcss": "^4.1.18",
     "typescript": "^5",
-    "vitest": "^4.0.17"
+    "vitest": "^4.0.17",
+    "terser-webpack-plugin": "^5.3.10"
   },
   "overrides": {
     "eslint": "9.39.2",
