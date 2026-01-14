@@ -495,41 +495,10 @@ export const pgGraphNodesRepository = {
         [userId, consentValue, firstIpAddress, metadata?.user_agent || null, fullIpAddressChain]
       )
 
-      const consentId = insertResult.rows[0]?.id
-
-      // 3. Si consentement != no_consent, mettre à jour users_with_name_consent
-      if (consentValue !== 'no_consent' && consentId) {
-        // D'abord supprimer l'entrée existante si elle existe
-        await queryPublic(
-          `DELETE FROM users_with_name_consent WHERE user_id = $1`,
-          [userId]
-        )
-
-        // Insérer la nouvelle entrée avec les infos utilisateur
-        await queryPublic(
-          `INSERT INTO users_with_name_consent(
-            user_id, consent_id, consent_level, name, twitter_id, twitter_username, twitter_image,
-            bluesky_id, bluesky_username, bluesky_image,
-            mastodon_id, mastodon_username, mastodon_image, mastodon_instance,
-            created_at, updated_at
-          )
-          SELECT 
-            $1, $2, $3,
-            u.name, u.twitter_id, u.twitter_username, u.image,
-            u.bluesky_id, u.bluesky_username, u.bluesky_image,
-            u.mastodon_id, u.mastodon_username, u.mastodon_image, u.mastodon_instance,
-            CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
-          FROM "next-auth".users u
-          WHERE u.id = $1`,
-          [userId, consentId, consentValue]
-        )
-      } else {
-        // Si no_consent, supprimer de users_with_name_consent
-        await queryPublic(
-          `DELETE FROM users_with_name_consent WHERE user_id = $1`,
-          [userId]
-        )
-      }
+      // Note: Le trigger handle_name_consent_update sur consent_names
+      // gère automatiquement la mise à jour de users_with_name_consent
+      // (INSERT/UPDATE si consent != no_consent, DELETE sinon)
+      // Cache invalidation is handled by the client calling /api/graph/refresh-labels-cache
 
       logger.logInfo(
         'Repository',
@@ -819,4 +788,38 @@ export const pgGraphNodesRepository = {
       throw error
     }
   },
+
+  /**
+   * Get a node's coord_hash by twitter_id
+   * Used to broadcast node_type changes to other clients
+   */
+  async getNodeCoordHashByTwitterId(twitterId: string): Promise<{ coord_hash: string; node_type: string } | null> {
+    try {
+      const result = await queryPublic<{ x: number; y: number; node_type: string }>(
+        `SELECT x, y, node_type FROM ${GRAPH_NODES_TABLE} WHERE id = $1`,
+        [twitterId]
+      )
+
+      if (result.rows.length === 0) {
+        return null
+      }
+
+      const row = result.rows[0]
+      return {
+        coord_hash: coordHash(row.x, row.y),
+        node_type: row.node_type || 'generic',
+      }
+    } catch (error) {
+      const errorString = error instanceof Error ? error.message : String(error)
+      logger.logError(
+        'Repository',
+        'pgGraphNodesRepository.getNodeCoordHashByTwitterId',
+        errorString,
+        'system',
+        { twitterId }
+      )
+      throw error
+    }
+  },
+
 }

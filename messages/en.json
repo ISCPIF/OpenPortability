@@ -4,7 +4,7 @@
       "profile": {
         "username": "@{username}"
       },
-      "returnToDashboard": "Return",
+      "returnToDashboard": "Dashboard",
       "reconnect": "Social Map",
       "settings": "Settings and notifications"
     },
