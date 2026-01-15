@@ -4,7 +4,7 @@
       "profile": {
         "username": "@{username}"
       },
-      "returnToDashboard": "Return",
+      "returnToDashboard": "Dashboard",
       "reconnect": "Social Map",
       "settings": "Settings and notifications"
     },
@@ -175,7 +175,11 @@
     "tutorial": {
       "title": "Step by step tutorial explanation",
       "description": "Learn how to easily migrate from Twitter/X to Mastodon and Bluesky",
-      "watchVideo": "Watch the video"
+      "watchVideo": "Watch the video",
+      "videoTitle": "Understand the migration flow in under 4 minutes.",
+      "videoSubtitle": "Walkthrough recorded by the team — includes pitfalls, verified tips, and scripts.",
+      "videoDuration": "03:42",
+      "videoFeatures": "Chapters • Auto captions"
     },
     "followersPanel": {
       "title": "Followers",
@@ -849,5 +853,11 @@
         "action": "Retry"
       }
     }
+  },
+  "notFound": {
+    "title": "Page not found",
+    "subtitle": "Error 404",
+    "message": "The page you are looking for does not exist or has been moved.",
+    "backHome": "Back to home"
   }
 }

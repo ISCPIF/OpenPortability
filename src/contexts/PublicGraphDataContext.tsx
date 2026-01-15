@@ -51,6 +51,9 @@ const IDB_STORE_NAME = 'public_graph_data';
 // Cache TTL: 24 hours for graph data
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 
+// Polling interval for cross-client sync (30 seconds)
+const SYNC_POLL_INTERVAL_MS = 30 * 1000;
+
 // IndexedDB helper class
 class PublicGraphIndexedDB {
   private db: IDBDatabase | null = null;
@@ -238,6 +241,9 @@ export function PublicGraphDataProvider({ children }: PublicGraphDataProviderPro
   // Fetch promise refs to prevent duplicate calls
   const baseNodesPromiseRef = useRef<Promise<void> | null>(null);
   const labelsPromiseRef = useRef<Promise<void> | null>(null);
+  
+  // Labels version ref for polling
+  const labelsVersionRef = useRef<number>(0);
 
   // Helper to calculate normalization bounds from nodes
   const calculateBounds = useCallback((nodes: GraphNode[]): NormalizationBounds => {
@@ -265,6 +271,41 @@ export function PublicGraphDataProvider({ children }: PublicGraphDataProviderPro
   // Auto-load data from IndexedDB cache on mount
   useEffect(() => {
     const loadCachedData = async () => {
+      // ALWAYS check labels version on mount, even if labels are already loaded in memory
+      // This handles the case where user was on another page when cache was invalidated
+      try {
+        const versionResponse = await fetch('/api/graph/refresh-labels-cache', {
+          method: 'GET',
+          headers: { 'Cache-Control': 'no-cache' },
+        });
+        if (versionResponse.ok) {
+          const versionData = await versionResponse.json();
+          const serverVersion = versionData.version || 0;
+          
+          // If we have labels in memory, check if they're stale
+          if (globalPublicState.labelsLoaded && labelsVersionRef.current > 0) {
+            if (serverVersion > labelsVersionRef.current) {
+              console.log('🔄 [Public Labels] Memory cache stale on mount (server:', serverVersion, 'local:', labelsVersionRef.current, '), invalidating...');
+              // Invalidate memory and IndexedDB cache
+              globalPublicState.labelsLoaded = false;
+              globalPublicState.labelMap = {};
+              globalPublicState.floatingLabels = [];
+              await publicGraphIDB.save(CACHE_KEYS.FLOATING_LABELS, { labelMap: {}, floatingLabels: [] });
+              setLabelMapState({});
+              setFloatingLabelsState([]);
+              setIsLabelsLoaded(false);
+              labelsPromiseRef.current = null;
+            }
+          }
+          // Update version ref for future comparisons
+          if (serverVersion > 0) {
+            labelsVersionRef.current = serverVersion;
+          }
+        }
+      } catch {
+        // If version check fails, continue with existing cache
+      }
+      
       // Load normalization bounds from cache first
       if (!globalPublicState.normalizationBounds) {
         try {
@@ -315,16 +356,41 @@ export function PublicGraphDataProvider({ children }: PublicGraphDataProviderPro
       }
 
       // Load labels from cache if not already loaded
+      // But first check server version to ensure cache is still valid
       if (!globalPublicState.labelsLoaded) {
         try {
-          const cached = await publicGraphIDB.load<{ labelMap: Record<string, string>; floatingLabels: FloatingLabel[] }>(CACHE_KEYS.FLOATING_LABELS);
+          const cached = await publicGraphIDB.load<{ labelMap: Record<string, string>; floatingLabels: FloatingLabel[]; version?: number }>(CACHE_KEYS.FLOATING_LABELS);
           if (cached && publicGraphIDB.isCacheValid(cached.timestamp)) {
-            globalPublicState.labelMap = cached.data.labelMap;
-            globalPublicState.floatingLabels = cached.data.floatingLabels;
-            globalPublicState.labelsLoaded = true;
-            setLabelMapState(cached.data.labelMap);
-            setFloatingLabelsState(cached.data.floatingLabels);
-            setIsLabelsLoaded(true);
+            // Check server version before using cache
+            let serverVersion = 0;
+            try {
+              const versionResponse = await fetch('/api/graph/refresh-labels-cache', {
+                method: 'GET',
+                headers: { 'Cache-Control': 'no-cache' },
+              });
+              if (versionResponse.ok) {
+                const versionData = await versionResponse.json();
+                serverVersion = versionData.version || 0;
+              }
+            } catch {
+              // If version check fails, use cache anyway
+            }
+            
+            // Only use cache if server version matches or we couldn't check
+            const cachedVersion = cached.data.version || cached.timestamp;
+            if (serverVersion === 0 || serverVersion <= cachedVersion) {
+              globalPublicState.labelMap = cached.data.labelMap;
+              globalPublicState.floatingLabels = cached.data.floatingLabels;
+              globalPublicState.labelsLoaded = true;
+              setLabelMapState(cached.data.labelMap);
+              setFloatingLabelsState(cached.data.floatingLabels);
+              setIsLabelsLoaded(true);
+              labelsVersionRef.current = serverVersion || cachedVersion;
+            } else {
+              // Cache is stale, delete it so fetchLabels will get fresh data
+              console.log('🔄 [Public Labels] Cache stale (server:', serverVersion, 'cache:', cachedVersion, '), will fetch fresh');
+              await publicGraphIDB.save(CACHE_KEYS.FLOATING_LABELS, { labelMap: {}, floatingLabels: [] });
+            }
           }
         } catch (err) {
           console.warn('💾 [PublicIDB] Failed to auto-load labels:', err);
@@ -334,6 +400,115 @@ export function PublicGraphDataProvider({ children }: PublicGraphDataProviderPro
 
     loadCachedData();
   }, [calculateBounds]);
+
+  // Poll server for labels version changes every 30 seconds
+  // This allows consent changes to propagate to all browsers (including public/discover mode)
+  // Polling is paused when the tab is not visible to save resources
+  useEffect(() => {
+    const checkLabelsVersion = async () => {
+      // Skip polling if tab is not visible
+      if (document.visibilityState !== 'visible') {
+        return;
+      }
+      
+      try {
+        const response = await fetch('/api/graph/refresh-labels-cache', {
+          method: 'GET',
+          headers: { 'Cache-Control': 'no-cache' },
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          const serverVersion = data.version || 0;
+
+          // First successful poll: initialize local version reference
+          if (labelsVersionRef.current === 0) {
+            labelsVersionRef.current = serverVersion;
+            return;
+          }
+
+          if (serverVersion > labelsVersionRef.current) {
+            console.log('🔄 [Public Labels Sync] Server version changed, refetching labels...');
+            
+            // Reset the loaded flag to force a fresh fetch
+            globalPublicState.labelsLoaded = false;
+            globalPublicState.labelMap = {};
+            globalPublicState.floatingLabels = [];
+            labelsPromiseRef.current = null;
+            
+            // Delete old cache
+            await publicGraphIDB.save(CACHE_KEYS.FLOATING_LABELS, { labelMap: {}, floatingLabels: [] });
+            
+            // Reset state
+            setLabelMapState({});
+            setFloatingLabelsState([]);
+            setIsLabelsLoaded(false);
+            
+            // Fetch fresh labels from server
+            try {
+              const labelsResponse = await fetch('/api/graph/consent_labels', {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' },
+              });
+              
+              if (labelsResponse.ok) {
+                const labelsData = await labelsResponse.json();
+                if (labelsData.success) {
+                  const newLabelMap = labelsData.labelMap || {};
+                  const newFloatingLabels: FloatingLabel[] = (labelsData.floatingLabels || []).map((label: any) => ({
+                    coord_hash: label.coord_hash,
+                    x: label.x,
+                    y: label.y,
+                    text: label.text,
+                    priority: label.priority,
+                    level: label.level,
+                  }));
+                  
+                  globalPublicState.labelMap = newLabelMap;
+                  globalPublicState.floatingLabels = newFloatingLabels;
+                  globalPublicState.labelsLoaded = true;
+                  setLabelMapState(newLabelMap);
+                  setFloatingLabelsState(newFloatingLabels);
+                  setIsLabelsLoaded(true);
+                  
+                  // Save to IndexedDB cache with version
+                  publicGraphIDB.save(CACHE_KEYS.FLOATING_LABELS, { labelMap: newLabelMap, floatingLabels: newFloatingLabels, version: serverVersion }).catch(() => {});
+                  
+                  console.log(`🔄 [Public Labels Sync] Refetched ${Object.keys(newLabelMap).length} labels`);
+                }
+              }
+            } catch (fetchError) {
+              console.warn('Failed to refetch public labels:', fetchError);
+            }
+          }
+          
+          // Update our version reference
+          labelsVersionRef.current = serverVersion;
+        }
+      } catch (error) {
+        console.warn('Failed to check public labels version:', error);
+      }
+    };
+    
+    // Check immediately on mount
+    checkLabelsVersion();
+    
+    // Then poll every 30 seconds
+    const pollInterval = setInterval(checkLabelsVersion, SYNC_POLL_INTERVAL_MS);
+
+    // Also check when tab becomes visible again (user returns to tab)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        checkLabelsVersion();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      clearInterval(pollInterval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
 
   // Fetch base nodes from Mosaic/DuckDB (public, no auth required)
   const fetchBaseNodes = useCallback(async () => {
@@ -377,8 +552,8 @@ export function PublicGraphDataProvider({ children }: PublicGraphDataProviderPro
         }
 
         
-        // Fetch only public data (no twitter_id)
-        const sql = 'SELECT label, x, y, community, degree, tier, node_type FROM postgres_db.public.graph_nodes_03_11_25';
+        // Fetch only public data (no twitter_id), exclude community 8
+        const sql = 'SELECT label, x, y, community, degree, tier, node_type FROM postgres_db.public.graph_nodes_03_11_25 WHERE community != 8';
         
         const response = await fetch('/api/mosaic/sql', {
           method: 'POST',
@@ -496,12 +671,12 @@ export function PublicGraphDataProvider({ children }: PublicGraphDataProviderPro
         }
 
         
-        const response = await fetch('/api/graph/names_labels', {
+        const response = await fetch('/api/graph/consent_labels', {
           method: 'GET',
           headers: { 'Content-Type': 'application/json' },
         });
 
-        if (!response.ok) throw new Error('Failed to fetch labels');
+        if (!response.ok) throw new Error('Failed to fetch consent labels');
 
         const data = await response.json();
         
@@ -523,8 +698,9 @@ export function PublicGraphDataProvider({ children }: PublicGraphDataProviderPro
           setFloatingLabelsState(newFloatingLabels);
           setIsLabelsLoaded(true);
                     
-          // Save to IndexedDB cache
-          publicGraphIDB.save(CACHE_KEYS.FLOATING_LABELS, { labelMap: newLabelMap, floatingLabels: newFloatingLabels }).catch(console.warn);
+          // Save to IndexedDB cache with current version
+          const currentVersion = labelsVersionRef.current || Date.now();
+          publicGraphIDB.save(CACHE_KEYS.FLOATING_LABELS, { labelMap: newLabelMap, floatingLabels: newFloatingLabels, version: currentVersion }).catch(console.warn);
         }
       } catch (error) {
         console.error('❌ [PublicGraphData] Error fetching labels:', error);

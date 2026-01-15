@@ -73,6 +73,7 @@ export default function DiscoverPage() {
     <PublicGraphDataProvider>
       <div className="relative w-full h-screen overflow-hidden">
         <DiscoverGraphDashboard onLoginClick={handleLoginClick} />
+        
         <Header />
         <Footer />
       </div>

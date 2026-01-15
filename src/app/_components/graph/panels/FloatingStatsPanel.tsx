@@ -136,6 +136,9 @@ export function FloatingStatsPanel({
   const [showImportTooltip, setShowImportTooltip] = useState(false);
   const [showConnectTooltip, setShowConnectTooltip] = useState(false);
   const [showGraphTooltip, setShowGraphTooltip] = useState(false);
+  
+  // Reset view animation state
+  const [isResetting, setIsResetting] = useState(false);
 
   // Check user state
   const isLoggedIn = !!session?.user;
@@ -661,13 +664,28 @@ export function FloatingStatsPanel({
           {onResetView && (
             <div className="mt-3 pt-3 border-t border-slate-700/50">
               <button
-                onClick={onResetView}
-                className="w-full py-2 px-3 text-[11px] font-medium text-slate-300 bg-slate-700/50 hover:bg-slate-600/50 border border-slate-600/50 rounded transition-colors flex items-center justify-center gap-2"
+                onClick={() => {
+                  setIsResetting(true);
+                  onResetView();
+                  // Reset animation after delay
+                  setTimeout(() => setIsResetting(false), 800);
+                }}
+                disabled={isResetting}
+                className={`w-full py-2 px-3 text-[11px] font-medium border rounded transition-all flex items-center justify-center gap-2 ${
+                  isResetting 
+                    ? 'text-blue-300 bg-blue-600/30 border-blue-500/50 cursor-wait' 
+                    : 'text-slate-300 bg-slate-700/50 hover:bg-slate-600/50 border-slate-600/50'
+                }`}
               >
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg 
+                  className={`w-3.5 h-3.5 transition-transform ${isResetting ? 'animate-spin' : ''}`} 
+                  fill="none" 
+                  stroke="currentColor" 
+                  viewBox="0 0 24 24"
+                >
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
-                Reset view
+                {isResetting ? 'Resetting...' : 'Reset view'}
               </button>
             </div>
           )}

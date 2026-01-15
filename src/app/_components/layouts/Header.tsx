@@ -193,9 +193,12 @@ const AuthenticatedHeader = () => {
 
   // Sur /reconnect, le header est fixed en haut
   const isReconnectPage = pathname.includes('/reconnect');
+  const isUploadPage = pathname.includes('/upload');
+  const isLargeFilePage = pathname.includes('/large-file');
+  const isSettingsPage = pathname.includes('/settings');
+  const isDashboardPage = pathname.includes('/dashboard');
 
-  // Check if user is "complete" (has_onboarded + all 3 services connected)
-  // These users don't need access to dashboard anymore
+  // Get user info for button visibility logic
   const user = session?.user as { 
     has_onboarded?: boolean; 
     twitter_id?: string | null; 
@@ -203,13 +206,20 @@ const AuthenticatedHeader = () => {
     mastodon_id?: string | null; 
   } | undefined;
   
-  const isFullyOnboarded = user?.has_onboarded === true 
-    && !!user?.twitter_id 
-    && !!user?.bluesky_id 
-    && !!user?.mastodon_id;
+  // Count connected accounts
+  const connectedAccounts = [
+    user?.twitter_id,
+    user?.bluesky_id,
+    user?.mastodon_id,
+  ].filter(Boolean).length;
 
-  // User can access the social graph only if they have onboarded OR have a twitter_id
-  const canAccessSocialGraph = true;
+  // Button visibility rules:
+  // - Reconnect: visible except on /reconnect, /upload, /large-file
+  // - Settings: visible except on /settings
+  // - Dashboard: visible if connectedAccounts === 1 OR has_onboarded === false
+  const showReconnectButton = !isReconnectPage && !isUploadPage && !isLargeFilePage;
+  const showSettingsButton = !isSettingsPage;
+  const showDashboardButton = !isReconnectPage && !isDashboardPage && (connectedAccounts === 1 || user?.has_onboarded === false);
 
   return (
     <header 
@@ -313,34 +323,57 @@ const AuthenticatedHeader = () => {
         )}
 
         {/* Navigation icons with labels - Right side */}
-        {/* For fully onboarded users (has_onboarded + 3 services), hide Dashboard link */}
         {session && (
-          pathname.includes('/reconnect') ? (
-            <div className="flex items-center gap-3 ml-auto">
-              {!isFullyOnboarded && (
-                <Link
-                  href="/dashboard"
-                  className="flex items-center gap-1.5 px-2.5 py-1 border rounded transition-all duration-200"
-                  style={{
-                    backgroundColor: isDark ? `${accentColor}0d` : 'rgba(0, 0, 0, 0.02)',
-                    borderColor: isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.1)',
-                    color: isDark ? '#ffffff' : colors.text,
-                    fontFamily: 'monospace',
-                    fontSize: '12px',
-                  }}
-                  onMouseEnter={(e: React.MouseEvent<HTMLAnchorElement>) => {
-                    e.currentTarget.style.borderColor = isDark ? accentColor : colors.text;
-                    e.currentTarget.style.boxShadow = `0 0 10px ${accentColor}4d`;
-                  }}
-                  onMouseLeave={(e: React.MouseEvent<HTMLAnchorElement>) => {
-                    e.currentTarget.style.borderColor = isDark ? `${accentColor}4d` : 'rgba(0, 0, 0, 0.1)';
-                    e.currentTarget.style.boxShadow = 'none';
-                  }}
-                >
-                  <Home className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">{t('returnToDashboard')}</span>
-                </Link>
-              )}
+          <div className={`flex items-center gap-3 ${isReconnectPage ? 'ml-auto' : ''}`}>
+            {showReconnectButton && (
+              <Link
+                href="/reconnect"
+                className="flex items-center gap-1.5 px-2.5 py-1 border rounded transition-all duration-200"
+                style={{
+                  backgroundColor: isDark ? `${accentColor}0d` : 'rgba(0, 0, 0, 0.02)',
+                  borderColor: isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.1)',
+                  color: isDark ? '#ffffff' : colors.text,
+                  fontFamily: 'monospace',
+                  fontSize: '12px',
+                }}
+                onMouseEnter={(e: React.MouseEvent<HTMLAnchorElement>) => {
+                  e.currentTarget.style.borderColor = isDark ? accentColor : colors.text;
+                  e.currentTarget.style.boxShadow = `0 0 10px ${accentColor}4d`;
+                }}
+                onMouseLeave={(e: React.MouseEvent<HTMLAnchorElement>) => {
+                  e.currentTarget.style.borderColor = isDark ? `${accentColor}4d` : 'rgba(0, 0, 0, 0.1)';
+                  e.currentTarget.style.boxShadow = 'none';
+                }}
+              >
+                <Map className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">{t('reconnect')}</span>
+              </Link>
+            )}
+            {showDashboardButton && (
+              <Link
+                href="/dashboard"
+                className="flex items-center gap-1.5 px-2.5 py-1 border rounded transition-all duration-200"
+                style={{
+                  backgroundColor: isDark ? `${accentColor}0d` : 'rgba(0, 0, 0, 0.02)',
+                  borderColor: isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.1)',
+                  color: isDark ? '#ffffff' : colors.text,
+                  fontFamily: 'monospace',
+                  fontSize: '12px',
+                }}
+                onMouseEnter={(e: React.MouseEvent<HTMLAnchorElement>) => {
+                  e.currentTarget.style.borderColor = isDark ? accentColor : colors.text;
+                  e.currentTarget.style.boxShadow = `0 0 10px ${accentColor}4d`;
+                }}
+                onMouseLeave={(e: React.MouseEvent<HTMLAnchorElement>) => {
+                  e.currentTarget.style.borderColor = isDark ? `${accentColor}4d` : 'rgba(0, 0, 0, 0.1)';
+                  e.currentTarget.style.boxShadow = 'none';
+                }}
+              >
+                <Home className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">{t('returnToDashboard')}</span>
+              </Link>
+            )}
+            {showSettingsButton && (
               <Link
                 href="/settings"
                 className="flex items-center gap-1.5 px-2.5 py-1 border rounded transition-all duration-200"
@@ -363,181 +396,8 @@ const AuthenticatedHeader = () => {
                 <Settings className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">{t('settings')}</span>
               </Link>
-            </div>
-          ) : pathname.includes('/upload') ? (
-            <div className="flex items-center gap-3">
-              {canAccessSocialGraph && (
-                <Link
-                  href="/reconnect"
-                  className="flex items-center gap-1.5 px-2.5 py-1 border rounded transition-all duration-200"
-                  style={{
-                    backgroundColor: isDark ? `${accentColor}0d` : 'rgba(0, 0, 0, 0.02)',
-                    borderColor: isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.1)',
-                    color: isDark ? '#ffffff' : colors.text,
-                    fontFamily: 'monospace',
-                    fontSize: '12px',
-                  }}
-                  onMouseEnter={(e: React.MouseEvent<HTMLAnchorElement>) => {
-                    e.currentTarget.style.borderColor = isDark ? accentColor : colors.text;
-                    e.currentTarget.style.boxShadow = `0 0 10px ${accentColor}4d`;
-                  }}
-                  onMouseLeave={(e: React.MouseEvent<HTMLAnchorElement>) => {
-                    e.currentTarget.style.borderColor = isDark ? `${accentColor}4d` : 'rgba(0, 0, 0, 0.1)';
-                    e.currentTarget.style.boxShadow = 'none';
-                  }}
-                >
-                  <Map className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">{t('reconnect')}</span>
-                </Link>
-              )}
-              {!isFullyOnboarded && (
-                <Link
-                  href="/dashboard"
-                  className="flex items-center gap-1.5 px-2.5 py-1 border rounded transition-all duration-200"
-                  style={{
-                    backgroundColor: isDark ? `${accentColor}0d` : 'rgba(0, 0, 0, 0.02)',
-                    borderColor: isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.1)',
-                    color: isDark ? '#ffffff' : colors.text,
-                    fontFamily: 'monospace',
-                    fontSize: '12px',
-                  }}
-                  onMouseEnter={(e: React.MouseEvent<HTMLAnchorElement>) => {
-                    e.currentTarget.style.borderColor = isDark ? accentColor : colors.text;
-                    e.currentTarget.style.boxShadow = `0 0 10px ${accentColor}4d`;
-                  }}
-                  onMouseLeave={(e: React.MouseEvent<HTMLAnchorElement>) => {
-                    e.currentTarget.style.borderColor = isDark ? `${accentColor}4d` : 'rgba(0, 0, 0, 0.1)';
-                    e.currentTarget.style.boxShadow = 'none';
-                  }}
-                >
-                  <Home className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">{t('returnToDashboard')}</span>
-                </Link>
-              )}
-              <Link
-                href="/settings"
-                className="flex items-center gap-1.5 px-2.5 py-1 border rounded transition-all duration-200"
-                style={{
-                  backgroundColor: isDark ? `${accentColor}0d` : 'rgba(0, 0, 0, 0.02)',
-                  borderColor: isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.1)',
-                  color: isDark ? '#ffffff' : colors.text,
-                  fontFamily: 'monospace',
-                  fontSize: '12px',
-                }}
-                onMouseEnter={(e: React.MouseEvent<HTMLAnchorElement>) => {
-                  e.currentTarget.style.borderColor = isDark ? accentColor : colors.text;
-                  e.currentTarget.style.boxShadow = `0 0 10px ${accentColor}4d`;
-                }}
-                onMouseLeave={(e: React.MouseEvent<HTMLAnchorElement>) => {
-                  e.currentTarget.style.borderColor = isDark ? `${accentColor}4d` : 'rgba(0, 0, 0, 0.1)';
-                  e.currentTarget.style.boxShadow = 'none';
-                }}
-              >
-                <Settings className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">{t('settings')}</span>
-              </Link>
-            </div>
-          ) : pathname.includes('/settings') ? (
-            <div className="flex items-center gap-3">
-              {canAccessSocialGraph && (
-                <Link
-                  href="/reconnect"
-                  className="flex items-center gap-1.5 px-2.5 py-1 border rounded transition-all duration-200"
-                  style={{
-                    backgroundColor: isDark ? `${accentColor}0d` : 'rgba(0, 0, 0, 0.02)',
-                    borderColor: isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.1)',
-                    color: isDark ? '#ffffff' : colors.text,
-                    fontFamily: 'monospace',
-                    fontSize: '12px',
-                  }}
-                  onMouseEnter={(e: React.MouseEvent<HTMLAnchorElement>) => {
-                    e.currentTarget.style.borderColor = isDark ? accentColor : colors.text;
-                    e.currentTarget.style.boxShadow = `0 0 10px ${accentColor}4d`;
-                  }}
-                  onMouseLeave={(e: React.MouseEvent<HTMLAnchorElement>) => {
-                    e.currentTarget.style.borderColor = isDark ? `${accentColor}4d` : 'rgba(0, 0, 0, 0.1)';
-                    e.currentTarget.style.boxShadow = 'none';
-                  }}
-                >
-                  <Map className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">{t('reconnect')}</span>
-                </Link>
-              )}
-              {!isFullyOnboarded && (
-                <Link
-                  href="/dashboard"
-                  className="flex items-center gap-1.5 px-2.5 py-1 border rounded transition-all duration-200"
-                  style={{
-                    backgroundColor: isDark ? `${accentColor}0d` : 'rgba(0, 0, 0, 0.02)',
-                    borderColor: isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.1)',
-                    color: isDark ? '#ffffff' : colors.text,
-                    fontFamily: 'monospace',
-                    fontSize: '12px',
-                  }}
-                  onMouseEnter={(e: React.MouseEvent<HTMLAnchorElement>) => {
-                    e.currentTarget.style.borderColor = isDark ? accentColor : colors.text;
-                    e.currentTarget.style.boxShadow = `0 0 10px ${accentColor}4d`;
-                  }}
-                  onMouseLeave={(e: React.MouseEvent<HTMLAnchorElement>) => {
-                    e.currentTarget.style.borderColor = isDark ? `${accentColor}4d` : 'rgba(0, 0, 0, 0.1)';
-                    e.currentTarget.style.boxShadow = 'none';
-                  }}
-                >
-                  <Home className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">{t('returnToDashboard')}</span>
-                </Link>
-              )}
-            </div>
-          ) : (
-            <div className="flex items-center gap-3">
-              {canAccessSocialGraph && (
-                <Link
-                  href="/reconnect"
-                  className="flex items-center gap-1.5 px-2.5 py-1 border rounded transition-all duration-200"
-                  style={{
-                    backgroundColor: isDark ? `${accentColor}0d` : 'rgba(0, 0, 0, 0.02)',
-                    borderColor: isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.1)',
-                    color: isDark ? '#ffffff' : colors.text,
-                    fontFamily: 'monospace',
-                    fontSize: '12px',
-                  }}
-                  onMouseEnter={(e: React.MouseEvent<HTMLAnchorElement>) => {
-                    e.currentTarget.style.borderColor = isDark ? accentColor : colors.text;
-                    e.currentTarget.style.boxShadow = `0 0 10px ${accentColor}4d`;
-                  }}
-                  onMouseLeave={(e: React.MouseEvent<HTMLAnchorElement>) => {
-                    e.currentTarget.style.borderColor = isDark ? `${accentColor}4d` : 'rgba(0, 0, 0, 0.1)';
-                    e.currentTarget.style.boxShadow = 'none';
-                  }}
-                >
-                  <Map className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">{t('reconnect')}</span>
-                </Link>
-              )}
-              <Link
-                href="/settings"
-                className="flex items-center gap-1.5 px-2.5 py-1 border rounded transition-all duration-200"
-                style={{
-                  backgroundColor: isDark ? `${accentColor}0d` : 'rgba(0, 0, 0, 0.02)',
-                  borderColor: isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.1)',
-                  color: isDark ? '#ffffff' : colors.text,
-                  fontFamily: 'monospace',
-                  fontSize: '12px',
-                }}
-                onMouseEnter={(e: React.MouseEvent<HTMLAnchorElement>) => {
-                  e.currentTarget.style.borderColor = isDark ? accentColor : colors.text;
-                  e.currentTarget.style.boxShadow = `0 0 10px ${accentColor}4d`;
-                }}
-                onMouseLeave={(e: React.MouseEvent<HTMLAnchorElement>) => {
-                  e.currentTarget.style.borderColor = isDark ? `${accentColor}4d` : 'rgba(0, 0, 0, 0.1)';
-                  e.currentTarget.style.boxShadow = 'none';
-                }}
-              >
-                <Settings className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">{t('settings')}</span>
-              </Link>
-            </div>
-          )
+            )}
+          </div>
         )}
       </div>
 

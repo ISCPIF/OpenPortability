@@ -37,7 +37,7 @@ export function ParticulesBackground({ maskSourceId = 'global' }: ParticulesBack
   //   const handler = (event: Event) => {
   //     const customEvent = event as CustomEvent<MaskEventDetail>;
   //     if (customEvent.detail?.id === maskSourceId) {
-  //       if (typeof process !== 'undefined' && process.env.NODE_ENV !== 'production') {
+  //       if (typeof process !== 'usndefined' && process.env.NODE_ENV !== 'production') {
   //         console.log('[ParticulesBackground] received mask bounds', maskSourceId, customEvent.detail.bounds);
   //       }
   //       setMaskBounds(customEvent.detail.bounds);

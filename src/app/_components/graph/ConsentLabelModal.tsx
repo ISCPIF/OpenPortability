@@ -64,14 +64,19 @@ export function ConsentLabelModal({ onDismiss, onConsentSaved, currentConsent }:
       const data = await response.json();
       
       if (data.success) {
-        // Invalidate labels cache and refetch
-        if (graphData?.invalidateLabelsCache) {
-          await graphData.invalidateLabelsCache();
-          // Refetch labels with new consent
-          graphData.fetchPersonalLabels?.();
-        }
+        // Optimistic UI: close modal immediately
         onConsentSaved?.(selectedLevel);
         onDismiss();
+        
+        // Trigger server-side cache refresh in background (fire-and-forget)
+        fetch('/api/graph/refresh-labels-cache', { method: 'POST' }).catch(() => {});
+        
+        // Also invalidate client-side cache and refetch (non-blocking)
+        if (graphData?.invalidateLabelsCache) {
+          graphData.invalidateLabelsCache().then(() => {
+            graphData.fetchPersonalLabels?.();
+          });
+        }
       } else {
         throw new Error(data.error || 'Failed to update consent');
       }
