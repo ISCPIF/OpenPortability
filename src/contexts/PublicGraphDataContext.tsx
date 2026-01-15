@@ -552,8 +552,8 @@ export function PublicGraphDataProvider({ children }: PublicGraphDataProviderPro
         }
 
         
-        // Fetch only public data (no twitter_id)
-        const sql = 'SELECT label, x, y, community, degree, tier, node_type FROM postgres_db.public.graph_nodes_03_11_25';
+        // Fetch only public data (no twitter_id), exclude community 8
+        const sql = 'SELECT label, x, y, community, degree, tier, node_type FROM postgres_db.public.graph_nodes_03_11_25 WHERE community != 8';
         
         const response = await fetch('/api/mosaic/sql', {
           method: 'POST',

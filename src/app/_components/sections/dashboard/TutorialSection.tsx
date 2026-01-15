@@ -1,6 +1,6 @@
 // src/app/_components/dashboard/TutorialSection.tsx
 import { motion } from 'framer-motion';
-import { Play, Sparkles, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { Play, Sparkles, ArrowRight } from 'lucide-react';
 import { plex } from '@/app/fonts/plex';
 import { useTranslations } from 'next-intl';
 import { useParams } from 'next/navigation';
@@ -8,29 +8,11 @@ import { useTheme } from '@/hooks/useTheme';
 
 export default function TutorialSection() {
   const params = useParams();
-  const t = useTranslations('dashboard');
+  const t = useTranslations('dashboard.tutorial');
   const { isDark } = useTheme();
   const cardClasses = isDark
     ? 'bg-gradient-to-br from-white/10 via-white/5 to-transparent border-white/10 text-white shadow-[0_25px_45px_rgba(0,0,0,0.35)]'
     : 'bg-white/80 border-white/70 text-slate-900 shadow-[0_25px_45px_rgba(15,23,42,0.12)]';
-
-  const steps = [
-    {
-      title: 'Upload & map your archive',
-      description: 'Drag your ZIP file, we auto-detect platforms + clean the data.',
-      accent: '01'
-    },
-    {
-      title: 'Review the reconnection graph',
-      description: 'Preview who moves, who stays, and your reach on each platform.',
-      accent: '02'
-    },
-    {
-      title: 'Launch the guided migration',
-      description: 'Follow the scripted sequence, pause anytime, resume later.',
-      accent: '03'
-    }
-  ];
 
   return (
     <div
@@ -54,7 +36,7 @@ export default function TutorialSection() {
         <div className="space-y-5">
           <div className="flex items-center gap-2 text-xs uppercase tracking-[0.35em] opacity-80">
             <Sparkles className="h-4 w-4" />
-            <span>{t('tutorial.title')}</span>
+            <span>{t('title')}</span>
           </div>
 
           <div className="group relative overflow-hidden rounded-2xl border border-white/20 bg-gradient-to-br from-indigo-500/30 via-purple-500/30 to-pink-500/30 p-5 pr-7">
@@ -62,23 +44,23 @@ export default function TutorialSection() {
             <div className="relative flex flex-col gap-4 text-left">
               <div>
                 <p className={`${plex.className} text-lg font-semibold`}>
-                  Understand the migration flow in under 4 minutes.
+                  {t('videoTitle')}
                 </p>
                 <p className="text-sm opacity-80">
-                  Walkthrough recorded by the team — includes pitfalls, verified tips, and scripts.
+                  {t('videoSubtitle')}
                 </p>
               </div>
 
               <div className="flex items-center gap-6 text-xs uppercase tracking-[0.35em] opacity-70">
-                <span>03:42</span>
-                <span>Chapters • Auto captions</span>
+                <span>{t('videoDuration')}</span>
+                <span>{t('videoFeatures')}</span>
               </div>
 
               <motion.a
                 href={
                   params.locale === 'fr'
-                    ? 'https://indymotion.fr/w/jLkPjkhtjaSQ9htgyu8FXR'
-                    : 'https://indymotion.fr/w/nQZrRgP3ceQKQV3ZuDJBAZ'
+                    ? 'https://vimeo.com/1154597932'
+                    : 'https://vimeo.com/1154597882'
                 }
                 target="_blank"
                 rel="noopener noreferrer"
@@ -86,7 +68,7 @@ export default function TutorialSection() {
                 whileTap={{ scale: 0.98 }}
                 className="inline-flex w-full items-center justify-between rounded-full border border-white/30 bg-white/10 px-4 py-3 text-sm font-semibold backdrop-blur-sm"
               >
-                <span>{t('tutorial.watchVideo')}</span>
+                <span>{t('watchVideo')}</span>
                 <div className="flex items-center gap-2">
                   <Play className="h-4 w-4" />
                   <ArrowRight className="h-4 w-4" />
@@ -96,29 +78,6 @@ export default function TutorialSection() {
           </div>
         </div>
 
-        {/* Steps */}
-        {/* <div className="space-y-4">
-          <p className="text-xs uppercase tracking-[0.4em] opacity-70">Step-by-step</p>
-          <div className="space-y-3">
-            {steps.map(({ title, description, accent }) => (
-              <div
-                key={title}
-                className="relative rounded-2xl border border-white/15 p-4 flex gap-4 items-start"
-              >
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-sm font-semibold">
-                  {accent}
-                </div>
-                <div>
-                  <div className="flex items-center gap-2 text-sm font-semibold">
-                    <CheckCircle2 className="h-4 w-4" />
-                    <span>{title}</span>
-                  </div>
-                  <p className="mt-1 text-sm opacity-80">{description}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div> */}
       </div>
     </div>
   );
