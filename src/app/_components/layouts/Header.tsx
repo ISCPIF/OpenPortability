@@ -11,6 +11,7 @@ import { usePathname } from 'next/navigation';
 import { useDashboardState } from '@/hooks/useDashboardState';
 import { useTheme } from '@/hooks/useTheme';
 import { useCommunityColors } from '@/hooks/useCommunityColors';
+import { quantico } from '@/app/fonts/plex';
 
 // Shared helper to ensure a single in-flight language fetch across components
 const ensureLanguagePreference = async (userId: string | undefined, currentLocale: string) => {
@@ -75,7 +76,7 @@ const UnauthenticatedHeader = () => {
   };
 
   return (
-    <header className="relative z-10" style={{ backgroundColor: isDark ? '#0a0f1f' : colors.background, color: isDark ? '#ffffff' : colors.text }}>
+    <header className={`${quantico.className} relative z-10`} style={{ backgroundColor: isDark ? '#0a0f1f' : colors.background, color: isDark ? '#ffffff' : colors.text }}>
       <div className="absolute inset-0 bg-transparent pointer-events-none" />
       <div className="relative">
         <div className="container mx-auto px-6 py-4">
@@ -223,7 +224,7 @@ const AuthenticatedHeader = () => {
 
   return (
     <header 
-      className={`z-[100] px-4 py-2 border-b ${isReconnectPage ? 'fixed top-0 left-0 right-0' : 'relative'}`}
+      className={`${quantico.className} z-[100] px-4 py-2 border-b ${isReconnectPage ? 'fixed top-0 left-0 right-0' : 'relative'}`}
       style={{ 
         backgroundColor: isDark ? 'rgba(10, 15, 31, 0.85)' : 'rgba(255, 255, 255, 0.85)',
         borderColor: isDark ? `${accentColor}26` : 'rgba(0, 0, 0, 0.1)',
@@ -243,7 +244,6 @@ const AuthenticatedHeader = () => {
                 ? (isDark ? '#ffffff' : colors.text) 
                 : (isDark ? `${accentColor}4d` : 'rgba(0, 0, 0, 0.1)'),
               color: isDark ? '#ffffff' : colors.text,
-              fontFamily: 'monospace',
               fontSize: '12px',
               boxShadow: isLanguageOpen ? `0 0 10px ${accentColor}4d` : 'none',
             }}
@@ -298,7 +298,6 @@ const AuthenticatedHeader = () => {
                         color: currentLocale === lang.code 
                           ? (isDark ? '#ffffff' : colors.text)
                           : (isDark ? 'rgba(255, 255, 255, 0.7)' : `${colors.text}99`),
-                        fontFamily: 'monospace',
                         fontSize: '12px',
                       }}
                       onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => {
@@ -333,7 +332,6 @@ const AuthenticatedHeader = () => {
                   backgroundColor: isDark ? `${accentColor}0d` : 'rgba(0, 0, 0, 0.02)',
                   borderColor: isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.1)',
                   color: isDark ? '#ffffff' : colors.text,
-                  fontFamily: 'monospace',
                   fontSize: '12px',
                 }}
                 onMouseEnter={(e: React.MouseEvent<HTMLAnchorElement>) => {
@@ -357,7 +355,6 @@ const AuthenticatedHeader = () => {
                   backgroundColor: isDark ? `${accentColor}0d` : 'rgba(0, 0, 0, 0.02)',
                   borderColor: isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.1)',
                   color: isDark ? '#ffffff' : colors.text,
-                  fontFamily: 'monospace',
                   fontSize: '12px',
                 }}
                 onMouseEnter={(e: React.MouseEvent<HTMLAnchorElement>) => {
@@ -381,7 +378,6 @@ const AuthenticatedHeader = () => {
                   backgroundColor: isDark ? `${accentColor}0d` : 'rgba(0, 0, 0, 0.02)',
                   borderColor: isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.1)',
                   color: isDark ? '#ffffff' : colors.text,
-                  fontFamily: 'monospace',
                   fontSize: '12px',
                 }}
                 onMouseEnter={(e: React.MouseEvent<HTMLAnchorElement>) => {

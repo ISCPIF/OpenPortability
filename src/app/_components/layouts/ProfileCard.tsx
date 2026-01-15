@@ -135,74 +135,79 @@ export default function ProfileCard({ type, showUnlink = false }: ProfileCardPro
 
   const instanceClasses = isDark ? 'text-xs text-white/60' : 'text-xs text-slate-500'
 
+  // Platform-specific colors
+  const platformColors = {
+    twitter: { bg: 'bg-slate-800/80', border: 'border-slate-600/50', accent: '#1DA1F2' },
+    bluesky: { bg: 'bg-sky-900/40', border: 'border-sky-500/30', accent: '#0085FF' },
+    mastodon: { bg: 'bg-purple-900/40', border: 'border-purple-500/30', accent: '#6364FF' }
+  }
+  const platformStyle = platformColors[type]
+
   return (
     <div className="group">
-      <div className={`flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 px-3 py-3 rounded-lg border transition-all duration-300 ${cardClasses} hover:-translate-y-0.5 hover:scale-[1.005]`}>
-        {/* Icon du réseau social */}
-        <div className={`shrink-0 relative flex items-center justify-center w-8 h-8 rounded-lg ${iconWrapperClasses}`}>
-          {profile.icon}
-        </div>
+      <div className={`relative overflow-hidden rounded-xl ${platformStyle.bg} ${platformStyle.border} border backdrop-blur-sm transition-all duration-300 hover:scale-[1.01] hover:shadow-lg`}>
+        {/* Main content row */}
+        <div className="flex items-center gap-4 p-4">
+          {/* Icon du réseau social - plus grand et visible */}
+          <div className="shrink-0 relative flex items-center justify-center w-12 h-12 rounded-xl bg-white/10 shadow-inner">
+            {profile.icon}
+          </div>
 
-        {/* Infos utilisateur avec lien */}
-        <div className="flex-1 min-w-0">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:gap-2">
+          {/* Infos utilisateur avec lien */}
+          <div className="flex-1 min-w-0">
             {profileUrl ? (
               <a
                 href={profileUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className={`${usernameClasses} truncate transition-colors`}
-                style={{ color: isDark ? '#ffffff' : undefined }}
-                onMouseEnter={(e: React.MouseEvent<HTMLAnchorElement>) => {
-                  e.currentTarget.style.color = contrastColor;
-                }}
-                onMouseLeave={(e: React.MouseEvent<HTMLAnchorElement>) => {
-                  e.currentTarget.style.color = isDark ? '#ffffff' : '';
-                }}
+                className="text-[14px] font-semibold text-white hover:text-blue-300 truncate block transition-colors"
               >
-                {profile.username}
+                @{profile.username}
               </a>
             ) : (
-              <p className={`${usernameClasses} truncate`}>
-                {profile.username}
+              <p className="text-[14px] font-semibold text-white truncate">
+                @{profile.username}
               </p>
             )}
             {profile.instance && (
-              <span className={`${instanceClasses} truncate`}>
-                @{profile.instance}
+              <span className="text-[11px] text-slate-400 truncate block mt-0.5">
+                {profile.instance}
               </span>
             )}
           </div>
+
+          {/* Badge connecté */}
+          <div className="shrink-0 hidden sm:flex items-center gap-1.5 px-2 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/30">
+            <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="text-[10px] text-emerald-400 font-medium uppercase tracking-wide">
+              {t('connected') ?? 'Connected'}
+            </span>
+          </div>
         </div>
 
-        {/* Bouton de déliaison */}
-        <div className="shrink-0 w-full sm:w-auto">
-          <button
-            onClick={handleUnlink}
-            disabled={isUnlinking || isLastAccount}
-            className={`${showUnlink ? 'inline-flex' : 'hidden group-hover:inline-flex'} items-center justify-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed`}
-            style={{
-              backgroundColor: isDark ? `${accentColor}1a` : `${contrastColor}0d`,
-              borderColor: isDark ? `${accentColor}4d` : `${contrastColor}33`,
-              color: isDark ? contrastColor : contrastColor,
-            }}
-            onMouseEnter={(e: React.MouseEvent<HTMLButtonElement>) => {
-              if (!isUnlinking && !isLastAccount) {
-                e.currentTarget.style.backgroundColor = isDark ? `${accentColor}33` : `${contrastColor}1a`;
-                e.currentTarget.style.borderColor = isDark ? accentColor : contrastColor;
-              }
-            }}
-            onMouseLeave={(e: React.MouseEvent<HTMLButtonElement>) => {
-              e.currentTarget.style.backgroundColor = isDark ? `${accentColor}1a` : `${contrastColor}0d`;
-              e.currentTarget.style.borderColor = isDark ? `${accentColor}4d` : `${contrastColor}33`;
-            }}
-          >
-            <IoUnlinkOutline className="text-base" />
-            <span className="whitespace-nowrap">
-              {t('unlinkButton', { provider: t(`providers.${type}`) })}
-            </span>
-          </button>
-        </div>
+        {/* Bouton de déliaison - en dessous, séparé */}
+        {showUnlink && (
+          <div className="px-4 pb-4 pt-0">
+            <button
+              onClick={handleUnlink}
+              disabled={isUnlinking || isLastAccount}
+              className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-slate-700/50 hover:bg-rose-500/20 border border-slate-600/50 hover:border-rose-500/30 text-slate-400 hover:text-rose-300 text-[11px] font-medium transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-slate-700/50 disabled:hover:text-slate-400 disabled:hover:border-slate-600/50 group/unlink"
+            >
+              <IoUnlinkOutline className="text-sm" />
+              <span>
+                {isLastAccount 
+                  ? (
+                    <>
+                      <span className="group-hover/unlink:hidden">{t('unlinkButton', { provider: t(`providers.${type}`) }) ?? 'Unlink'}</span>
+                      <span className="hidden group-hover/unlink:inline">{t('errors.lastAccount') ?? 'Cannot unlink last account'}</span>
+                    </>
+                  )
+                  : (t('unlinkButton', { provider: t(`providers.${type}`) }) ?? 'Unlink')
+                }
+              </span>
+            </button>
+          </div>
+        )}
       </div>
     </div>
   )

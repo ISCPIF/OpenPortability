@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, Fragment } from 'react';
+import { useState, Fragment, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { quantico } from '@/app/fonts/plex';
 import { useNewsletter } from '@/hooks/useNewsLetter';
@@ -10,14 +10,33 @@ import Footer from '@/app/_components/layouts/Footer';
 import LoadingIndicator from '@/app/_components/layouts/LoadingIndicator';
 import SwitchSettingsSection from '@/app/_components/sections/settings/SwitchSettingsSection';
 import ConnectedAccounts from '@/app/_components/layouts/ConnectedAccounts';
+import TutorialSection from '@/app/_components/sections/dashboard/TutorialSection';
+import NewsletterSection from '@/app/_components/sections/dashboard/NewsletterSection';
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { Trash2, Settings, LogOut, AlertTriangle } from 'lucide-react';
+import Link from 'next/link';
+import { Trash2, Settings, LogOut, AlertTriangle, Upload } from 'lucide-react';
 import { Dialog, Transition } from '@headlessui/react';
 import Image from 'next/image';
 import { ParticulesBackground } from '@/app/_components/layouts/ParticulesBackground';
 import { useTheme } from '@/hooks/useTheme';
 import logoBlanc from '@/../public/logo/logo-openport-blanc.svg';
+
+// Cookie helper functions
+const NEWSLETTER_MODAL_COOKIE = 'newsletter_modal_seen';
+
+function hasSeenNewsletterModal(): boolean {
+  if (typeof document === 'undefined') return true;
+  return document.cookie.includes(`${NEWSLETTER_MODAL_COOKIE}=true`);
+}
+
+function setNewsletterModalSeen(): void {
+  if (typeof document === 'undefined') return;
+  // Set cookie to expire in 30 days
+  const expires = new Date();
+  expires.setDate(expires.getDate() + 30);
+  document.cookie = `${NEWSLETTER_MODAL_COOKIE}=true; expires=${expires.toUTCString()}; path=/`;
+}
 
 export default function SettingsPage() {
   const t = useTranslations('settings');
@@ -36,6 +55,26 @@ export default function SettingsPage() {
     updateEmailWithNewsletter
   } = useNewsletter();
 
+  // Newsletter modal state - managed by NewsletterSection but we track it for auto-open
+  const [showNewsletterModal, setShowNewsletterModal] = useState(false);
+  
+  // Check if we should show newsletter modal on mount
+  useEffect(() => {
+    // Show modal if:
+    // 1. User hasn't seen it (no cookie)
+    // 2. User hasn't consented to newsletter yet
+    const hasNewsletterConsent = consents?.hqx_newsletter === true;
+    const hasSeenModal = hasSeenNewsletterModal();
+    
+    if (!hasSeenModal && !hasNewsletterConsent && !isLoading && session?.user) {
+      // Small delay to let the page render first
+      const timer = setTimeout(() => {
+        setShowNewsletterModal(true);
+        setNewsletterModalSeen(); // Mark as seen when auto-opened
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [consents, isLoading, session]);
 
   // Email form state
   const [showEmailForm, setShowEmailForm] = useState(false);
@@ -134,74 +173,164 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          <div className="w-full max-w-6xl mx-auto grid grid-cols-1 gap-6 xl:grid-cols-[2fr_1fr]">
-            {/* Main settings panel */}
-            <div className="rounded-xl bg-slate-900/95 backdrop-blur-sm border border-slate-700/50 shadow-xl overflow-hidden">
-              <div className="px-6 py-4 border-b border-slate-700/50">
-                <h2 className="text-[14px] font-semibold text-white">
-                  {t('notificationOptions')}
-                </h2>
+          <div className="w-full max-w-6xl mx-auto space-y-8">
+            {/* Main Content: 2 columns on desktop, reversed order on mobile */}
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-8">
+              
+              {/* Right Column on desktop, First on mobile: Sidebar (accounts only) */}
+              <div className="space-y-4 lg:order-2">
+                {/* Connected Accounts */}
+                <ConnectedAccounts />
+
+                {/* Upload Archive panel - only for non-onboarded users */}
+                {session?.user && !session.user.has_onboarded && (
+                  <div className="rounded-xl bg-gradient-to-br from-blue-900/40 to-purple-900/40 backdrop-blur-sm border border-blue-500/30 shadow-xl p-5">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="p-2 rounded-lg bg-blue-500/20">
+                        <Upload className="w-4 h-4 text-blue-400" />
+                      </div>
+                      <h3 className="text-[13px] font-semibold text-white">
+                        {t('importArchive') ?? 'Import your archive'}
+                      </h3>
+                    </div>
+                    <p className="text-[11px] text-slate-300 mb-4 leading-relaxed">
+                      {t('importArchiveDescription') ?? 'Upload your Twitter/X archive to find your connections on other platforms.'}
+                    </p>
+                    <Link
+                      href="/upload"
+                      className="w-full flex items-center justify-center gap-2 px-4 py-3 text-[12px] font-semibold rounded-lg bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white transition-all shadow-lg shadow-blue-500/25"
+                    >
+                      <Upload className="w-4 h-4" />
+                      {t('importArchiveButton') ?? 'Import Archive'}
+                    </Link>
+                  </div>
+                )}
+
+                {/* Logout + Delete - Hidden on mobile, shown in sidebar on desktop */}
+                <div className="hidden lg:block space-y-4">
+                  {/* Logout panel */}
+                  <div className="rounded-xl bg-slate-900/95 backdrop-blur-sm border border-slate-700/50 shadow-xl p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <LogOut className="w-4 h-4 text-amber-400" />
+                        <span className="text-[13px] font-medium text-white">
+                          {t('logout') ?? 'Logout'}
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => signOut()}
+                        className="px-4 py-2 text-[12px] font-medium rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white transition-all shadow-md"
+                      >
+                        {t('logout') ?? 'Logout'}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Delete Account panel */}
+                  <div className="rounded-xl bg-slate-900/95 backdrop-blur-sm border border-rose-500/30 shadow-xl p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <AlertTriangle className="w-4 h-4 text-rose-400" />
+                        <span className="text-[13px] font-medium text-rose-300">
+                          {t('deleteAccount')}
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => setShowDeleteConfirm(true)}
+                        className="px-4 py-2 text-[12px] font-medium rounded-lg bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/30 text-rose-300 transition-all flex items-center gap-2"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        {t('deleteAccount')}
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div className="p-6">
-                <SwitchSettingsSection
-                  consents={consents}
-                  onConsentChange={async (type, value) => { await updateConsent(type, value); }}
-                  showEmailForm={showEmailForm}
-                  setShowEmailForm={setShowEmailForm}
-                  email={email}
-                  setEmail={setEmail}
-                  emailError={emailError}
-                  setEmailError={setEmailError}
-                  handleEmailSubmit={handleEmailSubmit}
-                  isSubmittingEmail={isSubmittingEmail}
-                />
+
+              {/* Left Column on desktop, Second on mobile: Main Settings */}
+              <div className="space-y-6 lg:order-1">
+                {/* Notification Options - Primary content */}
+                <div className="rounded-2xl bg-slate-900/95 backdrop-blur-sm border border-slate-700/50 shadow-xl overflow-hidden">
+                  <div className="px-6 pt-5 pb-4">
+                    <h2 className="text-[15px] font-semibold text-white">
+                      {t('notificationOptions')}
+                    </h2>
+                    <p className="text-[11px] text-slate-400 mt-1">
+                      {t('notificationOptionsDescription') ?? 'Manage how you receive updates and notifications'}
+                    </p>
+                    <div className="mt-4 border-b border-slate-700/50" />
+                  </div>
+                  <div className="px-6 pb-5">
+                    <SwitchSettingsSection
+                      consents={consents}
+                      onConsentChange={async (type, value) => { await updateConsent(type, value); }}
+                      showEmailForm={showEmailForm}
+                      setShowEmailForm={setShowEmailForm}
+                      email={email}
+                      setEmail={setEmail}
+                      emailError={emailError}
+                      setEmailError={setEmailError}
+                      handleEmailSubmit={handleEmailSubmit}
+                      isSubmittingEmail={isSubmittingEmail}
+                    />
+                  </div>
+                </div>
+
+                {/* Tutorial + Newsletter Row */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <TutorialSection />
+                  
+                  {session?.user && (
+                    <NewsletterSection
+                      userId={session.user.id}
+                      showModal={showNewsletterModal}
+                      setShowModal={setShowNewsletterModal}
+                      onUpdate={() => {}}
+                      haveSeenNewsletter={hasSeenNewsletterModal()}
+                      newsletterData={{ consents }}
+                    />
+                  )}
+                </div>
               </div>
             </div>
 
-            {/* Sidebar */}
-            <div className="space-y-4">
-              <ConnectedAccounts />
-
+            {/* Mobile only: Logout + Delete at the bottom */}
+            <div className="lg:hidden space-y-4">
               {/* Logout panel */}
-              <div className="rounded-xl bg-slate-900/95 backdrop-blur-sm border border-slate-700/50 shadow-xl p-5">
+              <div className="rounded-xl bg-slate-900/95 backdrop-blur-sm border border-slate-700/50 shadow-xl p-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <LogOut className="w-4 h-4 text-amber-400" />
-                    <h3 className="text-[13px] font-semibold text-white">
+                    <span className="text-[13px] font-medium text-white">
                       {t('logout') ?? 'Logout'}
-                    </h3>
+                    </span>
                   </div>
                   <button
                     onClick={() => signOut()}
-                    className="px-4 py-2 text-[12px] font-medium rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white transition-all"
+                    className="px-4 py-2 text-[12px] font-medium rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white transition-all shadow-md"
                   >
                     {t('logout') ?? 'Logout'}
                   </button>
                 </div>
               </div>
 
-              {/* Delete account panel */}
-              <div className="rounded-xl bg-slate-900/95 backdrop-blur-sm border border-rose-500/30 shadow-xl p-5">
-                <div className="flex items-center gap-2 mb-3">
-                  <AlertTriangle className="w-4 h-4 text-rose-400" />
-                  <h2 className="text-[13px] font-semibold text-rose-400">
+              {/* Delete Account panel */}
+              <div className="rounded-xl bg-slate-900/95 backdrop-blur-sm border border-rose-500/30 shadow-xl p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle className="w-4 h-4 text-rose-400" />
+                    <span className="text-[13px] font-medium text-rose-300">
+                      {t('deleteAccount')}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => setShowDeleteConfirm(true)}
+                    className="px-4 py-2 text-[12px] font-medium rounded-lg bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/30 text-rose-300 transition-all flex items-center gap-2"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
                     {t('deleteAccount')}
-                  </h2>
+                  </button>
                 </div>
-                <div className="space-y-2 mb-4">
-                  {[1, 2, 3, 4].map(index => (
-                    <p key={index} className="text-[11px] text-slate-400 whitespace-pre-line">
-                      {t(`deleteConfirm.message${index}` as const)}
-                    </p>
-                  ))}
-                </div>
-                <button
-                  onClick={() => setShowDeleteConfirm(true)}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-[12px] font-medium rounded-lg bg-rose-500/20 hover:bg-rose-500/30 border border-rose-500/30 text-rose-300 transition-all"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  {t('deleteAccount')}
-                </button>
               </div>
             </div>
           </div>
@@ -243,10 +372,15 @@ export default function SettingsPage() {
                       {t('deleteConfirm.title')}
                     </Dialog.Title>
                   </div>
-                  <div className="mt-2">
+                  <div className="mt-2 space-y-3">
                     <p className="text-[12px] text-slate-400 whitespace-pre-line">
                       {t('deleteConfirm.message')}
                     </p>
+                    <div className="p-3 rounded-lg bg-slate-800/50 border border-slate-700/50">
+                      <p className="text-[11px] text-slate-500 leading-relaxed">
+                        {t('deleteConfirm.gdprNotice')}
+                      </p>
+                    </div>
                   </div>
 
                   <div className="mt-6 flex justify-end gap-3">

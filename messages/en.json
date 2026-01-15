@@ -12,6 +12,7 @@
       "connectedWith": "You are connected with {services} ",
       "and": "and",
       "connected": "Connected",
+      "connect": "Connect",
       "services": {
         "twitter": "Twitter/X",
         "bluesky": "BlueSky",
@@ -254,7 +255,8 @@
     "unlinkConfirmation": "Are you sure you want to unlink your {provider} account?",
     "unlinkSuccess": "Your {provider} account has been successfully unlinked",
     "unlinkError": "An error occurred while unlinking your {provider} account",
-    "unlinkButton": "Unlink {provider} account",
+    "unlinkButton": "Unlink {provider}",
+    "connected": "Connected",
     "providers": {
       "twitter": "Twitter/X",
       "bluesky": "Bluesky",
@@ -273,6 +275,9 @@
 "logout": "Log out",
 "invalidEmail": "Please enter a valid email address",
 "updateSuccess": "Preferences updated",
+"importArchive": "Import your archive",
+"importArchiveDescription": "Upload your Twitter/X archive to find your connections on other platforms.",
+"importArchiveButton": "Import Archive",
 "deleteAccount": "Delete my account",
 "deleteConfirm": {
 "title": "Delete account",
@@ -282,7 +287,8 @@
 "message4": "• Your OpenPortability profile",
 "cancel": "Cancel",
 "message" : "Are you sure you want to delete your OpenPortability account?",
-"confirm": "Yes, delete my account"
+"confirm": "Yes, delete my account",
+"gdprNotice": "In accordance with GDPR (General Data Protection Regulation), all your personal data will be permanently and completely deleted from our servers. We do not retain any backup or copy of your data after deletion. This deletion is final and cannot be undone."
 },
 "newsletter": {
 "title": "OpenPortability Newsletter",
@@ -307,6 +313,7 @@
 "description": "Receive updates from OpenPortability"
 },
 "notificationOptions": "Notification options",
+"notificationOptionsDescription": "Manage how you receive updates and notifications",
 "loading": "loading",
 "accountSettings": "Account settings",
 "testDmSection": "Test direct messages (DM)",
@@ -366,7 +373,9 @@
   "validateAnyway": "You must still validate your current preferences.",
   "confirmButton": "Confirm my preferences",
   "blueskyDmWarning": "To receive our messages, make sure you have authorized DMs in your Bluesky settings and/or that you follow the account",
-  "mastodonDmWarning": "To receive our messages, make sure you have authorized DMs in your Mastodon settings and/or that you follow the account"
+  "mastodonDmWarning": "To receive our messages, make sure you have authorized DMs in your Mastodon settings and/or that you follow the account",
+  "success": "Your preferences have been updated successfully",
+  "error": "An error occurred while updating your preferences"
 }
 },
 "NewsletterConsent": {

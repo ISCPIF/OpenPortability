@@ -121,7 +121,7 @@ const Footer = memo(() => {
       <div className="max-w-screen-2xl mx-auto flex flex-col items-center gap-0.5 md:gap-1">
         {/* Line 1: Platform text - hidden on mobile */}
         <div 
-          className="hidden md:block text-xs font-mono"
+          className="hidden md:block text-xs"
           style={{ color: isDark ? 'rgba(255, 255, 255, 0.7)' : `${colors.text}99` }}
         >
           {content}
@@ -171,7 +171,7 @@ const Footer = memo(() => {
         </div>
 
         {/* Line 3: Privacy + Copyright - simplified on mobile */}
-        <div className="flex items-center gap-1 md:gap-2 text-[9px] md:text-[10px] font-mono">
+        <div className="flex items-center gap-1 md:gap-2 text-[9px] md:text-[10px]">
           <a 
             href="/privacy_policy"
             target="_blank"

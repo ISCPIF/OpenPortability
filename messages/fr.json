@@ -11,6 +11,7 @@
     "connectedAccounts": {
       "connectedWith": "Vous êtes connecté avec {services} ",
       "and": "et",
+      "connect": "Connecter",
       "services": {
         "twitter": "Twitter/X",
         "bluesky": "BlueSky",
@@ -327,7 +328,8 @@
     "unlinkConfirmation": "Êtes-vous sûr de vouloir délier votre compte {provider} ?",
     "unlinkSuccess": "Votre compte {provider} a été délié avec succès",
     "unlinkError": "Une erreur est survenue lors de la déliaison de votre compte {provider}",
-    "unlinkButton": "Délier le compte {provider}",
+    "unlinkButton": "Délier {provider}",
+    "connected": "Connecté",
     "providers": {
       "twitter": "Twitter/X",
       "bluesky": "Bluesky",
@@ -339,12 +341,16 @@
     }
   },
 "settings": {
+    "title": "Paramètres",
     "active": "Actif",
     "disabled": "Désactivé",
     "loadingSettings": "Chargement des paramètres...",
     "logout": "Déconnexion",
     "invalidEmail": "Email invalide",
     "updateSuccess" : "Préférences mises à jour",
+    "importArchive": "Importer votre archive",
+    "importArchiveDescription": "Téléchargez votre archive Twitter/X pour retrouver vos connexions sur d'autres plateformes.",
+    "importArchiveButton": "Importer l'archive",
     "deleteAccount": "Supprimer mon compte",
     "deleteConfirm": {
       "title": "Supprimer le compte",
@@ -354,7 +360,8 @@
       "message4": "• Votre profil OpenPortability",
       "cancel": "Annuler",
       "confirm": "Oui, supprimer mon compte",
-      "message" : "Êtes-vous sûr.e de vouloir supprimer votre compte OpenPortability ?"
+      "message" : "Êtes-vous sûr.e de vouloir supprimer votre compte OpenPortability ?",
+      "gdprNotice": "Conformément au RGPD (Règlement Général sur la Protection des Données), toutes vos données personnelles seront définitivement et intégralement supprimées de nos serveurs. Nous ne conservons aucune sauvegarde ni copie de vos données après suppression. Cette suppression est définitive et irréversible."
     },
     "newsletter": {
       "title": "Newsletter OpenPortability",
@@ -379,6 +386,7 @@
       "description": "Recevoir les updates de OpenPortability"
     },
     "notificationOptions": "Options de notification",
+    "notificationOptionsDescription": "Gérez comment vous recevez les mises à jour et notifications",
     "loading" : "chargement",
     "accountSettings": "Paramètres du compte",
     "testDmSection": "Tester les messages directs (DM)",
@@ -392,7 +400,9 @@
       "validateAnyway": "Vous devez tout de même valider vos préférences actuelles.",
       "confirmButton": "Confirmer mes préférences",
       "blueskyDmWarning": "Pour recevoir nos messages, vérifiez que vous avez autorisé les DMs dans vos paramètres Bluesky et/ou que vous suivez le compte",
-      "mastodonDmWarning": "Pour recevoir nos messages, vérifiez que vous avez autorisé les DMs dans vos paramètres Mastodon et/ou que vous suivez le compte"
+      "mastodonDmWarning": "Pour recevoir nos messages, vérifiez que vous avez autorisé les DMs dans vos paramètres Mastodon et/ou que vous suivez le compte",
+      "success": "Vos préférences ont été mises à jour avec succès",
+      "error": "Une erreur est survenue lors de la mise à jour de vos préférences"
     },
     "notifications": {
       "title": "Notifications",
