@@ -243,7 +243,11 @@
     "tutorial": {
       "title": "Explication des étapes dans notre tutoriel",
       "description": "Découvrez comment migrer facilement de Twitter/X vers Mastodon et Bluesky",
-      "watchVideo": "Regarder la vidéo"
+      "watchVideo": "Regarder la vidéo",
+      "videoTitle": "Comprenez le processus de migration en moins de 4 minutes.",
+      "videoSubtitle": "Tutoriel enregistré par l'équipe — inclut les pièges à éviter, conseils vérifiés et scripts.",
+      "videoDuration": "03:42",
+      "videoFeatures": "Chapitres • Sous-titres auto"
     }
   },
   "dashboardSea": {
@@ -863,5 +867,11 @@
     "largeFiles": "Traitement de vos fichiers...",
     "dashboard": "Chargement du tableau de bord...",
     "settings": "Chargement des paramètres..."
+  },
+  "notFound": {
+    "title": "Page introuvable",
+    "subtitle": "Erreur 404",
+    "message": "La page que vous recherchez n'existe pas ou a été déplacée.",
+    "backHome": "Retour à l'accueil"
   }
 }

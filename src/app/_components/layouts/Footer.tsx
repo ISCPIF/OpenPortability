@@ -26,8 +26,8 @@ const Footer = memo(() => {
     ? (communityColors[9] || communityColors[8] || '#fad541') // Light color for dark theme
     : (communityColors[0] || communityColors[1] || '#011959'); // Dark color for light theme
   
-  // Sur /reconnect, le footer est fixed en bas
-  const isReconnectPage = pathname.includes('/reconnect');
+  // Sur /reconnect et /discover, le footer est fixed en bas
+  const isReconnectPage = pathname.includes('/reconnect') || pathname.includes('/discover');
   // Sur /auth/signin, le texte est blanc
   const isSigninPage = pathname.includes('/auth/signin');
 

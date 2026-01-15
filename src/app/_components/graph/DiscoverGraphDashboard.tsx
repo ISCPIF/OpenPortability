@@ -158,7 +158,13 @@ export function DiscoverGraphDashboard({ onLoginClick }: DiscoverGraphDashboardP
     setIsGraphRendered(true);
   }, []);
 
+  // Callback to reset the graph view (forces remount of EmbeddingView)
   const handleResetView = useCallback(() => {
+    // Clear viewport cookies so the view resets to default position
+    if (typeof document !== 'undefined') {
+      document.cookie = 'graph_viewport_state=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+      document.cookie = 'graph_ui_state=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    }
     setViewResetKey(prev => prev + 1);
   }, []);
 
