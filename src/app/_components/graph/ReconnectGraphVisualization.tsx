@@ -36,11 +36,8 @@ interface ViewportState {
   scale: number; // zoom level (embedding-atlas uses 'scale' not 'k')
 }
 
-// Cookie name for viewport persistence
-const VIEWPORT_COOKIE_NAME = 'graph_viewport_state';
-const VIEWPORT_COOKIE_EXPIRY_DAYS = 7;
-const GRAPH_UI_COOKIE_NAME = 'graph_ui_state';
-const GRAPH_UI_COOKIE_EXPIRY_DAYS = 30;
+// Import centralized cookie helper
+import { getInitialViewport, setGraphViewport } from '@/lib/utils/graphCookies';
 
 // Viewport limits - prevent user from zooming/panning too far
 const MIN_SCALE = 0.01; // Minimum zoom level (zoomed out)
@@ -49,24 +46,6 @@ const MIN_X = -50;      // Minimum x coordinate (left boundary)
 const MAX_X = 50;       // Maximum x coordinate (right boundary)
 const MIN_Y = -50;      // Minimum y coordinate (top boundary)
 const MAX_Y = 50;       // Maximum y coordinate (bottom boundary)
-
-// Helper to get cookie value
-function getCookie(name: string): string | null {
-  if (typeof document === 'undefined') return null;
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) return parts.pop()?.split(';').shift() || null;
-  return null;
-}
-
-// Helper to set cookie
-function setCookie(name: string, value: string, days: number): void {
-  if (typeof document === 'undefined') return;
-  const expires = new Date();
-  expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
-  const cookieString = `${name}=${encodeURIComponent(value)};expires=${expires.toUTCString()};path=/;SameSite=Lax`;
-  document.cookie = cookieString;
-}
 
 // User node type (from context)
 interface UserNodeData {
@@ -171,34 +150,9 @@ export function ReconnectGraphVisualization({
   const embeddingDataRef = useRef<any>(null);
   const normalizationBoundsRef = useRef<any>(null);
 
-  // Viewport state for persistence
+  // Viewport state for persistence (uses centralized cookie helper)
   const [viewportState, setViewportState] = useState<ViewportState | null>(() => {
-    // Load from cookie on initial render
-    const savedUi = getCookie(GRAPH_UI_COOKIE_NAME);
-    if (savedUi) {
-      try {
-        const parsed = JSON.parse(decodeURIComponent(savedUi));
-        const vp = parsed?.viewport;
-        if (vp && typeof vp.x === 'number' && typeof vp.y === 'number' && typeof vp.scale === 'number') {
-          return vp;
-        }
-      } catch (e) {
-        console.warn('📍 [Viewport] Failed to parse saved UI state:', e);
-      }
-    }
-
-    const saved = getCookie(VIEWPORT_COOKIE_NAME);
-    if (saved) {
-      try {
-        const parsed = JSON.parse(decodeURIComponent(saved));
-        if (typeof parsed.x === 'number' && typeof parsed.y === 'number' && typeof parsed.scale === 'number') {
-          return parsed;
-        }
-      } catch (e) {
-        console.warn('📍 [Viewport] Failed to parse saved viewport:', e);
-      }
-    }
-    return null;
+    return getInitialViewport();
   });
   const viewportSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -216,6 +170,7 @@ export function ReconnectGraphVisualization({
   const contextBaseNodesLoading = graphData?.isBaseNodesLoading ?? false;
   const fetchBaseNodes = graphData?.fetchBaseNodes ?? (async () => {});
   const contextNormalizationBounds = graphData?.normalizationBounds ?? null;
+  const nodeTypeVersion = graphData?.nodeTypeVersion ?? 0;
 
   // Get theme for background color
   const { isDark, colors } = useTheme();
@@ -272,7 +227,7 @@ export function ReconnectGraphVisualization({
 
     // En mode PERSONAL ou FOLLOWERS : afficher tous les nœuds (le highlighting est géré par mergeGraphWithPersonalNetwork)
     return nodes;
-  }, [nodes, isMembersView, isMosaicView]);
+  }, [nodes, isMembersView, isMosaicView, nodeTypeVersion]);
 
   // State pour savoir si les données Mosaic sont en cours de chargement
   // Si des nodes sont déjà fournis en props, pas besoin de charger
@@ -529,7 +484,7 @@ export function ReconnectGraphVisualization({
     const autoSel = shouldComputeAutoSelection && personalPoints.length > 0 ? personalPoints : null;
     
     return { embeddingData: data, computedAutoSelection: autoSel };
-  }, [staticEmbeddingData, filteredNodes, nodeHashMap, userNodeHash, isMembersView, isMosaicView, isFollowersView, isPersonalOnlyView, followingHashes, followerHashes, effectiveFollowerHashes, hasOnboarded, highlightMode, lassoConnectedIds, highlightVersion]);
+  }, [staticEmbeddingData, filteredNodes, nodeHashMap, userNodeHash, isMembersView, isMosaicView, isFollowersView, isPersonalOnlyView, followingHashes, followerHashes, effectiveFollowerHashes, hasOnboarded, highlightMode, lassoConnectedIds, highlightVersion, nodeTypeVersion]);
 
   // Community colors are now managed by useCommunityColors hook (see line ~70)
   // The hook provides colors with cookie persistence and palette selection
@@ -796,11 +751,8 @@ export function ReconnectGraphVisualization({
     };
     setSearchSelection([searchPoint]);
     
-    // Save to cookie
-    const serialized = JSON.stringify(newViewport);
-    setCookie(VIEWPORT_COOKIE_NAME, serialized, VIEWPORT_COOKIE_EXPIRY_DAYS);
-    const uiSerialized = JSON.stringify({ viewMode, viewport: newViewport });
-    setCookie(GRAPH_UI_COOKIE_NAME, uiSerialized, GRAPH_UI_COOKIE_EXPIRY_DAYS);
+    // Save to cookie (using centralized helper)
+    setGraphViewport(newViewport);
   }, [highlightedSearchNode, isMosaicView, embeddingData, contextNormalizationBounds, publicNormalizationBounds]);
 
   // Callback for viewport state changes - debounced save to cookie
@@ -816,25 +768,22 @@ export function ReconnectGraphVisualization({
     if (needsClamp) {
       const clampedState: ViewportState = { x: clampedX, y: clampedY, scale: clampedScale };
       setViewportState(clampedState);
-      // Save clamped state to cookie
-      const serialized = JSON.stringify(clampedState);
-      setCookie(VIEWPORT_COOKIE_NAME, serialized, VIEWPORT_COOKIE_EXPIRY_DAYS);
-      const uiSerialized = JSON.stringify({ viewMode, viewport: clampedState });
-      setCookie(GRAPH_UI_COOKIE_NAME, uiSerialized, GRAPH_UI_COOKIE_EXPIRY_DAYS);
+      // Save clamped state to cookie immediately
+      setGraphViewport(clampedState);
       return;
     }
+    
+    // Always update local state immediately for consistency
+    setViewportState(state);
     
     // Debounce cookie save to avoid too many writes
     if (viewportSaveTimeoutRef.current) {
       clearTimeout(viewportSaveTimeoutRef.current);
     }
     viewportSaveTimeoutRef.current = setTimeout(() => {
-      const serialized = JSON.stringify(state);
-      setCookie(VIEWPORT_COOKIE_NAME, serialized, VIEWPORT_COOKIE_EXPIRY_DAYS);
-      const uiSerialized = JSON.stringify({ viewMode, viewport: state });
-      setCookie(GRAPH_UI_COOKIE_NAME, uiSerialized, GRAPH_UI_COOKIE_EXPIRY_DAYS);
-    }, 500); // 500ms debounce
-  }, [viewMode]);
+      setGraphViewport(state);
+    }, 100); // 100ms debounce - fast save to preserve viewport on remount
+  }, []);
 
   // Helper function to check if a point is inside a polygon (ray casting algorithm)
   const isPointInPolygon = useCallback((x: number, y: number, polygon: { x: number; y: number }[]): boolean => {
@@ -1211,6 +1160,7 @@ export function ReconnectGraphVisualization({
   // Mode standard (personal network / members) : utilise EmbeddingView avec données locales
   // Use labels count as key to force remount when labels change
   // This is needed because embedding-atlas doesn't properly update labels via update()
+  // Viewport is restored from cookie on remount (via getInitialViewport)
   const labelsKey = validLabels?.length ?? 0;
   
   return (

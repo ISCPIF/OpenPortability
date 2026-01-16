@@ -24,6 +24,7 @@ import { MigrationSuccessModal } from '../modales/MigrationSuccessModal';
 import { IntroOverlay } from './IntroOverlay';
 import { ConsentLabelModal } from './ConsentLabelModal';
 import { Lock } from 'lucide-react';
+import { getInitialViewMode, setGraphViewMode, clearGraphUiState, getGraphUiState } from '@/lib/utils/graphCookies';
 
 // Dynamic import to avoid SSR issues with embedding-atlas WASM
 const ReconnectGraphVisualization = dynamic(
@@ -137,92 +138,17 @@ export function ReconnectGraphDashboard({
   // Use GraphDataContext for personal data (matching + hashes)
   const graphData = useGraphData();
   
-  // Get initial view mode from cookie - always start with cookie value or 'discover'
+  // Get initial view mode from centralized cookie helper
   // On mobile: always force 'followings' mode to show FloatingAccountsPanel
-  // We'll switch to 'followings' later once hashes are confirmed loaded
-  const getInitialViewMode = (): 'discover' | 'followings' | 'followers' => {
-    if (typeof window !== 'undefined') {
-      // On mobile, always force followings mode
-      if (window.innerWidth < 768) {
-        return 'followings';
-      }
-
-      const savedUi = document.cookie
-        .split('; ')
-        .find(row => row.startsWith('graph_ui_state='))
-        ?.split('=')[1];
-
-      if (savedUi) {
-        try {
-          const parsed = JSON.parse(decodeURIComponent(savedUi));
-          const savedViewMode = parsed?.viewMode as 'discover' | 'followings' | 'followers' | undefined;
-          if (savedViewMode && ['discover', 'followings', 'followers'].includes(savedViewMode)) {
-            return savedViewMode;
-          }
-        } catch {
-          // ignore malformed cookie
-        }
-      }
-      
-      const savedViewMode = document.cookie
-        .split('; ')
-        .find(row => row.startsWith('graph_view_mode='))
-        ?.split('=')[1] as 'discover' | 'followings' | 'followers' | undefined;
-      
-      if (savedViewMode && ['discover', 'followings', 'followers'].includes(savedViewMode)) {
-        return savedViewMode;
-      }
-    }
-    // Default to discover - we'll switch to followings once hashes are loaded
-    return 'discover';
-  };
   
   const [viewMode, setViewModeState] = useState<'discover' | 'followings' | 'followers'>(getInitialViewMode);
   const hasAutoSwitchedToFollowings = useRef(false);
   const hasFetchedLassoStats = useRef(false);
   
-  // Wrapper to save view mode to cookie when it changes
+  // Wrapper to save view mode to cookie when it changes (uses centralized helper)
   const setViewMode = useCallback((mode: 'discover' | 'followings' | 'followers') => {
     setViewModeState(mode);
-    // Save to cookie with 30 day expiry
-    const expires = new Date();
-    expires.setDate(expires.getDate() + 30);
-    document.cookie = `graph_view_mode=${mode}; expires=${expires.toUTCString()}; path=/; SameSite=Lax`;
-
-    const getCookie = (name: string): string | null => {
-      const value = `; ${document.cookie}`;
-      const parts = value.split(`; ${name}=`);
-      if (parts.length === 2) return parts.pop()?.split(';').shift() || null;
-      return null;
-    };
-
-    const setCookie = (name: string, value: string, days: number): void => {
-      const exp = new Date();
-      exp.setTime(exp.getTime() + days * 24 * 60 * 60 * 1000);
-      document.cookie = `${name}=${encodeURIComponent(value)};expires=${exp.toUTCString()};path=/;SameSite=Lax`;
-    };
-
-    let viewport: any = null;
-    const existingUi = getCookie('graph_ui_state');
-    if (existingUi) {
-      try {
-        const parsed = JSON.parse(decodeURIComponent(existingUi));
-        viewport = parsed?.viewport ?? null;
-      } catch {
-        viewport = null;
-      }
-    }
-    if (!viewport) {
-      const legacyViewport = getCookie('graph_viewport_state');
-      if (legacyViewport) {
-        try {
-          viewport = JSON.parse(decodeURIComponent(legacyViewport));
-        } catch {
-          viewport = null;
-        }
-      }
-    }
-    setCookie('graph_ui_state', JSON.stringify({ viewMode: mode, viewport: viewport || undefined }), 30);
+    setGraphViewMode(mode);
   }, []);
   // Nœuds récupérés depuis Mosaic (DuckDB)
   const [mosaicNodes, setMosaicNodes] = useState<GraphNode[]>([]);
@@ -436,10 +362,13 @@ export function ReconnectGraphDashboard({
   
   const handleLassoMigrationComplete = useCallback(() => {
     setIsLassoMigrating(false);
-    // Show success modal when lasso migration completes
-    setShowLassoSuccessModal(true);
+    // Show success modal only if at least 2 accounts were followed (avoid intrusive modal for small results)
+    const totalSucceeded = (lassoMigrationResults?.bluesky?.succeeded || 0) + (lassoMigrationResults?.mastodon?.succeeded || 0);
+    if (totalSucceeded >= 2) {
+      setShowLassoSuccessModal(true);
+    }
     setShowProgressPanel(false);
-  }, []);
+  }, [lassoMigrationResults]);
   
   // State for lasso panel active tab (to control highlight)
   const [lassoActiveTab, setLassoActiveTab] = useState<'found' | 'connected'>('found');
@@ -526,8 +455,6 @@ export function ReconnectGraphDashboard({
   const handleLoginModalClose = useCallback(() => {
     setShowLoginModal(false);
     setHasUserDismissedModal(true);
-    // Force discover view when user dismisses modal
-    setViewMode('discover');
   }, []);
 
   // Handle successful login
@@ -538,10 +465,13 @@ export function ReconnectGraphDashboard({
     onClearInvalidTokenProviders?.();
   }, [recheckAuth, onClearInvalidTokenProviders]);
 
-  // Handle migration complete - show success modal
+  // Handle migration complete - show success modal only if at least 2 accounts were followed
   const handleMigrationComplete = useCallback(() => {
-    setShowSuccessModal(true);
-  }, []);
+    const totalSucceeded = (migrationResults?.bluesky?.succeeded || 0) + (migrationResults?.mastodon?.succeeded || 0);
+    if (totalSucceeded >= 2) {
+      setShowSuccessModal(true);
+    }
+  }, [migrationResults]);
 
   // Determine if personal views are blocked
   // NOT blocked if user has twitter_username (can show network from matching_found even without Bluesky/Mastodon)
@@ -585,11 +515,8 @@ export function ReconnectGraphDashboard({
 
   // Callback to reset the graph view (forces remount of EmbeddingView)
   const handleResetView = useCallback(() => {
-    // Clear viewport cookies so the view resets to default position
-    if (typeof document !== 'undefined') {
-      document.cookie = 'graph_viewport_state=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-      document.cookie = 'graph_ui_state=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-    }
+    // Clear all graph UI cookies so the view resets to default position
+    clearGraphUiState();
     setViewResetKey(prev => prev + 1);
   }, []);
 
@@ -717,13 +644,11 @@ export function ReconnectGraphDashboard({
     // Skip if already switched
     if (hasAutoSwitchedToFollowings.current) return;
     
-    // Check if there's a saved cookie preference FIRST
-    const savedViewMode = typeof window !== 'undefined' 
-      ? document.cookie.split('; ').find(row => row.startsWith('graph_view_mode='))?.split('=')[1]
-      : null;
+    // Check if there's a saved cookie preference FIRST (using centralized helper)
+    const savedState = typeof window !== 'undefined' ? getGraphUiState() : { viewMode: undefined };
     
     // If user has a saved preference, respect it and mark as switched
-    if (savedViewMode && ['discover', 'followings', 'followers'].includes(savedViewMode)) {
+    if (savedState.viewMode) {
       hasAutoSwitchedToFollowings.current = true;
       return;
     }
