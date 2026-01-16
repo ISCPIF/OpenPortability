@@ -10,6 +10,7 @@ import { CommunityColorPicker } from './CommunityColorPicker';
 import { FloatingLassoSelectionPanelLight } from './panels/FloatingLassoSelectionPanelLight';
 import { useCommunityColors } from '@/hooks/useCommunityColors';
 import { GraphNode } from '@/lib/types/graph';
+import { clearGraphUiState } from '@/lib/utils/graphCookies';
 
 // Dynamic import to avoid SSR issues with embedding-atlas WASM
 const ReconnectGraphVisualization = dynamic(
@@ -160,11 +161,8 @@ export function DiscoverGraphDashboard({ onLoginClick }: DiscoverGraphDashboardP
 
   // Callback to reset the graph view (forces remount of EmbeddingView)
   const handleResetView = useCallback(() => {
-    // Clear viewport cookies so the view resets to default position
-    if (typeof document !== 'undefined') {
-      document.cookie = 'graph_viewport_state=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-      document.cookie = 'graph_ui_state=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
-    }
+    // Clear all graph UI cookies so the view resets to default position
+    clearGraphUiState();
     setViewResetKey(prev => prev + 1);
   }, []);
 

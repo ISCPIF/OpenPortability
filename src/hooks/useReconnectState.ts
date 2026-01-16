@@ -319,6 +319,11 @@ export function useReconnectState() {
       setIsLoading(false);
       return;
     }
+    
+    // Always load global stats for any authenticated user
+    // Global stats should be available to everyone with a session
+    refreshStats();
+    
     // Permettre l'accès si l'utilisateur a onboarded OU a un compte Twitter (twitter_id ou twitter_username)
     const hasTwitterAccount = session.user?.twitter_id || session.user?.twitter_username;
     if (!session.user?.has_onboarded && !hasTwitterAccount) {
@@ -329,10 +334,6 @@ export function useReconnectState() {
 
     // NOTE: matching_found is now loaded by GraphDataContext.fetchPersonalData()
     // called from ReconnectGraphDashboard. This hook only syncs from global cache.
-    // Stats are loaded after personal data is ready.
-    
-    // Charger les stats (indépendant du matching)
-    refreshStats();
     
     setIsLoading(false);
   }, [session?.user?.id, status, refreshStats]); // Uniquement se déclencher sur les changements d'ID utilisateur et de status

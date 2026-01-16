@@ -12,6 +12,8 @@ const QuerySchema = z.object({
   handle: z.string()
     .trim()
     .transform((s) => (s.startsWith('@') ? s.slice(1) : s))
+    // Auto-append .bsky.social if handle has no dot (e.g., "thiboz" -> "thiboz.bsky.social")
+    .transform((s) => (s.includes('.') ? s : `${s}.bsky.social`))
     .refine((s) => s.length >= 1 && s.length <= 253, {
       message: 'Invalid Bluesky handle length',
     })
@@ -24,16 +26,24 @@ const QuerySchema = z.object({
 export const GET = withPublicValidation(
   z.object({}).passthrough(),
   async (request: NextRequest) => {
-    const handle = request.nextUrl.searchParams.get("handle")!;
+    let handle = request.nextUrl.searchParams.get("handle")!;
     const state = request.nextUrl.searchParams.get("state") || undefined;
+
+    // Normalize handle: remove @ prefix and auto-append .bsky.social if no domain
+    if (handle.startsWith('@')) {
+      handle = handle.slice(1);
+    }
+    if (!handle.includes('.')) {
+      handle = `${handle}.bsky.social`;
+    }
 
     try {
       const client = await createBlueskyOAuthClient();
       const url = await client.authorize(handle, { state });
       return NextResponse.redirect(url);
     } catch (err: any) {
-      logger.logError('API', 'GET /api/auth/bluesky/oauth', err?.message, 'system', { 
-        message: 'Logout failed' 
+      logger.logError('API', 'GET /api/auth/bluesky/oauth', `Failed to resolve identity: ${handle}`, 'system', { 
+        error: err?.message 
       });
       return NextResponse.json({ error: err?.message || "Failed to initiate Bluesky OAuth" }, { status: 500 });
     }

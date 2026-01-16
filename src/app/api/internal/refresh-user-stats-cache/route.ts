@@ -3,6 +3,7 @@ import { redis } from '@/lib/redis';
 import logger from '@/lib/log_utils';
 import { withInternalValidation } from '@/lib/validation/internal-middleware';
 import { z } from 'zod';
+import { publishUserStatsUpdate } from '@/lib/sse-publisher';
 
 // Schéma pour valider le payload du webhook PostgreSQL
 const UserStatsPayloadSchema = z.object({
@@ -50,6 +51,27 @@ async function handleRefreshUserStatsCache(
       user_id,
       statsKeys: Object.keys(stats || {})
     });
+
+    // 3. Publish SSE event to notify connected clients
+    try {
+      const sseStats = {
+        connections: stats.connections || { followers: 0, following: 0, totalEffectiveFollowers: 0 },
+        matches: stats.matches || {
+          bluesky: { total: 0, hasFollowed: 0, notFollowed: 0 },
+          mastodon: { total: 0, hasFollowed: 0, notFollowed: 0 },
+        },
+      };
+      await publishUserStatsUpdate(user_id, sseStats);
+      logger.logInfo('WEBHOOK', 'POST /api/internal/refresh-user-stats-cache', 'SSE event published for user stats', 'system', {
+        user_id
+      });
+    } catch (sseError) {
+      // Don't fail the request if SSE publish fails
+      logger.logWarning('WEBHOOK', 'POST /api/internal/refresh-user-stats-cache', 'Failed to publish SSE event', 'system', {
+        user_id,
+        error: sseError instanceof Error ? sseError.message : String(sseError)
+      });
+    }
 
     return NextResponse.json({ 
       success: true, 

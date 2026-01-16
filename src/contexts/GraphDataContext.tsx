@@ -394,6 +394,9 @@ interface GraphDataContextValue {
   
   // Event subscription for cross-component updates
   subscribeToUpdates: (event: GraphDataEventType, callback: GraphDataEventCallback) => () => void;
+  
+  // Version counter for nodeType changes (triggers re-renders when nodeTypes change via SSE)
+  nodeTypeVersion: number;
 }
 
 const GraphDataContext = createContext<GraphDataContextValue | null>(null);
@@ -440,6 +443,9 @@ export function GraphDataProvider({ children }: GraphDataProviderProps) {
   
   // State to trigger re-renders when hashes change (but Sets stay stable)
   const [hashesVersion, setHashesVersion] = useState(0);
+  
+  // State to trigger re-renders when nodeTypes change via SSE
+  const [nodeTypeVersion, setNodeTypeVersion] = useState(0);
   
   const [matchingData, setMatchingDataState] = useState<MatchingTarget[]>(globalGraphState.matchingData);
   const [isHashesLoading, setIsHashesLoading] = useState(false);
@@ -901,6 +907,9 @@ export function GraphDataProvider({ children }: GraphDataProviderProps) {
       if (hasUpdates) {
         globalGraphState.baseNodes = updatedNodes;
         setBaseNodesState(updatedNodes);
+        
+        // Increment nodeTypeVersion to trigger re-renders in components using baseNodes
+        setNodeTypeVersion((v: number) => v + 1);
         
         // Also update IndexedDB cache with new node_type values
         const cachedNodes: CachedGraphNode[] = updatedNodes.map(node => ({
@@ -1738,6 +1747,7 @@ export function GraphDataProvider({ children }: GraphDataProviderProps) {
     refetchPersonalData,
     updateFollowingStatus,
     subscribeToUpdates,
+    nodeTypeVersion,
   }), [
     baseNodes,
     setBaseNodes,
@@ -1766,6 +1776,7 @@ export function GraphDataProvider({ children }: GraphDataProviderProps) {
     fetchPersonalData,
     refetchPersonalData,
     updateFollowingStatus,
+    nodeTypeVersion,
     subscribeToUpdates,
   ]);
 

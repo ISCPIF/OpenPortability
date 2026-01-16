@@ -18,6 +18,7 @@ import LoadingIndicator from '@/app/_components/layouts/LoadingIndicator';
 import { ParticulesBackground } from '@/app/_components/layouts/ParticulesBackground';
 import { useTheme } from '@/hooks/useTheme';
 import { invalidateHashesCache } from '@/contexts/GraphDataContext';
+import { setGraphViewMode } from '@/lib/utils/graphCookies';
 
 interface JobStatus {
   status: 'pending' | 'processing' | 'completed' | 'failed';
@@ -292,28 +293,8 @@ export default function LargeFilesPage() {
           // Set flag for useReconnectState to know we came from LargeFilesPage
           sessionStorage.setItem('fromLargeFiles', 'true');
           
-          // Set view mode cookies to 'followings' so reconnect page opens on followings view
-          // IMPORTANT: Must update BOTH cookies because graph_ui_state takes priority in getInitialViewMode()
-          const expires = new Date();
-          expires.setDate(expires.getDate() + 30);
-          document.cookie = `graph_view_mode=followings; expires=${expires.toUTCString()}; path=/; SameSite=Lax`;
-          
-          // Also update graph_ui_state (preserving viewport if exists)
-          const existingUiCookie = document.cookie
-            .split('; ')
-            .find(row => row.startsWith('graph_ui_state='))
-            ?.split('=')[1];
-          let viewport = null;
-          if (existingUiCookie) {
-            try {
-              const parsed = JSON.parse(decodeURIComponent(existingUiCookie));
-              viewport = parsed?.viewport ?? null;
-            } catch {
-              // ignore malformed cookie
-            }
-          }
-          const uiState = JSON.stringify({ viewMode: 'followings', viewport: viewport || undefined });
-          document.cookie = `graph_ui_state=${encodeURIComponent(uiState)}; expires=${expires.toUTCString()}; path=/; SameSite=Lax`;
+          // Set view mode to 'followings' so reconnect page opens on followings view
+          setGraphViewMode('followings');
           
           const locale = params.locale as string || 'fr';
           router.push(`/${locale}/reconnect`);
