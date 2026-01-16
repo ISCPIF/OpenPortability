@@ -793,7 +793,7 @@ export const pgGraphNodesRepository = {
    * Get a node's coord_hash by twitter_id
    * Used to broadcast node_type changes to other clients
    */
-  async getNodeCoordHashByTwitterId(twitterId: string): Promise<{ coord_hash: string; node_type: string } | null> {
+  async getNodeCoordHashByTwitterId(twitterId: string): Promise<{ coord_hash: string; node_type: string; x: number; y: number } | null> {
     try {
       const result = await queryPublic<{ x: number; y: number; node_type: string }>(
         `SELECT x, y, node_type FROM ${GRAPH_NODES_TABLE} WHERE id = $1`,
@@ -808,6 +808,8 @@ export const pgGraphNodesRepository = {
       return {
         coord_hash: coordHash(row.x, row.y),
         node_type: row.node_type || 'generic',
+        x: row.x,
+        y: row.y,
       }
     } catch (error) {
       const errorString = error instanceof Error ? error.message : String(error)

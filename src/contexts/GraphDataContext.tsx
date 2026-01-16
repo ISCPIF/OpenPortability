@@ -754,8 +754,71 @@ export function GraphDataProvider({ children }: GraphDataProviderProps) {
   // ===== SSE for real-time updates (replaces polling) =====
   // SSE handlers for labels, node types, and following status updates
   const handleSSELabels = useCallback(async (data: SSELabelsData) => {
-    console.log('🔌 [SSE] Labels update received:', data);
+    // Handle incremental label changes (add/remove single label)
+    if (data.incremental && data.change) {
+      const { coord_hash, action, label } = data.change;
+      console.log(`🔌 [SSE] Incremental label ${action}: ${coord_hash}`);
+      
+      if (action === 'add' && label) {
+        // Add new label to existing state
+        const newLabelMap = { ...globalGraphState.personalLabelMap, [coord_hash]: label.text };
+        const newFloatingLabel: FloatingLabel = {
+          coord_hash,
+          x: label.x,
+          y: label.y,
+          text: label.text,
+          priority: label.priority || 50,
+          level: 0,
+        };
+        // Check if label already exists, if so update it, otherwise add
+        const existingIndex = globalGraphState.personalFloatingLabels.findIndex(l => l.coord_hash === coord_hash);
+        let newFloatingLabels: FloatingLabel[];
+        if (existingIndex >= 0) {
+          newFloatingLabels = [...globalGraphState.personalFloatingLabels];
+          newFloatingLabels[existingIndex] = newFloatingLabel;
+        } else {
+          newFloatingLabels = [...globalGraphState.personalFloatingLabels, newFloatingLabel];
+        }
+        
+        globalGraphState.personalLabelMap = newLabelMap;
+        globalGraphState.personalFloatingLabels = newFloatingLabels;
+        setPersonalLabelMapState(newLabelMap);
+        setPersonalFloatingLabelsState(newFloatingLabels);
+        
+        // Update IndexedDB cache
+        graphIDB.save(CACHE_KEYS.PERSONAL_LABELS, { 
+          labelMap: newLabelMap, 
+          floatingLabels: newFloatingLabels, 
+          version: Date.now() 
+        }).catch(() => {});
+        
+        console.log(`🔌 [SSE] Added label for ${coord_hash}: "${label.text}"`);
+      } else if (action === 'remove') {
+        // Remove label from existing state
+        const newLabelMap = { ...globalGraphState.personalLabelMap };
+        delete newLabelMap[coord_hash];
+        const newFloatingLabels = globalGraphState.personalFloatingLabels.filter(l => l.coord_hash !== coord_hash);
+        
+        globalGraphState.personalLabelMap = newLabelMap;
+        globalGraphState.personalFloatingLabels = newFloatingLabels;
+        setPersonalLabelMapState(newLabelMap);
+        setPersonalFloatingLabelsState(newFloatingLabels);
+        
+        // Update IndexedDB cache
+        graphIDB.save(CACHE_KEYS.PERSONAL_LABELS, { 
+          labelMap: newLabelMap, 
+          floatingLabels: newFloatingLabels, 
+          version: Date.now() 
+        }).catch(() => {});
+        
+        console.log(`🔌 [SSE] Removed label for ${coord_hash}`);
+      }
+      
+      graphDataEvents.emit('personalLabelsUpdated');
+      return;
+    }
     
+    // Handle full invalidation (fallback for non-incremental updates)
     if (data.invalidated) {
       // Reset the loaded flag to force a fresh fetch
       globalGraphState.personalLabelsLoaded = false;

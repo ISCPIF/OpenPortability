@@ -115,8 +115,9 @@ export const POST = withValidation(
               results.bluesky = await blueskyService.batchFollow(blueskyHandles)
             }
 
-            if (results.bluesky.failures.length > 0) {
-              logger.logError('API', 'POST /api/migrate/send_follow', 'Some Bluesky follows failed', userId, {
+            // Only log error if the entire batch failed (no successes at all)
+            if (results.bluesky.failures.length > 0 && results.bluesky.failures.length === blueskyHandles.length) {
+              logger.logWarning('API', 'POST /api/migrate/send_follow', 'Entire Bluesky batch failed', userId, {
                 failureCount: results.bluesky.failures.length,
                 errors: results.bluesky.failures.map((f: any) => f.error)
               });
@@ -288,16 +289,12 @@ export const POST = withValidation(
               mastodonTargets
             )
 
-            if (results.mastodon.failures.length > 0) {
-              logger.logError('API', 'POST /api/migrate/send_follow', 'Some Mastodon follows failed', userId, {
+            // Only log error if the entire batch failed (no successes at all)
+            if (results.mastodon.failures.length > 0 && results.mastodon.failures.length === mastodonTargets.length) {
+              logger.logWarning('API', 'POST /api/migrate/send_follow', 'Entire Mastodon batch failed', userId, {
                 failureCount: results.mastodon.failures.length,
                 errors: results.mastodon.failures.map((f: any) => f.error)
               });
-            }
-            else
-            {
-              console.log('Mastodon follows succeeded');
-              console.log(results.mastodon);
             }
 
             // Group accounts by type

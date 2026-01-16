@@ -248,6 +248,20 @@ export function EmbeddingViewWrapper(props: EmbeddingViewWrapperProps) {
     const view = new SelectedEmbeddingClass(containerRef.current, viewProps);
     viewRef.current = view;
     
+    // Force apply viewport state after creation if provided
+    // embedding-atlas may not apply viewportState correctly on initial render
+    const initialViewport = props.viewportState;
+    if (initialViewport && view.update) {
+      // Small delay to ensure the view is fully initialized
+      setTimeout(() => {
+        try {
+          view.update({ viewportState: initialViewport });
+        } catch (e) {
+          // Ignore errors - view might not support update yet
+        }
+      }, 50);
+    }
+    
     setIsLoading(false);
     
     // Signal that graph is ready after a short delay for rendering

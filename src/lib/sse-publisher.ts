@@ -71,6 +71,21 @@ export async function publishNodeTypeChanges(changes: Array<{ coord_hash: string
 }
 
 /**
+ * Publish incremental label change (add or remove a single label)
+ * This allows clients to update their label cache without refetching everything
+ */
+export async function publishLabelChange(change: {
+  coord_hash: string;
+  action: 'add' | 'remove';
+  label?: { x: number; y: number; text: string; priority?: number };
+}): Promise<boolean> {
+  return publishSSEEvent('labels', { 
+    incremental: true,
+    change 
+  });
+}
+
+/**
  * Publish follower hashes update for a specific user
  */
 export async function publishFollowerHashesUpdate(

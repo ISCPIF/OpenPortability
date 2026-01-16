@@ -609,6 +609,11 @@
         }
       }
     },
+    "visibility": {
+      "title": "Visible on graph",
+      "visible": "Your name is visible to others",
+      "hidden": "Your name is hidden from others"
+    },
     "buttons": {
       "showAllFollowers": "Show all my followers",
       "showAllFollowersTooltip": "Display all your followers highlighted on the graph",
