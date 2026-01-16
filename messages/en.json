@@ -58,11 +58,15 @@
           "connect" : "Connect",
           "error": {
             "required": "The name of your server is required",
-            "unreachable": "Instance is unreachable. Please check the URL and try again.",
+            "unreachable": "Instance is unreachable. Please check the instance name and try again.",
             "fetch_instances": "Error fetching instances.",
             "invalid_format": "Invalid instance format. Example: mastodon.social",
             "special_chars": "Instance cannot contain special characters",
-            "too_long": "Instance name is too long"
+            "too_long": "Instance name is too long",
+            "unreachable_instance": "The instance \"{instance}\" is unreachable. Please check the instance name and try again.",
+            "invalid_instance": "The instance \"{instance}\" does not exist or is not a valid Mastodon server.",
+            "oauth_failed": "Failed to connect to \"{instance}\". The server may be temporarily unavailable.",
+            "unknown": "An unexpected error occurred while connecting to \"{instance}\". Please try again."
           }
 
         },
@@ -895,6 +899,26 @@
       "Default": {
         "title": "Authentication error",
         "message": "An unexpected error occurred during authentication.",
+        "action": "Retry"
+      },
+      "MastodonInstance_INSTANCE_UNREACHABLE": {
+        "title": "Instance unreachable",
+        "message": "The Mastodon instance could not be reached. Please check the instance name and try again.",
+        "action": "Retry"
+      },
+      "MastodonInstance_INSTANCE_INVALID": {
+        "title": "Invalid instance",
+        "message": "This does not appear to be a valid Mastodon server. Please check the URL.",
+        "action": "Retry"
+      },
+      "MastodonInstance_OAUTH_CREATION_FAILED": {
+        "title": "Connection failed",
+        "message": "Failed to connect to the Mastodon instance. The server may be temporarily unavailable.",
+        "action": "Retry"
+      },
+      "MastodonInstance_UNKNOWN_ERROR": {
+        "title": "Connection error",
+        "message": "An unexpected error occurred while connecting to the Mastodon instance.",
         "action": "Retry"
       }
     }

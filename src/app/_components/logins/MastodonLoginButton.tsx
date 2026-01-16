@@ -1,11 +1,19 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { signIn } from "next-auth/react"
+import { useSearchParams } from 'next/navigation'
 import { SiMastodon } from 'react-icons/si'
 import { quantico } from "@/app/fonts/plex"
 import { Loader2, AlertCircle, Globe, ArrowRight, CheckCircle2 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useTheme } from '@/hooks/useTheme'
+
+// Error codes matching auth.ts MastodonErrorCode
+type MastodonErrorCode = 
+  | 'INSTANCE_UNREACHABLE'
+  | 'INSTANCE_INVALID'
+  | 'OAUTH_CREATION_FAILED'
+  | 'UNKNOWN_ERROR'
 
 interface MastodonLoginButtonProps {
   onLoadingChange?: (loading: boolean) => void
@@ -32,8 +40,51 @@ export default function MastodonLoginButton({
   const [instanceError, setInstanceError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [isFocused, setIsFocused] = useState(false)
+  const [serverError, setServerError] = useState<{ code: MastodonErrorCode; instance: string } | null>(null)
   const t = useTranslations('dashboardLoginButtons')
   const { isDark } = useTheme()
+  const searchParams = useSearchParams()
+
+  // Check for server-side Mastodon errors in URL params
+  useEffect(() => {
+    const errorCode = searchParams.get('mastodon_error') as MastodonErrorCode | null
+    const errorInstance = searchParams.get('mastodon_instance')
+    
+    if (errorCode && errorInstance) {
+      setServerError({ code: errorCode, instance: errorInstance })
+      setInstanceText(errorInstance)
+      
+      // Clean up URL params after reading
+      const url = new URL(window.location.href)
+      url.searchParams.delete('mastodon_error')
+      url.searchParams.delete('mastodon_instance')
+      window.history.replaceState({}, '', url.toString())
+    }
+  }, [searchParams])
+
+  // Get user-friendly error message based on error code
+  const getErrorMessage = (code: MastodonErrorCode, instance: string): string => {
+    switch (code) {
+      case 'INSTANCE_UNREACHABLE':
+        return t('services.mastodon.error.unreachable_instance', { instance })
+      case 'INSTANCE_INVALID':
+        return t('services.mastodon.error.invalid_instance', { instance })
+      case 'OAUTH_CREATION_FAILED':
+        return t('services.mastodon.error.oauth_failed', { instance })
+      case 'UNKNOWN_ERROR':
+      default:
+        return t('services.mastodon.error.unknown', { instance })
+    }
+  }
+
+  // Clear server error when user starts typing
+  const handleInstanceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setInstanceError('')
+    setServerError(null)
+    const instanceName = e.target.value?.trim()
+    validateInstance(instanceName)
+    setInstanceText(e.target.value)
+  }
 
   const validateInstance = (instance: string): boolean => {
     setInstanceError('')
@@ -63,12 +114,35 @@ export default function MastodonLoginButton({
     try {
       setIsLoading(true)
       onLoadingChange(true)
+      setServerError(null)
+      
+      const trimmedInstance = instance.trim()
+      
+      // First, verify the instance is reachable before starting OAuth flow
+      const verifyResponse = await fetch('/api/auth/mastodon/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ instance: trimmedInstance })
+      })
+      
+      const verifyResult = await verifyResponse.json()
+      
+      if (!verifyResult.valid) {
+        // Instance is not valid - show error instead of starting broken OAuth flow
+        const errorCode = verifyResult.error as MastodonErrorCode
+        setServerError({ code: errorCode, instance: trimmedInstance })
+        setIsLoading(false)
+        onLoadingChange(false)
+        return
+      }
+      
+      // Instance is valid, proceed with OAuth
       const callbackUrl = window.location.pathname.includes('/reconnect') ? '/reconnect' : '/dashboard'
 
       const result = await signIn("mastodon", {
         redirect: false,
         callbackUrl: callbackUrl
-      }, { instance: instance.trim() })
+      }, { instance: trimmedInstance })
 
       if (result?.error) {
         onError(result.error)
@@ -166,16 +240,11 @@ export default function MastodonLoginButton({
               type="text"
               list="known_instances"
               value={instanceText}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                setInstanceError('')
-                const instanceName = e.target.value?.trim()
-                validateInstance(instanceName)
-                setInstanceText(e.target.value)
-              }}
+              onChange={handleInstanceChange}
               onFocus={() => setIsFocused(true)}
               onBlur={() => setIsFocused(false)}
               placeholder="mastodon.social"
-              className={`${quantico.className} w-full pl-11 pr-4 py-3 rounded-xl border-2 transition-all duration-200 outline-none ${inputClasses} ${instanceError ? 'border-red-500' : ''}`}
+              className={`${quantico.className} w-full pl-11 pr-4 py-3 rounded-xl border-2 transition-all duration-200 outline-none ${inputClasses} ${instanceError || serverError ? 'border-red-500' : ''}`}
               disabled={isLoading}
             />
             {isFocused && !instanceError && (
@@ -195,9 +264,9 @@ export default function MastodonLoginButton({
           </datalist>
         </div>
 
-        {/* Error */}
+        {/* Error - client-side validation or server-side error */}
         <AnimatePresence>
-          {instanceError && (
+          {(instanceError || serverError) && (
             <motion.div
               initial={{ opacity: 0, y: -8 }}
               animate={{ opacity: 1, y: 0 }}
@@ -205,7 +274,9 @@ export default function MastodonLoginButton({
               className={`flex items-center gap-3 p-3 rounded-xl ${isDark ? 'bg-red-500/20 border border-red-500/30' : 'bg-red-50 border border-red-200'}`}
             >
               <AlertCircle className={`w-4 h-4 flex-shrink-0 ${isDark ? 'text-red-400' : 'text-red-500'}`} />
-              <p className={`${quantico.className} text-sm ${isDark ? 'text-red-300' : 'text-red-600'}`}>{instanceError}</p>
+              <p className={`${quantico.className} text-sm ${isDark ? 'text-red-300' : 'text-red-600'}`}>
+                {instanceError || (serverError && getErrorMessage(serverError.code, serverError.instance))}
+              </p>
             </motion.div>
           )}
         </AnimatePresence>

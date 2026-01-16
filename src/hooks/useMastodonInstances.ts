@@ -8,7 +8,8 @@ export function useMastodonInstances() {
         try {
           const response = await fetch('/api/auth/mastodon');
           const data = await response.json();
-          if (data.success) {
+          // L'API retourne { instances: [...] } directement
+          if (data.instances && Array.isArray(data.instances)) {
             setMastodonInstances(data.instances);
           }
         } catch (error) {
