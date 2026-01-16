@@ -5,10 +5,9 @@ import type React from 'react';
 import { useSession } from "next-auth/react";
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, Globe, Settings, Home, Map } from 'lucide-react';
+import { ChevronDown, Globe, Settings, Map } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { usePathname } from 'next/navigation';
-import { useDashboardState } from '@/hooks/useDashboardState';
 import { useTheme } from '@/hooks/useTheme';
 import { useCommunityColors } from '@/hooks/useCommunityColors';
 import { quantico } from '@/app/fonts/plex';
@@ -197,30 +196,12 @@ const AuthenticatedHeader = () => {
   const isUploadPage = pathname.includes('/upload');
   const isLargeFilePage = pathname.includes('/large-file');
   const isSettingsPage = pathname.includes('/settings');
-  const isDashboardPage = pathname.includes('/dashboard');
-
-  // Get user info for button visibility logic
-  const user = session?.user as { 
-    has_onboarded?: boolean; 
-    twitter_id?: string | null; 
-    bluesky_id?: string | null; 
-    mastodon_id?: string | null; 
-  } | undefined;
-  
-  // Count connected accounts
-  const connectedAccounts = [
-    user?.twitter_id,
-    user?.bluesky_id,
-    user?.mastodon_id,
-  ].filter(Boolean).length;
 
   // Button visibility rules:
   // - Reconnect: visible except on /reconnect, /upload, /large-file
   // - Settings: visible except on /settings
-  // - Dashboard: visible if connectedAccounts === 1 OR has_onboarded === false
   const showReconnectButton = !isReconnectPage && !isUploadPage && !isLargeFilePage;
   const showSettingsButton = !isSettingsPage;
-  const showDashboardButton = !isReconnectPage && !isDashboardPage && (connectedAccounts === 1 || user?.has_onboarded === false);
 
   return (
     <header 
@@ -345,29 +326,6 @@ const AuthenticatedHeader = () => {
               >
                 <Map className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">{t('reconnect')}</span>
-              </Link>
-            )}
-            {showDashboardButton && (
-              <Link
-                href="/dashboard"
-                className="flex items-center gap-1.5 px-2.5 py-1 border rounded transition-all duration-200"
-                style={{
-                  backgroundColor: isDark ? `${accentColor}0d` : 'rgba(0, 0, 0, 0.02)',
-                  borderColor: isDark ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.1)',
-                  color: isDark ? '#ffffff' : colors.text,
-                  fontSize: '12px',
-                }}
-                onMouseEnter={(e: React.MouseEvent<HTMLAnchorElement>) => {
-                  e.currentTarget.style.borderColor = isDark ? accentColor : colors.text;
-                  e.currentTarget.style.boxShadow = `0 0 10px ${accentColor}4d`;
-                }}
-                onMouseLeave={(e: React.MouseEvent<HTMLAnchorElement>) => {
-                  e.currentTarget.style.borderColor = isDark ? `${accentColor}4d` : 'rgba(0, 0, 0, 0.1)';
-                  e.currentTarget.style.boxShadow = 'none';
-                }}
-              >
-                <Home className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">{t('returnToDashboard')}</span>
               </Link>
             )}
             {showSettingsButton && (

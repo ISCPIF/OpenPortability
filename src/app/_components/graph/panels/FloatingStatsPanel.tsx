@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
-import { ArrowUpRight, Check, Users, UserPlus, Activity, Layers, Star, Upload, LogIn, Info, X, ChevronUp, ChevronDown, Network, UserCheck } from 'lucide-react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
+import { ArrowUpRight, Check, Users, UserPlus, Activity, Layers, Star, Upload, LogIn, Info, X, ChevronUp, ChevronDown, Network, UserCheck, Eye, EyeOff, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
@@ -12,6 +12,7 @@ import blueskyIcon from '../../../../../public/newSVG/BS.svg';
 import twitterIcon from '../../../../../public/newSVG/X.svg';
 import { ReconnectLoginModal } from '@/app/_components/modales/ReconnectLoginModal';
 import { quantico } from '@/app/fonts/plex';
+import { useGraphDataOptional } from '@/contexts/GraphDataContext';
 
 // Tooltip component for hover info
 function InfoTooltip({ 
@@ -97,6 +98,8 @@ interface FloatingStatsPanelProps {
   onShowEffectiveFollowers?: () => void; // callback to highlight only effective followers (purple) - followers who followed via OP
   onResetView?: () => void; // callback to reset graph viewport to initial state
   lassoConnectedCount?: number; // number of lasso connected nodes to show in legend
+  currentConsentLevel?: 'no_consent' | 'only_to_followers_of_followers' | 'all_consent' | null; // current user consent level for visibility
+  onConsentLevelChange?: (level: 'no_consent' | 'only_to_followers_of_followers' | 'all_consent') => void; // callback when consent level changes
   globalStats?: {
     users: { total: number; onboarded: number };
     connections: {
@@ -128,9 +131,12 @@ export function FloatingStatsPanel({
   onShowEffectiveFollowers,
   onResetView,
   lassoConnectedCount = 0,
+  currentConsentLevel,
+  onConsentLevelChange,
   globalStats,
 }: FloatingStatsPanelProps) {
   const t = useTranslations('floatingStatsPanel');
+  const graphData = useGraphDataOptional();
   
   // Collapsed state - default to collapsed on mobile, expanded on desktop
   const [isCollapsed, setIsCollapsed] = useState(true);
@@ -150,8 +156,49 @@ export function FloatingStatsPanel({
   // Reset view animation state
   const [isResetting, setIsResetting] = useState(false);
 
-  // Check user state
+  // Check user state (moved up for useCallback dependency)
   const isLoggedIn = !!session?.user;
+  
+  // Visibility toggle state
+  const [isUpdatingVisibility, setIsUpdatingVisibility] = useState(false);
+  const [visibilityError, setVisibilityError] = useState<string | null>(null);
+  const isVisible = currentConsentLevel === 'all_consent';
+  
+  // Handle visibility toggle
+  const handleVisibilityToggle = useCallback(async () => {
+    if (!isLoggedIn || isUpdatingVisibility) return;
+    
+    setIsUpdatingVisibility(true);
+    setVisibilityError(null);
+    
+    const newLevel = isVisible ? 'no_consent' : 'all_consent';
+    
+    try {
+      const response = await fetch('/api/graph/consent_labels', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ consent_level: newLevel }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to update visibility');
+      }
+
+      // Update local state immediately for responsive UI
+      onConsentLevelChange?.(newLevel);
+      
+      // SSE will handle the incremental label update for other clients
+      // No need to refetch all labels - the SSE handler in GraphDataContext
+      // will add/remove the single label that changed
+    } catch (err) {
+      setVisibilityError(err instanceof Error ? err.message : 'An error occurred');
+      // Revert on error
+      onConsentLevelChange?.(isVisible ? 'all_consent' : 'no_consent');
+    } finally {
+      setIsUpdatingVisibility(false);
+    }
+  }, [isLoggedIn, isUpdatingVisibility, isVisible, graphData, onConsentLevelChange]);
   const hasOnboarded = session?.user?.has_onboarded ?? false;
   const hasTwitter = !!session?.user?.twitter_username;
   const hasBluesky = !!session?.user?.bluesky_username;
@@ -725,6 +772,43 @@ export function FloatingStatsPanel({
                   </div>
                 )}
               </div>
+            </div>
+          )}
+
+          {/* Visibility Toggle - Only in Discover mode for logged in users */}
+          {isLoggedIn && !showFollowers && !showFollowing && (
+            <div className="mt-3 pt-3 border-t border-slate-700/50">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  {isVisible ? (
+                    <Eye className="w-4 h-4 text-emerald-400" />
+                  ) : (
+                    <EyeOff className="w-4 h-4 text-slate-500" />
+                  )}
+                  <div>
+                    <span className="text-[11px] text-white block">{t('visibility.title')}</span>
+                    <span className="text-[9px] text-slate-400">{isVisible ? t('visibility.visible') : t('visibility.hidden')}</span>
+                  </div>
+                </div>
+                <button
+                  onClick={handleVisibilityToggle}
+                  disabled={isUpdatingVisibility}
+                  className={`relative w-10 h-5 rounded-full transition-colors ${
+                    isUpdatingVisibility ? 'opacity-50 cursor-wait' : 'cursor-pointer'
+                  } ${isVisible ? 'bg-emerald-500' : 'bg-slate-600'}`}
+                >
+                  {isUpdatingVisibility ? (
+                    <Loader2 className="w-3 h-3 text-white absolute top-1 left-1/2 -translate-x-1/2 animate-spin" />
+                  ) : (
+                    <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${
+                      isVisible ? 'translate-x-5' : 'translate-x-0.5'
+                    }`} />
+                  )}
+                </button>
+              </div>
+              {visibilityError && (
+                <p className="text-[9px] text-red-400 mt-1">{visibilityError}</p>
+              )}
             </div>
           )}
 

@@ -594,6 +594,11 @@
       "totalNodes": "Nœuds totaux",
       "communities": "Communautés"
     },
+    "visibility": {
+      "title": "Visible sur le graphe",
+      "visible": "Votre nom est visible par les autres",
+      "hidden": "Votre nom est caché des autres"
+    },
     "buttons": {
       "showAllFollowers": "Afficher tous mes followers",
       "showAllFollowersTooltip": "Affiche tous vos followers surlignés sur le graphe",

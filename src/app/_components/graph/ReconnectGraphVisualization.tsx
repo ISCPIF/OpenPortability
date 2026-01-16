@@ -1209,7 +1209,7 @@ export function ReconnectGraphVisualization({
   // Only force remount when explicitly requested via parent's viewResetKey.
 
   // Mode standard (personal network / members) : utilise EmbeddingView avec données locales
-  // Use labels count as key to force remount when labels change significantly
+  // Use labels count as key to force remount when labels change
   // This is needed because embedding-atlas doesn't properly update labels via update()
   const labelsKey = validLabels?.length ?? 0;
   

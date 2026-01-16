@@ -115,6 +115,21 @@ export function ReconnectGraphDashboard({
   
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
+  const [userConsentLevel, setUserConsentLevel] = useState<'no_consent' | 'only_to_followers_of_followers' | 'all_consent' | null>(null);
+  
+  // Fetch user's current consent level
+  useEffect(() => {
+    if (session?.user?.id) {
+      fetch('/api/graph/consent_labels/user')
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            setUserConsentLevel(data.consent_level);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [session?.user?.id]);
   // View mode: 'discover' = Mosaic (DuckDB), 'followings' = following network, 'followers' = followers network
   const hasOnboarded = session?.user?.has_onboarded ?? false;
   const hasTwitterUsername = !!session?.user?.twitter_username;
@@ -1079,6 +1094,8 @@ export function ReconnectGraphDashboard({
           onShowEffectiveFollowers={handleShowEffectiveFollowers}
           onResetView={handleResetView}
           lassoConnectedCount={connectedHashes.size}
+          currentConsentLevel={userConsentLevel}
+          onConsentLevelChange={setUserConsentLevel}
           globalStats={globalStats}
         />
       )}

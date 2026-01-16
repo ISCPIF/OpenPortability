@@ -5,7 +5,7 @@ import { withValidation, withPublicValidation } from '@/lib/validation/middlewar
 import { z } from 'zod';
 import { auth } from '@/app/auth';
 import { redis } from '@/lib/redis';
-import { publishLabelsUpdate, publishNodeTypeChanges } from '@/lib/sse-publisher';
+import { publishLabelChange, publishNodeTypeChanges } from '@/lib/sse-publisher';
 
 // Redis keys for node_type changes sync
 const NODE_TYPE_CHANGES_KEY = 'graph:node-type-changes';
@@ -207,6 +207,28 @@ async function updateConsentLabelsHandler(
             coord_hash: nodeInfo.coord_hash,
             node_type: newNodeType,
           }]);
+          
+          // Publish incremental label change for other clients
+          // If becoming visible (all_consent), add the label; if hiding (no_consent), remove it
+          if (validatedData.consent_level === 'all_consent' && nodeInfo.x !== undefined && nodeInfo.y !== undefined) {
+            // Get user's display name for the label
+            const displayLabel = session?.user?.twitter_username || session?.user?.name || 'User';
+            await publishLabelChange({
+              coord_hash: nodeInfo.coord_hash,
+              action: 'add',
+              label: {
+                x: nodeInfo.x,
+                y: nodeInfo.y,
+                text: displayLabel,
+                priority: 100, // High priority to ensure visibility
+              }
+            });
+          } else if (validatedData.consent_level === 'no_consent') {
+            await publishLabelChange({
+              coord_hash: nodeInfo.coord_hash,
+              action: 'remove',
+            });
+          }
           
           logger.logInfo(
             'API',

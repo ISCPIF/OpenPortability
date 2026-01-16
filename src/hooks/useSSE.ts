@@ -23,8 +23,15 @@ export interface SSEEvent {
 }
 
 export interface SSELabelsData {
-  version: number;
-  invalidated: boolean;
+  version?: number;
+  invalidated?: boolean;
+  // Incremental update support
+  incremental?: boolean;
+  change?: {
+    coord_hash: string;
+    action: 'add' | 'remove';
+    label?: { x: number; y: number; text: string; priority?: number };
+  };
 }
 
 export interface SSENodeTypesData {
