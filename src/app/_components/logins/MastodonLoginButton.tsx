@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { signIn } from "next-auth/react"
 import { useSearchParams } from 'next/navigation'
 import { SiMastodon } from 'react-icons/si'
 import { quantico } from "@/app/fonts/plex"
-import { Loader2, AlertCircle, Globe, ArrowRight, CheckCircle2 } from 'lucide-react'
+import { Loader2, AlertCircle, Globe, ArrowRight, CheckCircle2, ChevronDown, Check } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useTheme } from '@/hooks/useTheme'
 
@@ -40,10 +40,42 @@ export default function MastodonLoginButton({
   const [instanceError, setInstanceError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [isFocused, setIsFocused] = useState(false)
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false)
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 })
   const [serverError, setServerError] = useState<{ code: MastodonErrorCode; instance: string } | null>(null)
   const t = useTranslations('dashboardLoginButtons')
   const { isDark } = useTheme()
   const searchParams = useSearchParams()
+  const dropdownRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
+  const inputContainerRef = useRef<HTMLDivElement>(null)
+
+  // Filter instances based on input
+  const filteredInstances = instances.filter(instance =>
+    instance.toLowerCase().includes(instanceText.toLowerCase())
+  )
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  // Calculate dropdown position when opening
+  useEffect(() => {
+    if (isDropdownOpen && inputContainerRef.current) {
+      const rect = inputContainerRef.current.getBoundingClientRect()
+      setDropdownPosition({
+        top: rect.top,
+        left: rect.right + 8 // 8px gap to the right
+      })
+    }
+  }, [isDropdownOpen])
 
   // Check for server-side Mastodon errors in URL params
   useEffect(() => {
@@ -84,6 +116,19 @@ export default function MastodonLoginButton({
     const instanceName = e.target.value?.trim()
     validateInstance(instanceName)
     setInstanceText(e.target.value)
+    // Open dropdown when typing
+    if (e.target.value && filteredInstances.length > 0) {
+      setIsDropdownOpen(true)
+    }
+  }
+
+  // Select instance from dropdown
+  const handleSelectInstance = (instance: string) => {
+    setInstanceText(instance)
+    setInstanceError('')
+    setServerError(null)
+    setIsDropdownOpen(false)
+    inputRef.current?.focus()
   }
 
   const validateInstance = (instance: string): boolean => {
@@ -227,27 +272,41 @@ export default function MastodonLoginButton({
       </div>
 
       <form onSubmit={(e: React.FormEvent) => { e.preventDefault(); handleSignIn(instanceText) }} className="space-y-4">
-        {/* Instance input */}
+        {/* Instance input with custom dropdown */}
         <div className="space-y-2">
           <label className={`${quantico.className} block text-xs font-medium uppercase tracking-wider ${isDark ? 'text-white/70' : 'text-slate-600'}`}>
             {t('services.mastodon.instance')}
           </label>
-          <div className="relative">
+          <div className="relative" ref={inputContainerRef}>
             <div className={`absolute left-4 top-1/2 -translate-y-1/2 ${isDark ? 'text-white/40' : 'text-slate-400'}`}>
               <Globe className="h-4 w-4" />
             </div>
             <input
+              ref={inputRef}
               type="text"
-              list="known_instances"
               value={instanceText}
               onChange={handleInstanceChange}
-              onFocus={() => setIsFocused(true)}
+              onFocus={() => {
+                setIsFocused(true)
+                if (filteredInstances.length > 0) setIsDropdownOpen(true)
+              }}
               onBlur={() => setIsFocused(false)}
               placeholder="mastodon.social"
-              className={`${quantico.className} w-full pl-11 pr-4 py-3 rounded-xl border-2 transition-all duration-200 outline-none ${inputClasses} ${instanceError || serverError ? 'border-red-500' : ''}`}
+              className={`${quantico.className} w-full pl-11 pr-10 py-3 rounded-xl border-2 transition-all duration-200 outline-none ${inputClasses} ${instanceError || serverError ? 'border-red-500' : ''}`}
               disabled={isLoading}
+              autoComplete="off"
             />
-            {isFocused && !instanceError && (
+            {/* Dropdown toggle button */}
+            {instances.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className={`absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-md transition-colors ${isDark ? 'hover:bg-white/10 text-white/40' : 'hover:bg-slate-100 text-slate-400'}`}
+              >
+                <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
+            )}
+            {isFocused && !instanceError && !serverError && (
               <motion.div
                 layoutId="mastodon-focus-ring"
                 className="absolute inset-0 rounded-xl border-2 border-violet-400 pointer-events-none"
@@ -256,12 +315,47 @@ export default function MastodonLoginButton({
                 exit={{ opacity: 0 }}
               />
             )}
+
+            {/* Custom dropdown - opens to the right, above all other components */}
+            <AnimatePresence>
+              {isDropdownOpen && filteredInstances.length > 0 && (
+                <motion.div
+                  ref={dropdownRef}
+                  initial={{ opacity: 0, x: -8, scale: 0.96 }}
+                  animate={{ opacity: 1, x: 0, scale: 1 }}
+                  exit={{ opacity: 0, x: -8, scale: 0.96 }}
+                  transition={{ duration: 0.15 }}
+                  style={{ 
+                    zIndex: 99999,
+                    position: 'fixed',
+                    top: dropdownPosition.top,
+                    left: dropdownPosition.left
+                  }}
+                  className={`w-64 py-2 rounded-xl border-2 shadow-2xl backdrop-blur-sm max-h-48 overflow-y-auto ${isDark ? 'bg-slate-900/95 border-white/20' : 'bg-white border-slate-200'}`}
+                >
+                  {filteredInstances.map((instance, index) => (
+                    <button
+                      key={index}
+                      type="button"
+                      onClick={() => handleSelectInstance(instance)}
+                      className={`${quantico.className} w-full px-4 py-2.5 text-left flex items-center gap-3 transition-colors ${isDark 
+                        ? 'hover:bg-violet-500/20 text-white/90' 
+                        : 'hover:bg-violet-50 text-slate-700'
+                      } ${instanceText === instance ? (isDark ? 'bg-violet-500/10' : 'bg-violet-50') : ''}`}
+                    >
+                      <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${isDark ? 'bg-violet-500/20' : 'bg-violet-100'}`}>
+                        <SiMastodon className={`h-4 w-4 ${isDark ? 'text-violet-400' : 'text-violet-600'}`} />
+                      </div>
+                      <span className="flex-1 text-sm font-medium">{instance}</span>
+                      {instanceText === instance && (
+                        <Check className={`h-4 w-4 ${isDark ? 'text-violet-400' : 'text-violet-600'}`} />
+                      )}
+                    </button>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
-          <datalist id="known_instances">
-            {instances.map((instance, index) => (
-              <option key={index} value={instance} />
-            ))}
-          </datalist>
         </div>
 
         {/* Error - client-side validation or server-side error */}
