@@ -497,7 +497,29 @@
         "statusReady": "Ready",
         "statusLoading": "Loading",
         "statusPending": "Pending"
+      },
+      "modes": {
+        "followers": {
+          "description": "See who follows you and where they are in the network"
+        },
+        "following": {
+          "description": "See who you follow and reconnect with them"
+        },
+        "discover": {
+          "description": "Explore the network and discover new accounts"
+        }
       }
+    },
+    "globalStats": {
+      "title": "OPENPORTABILITY",
+      "totalUsers": "Total users",
+      "totalConnections": "Total connections",
+      "totalReconnections": "Total reconnections"
+    },
+    "reconnectionStats": {
+      "reconnected": "Reconnected",
+      "found": "Found",
+      "effectiveFollowers": "Effective followers"
     },
     "stats": {
       "toConnect": "To connect",
@@ -582,6 +604,20 @@
           }
         }
       }
+    },
+    "buttons": {
+      "showAllFollowers": "Show all my followers",
+      "showAllFollowersTooltip": "Display all your followers highlighted on the graph",
+      "showMyNetwork": "Show my network",
+      "showMyNetworkTooltip": "Highlight your followers and following on the graph",
+      "showMyNode": "Show my node",
+      "showMyNodeTooltip": "Center the view on your position in the graph",
+      "showDiscovered": "Show discovered",
+      "showDiscoveredTooltip": "Connections created from lasso selection on the graph",
+      "showEffectiveFollowers": "Show effective followers",
+      "showEffectiveFollowersTooltip": "Followers who actually followed you on Bluesky or Mastodon via OpenPortability",
+      "resetView": "Reset view",
+      "resetting": "Resetting..."
     }
   },
   "refreshToken": {

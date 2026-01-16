@@ -519,6 +519,92 @@
       }
     }
   },
+  "floatingStatsPanel": {
+    "header": {
+      "exploration": {
+        "title": "Exploration",
+        "description": "Comptes les plus populaires sur OpenPortability",
+        "status": "Anonyme"
+      },
+      "discovery": {
+        "title": "Découverte",
+        "description": "Comptes les plus populaires sur OpenPortability",
+        "status": "Explorer"
+      },
+      "yourNetwork": {
+        "title": "Votre Réseau",
+        "description": "Vos followers superposés aux comptes populaires",
+        "statusReady": "Prêt",
+        "statusLoading": "Chargement",
+        "statusPending": "En attente"
+      },
+      "modes": {
+        "followers": {
+          "description": "Voir qui vous suit et où ils se trouvent dans le réseau"
+        },
+        "following": {
+          "description": "Voir qui vous suivez et vous reconnecter avec eux"
+        },
+        "discover": {
+          "description": "Explorer le réseau et découvrir de nouveaux comptes"
+        }
+      }
+    },
+    "globalStats": {
+      "title": "OPENPORTABILITY",
+      "totalUsers": "Utilisateurs totaux",
+      "totalConnections": "Connexions totales",
+      "totalReconnections": "Reconnexions totales"
+    },
+    "reconnectionStats": {
+      "reconnected": "Reconnectés",
+      "found": "Trouvés",
+      "effectiveFollowers": "Followers effectifs"
+    },
+    "stats": {
+      "toConnect": "À connecter",
+      "connected": "Connectés",
+      "importedFollowers": "Followers importés",
+      "importedFollowing": "Abonnements importés",
+      "effectiveFollowers": "Followers effectifs",
+      "retrievedFollowing": "Abonnements récupérés",
+      "retrievedFollowers": "Followers récupérés"
+    },
+    "network": {
+      "title": "Votre réseau",
+      "importArchive": "Importer votre archive Twitter",
+      "findConnections": "Trouver vos connexions"
+    },
+    "platforms": {
+      "title": "Vos plateformes",
+      "twitter": "Twitter/X",
+      "bluesky": "Bluesky",
+      "mastodon": "Mastodon",
+      "connected": "Connecté",
+      "connect": "+ Connecter"
+    },
+    "graph": {
+      "title": "Graphe",
+      "statusReady": "Prêt",
+      "statusLoading": "Chargement",
+      "totalNodes": "Nœuds totaux",
+      "communities": "Communautés"
+    },
+    "buttons": {
+      "showAllFollowers": "Afficher tous mes followers",
+      "showAllFollowersTooltip": "Affiche tous vos followers surlignés sur le graphe",
+      "showMyNetwork": "Afficher mon réseau",
+      "showMyNetworkTooltip": "Surligne vos followers et abonnements sur le graphe",
+      "showMyNode": "Afficher mon nœud",
+      "showMyNodeTooltip": "Centre la vue sur votre position dans le graphe",
+      "showDiscovered": "Afficher les découvertes",
+      "showDiscoveredTooltip": "Connexions créées à partir de la sélection lasso sur le graphe",
+      "showEffectiveFollowers": "Afficher les followers effectifs",
+      "showEffectiveFollowersTooltip": "Followers qui vous ont effectivement suivi sur Bluesky ou Mastodon via OpenPortability",
+      "resetView": "Réinitialiser la vue",
+      "resetting": "Réinitialisation..."
+    }
+  },
   "firstSeen": {
     "title": "Bienvenue !",
     "description": "Vous êtes sur le point d'exercer votre droit à la portabilité de vos données depuis X vers BlueSky et/ou Mastodon tout en participant à un projet de recherche sur les réseaux sociaux. Cela vous prendra 5min.\n\nOpenPortability va référencer vos identités numériques et vous aider à recréer progressivement votre communauté sur BlueSky et/ou Mastodon, sans impact sur votre compte X.\n\nAu fur et à mesure que d'autres utilisateurs s'inscriront sur OpenPortability les liens référencés sur X seront recréés sur BlueSky ou Mastodon avec leur accord. N'hésitez pas à encourager vos abonnés à faire de même !\n\nCette \"copie\" de votre réseau social peut prendre plusieurs jours.\n\nEn utilisant OpenPortability, vous acceptez que vos données soient traitées conformément à {lien} et consentez au transfert éventuel de vos données en dehors de l'Union européenne (ex. serveurs BlueSky).",
