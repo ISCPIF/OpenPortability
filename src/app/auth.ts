@@ -12,7 +12,27 @@ export type { BlueskyProfile }
 
 type MastodonAppCreds = { instance: string; client_id: string; client_secret: string }
 
-async function createMastodonApp(instance: string): Promise<MastodonAppCreds | null>{
+// Error codes for Mastodon app creation
+export type MastodonErrorCode = 
+  | 'INSTANCE_UNREACHABLE'
+  | 'INSTANCE_INVALID'
+  | 'OAUTH_CREATION_FAILED'
+  | 'UNKNOWN_ERROR'
+
+export class MastodonAppError extends Error {
+  code: MastodonErrorCode
+  instance: string
+  
+  constructor(code: MastodonErrorCode, instance: string, message: string) {
+    super(message)
+    this.name = 'MastodonAppError'
+    this.code = code
+    this.instance = instance
+  }
+}
+
+
+async function createMastodonApp(instance: string): Promise<MastodonAppCreds>{
   logger.logInfo('Auth', 'createMastodonApp', `Vérification de l'instance ${instance}`, undefined, { instance });
   
   const lcInstance = instance.toLowerCase()
@@ -36,68 +56,92 @@ async function createMastodonApp(instance: string): Promise<MastodonAppCreds | n
       "website": "https://app.beta.v2.helloquitx.com/"
     };
     
+    logger.logInfo('Auth', 'createMastodonApp', `Création d'une app OAuth pour ${lcInstance}`, undefined, { 
+      instance: lcInstance, 
+      redirectUri: formData.redirect_uris 
+    });
+    
+    let response: Response;
     try {
-      logger.logInfo('Auth', 'createMastodonApp', `Création d'une app OAuth pour ${lcInstance}`, undefined, { 
-        instance: lcInstance, 
-        redirectUri: formData.redirect_uris 
-      });
-      
-      const response = await fetch(url, {
+      response = await fetch(url, {
         method: 'POST',
         body: JSON.stringify(formData),
-        headers: {"Content-Type": "application/json"}
+        headers: {"Content-Type": "application/json"},
+        signal: AbortSignal.timeout(10000) // 10s timeout
       });
+    } catch (fetchError) {
+      const errorMessage = fetchError instanceof Error ? fetchError.message : 'Unknown fetch error';
+      logger.logError('Auth', 'createMastodonApp', 
+        `Instance ${lcInstance} injoignable: ${errorMessage}`, 
+        undefined, 
+        { instance: lcInstance, error: errorMessage }
+      );
+      throw new MastodonAppError(
+        'INSTANCE_UNREACHABLE',
+        lcInstance,
+        `L'instance ${lcInstance} est injoignable. Vérifiez l'URL.`
+      );
+    }
+    
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => 'Unknown error');
+      logger.logError('Auth', 'createMastodonApp', 
+        `Erreur lors de la création de l'app OAuth Mastodon (${response.status})`, 
+        undefined, 
+        { 
+          instance: lcInstance, 
+          status: response.status, 
+          statusText: response.statusText,
+          errorText
+        }
+      );
       
-      if (!response.ok) {
-        const errorText = await response.text().catch(() => 'Unknown error');
-        logger.logError('Auth', 'createMastodonApp', 
-          `Erreur lors de la création de l'app OAuth Mastodon (${response.status})`, 
-          undefined, 
-          { 
-            instance: lcInstance, 
-            status: response.status, 
-            statusText: response.statusText,
-            errorText
-          }
+      // 404 = instance doesn't exist or doesn't support Mastodon API
+      if (response.status === 404) {
+        throw new MastodonAppError(
+          'INSTANCE_INVALID',
+          lcInstance,
+          `L'instance ${lcInstance} n'existe pas ou n'est pas une instance Mastodon valide.`
         );
-        throw new Error(`Error while creating the Mastodon OAuth app: ${response.status} - ${errorText}`);
       }
       
-      const json = await response.json();
-      cachedAppData = {
+      throw new MastodonAppError(
+        'OAUTH_CREATION_FAILED',
+        lcInstance,
+        `Erreur lors de la création de l'app OAuth (${response.status}): ${errorText}`
+      );
+    }
+    
+    const json = await response.json();
+    cachedAppData = {
+      instance: lcInstance,
+      client_id: json.client_id,
+      client_secret: json.client_secret
+    };
+    
+    logger.logInfo('Auth', 'createMastodonApp', `App OAuth créée avec succès pour ${lcInstance}`, undefined, { 
+      instance: lcInstance, 
+      clientId: json.client_id 
+    });
+    
+    // Save to database (non-blocking, errors logged but not thrown)
+    try {
+      await pgMastodonInstanceRepository.createInstance({
         instance: lcInstance,
         client_id: json.client_id,
-        client_secret: json.client_secret
-      };
-      
-      logger.logInfo('Auth', 'createMastodonApp', `App OAuth créée avec succès pour ${lcInstance}`, undefined, { 
-        instance: lcInstance, 
-        clientId: json.client_id 
-      });
-      
-      try {
-        await pgMastodonInstanceRepository.createInstance({
-          instance: lcInstance,
-          client_id: json.client_id,
-          client_secret: json.client_secret,
-        })
-        logger.logInfo('Auth', 'createMastodonApp', 
-          `Instance ${lcInstance} enregistrée avec succès`, 
-          undefined, 
-          { instance: lcInstance }
-        );
-      } catch (error: any) {
-        logger.logError('Auth', 'createMastodonApp', 
-          `Erreur lors de l'enregistrement des informations d'OAuth`,
-          undefined, 
-          { instance: lcInstance, error: error?.message }
-        );
-      }
-    } catch (error) {
-      logger.logError('Auth', 'createMastodonApp', 
-        error instanceof Error ? error : new Error('Unknown error during Mastodon OAuth creation'), 
+        client_secret: json.client_secret,
+      })
+      logger.logInfo('Auth', 'createMastodonApp', 
+        `Instance ${lcInstance} enregistrée avec succès`, 
         undefined, 
         { instance: lcInstance }
+      );
+    } catch (dbError: unknown) {
+      const errorMessage = dbError instanceof Error ? dbError.message : 'Unknown error';
+      logger.logError('Auth', 'createMastodonApp', 
+        `Erreur lors de l'enregistrement des informations d'OAuth`,
+        undefined, 
+        { instance: lcInstance, error: errorMessage }
       );
     }
   } else {
@@ -106,7 +150,7 @@ async function createMastodonApp(instance: string): Promise<MastodonAppCreds | n
     });
   }
   
-  return cachedAppData
+  return cachedAppData!
 }
 
 // https://authjs.dev/reference/nextjs#lazy-initialization
@@ -121,7 +165,33 @@ export const { auth, signIn, signOut, handlers } = NextAuth(async req => {
       { instance }
     );
     
-    const res = await createMastodonApp(instance);
+    let res: MastodonAppCreds | null = null;
+    let mastodonError: MastodonAppError | null = null;
+    
+    try {
+      res = await createMastodonApp(instance);
+    } catch (error) {
+      if (error instanceof MastodonAppError) {
+        mastodonError = error;
+        logger.logError('Auth', 'mastodonSignIn', 
+          `Erreur Mastodon: ${error.code} - ${error.message}`,
+          undefined, 
+          { instance, errorCode: error.code }
+        );
+      } else {
+        mastodonError = new MastodonAppError(
+          'UNKNOWN_ERROR',
+          instance,
+          error instanceof Error ? error.message : 'Erreur inconnue'
+        );
+        logger.logError('Auth', 'mastodonSignIn', 
+          `Erreur inattendue lors de la création de l'app Mastodon`,
+          undefined, 
+          { instance, error: error instanceof Error ? error.message : 'Unknown' }
+        );
+      }
+    }
+    
     const mastodonProvider = authConfig.providers.find(prov => prov.id === "mastodon");
     
     if (mastodonProvider && res) {     
@@ -156,9 +226,17 @@ export const { auth, signIn, signOut, handlers } = NextAuth(async req => {
           authorization: oauthProv.authorization
         }
       );
+    } else if (mastodonError) {
+      // Fallback error handling - client should have caught this via /api/auth/mastodon/verify
+      // Log the error but let OAuth fail naturally (will show generic error)
+      logger.logError('Auth', 'mastodonSignIn', 
+        `Erreur Mastodon non interceptée côté client: ${mastodonError.code}`,
+        undefined, 
+        { errorCode: mastodonError.code, instance: mastodonError.instance }
+      );
     } else {
       logger.logError('Auth', 'mastodonSignIn', 
-        'Provider Mastodon non trouvé dans la configuration ou credentials introuvables',
+        'Provider Mastodon non trouvé dans la configuration',
         undefined, 
         { instance }
       );

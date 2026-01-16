@@ -77,7 +77,11 @@
             "fetch_instances": "Erreur lors de la récupération des instances.",
             "invalid_format": "Format d'instance invalide. Exemple: piaille.fr",
             "special_chars": "L'instance ne peut pas contenir de caractères spéciaux",
-            "too_long": "Le nom d'instance est trop long"
+            "too_long": "Le nom d'instance est trop long",
+            "unreachable_instance": "L'instance \"{instance}\" est inaccessible. Veuillez vérifier l'URL et réessayer.",
+            "invalid_instance": "L'instance \"{instance}\" n'existe pas ou n'est pas un serveur Mastodon valide.",
+            "oauth_failed": "Échec de connexion à \"{instance}\". Le serveur est peut-être temporairement indisponible.",
+            "unknown": "Une erreur inattendue s'est produite lors de la connexion à \"{instance}\". Veuillez réessayer."
           }
         },
         "bluesky": "BlueSky",
