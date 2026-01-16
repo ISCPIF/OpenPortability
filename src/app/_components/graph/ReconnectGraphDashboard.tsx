@@ -441,7 +441,7 @@ export function ReconnectGraphDashboard({
   
   // State for highlight controls (re-trigger highlight when user clicks buttons)
   const [highlightVersion, setHighlightVersion] = useState(0);
-  const [highlightMode, setHighlightMode] = useState<'network' | 'node' | 'connected' | 'members' | null>(null);
+  const [highlightMode, setHighlightMode] = useState<'network' | 'node' | 'connected' | 'members' | 'effective' | null>(null);
   
   // Listen for followingHashes updates (after follow actions) to refresh visualization
   useEffect(() => {

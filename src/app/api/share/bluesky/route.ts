@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
-import { BskyAgent } from '@atproto/api';
+import { Agent } from '@atproto/api';
 import { z } from "zod";
 import { withValidation } from "@/lib/validation/middleware";
-import { BlueskyService } from "@/lib/services/blueskyServices";
-import { BlueskyRepository } from "@/lib/repositories/blueskyRepository";
 import { AccountService } from "@/lib/services/accountService";
-import { decrypt } from '@/lib/encryption';
+import { createBlueskyOAuthClient } from "@/lib/services/blueskyOAuthClient";
 import logger from '@/lib/log_utils';
+import { readFileSync } from 'fs';
+import { join } from 'path';
 
 // Schéma de validation pour le partage sur Bluesky
 const BlueskyShareSchema = z.object({
@@ -18,8 +18,6 @@ const BlueskyShareSchema = z.object({
 // Type pour les données validées
 type BlueskyShareRequest = z.infer<typeof BlueskyShareSchema>;
 
-const blueskyRepository = new BlueskyRepository();
-const blueskyService = new BlueskyService(blueskyRepository);
 const accountService = new AccountService();
 
 async function blueskyShareHandler(req: Request, data: BlueskyShareRequest, session: any) {
@@ -35,7 +33,7 @@ async function blueskyShareHandler(req: Request, data: BlueskyShareRequest, sess
     }
 
     const account = await accountService.getAccountByProviderAndUserId('bluesky', session.user.id);    
-    if (!account || (!account.access_token && !account.refresh_token)) {
+    if (!account || !account.provider_account_id) {
       logger.logWarning('API', 'POST /api/share/bluesky', 'Not authorized to share on BlueSky', session.user.id);
       return NextResponse.json(
         { success: false, error: 'Not authorized to share on Bluesky' },
@@ -43,48 +41,60 @@ async function blueskyShareHandler(req: Request, data: BlueskyShareRequest, sess
       );
     }
 
-    const agent = new BskyAgent({ service: 'https://bsky.social' });
+    const did = account.provider_account_id;
+    
     try {
-        const accessToken = decrypt(account.access_token);
-        const refreshToken = decrypt(account.refresh_token);
-        await agent.resumeSession({
-          accessJwt: accessToken,
-          refreshJwt: refreshToken,
-          handle: account.provider_account_id.split('.')[0],
-          did: account.provider_account_id,
-          active: true
-        });
-
-        if (!agent.session) {
-          logger.logError('API', 'POST /api/share/bluesky', new Error('Failed to resume session on BlueSky'), session.user.id, {
-            context: 'BlueSky session resumption'
+        // Use OAuth client to restore session with DPoP support
+        const oauthClient = await createBlueskyOAuthClient();
+        const oauthSession = await oauthClient.restore(did);
+        
+        if (!oauthSession) {
+          logger.logError('API', 'POST /api/share/bluesky', new Error('Failed to restore OAuth session'), session.user.id, {
+            context: 'BlueSky OAuth session restoration'
           });
           return NextResponse.json(
-            { success: false, error: 'Failed to resume session on Bluesky' },
-            { status: 500 }
+            { success: false, error: 'Bluesky session expired - please reconnect your account' },
+            { status: 401 }
           );
         }
+        
+        // Create agent with OAuth session
+        const agent = new Agent(oauthSession);
         
         // Si une image est fournie, l'uploader d'abord
         let embed: { $type: string; images: Array<{ alt: string; image: { $type: string; ref: { $link: string }; mimeType: string; size: number } }> } | undefined;
         
         if (data.imageUrl) {
           try {
-            // Construire l'URL absolue de l'image
-            const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
-            const imageFullUrl = `${baseUrl}${data.imageUrl.startsWith('/') ? '' : '/'}${data.imageUrl}`;
+            // Lire l'image depuis le filesystem (public folder)
+            const imagePath = data.imageUrl.startsWith('/') ? data.imageUrl.slice(1) : data.imageUrl;
+            const publicDir = process.cwd();
+            const fullPath = join(publicDir, 'public', imagePath);
             
-            // Télécharger l'image
-            const imageResponse = await fetch(imageFullUrl);
-            if (!imageResponse.ok) {
-              throw new Error(`Failed to fetch image: ${imageResponse.status}`);
+            let uint8Array: Uint8Array;
+            let contentType = 'image/jpeg';
+            
+            try {
+              const imageBuffer = readFileSync(fullPath);
+              uint8Array = new Uint8Array(imageBuffer);
+              // Déterminer le type MIME basé sur l'extension
+              if (imagePath.endsWith('.png')) contentType = 'image/png';
+              else if (imagePath.endsWith('.gif')) contentType = 'image/gif';
+              else if (imagePath.endsWith('.webp')) contentType = 'image/webp';
+            } catch (fsError) {
+              // Fallback: essayer de fetch via HTTP si le fichier n'existe pas localement
+              const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+              const imageFullUrl = `${baseUrl}${data.imageUrl.startsWith('/') ? '' : '/'}${data.imageUrl}`;
+              
+              const imageResponse = await fetch(imageFullUrl);
+              if (!imageResponse.ok) {
+                throw new Error(`Failed to fetch image: ${imageResponse.status}`);
+              }
+              
+              const arrayBuffer = await imageResponse.arrayBuffer();
+              uint8Array = new Uint8Array(arrayBuffer);
+              contentType = imageResponse.headers.get('content-type') || 'image/jpeg';
             }
-            
-            const imageBuffer = await imageResponse.arrayBuffer();
-            const uint8Array = new Uint8Array(imageBuffer);
-            
-            // Déterminer le type MIME
-            const contentType = imageResponse.headers.get('content-type') || 'image/jpeg';
             
             // Uploader le blob sur Bluesky
             const uploadResponse = await agent.uploadBlob(uint8Array, {

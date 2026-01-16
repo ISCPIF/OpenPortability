@@ -62,7 +62,7 @@ export default function UploadPage() {
       router.replace("/auth/signin");
     }
     if (session?.user?.has_onboarded) {
-      router.replace("/dashboard");
+      router.replace("/reconnect");
     }
     if (status !== "loading") {
       setIsLoading(false);

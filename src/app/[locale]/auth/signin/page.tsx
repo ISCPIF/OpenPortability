@@ -33,7 +33,7 @@ export default function SignIn() {
     if (session) {
       setIsLoading(true)
       const locale = params.locale as string || 'fr'
-      router.push(`/${locale}/dashboard`)
+      router.push(`/${locale}/reconnect`)
     }
   }, [session, router, params.locale])
 

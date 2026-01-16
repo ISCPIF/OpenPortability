@@ -6,6 +6,7 @@ import { plex } from '../../fonts/plex'
 import { useTranslations } from 'next-intl'
 import Image from 'next/image'
 import blueskyIcon from '../../../../public/newSVG/BS.svg'
+import shareImage from '../../../../public/share_image.jpeg'
 import { handleShare } from '@/lib/utils'
 
 interface BlueSkyPreviewModalProps {
@@ -131,6 +132,16 @@ export default function BlueSkyPreviewModal({
                 </button>
               </div>
 
+              {/* Image preview */}
+              <div className="mb-4 rounded-xl overflow-hidden border border-gray-200 shadow-sm">
+                <Image
+                  src={shareImage}
+                  alt="OpenPortability - Retrouvez vos contacts sur Bluesky et Mastodon"
+                  className="w-full h-auto object-cover"
+                  priority
+                />
+              </div>
+
               {/* Zone de texte avec compteur de caractères */}
               <div className="mb-5 w-full">
                 <div className="relative">
@@ -139,7 +150,7 @@ export default function BlueSkyPreviewModal({
                     onChange={handleTextChange}
                     className={`w-full p-4 border ${charCount > MAX_CHARS ? 'border-red-500' : 'border-gray-200'} 
                     rounded-xl focus:outline-none focus:ring-2 focus:ring-[#2a39a9]/50 focus:border-transparent 
-                    shadow-sm min-h-[150px] text-gray-700 resize-none ${plex.className}`}
+                    shadow-sm min-h-[120px] text-gray-700 resize-none ${plex.className}`}
                     defaultValue={message}
                     placeholder="Votre message sur Bluesky..."
                   />

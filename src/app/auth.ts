@@ -50,9 +50,9 @@ async function createMastodonApp(instance: string): Promise<MastodonAppCreds>{
     const formData = {
       "client_name": "OpenPortability",
       "redirect_uris": `${process.env.NEXTAUTH_URL}/api/auth/callback/mastodon`,
-      // TODO: limiter au strict nécessaire
       // https://docs.joinmastodon.org/api/oauth-scopes/#granular
-      "scopes": "read write:follows",
+      // read: profil, write:follows: follow/unfollow, write:statuses: poster, write:media: images
+      "scopes": "read write:follows write:statuses write:media",
       "website": "https://app.beta.v2.helloquitx.com/"
     };
     
@@ -211,7 +211,7 @@ export const { auth, signIn, signOut, handlers } = NextAuth(async req => {
       oauthProv.clientId = res.client_id;
       oauthProv.clientSecret = res.client_secret;
       const authParams = new URLSearchParams({
-        scope: "read write:follows",
+        scope: "read write:follows write:statuses write:media",
         force_login: "true",
       });
       oauthProv.authorization = `${issuer}/oauth/authorize?${authParams.toString()}`;

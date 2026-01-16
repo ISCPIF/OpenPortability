@@ -182,7 +182,7 @@ export default function MastodonLoginButton({
       }
       
       // Instance is valid, proceed with OAuth
-      const callbackUrl = window.location.pathname.includes('/reconnect') ? '/reconnect' : '/dashboard'
+      const callbackUrl = window.location.pathname.includes('/reconnect') ? '/reconnect' : '/reconnect'
 
       const result = await signIn("mastodon", {
         redirect: false,

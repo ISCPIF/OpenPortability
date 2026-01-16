@@ -3,8 +3,9 @@ import { z } from "zod";
 import { withValidation } from "@/lib/validation/middleware";
 import { AccountService } from "@/lib/services/accountService";
 import { pgUserRepository } from "@/lib/repositories/auth/pg-user-repository";
-import { decrypt } from '@/lib/encryption';
 import logger from '@/lib/log_utils';
+import { readFileSync } from 'fs';
+import { join } from 'path';
 
 // Schéma de validation pour le partage sur Mastodon
 const MastodonShareSchema = z.object({
@@ -51,7 +52,8 @@ async function mastodonShareHandler(req: Request, data: MastodonShareRequest, se
     }
 
     const mastodonInstance = user.mastodon_instance;
-    const accessToken = decrypt(account.access_token);
+    // Token is already decrypted by pgAccountRepository.getProviderAccount()
+    const accessToken = account.access_token;
 
     try {
       let mediaId: string | undefined;
@@ -59,22 +61,41 @@ async function mastodonShareHandler(req: Request, data: MastodonShareRequest, se
       // Si une image est fournie, l'uploader d'abord
       if (data.imageUrl) {
         try {
-          // Construire l'URL absolue de l'image
-          const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
-          const imageFullUrl = `${baseUrl}${data.imageUrl.startsWith('/') ? '' : '/'}${data.imageUrl}`;
+          // Lire l'image depuis le filesystem (public folder)
+          // En standalone mode, les fichiers publics sont dans /app/public
+          const imagePath = data.imageUrl.startsWith('/') ? data.imageUrl.slice(1) : data.imageUrl;
+          const publicDir = process.cwd();
+          const fullPath = join(publicDir, 'public', imagePath);
           
-          // Télécharger l'image
-          const imageResponse = await fetch(imageFullUrl);
-          if (!imageResponse.ok) {
-            throw new Error(`Failed to fetch image: ${imageResponse.status}`);
+          let imageBuffer: Buffer;
+          let contentType = 'image/jpeg';
+          
+          try {
+            imageBuffer = readFileSync(fullPath);
+            // Déterminer le type MIME basé sur l'extension
+            if (imagePath.endsWith('.png')) contentType = 'image/png';
+            else if (imagePath.endsWith('.gif')) contentType = 'image/gif';
+            else if (imagePath.endsWith('.webp')) contentType = 'image/webp';
+          } catch (fsError) {
+            // Fallback: essayer de fetch via HTTP si le fichier n'existe pas localement
+            const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+            const imageFullUrl = `${baseUrl}${data.imageUrl.startsWith('/') ? '' : '/'}${data.imageUrl}`;
+            
+            const imageResponse = await fetch(imageFullUrl);
+            if (!imageResponse.ok) {
+              throw new Error(`Failed to fetch image: ${imageResponse.status}`);
+            }
+            
+            const arrayBuffer = await imageResponse.arrayBuffer();
+            imageBuffer = Buffer.from(arrayBuffer);
+            contentType = imageResponse.headers.get('content-type') || 'image/jpeg';
           }
-          
-          const imageBuffer = await imageResponse.arrayBuffer();
-          const contentType = imageResponse.headers.get('content-type') || 'image/jpeg';
           
           // Créer un FormData pour l'upload
           const formData = new FormData();
-          const blob = new Blob([imageBuffer], { type: contentType });
+          // Convert Buffer to Uint8Array for Blob compatibility
+          const uint8Array = new Uint8Array(imageBuffer);
+          const blob = new Blob([uint8Array], { type: contentType });
           
           // Déterminer l'extension du fichier
           const extension = contentType.split('/')[1] || 'jpg';

@@ -2,30 +2,7 @@ import { NextRequest } from 'next/server';
 import { redis } from '@/lib/redis';
 import { auth } from '@/app/auth';
 import logger from '@/lib/log_utils';
-
-// SSE Channel for graph updates (public + user-specific)
-const SSE_CHANNEL = 'sse:graph:updates';
-
-// Heartbeat interval (30 seconds) to keep connection alive
-const HEARTBEAT_INTERVAL_MS = 30000;
-
-/**
- * SSE Event Types:
- * - labels: Public labels changed (consent change by any user)
- * - nodeTypes: Node types changed (member ↔ generic)
- * - followers: Follower hashes updated (new effective follower)
- * - followings: Following status updated (after follow action)
- * - stats:global: Global stats updated (new user, new follow)
- * - stats:user: User-specific stats updated (after user action)
- */
-export interface SSEEvent {
-  type: 'labels' | 'nodeTypes' | 'followers' | 'followings' | 'stats:global' | 'stats:user';
-  data: any;
-  // Optional: target specific user (null = broadcast to all)
-  userId?: string | null;
-  // Timestamp for ordering
-  timestamp: number;
-}
+import { SSE_GRAPH_CHANNEL, SSE_HEARTBEAT_INTERVAL_MS, type SSEEvent } from '@/lib/sse/constants';
 
 /**
  * GET /api/sse
@@ -63,7 +40,7 @@ export async function GET(request: NextRequest) {
         subscriber = redis.createSubscriber();
 
         // Subscribe to the SSE channel
-        await subscriber.subscribe(SSE_CHANNEL);
+        await subscriber.subscribe(SSE_GRAPH_CHANNEL);
 
         logger.logInfo('SSE', 'Client connected', `User: ${userId || 'anonymous'}`, userId || 'anonymous');
 
@@ -120,7 +97,7 @@ export async function GET(request: NextRequest) {
             // Controller might be closed
             if (heartbeatInterval) clearInterval(heartbeatInterval);
           }
-        }, HEARTBEAT_INTERVAL_MS);
+        }, SSE_HEARTBEAT_INTERVAL_MS);
 
       } catch (error) {
         logger.logError('SSE', 'Failed to setup SSE stream', error instanceof Error ? error.message : String(error), userId || 'anonymous');
@@ -141,7 +118,7 @@ export async function GET(request: NextRequest) {
       }
 
       if (subscriber) {
-        subscriber.unsubscribe(SSE_CHANNEL).catch(() => {});
+        subscriber.unsubscribe(SSE_GRAPH_CHANNEL).catch(() => {});
         subscriber.quit().catch(() => {});
         subscriber = null;
       }
@@ -160,5 +137,3 @@ export async function GET(request: NextRequest) {
   });
 }
 
-// Export channel name for use in other APIs
-export const SSE_GRAPH_CHANNEL = SSE_CHANNEL;

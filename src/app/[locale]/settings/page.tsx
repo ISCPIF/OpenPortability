@@ -64,7 +64,7 @@ export default function SettingsPage() {
     // Show modal if:
     // 1. User hasn't seen it (no cookie)
     // 2. User hasn't consented to newsletter yet
-    const hasNewsletterConsent = consents?.hqx_newsletter === true;
+    const hasNewsletterConsent = consents?.email_newsletter === true;
     const hasSeenModal = hasSeenNewsletterModal();
     
     if (!hasSeenModal && !hasNewsletterConsent && !isLoading && session?.user) {

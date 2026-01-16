@@ -18,6 +18,12 @@ export function isValidEmail(email : string) {
   return EMAIL_REGEXP.test(email);
 }
 
+// Default share image configuration
+const DEFAULT_SHARE_IMAGE: ShareOptions = {
+  imageUrl: '/share_image.jpeg',
+  imageAlt: 'OpenPortability - Retrouvez vos contacts sur Bluesky et Mastodon'
+}
+
 export interface ShareOptions {
   imageUrl?: string;  // Chemin relatif depuis /public (ex: '/share_image.jpeg')
   imageAlt?: string;  // Texte alternatif pour l'image
@@ -39,13 +45,19 @@ export const handleShare = async (
       console.error('❌ No user session found, returning');
     return;
   }
+  
+  // Use default image if none provided for Bluesky and Mastodon
+  const shareOptions: ShareOptions = (platform === 'bluesky' || platform === 'mastodon') 
+    ? { ...DEFAULT_SHARE_IMAGE, ...options }
+    : options || {};
+  
   try {
     let url;
     // Remove any existing URLs from the text to prevent duplication
     const textWithoutUrl = text.replace(/➡️ https:\/\/OpenPortability\.org.*$/, '➡️ https://OpenPortability.org');
     
     if (platform === 'bluesky') {
-      // Utiliser l'API pour poster directement sur BlueSky (avec image optionnelle)
+      // Utiliser l'API pour poster directement sur BlueSky (avec image par défaut)
       const response = await fetch('/api/share/bluesky', {
         method: 'POST',
         headers: {
@@ -53,8 +65,8 @@ export const handleShare = async (
         },
         body: JSON.stringify({
           text: textWithoutUrl,
-          imageUrl: options?.imageUrl,
-          imageAlt: options?.imageAlt
+          imageUrl: shareOptions.imageUrl,
+          imageAlt: shareOptions.imageAlt
         })
       });
 
@@ -76,35 +88,28 @@ export const handleShare = async (
         return;
       }
       
-      // Si une image est fournie, utiliser l'API pour poster avec l'image
-      if (options?.imageUrl) {
-        const response = await fetch('/api/share/mastodon', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            text: textWithoutUrl,
-            imageUrl: options.imageUrl,
-            imageAlt: options.imageAlt
-          })
-        });
+      // Toujours utiliser l'API pour poster avec l'image par défaut
+      const response = await fetch('/api/share/mastodon', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          text: textWithoutUrl,
+          imageUrl: shareOptions.imageUrl,
+          imageAlt: shareOptions.imageAlt
+        })
+      });
 
-        const result = await response.json();
-        
-        if (!response.ok) {
-          throw new Error(result.error || 'Failed to share to Mastodon');
-        }
-        
-        // Ouvrir le post dans une nouvelle fenêtre si possible
-        if (result.url) {
-          window.open(result.url, '_blank');
-        }
-      } else {
-        // Sans image, utiliser le Web Intent classique
-        const instance = session.user.mastodon_instance.replace(/^https?:\/\//, '');
-        url = `https://${instance}/share?text=${encodeURIComponent(textWithoutUrl)}`;
-        window.open(url, '_blank');
+      const result = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to share to Mastodon');
+      }
+      
+      // Ouvrir le post dans une nouvelle fenêtre si possible
+      if (result.url) {
+        window.open(result.url, '_blank');
       }
     } else {
       const platformUrls = {
