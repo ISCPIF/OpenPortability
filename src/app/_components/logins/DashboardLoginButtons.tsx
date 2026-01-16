@@ -78,7 +78,7 @@ export default function DashboardLoginButtons({
     setIsLoading(true)
     onLoadingChange(true)
     try {
-      await signIn('twitter', { callbackUrl: '/dashboard' })
+      await signIn('twitter', { callbackUrl: '/reconnect' })
     } catch (error) {
       console.error('Error signing in with Twitter:', error)
     }

@@ -9,6 +9,8 @@ import { plex, quantico } from '@/app/fonts/plex'
 import { handleShare, type ShareOptions } from '@/lib/utils'
 import Image from 'next/image'
 import blueskyIcon from '../../../../public/newSVG/BS.svg'
+import shareImage from '../../../../public/share_image.jpeg'
+import { SiMastodon } from 'react-icons/si'
 
 interface FailureDetail {
   platform: 'bluesky' | 'mastodon'
@@ -39,7 +41,7 @@ interface MigrationSuccessModalProps {
   isLassoMode?: boolean
 }
 
-type ViewType = 'main' | 'bluesky-preview'
+type ViewType = 'main' | 'bluesky-preview' | 'mastodon-preview'
 type TabType = 'summary' | 'errors'
 
 export function MigrationSuccessModal({
@@ -62,7 +64,6 @@ export function MigrationSuccessModal({
   const [charCount, setCharCount] = useState(0)
   const [isPublishing, setIsPublishing] = useState(false)
   const messageRef = useRef<HTMLTextAreaElement>(null)
-  const MAX_CHARS = 300
 
   const totalSucceeded = blueskySucceeded + mastodonSucceeded
   const totalToFollow = blueskyTotal + mastodonTotal
@@ -75,9 +76,9 @@ export function MigrationSuccessModal({
     total: totalToFollow 
   })
 
-  // Initialize textarea when switching to preview
+  // Initialize textarea when switching to preview (for both platforms)
   useEffect(() => {
-    if (currentView === 'bluesky-preview' && messageRef.current) {
+    if ((currentView === 'bluesky-preview' || currentView === 'mastodon-preview') && messageRef.current) {
       messageRef.current.value = shareMessage
       setCharCount(shareMessage.length)
       messageRef.current.focus()
@@ -101,16 +102,18 @@ export function MigrationSuccessModal({
   const handleShareClick = (platform: string) => {
     if (platform === 'bluesky') {
       setCurrentView('bluesky-preview')
+    } else if (platform === 'mastodon') {
+      setCurrentView('mastodon-preview')
     } else {
       handleShare(shareMessage, platform, session, undefined, undefined, shareImageOptions)
     }
   }
 
-  const handlePublishBluesky = async () => {
+  const handlePublish = async (platform: 'bluesky' | 'mastodon') => {
     if (messageRef.current && !isPublishing) {
       setIsPublishing(true)
       try {
-        await handleShare(messageRef.current.value, 'bluesky', session, undefined, undefined, shareImageOptions)
+        await handleShare(messageRef.current.value, platform, session, undefined, undefined, shareImageOptions)
         setCurrentView('main')
       } finally {
         setIsPublishing(false)
@@ -133,7 +136,7 @@ export function MigrationSuccessModal({
       onClose={onClose}
       theme="dark"
       size="lg"
-      ariaLabel={currentView === 'main' ? t('title') : tPreview('previewTitle', { platform: 'Bluesky' })}
+      ariaLabel={currentView === 'main' ? t('title') : tPreview('previewTitle', { platform: currentView === 'bluesky-preview' ? 'Bluesky' : 'Mastodon' })}
       closeOnOverlayClick={true}
       closeOnEscape={true}
       showCloseButton={currentView === 'main'}
@@ -267,82 +270,107 @@ export function MigrationSuccessModal({
           </div>
         </div>
       ) : (
-        /* Vue Bluesky Preview - Éditeur de message intégré */
-        <div className="space-y-6">
-          {/* Header avec bouton retour et style app */}
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => setCurrentView('main')}
-              className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 backdrop-blur-sm hover:bg-white/20 transition-all duration-200"
-              aria-label="Retour"
-            >
-              <ArrowLeft className="w-5 h-5 text-white" />
-            </button>
-            <div className="flex items-center gap-3 flex-1">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-sky-400/20 backdrop-blur-sm">
+        /* Vue Preview - Éditeur de message pour Bluesky ou Mastodon */
+        (() => {
+          const isBluesky = currentView === 'bluesky-preview'
+          const platformName = isBluesky ? 'Bluesky' : 'Mastodon'
+          const maxChars = isBluesky ? 300 : 500
+          const accentColor = isBluesky ? 'sky' : 'violet'
+          
+          return (
+            <div className="space-y-6">
+              {/* Header avec bouton retour */}
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={() => setCurrentView('main')}
+                  className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 backdrop-blur-sm hover:bg-white/20 transition-all duration-200"
+                  aria-label="Retour"
+                >
+                  <ArrowLeft className="w-5 h-5 text-white" />
+                </button>
+                <div className="flex items-center gap-3 flex-1">
+                  <div className={`flex h-12 w-12 items-center justify-center rounded-xl ${isBluesky ? 'bg-sky-400/20' : 'bg-violet-400/20'} backdrop-blur-sm`}>
+                    {isBluesky ? (
+                      <Image
+                        src={blueskyIcon}
+                        alt="Bluesky"
+                        width={28}
+                        height={28}
+                        className="w-7 h-7"
+                      />
+                    ) : (
+                      <SiMastodon className="w-7 h-7 text-violet-400" />
+                    )}
+                  </div>
+                  <div>
+                    <h2 className={`text-lg font-semibold text-white uppercase tracking-wider ${quantico.className}`}>
+                      {tPreview('previewTitle', { platform: platformName })}
+                    </h2>
+                    <p className="text-xs text-white/60">Personnalisez votre message</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Image preview */}
+              <div className="rounded-xl overflow-hidden border border-white/10">
                 <Image
-                  src={blueskyIcon}
-                  alt="Bluesky"
-                  width={28}
-                  height={28}
-                  className="w-7 h-7"
+                  src={shareImage}
+                  alt="OpenPortability - Retrouvez vos contacts"
+                  className="w-full h-auto object-cover"
+                  priority
                 />
               </div>
-              <div>
-                <h2 className={`text-lg font-semibold text-white uppercase tracking-wider ${quantico.className}`}>
-                  {tPreview('previewTitle', { platform: 'Bluesky' })}
-                </h2>
-                <p className="text-xs text-white/60">Personnalisez votre message</p>
+
+              {/* Zone de texte */}
+              <div className={`relative rounded-2xl border ${isBluesky ? 'border-sky-400/30' : 'border-violet-400/30'} bg-gradient-to-br ${isBluesky ? 'from-sky-400/10 via-sky-400/5' : 'from-violet-400/10 via-violet-400/5'} to-transparent p-1 shadow-[0_0_25px_${isBluesky ? 'rgba(56,189,248,0.15)' : 'rgba(139,92,246,0.15)'}]`}>
+                <textarea
+                  ref={messageRef}
+                  onChange={handleTextChange}
+                  className={`w-full p-4 bg-slate-900/50 backdrop-blur-sm border-0 
+                  rounded-xl focus:outline-none focus:ring-2 ${isBluesky ? 'focus:ring-sky-400/50' : 'focus:ring-violet-400/50'}
+                  min-h-[100px] text-white resize-none placeholder:text-white/40 ${quantico.className}`}
+                  defaultValue={shareMessage}
+                  placeholder={`Votre message sur ${platformName}...`}
+                />
+                
+                {/* Compteur de caractères */}
+                <div className={`absolute bottom-4 right-4 text-xs font-medium px-2 py-1 rounded-full ${
+                  charCount > maxChars 
+                    ? 'bg-red-500/20 text-red-400' 
+                    : 'bg-white/10 text-white/60'
+                }`}>
+                  {charCount}/{maxChars}
+                </div>
+              </div>
+
+              {/* Boutons d'action */}
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  onClick={() => setCurrentView('main')}
+                  className={`px-6 py-3 rounded-2xl border border-white/20 bg-white/5 text-white/80
+                  hover:bg-white/10 hover:border-white/30 transition-all duration-200 ${quantico.className} uppercase tracking-wider text-sm`}
+                >
+                  {tPreview('cancel')}
+                </button>
+                
+                <button
+                  onClick={() => handlePublish(isBluesky ? 'bluesky' : 'mastodon')}
+                  disabled={charCount > maxChars || charCount === 0 || isPublishing}
+                  className={`group px-6 py-3 rounded-2xl flex items-center gap-2 ${quantico.className} uppercase tracking-wider text-sm
+                  ${charCount > maxChars || charCount === 0 || isPublishing
+                    ? 'bg-slate-700 text-slate-500 cursor-not-allowed border border-slate-600' 
+                    : isBluesky 
+                      ? 'bg-sky-400/80 hover:bg-sky-400 text-white border border-sky-300/50 shadow-[0_0_25px_rgba(56,189,248,0.3)] hover:shadow-[0_0_35px_rgba(56,189,248,0.4)]'
+                      : 'bg-violet-500/80 hover:bg-violet-500 text-white border border-violet-400/50 shadow-[0_0_25px_rgba(139,92,246,0.3)] hover:shadow-[0_0_35px_rgba(139,92,246,0.4)]'
+                  } transition-all duration-300`}
+                >
+                  <Send className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
+                  {isPublishing ? '...' : tPreview('publish')}
+                </button>
               </div>
             </div>
-          </div>
-
-          {/* Zone de texte avec style app */}
-          <div className="relative rounded-2xl border border-sky-400/30 bg-gradient-to-br from-sky-400/10 via-sky-400/5 to-transparent p-1 shadow-[0_0_25px_rgba(56,189,248,0.15)]">
-            <textarea
-              ref={messageRef}
-              onChange={handleTextChange}
-              className={`w-full p-4 bg-slate-900/50 backdrop-blur-sm border-0 
-              rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-400/50 
-              min-h-[140px] text-white resize-none placeholder:text-white/40 ${quantico.className}`}
-              defaultValue={shareMessage}
-              placeholder="Votre message sur Bluesky..."
-            />
-            
-            {/* Compteur de caractères */}
-            <div className={`absolute bottom-4 right-4 text-xs font-medium px-2 py-1 rounded-full ${
-              charCount > MAX_CHARS 
-                ? 'bg-red-500/20 text-red-400' 
-                : 'bg-white/10 text-white/60'
-            }`}>
-              {charCount}/{MAX_CHARS}
-            </div>
-          </div>
-
-          {/* Boutons d'action avec style app */}
-          <div className="flex justify-end gap-3 pt-2">
-            <button
-              onClick={() => setCurrentView('main')}
-              className={`px-6 py-3 rounded-2xl border border-white/20 bg-white/5 text-white/80
-              hover:bg-white/10 hover:border-white/30 transition-all duration-200 ${quantico.className} uppercase tracking-wider text-sm`}
-            >
-              {tPreview('cancel')}
-            </button>
-            
-            <button
-              onClick={handlePublishBluesky}
-              disabled={charCount > MAX_CHARS || charCount === 0 || isPublishing}
-              className={`group px-6 py-3 rounded-2xl flex items-center gap-2 ${quantico.className} uppercase tracking-wider text-sm
-              ${charCount > MAX_CHARS || charCount === 0 || isPublishing
-                ? 'bg-slate-700 text-slate-500 cursor-not-allowed border border-slate-600' 
-                : 'bg-sky-400/80 hover:bg-sky-400 text-white border border-sky-300/50 shadow-[0_0_25px_rgba(56,189,248,0.3)] hover:shadow-[0_0_35px_rgba(56,189,248,0.4)]'
-              } transition-all duration-300`}
-            >
-              <Send className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
-              {isPublishing ? '...' : tPreview('publish')}
-            </button>
-          </div>
-        </div>
+          )
+        })()
       )}
     </ModalShell>
   )

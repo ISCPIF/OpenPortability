@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useSession } from 'next-auth/react'
 import ProfileCard from './ProfileCard'
 import { motion } from 'framer-motion'
@@ -9,6 +9,7 @@ import { Link2, CheckCircle2 } from 'lucide-react'
 import { quantico } from '@/app/fonts/plex'
 import Image from 'next/image'
 import { ReconnectLoginModal } from '@/app/_components/modales/ReconnectLoginModal'
+import { useMastodonInstances } from '@/hooks/useMastodonInstances'
 
 import mastodonIcon from '../../../../public/newSVG/masto.svg'
 import blueskyIcon from '../../../../public/newSVG/BS.svg'
@@ -18,7 +19,7 @@ export default function ConnectedAccounts() {
   const { data: session } = useSession()
   const t = useTranslations('connectedAccounts')
   const [showLoginModal, setShowLoginModal] = useState(false)
-  const [mastodonInstances, setMastodonInstances] = useState<string[]>([])
+  const mastodonInstances = useMastodonInstances()
   
   if (!session?.user) return null
 
@@ -26,22 +27,6 @@ export default function ConnectedAccounts() {
   const hasBluesky = !!session.user.bluesky_id
   const hasMastodon = !!session.user.mastodon_id
   const hasAnyAccount = hasTwitter || hasBluesky || hasMastodon
-
-  // Fetch mastodon instances for the login modal
-  useEffect(() => {
-    const fetchInstances = async () => {
-      try {
-        const res = await fetch('/api/auth/mastodon')
-        if (res.ok) {
-          const data = await res.json()
-          setMastodonInstances(data.instances || [])
-        }
-      } catch (error) {
-        console.error('Failed to fetch mastodon instances:', error)
-      }
-    }
-    fetchInstances()
-  }, [])
 
   const connectedServices = (
     [

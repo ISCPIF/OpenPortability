@@ -32,7 +32,7 @@ const CustomToast = ({ platform, message, buttonText }: { platform: string; mess
     </div>
     <p className="text-[12px] text-slate-300">{message}</p>
     <button 
-      onClick={() => window.location.href = '/dashboard'}
+      onClick={() => window.location.href = '/reconnect'}
       className="px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-lg text-[12px] font-medium hover:from-amber-600 hover:to-orange-600 transition-all"
     >
       {buttonText}
