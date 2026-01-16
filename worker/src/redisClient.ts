@@ -146,6 +146,56 @@ export class RedisClientManager {
 // Export singleton instance
 export const redisClient = RedisClientManager.getInstance();
 
+// SSE Channel name (must match the Next.js app)
+const SSE_CHANNEL = 'sse:graph:updates';
+
+/**
+ * Publish an SSE event to notify connected clients about job progress.
+ * This allows real-time updates instead of polling.
+ */
+export async function publishJobSSEEvent(
+  jobId: string,
+  userId: string,
+  status: string,
+  stats: RedisJobStats,
+  meta?: RedisJobMeta
+): Promise<boolean> {
+  try {
+    await redisClient.ensureConnection();
+    const redis = redisClient.getClient();
+    
+    const event = {
+      type: 'importJob',
+      data: {
+        jobId,
+        status,
+        progress: stats.processed,
+        totalItems: stats.total,
+        stats,
+        phase: meta?.phase,
+        phase_progress: meta?.phase_progress,
+        nodes_total: meta?.nodes_total,
+        nodes_processed: meta?.nodes_processed,
+        edges_total: meta?.edges_total,
+        edges_processed: meta?.edges_processed,
+      },
+      userId, // Target specific user
+      timestamp: Date.now(),
+    };
+    
+    const result = await redis.publish(SSE_CHANNEL, JSON.stringify(event));
+    
+    if (result > 0) {
+      console.log(`📡 [SSE] Published importJob event for job ${jobId} (${result} subscribers)`);
+    }
+    
+    return result > 0;
+  } catch (error) {
+    console.log(`⚠️ [SSE] Failed to publish importJob event: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    return false;
+  }
+}
+
 // Job stats interface matching the API format
 export interface RedisJobStats {
   total: number;
@@ -165,9 +215,10 @@ export interface RedisJobMeta {
   nodes_processed?: number;
   edges_total?: number;
   edges_processed?: number;
+  status?: 'pending' | 'processing' | 'completed' | 'failed'; // Job status for SSE
 }
 
-// Function to update job stats in Redis
+// Function to update job stats in Redis and publish SSE event
 export async function updateJobStats(
   jobId: string,
   stats: RedisJobStats,
@@ -196,7 +247,12 @@ export async function updateJobStats(
     jobData.stats = stats;
     // Merge optional phase/meta fields without breaking older readers
     if (meta && typeof meta === 'object') {
-      jobData = { ...jobData, ...meta };
+      // Extract status separately to update jobData.status
+      const { status: metaStatus, ...restMeta } = meta;
+      if (metaStatus) {
+        jobData.status = metaStatus;
+      }
+      jobData = { ...jobData, ...restMeta };
     }
     jobData.updated_at = new Date().toISOString();
     
@@ -205,6 +261,18 @@ export async function updateJobStats(
     
     if (workerId) {
       console.log(`[Worker ${workerId}] 📊 Updated job stats: ${stats.processed}/${stats.total} (${Math.round((stats.processed/stats.total)*100)}%)`);
+    }
+
+    // Publish SSE event to notify connected clients in real-time
+    // Only publish if we have a user_id to target
+    if (jobData.user_id) {
+      await publishJobSSEEvent(
+        jobId,
+        jobData.user_id,
+        jobData.status || 'processing',
+        stats,
+        meta
+      );
     }
     
     return { success: true };

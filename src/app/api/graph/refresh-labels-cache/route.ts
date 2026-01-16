@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { redis } from '@/lib/redis';
 import logger from '@/lib/log_utils';
 import { auth } from '@/app/auth';
+import { publishSSEEvent } from '@/lib/sse-publisher';
 
 // Redis cache keys
 const CACHE_KEY = 'graph:labels:public';
@@ -64,6 +65,15 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       redis.del(CACHE_KEY),
       redis.set(VERSION_KEY, now.toString()),
     ]);
+    
+    // Publish SSE event to notify all connected clients that labels have changed
+    // Clients will then fetch fresh labels from /api/graph/consent_labels
+    await publishSSEEvent('labels', { 
+      version: now,
+      invalidated: true,
+      // Note: We don't send the actual labels here - clients should refetch
+      // This keeps the SSE payload small and ensures clients get fresh data
+    });
     
     logger.logInfo(
       'API',

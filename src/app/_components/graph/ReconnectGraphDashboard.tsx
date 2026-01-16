@@ -57,6 +57,15 @@ interface ReconnectGraphDashboardProps {
   invalidTokenProviders?: string[];
   onClearInvalidTokenProviders?: () => void;
   selectedBreakdown?: { bluesky: number; mastodon: number } | null;
+  globalStats?: {
+    users: { total: number; onboarded: number };
+    connections: {
+      followers: number;
+      following: number;
+      followedOnBluesky: number;
+      followedOnMastodon: number;
+    };
+  };
 }
 
 export function ReconnectGraphDashboard({
@@ -76,6 +85,7 @@ export function ReconnectGraphDashboard({
   invalidTokenProviders = [],
   onClearInvalidTokenProviders,
   selectedBreakdown,
+  globalStats,
 }: ReconnectGraphDashboardProps) {
   const { isDark } = useTheme();
   const { colors: communityColors } = useCommunityColors();
@@ -457,8 +467,8 @@ export function ReconnectGraphDashboard({
     setHighlightVersion(v => v + 1);
   }, []);
 
-  const handleShowMemberFollowers = useCallback(() => {
-    setHighlightMode('members');
+  const handleShowEffectiveFollowers = useCallback(() => {
+    setHighlightMode('effective');
     setHighlightVersion(v => v + 1);
   }, []);
   
@@ -925,6 +935,7 @@ export function ReconnectGraphDashboard({
             highlightMode={highlightMode}
             followingHashes={graphData.followingHashes}
             followerHashes={graphData.followerHashes}
+            effectiveFollowerHashes={graphData.effectiveFollowerHashes}
             hasOnboarded={hasOnboarded}
             highlightedSearchNode={highlightedSearchNode}
           />
@@ -1065,9 +1076,10 @@ export function ReconnectGraphDashboard({
           onShowMyNetwork={handleShowMyNetwork}
           onShowMyNode={handleShowMyNode}
           onShowConnected={handleShowConnected}
-          onShowMemberFollowers={handleShowMemberFollowers}
+          onShowEffectiveFollowers={handleShowEffectiveFollowers}
           onResetView={handleResetView}
           lassoConnectedCount={connectedHashes.size}
+          globalStats={globalStats}
         />
       )}
 

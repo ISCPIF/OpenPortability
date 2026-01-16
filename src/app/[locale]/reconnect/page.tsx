@@ -58,6 +58,7 @@ export default function ReconnectPage() {
   const {
     session,
     stats,
+    globalStats,
     mastodonInstances,
     isMigrating,
     setIsMigrating,
@@ -118,6 +119,7 @@ export default function ReconnectPage() {
           invalidTokenProviders={invalidTokenProviders}
           onClearInvalidTokenProviders={() => setInvalidTokenProviders([])}
           selectedBreakdown={selectedBreakdown}
+          globalStats={globalStats}
         />
         
         <Header />

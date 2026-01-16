@@ -384,7 +384,7 @@ export async function processJob(job: ImportJob, workerId: string): Promise<{
       followers: followersData.length,
       following: followingData.length,
       processed: totalRecords
-    }, workerId, { phase: 'completed', phase_progress: 100, edges_total: totalRecords, edges_processed: totalRecords });
+    }, workerId, { phase: 'completed', phase_progress: 100, edges_total: totalRecords, edges_processed: totalRecords, status: 'completed' });
 
     const executionTime = Date.now() - startTime;
     // console.log(`[Worker ${workerId}] ✅ Job ${job.id} completed in ${executionTime}ms`);

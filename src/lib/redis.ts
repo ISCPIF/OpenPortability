@@ -685,6 +685,49 @@ class RedisClient {
       return 0;
     }
   }
+
+  // ===== SSE Pub/Sub Methods =====
+  
+  /**
+   * Publish a message to a Redis channel for SSE broadcasting
+   * @param channel - The channel name (e.g., 'sse:graph:updates')
+   * @param message - The message to publish (will be JSON stringified if object)
+   */
+  async publish(channel: string, message: string | object): Promise<number> {
+    try {
+      await this.ensureConnection();
+      const messageStr = typeof message === 'string' ? message : JSON.stringify(message);
+      return await this.client.publish(channel, messageStr);
+    } catch (error) {
+      const errorString = error instanceof Error ? error.message : String(error);
+      logger.logError('Redis', 'Failed to publish', errorString, 'system', { channel });
+      return 0;
+    }
+  }
+
+  /**
+   * Create a new Redis client for subscribing to channels.
+   * IMPORTANT: ioredis requires a dedicated client for subscriptions
+   * because the client enters "subscriber mode" and can't execute other commands.
+   * The caller is responsible for managing the lifecycle of this client.
+   */
+  createSubscriber(): Redis {
+    return new Redis(redisConfig);
+  }
+
+  /**
+   * Get multiple keys at once (for cache version checking)
+   */
+  async mget(keys: string[]): Promise<(string | null)[]> {
+    try {
+      await this.ensureConnection();
+      return await this.client.mget(...keys);
+    } catch (error) {
+      const errorString = error instanceof Error ? error.message : String(error);
+      logger.logError('Redis', 'Failed to mget', errorString, 'system', { keysCount: keys.length });
+      return keys.map(() => null);
+    }
+  }
 }
 
 // Fonction pour obtenir le singleton Redis via globalThis

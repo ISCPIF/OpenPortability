@@ -5,6 +5,8 @@ import { withValidation } from "@/lib/validation/middleware"
 import { z } from "zod"
 import { queryPublic } from '@/lib/database'
 import { pgUserRepository } from '@/lib/repositories/auth/pg-user-repository'
+import { publishSSEEvent, publishNodeTypeChanges } from '@/lib/sse-publisher'
+import { pgGraphNodesRepository } from '@/lib/repositories/public/pg-graph-nodes-repository'
 
 // Schéma vide car cette route ne nécessite pas de body
 const EmptySchema = z.object({}).strict()
@@ -20,6 +22,19 @@ async function deleteHandler(_request: Request, _validatedData: {}, session: any
     }
 
     const userId = session.user.id
+    const twitterId = session.user.twitter_id
+
+    // 0. AVANT la suppression: récupérer le coord_hash pour notifier les clients SSE
+    let coordHash: string | null = null;
+    if (twitterId) {
+      try {
+        const nodeInfo = await pgGraphNodesRepository.getNodeCoordHashByTwitterId(twitterId);
+        coordHash = nodeInfo?.coord_hash || null;
+        logger.logInfo('API', 'DELETE /api/delete', `Found coord_hash for SSE notification: ${coordHash}`, userId);
+      } catch (e) {
+        logger.logWarning('API', 'DELETE /api/delete', 'Failed to get coord_hash for SSE (non-critical)', userId);
+      }
+    }
 
     // 1. Si l'utilisateur a has_onboarded = true
     if (session.user.has_onboarded) {
@@ -70,6 +85,34 @@ async function deleteHandler(_request: Request, _validatedData: {}, session: any
       throw e
     }
     logger.logInfo('API', 'DELETE /api/delete', 'Successfully deleted user', userId)
+
+    // 4. APRÈS la suppression: notifier les clients SSE que les labels ont changé
+    // Le trigger PostgreSQL a déjà mis node_type = 'generic', mais les clients ne le savent pas
+    try {
+      // Invalider le cache des labels
+      const VERSION_KEY = 'graph:labels:version';
+      const CACHE_KEY = 'graph:labels:public';
+      const now = Date.now();
+      await Promise.all([
+        redis.del(CACHE_KEY),
+        redis.set(VERSION_KEY, now.toString()),
+      ]);
+
+      // Publier l'événement SSE pour notifier tous les clients connectés
+      if (coordHash) {
+        await publishNodeTypeChanges([{ coord_hash: coordHash, node_type: 'generic' }]);
+        logger.logInfo('API', 'DELETE /api/delete', `Published SSE node_type change for ${coordHash}`, userId);
+      }
+      
+      // Publier aussi un événement labels pour que les clients refetch
+      await publishSSEEvent('labels', { version: now, invalidated: true });
+      logger.logInfo('API', 'DELETE /api/delete', 'Published SSE labels invalidation', userId);
+    } catch (sseError) {
+      // Non-critique, ne pas faire échouer la suppression
+      logger.logWarning('API', 'DELETE /api/delete', 'Failed to publish SSE events (non-critical)', userId, {
+        error: sseError instanceof Error ? sseError.message : 'Unknown SSE error'
+      });
+    }
     
     return NextResponse.json(
       { message: 'Account deleted successfully' },

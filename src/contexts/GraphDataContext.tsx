@@ -5,6 +5,7 @@ import { GraphNode } from '@/lib/types/graph';
 import { MatchingTarget } from '@/lib/types/matching';
 import { FollowingHashStatus } from '@/hooks/usePersonalNetwork';
 import { tableFromIPC, Table } from 'apache-arrow';
+import { useSSE, SSELabelsData, SSENodeTypesData, SSEFollowingsData } from '@/hooks/useSSE';
 
 // Event emitter for cross-hook communication (replaces polling)
 type GraphDataEventType = 'followingHashesUpdated' | 'followerHashesUpdated' | 'matchingDataUpdated' | 'baseNodesUpdated' | 'personalLabelsUpdated';
@@ -90,6 +91,7 @@ interface GlobalGraphState {
   normalizationBounds: NormalizationBounds | null;
   followingHashes: Map<string, FollowingHashStatus>;
   followerHashes: Set<string>;
+  effectiveFollowerHashes: Set<string>; // Followers who actually followed via OP (purple highlight)
   userNode: UserNode | null;
   matchingData: MatchingTarget[];
   matchingDataLoaded: boolean;
@@ -111,6 +113,7 @@ const globalGraphState: GlobalGraphState = {
   normalizationBounds: null,
   followingHashes: new Map(),
   followerHashes: new Set(),
+  effectiveFollowerHashes: new Set(),
   userNode: null,
   matchingData: [],
   matchingDataLoaded: false,
@@ -139,8 +142,9 @@ const CACHE_TTL_LABELS_MS = 5 * 60 * 1000; // 5 minutes for labels cache validit
 const CACHE_TTL_FOLLOWER_HASHES_MS = 24 * 60 * 60 * 1000; // 24 hours for follower hashes (rarely changes)
 const CACHE_TTL_FOLLOWING_HASHES_MS = 30 * 60 * 1000; // 30 minutes for following hashes (changes after follow)
 
-// Polling interval for cross-client sync (labels + node_type changes)
-const SYNC_POLL_INTERVAL_MS = 30 * 1000; // 30 seconds
+// SSE replaces polling for cross-client sync (labels + node_type changes)
+// Kept for reference but no longer used
+// const SYNC_POLL_INTERVAL_MS = 30 * 1000; // 30 seconds
 
 // IndexedDB helper class
 class GraphIndexedDB {
@@ -304,6 +308,7 @@ interface CachedFollowingHashes {
 
 interface CachedFollowerHashes {
   hashes: string[];
+  effectiveHashes?: string[]; // Followers who actually followed via OP (purple highlight)
   lastUpdated: number;
 }
 
@@ -352,6 +357,7 @@ interface GraphDataContextValue {
   // Stable hash Sets/Maps for highlighting (RGPD-friendly)
   followingHashes: Map<string, FollowingHashStatus>;
   followerHashes: Set<string>;
+  effectiveFollowerHashes: Set<string>; // Followers who actually followed via OP (purple highlight)
   
   // User's own node in the graph (if exists)
   userNode: UserNode | null;
@@ -427,6 +433,7 @@ export function GraphDataProvider({ children }: GraphDataProviderProps) {
   // Use refs for Sets/Maps to maintain stable references
   const followingHashesRef = useRef<Map<string, FollowingHashStatus>>(globalGraphState.followingHashes);
   const followerHashesRef = useRef<Set<string>>(globalGraphState.followerHashes);
+  const effectiveFollowerHashesRef = useRef<Set<string>>(globalGraphState.effectiveFollowerHashes);
   
   // User node state (user's position in the graph)
   const [userNode, setUserNodeState] = useState<UserNode | null>(globalGraphState.userNode);
@@ -446,10 +453,14 @@ export function GraphDataProvider({ children }: GraphDataProviderProps) {
   const baseNodesPromiseRef = useRef<Promise<void> | null>(null);
   const personalLabelsPromiseRef = useRef<Promise<void> | null>(null);
   const personalDataPromiseRef = useRef<Promise<void> | null>(null);
+  
+  // Labels version ref for SSE cache validation
+  const labelsVersionRef = useRef<number>(0);
 
   // Stable Set references via useMemo (only changes when version changes)
   const followingHashes = useMemo(() => followingHashesRef.current, [hashesVersion]);
   const followerHashes = useMemo(() => followerHashesRef.current, [hashesVersion]);
+  const effectiveFollowerHashes = useMemo(() => effectiveFollowerHashesRef.current, [hashesVersion]);
 
   // Helper to calculate normalization bounds from nodes
   const calculateBounds = useCallback((nodes: GraphNode[]): NormalizationBounds => {
@@ -703,8 +714,11 @@ export function GraphDataProvider({ children }: GraphDataProviderProps) {
           const cachedFollowers = await graphIDB.load<CachedFollowerHashes>(CACHE_KEYS.FOLLOWER_HASHES);
           if (cachedFollowers && graphIDB.isCacheValidForFollowerHashes(cachedFollowers.timestamp)) {
             const hashesSet = new Set(cachedFollowers.data.hashes);
+            const effectiveHashesSet = new Set(cachedFollowers.data.effectiveHashes || []);
             followerHashesRef.current = hashesSet;
+            effectiveFollowerHashesRef.current = effectiveHashesSet;
             globalGraphState.followerHashes = hashesSet;
+            globalGraphState.effectiveFollowerHashes = effectiveHashesSet;
             globalGraphState.followerHashesLoaded = true;
             followersLoaded = true;
           }
@@ -737,221 +751,168 @@ export function GraphDataProvider({ children }: GraphDataProviderProps) {
     loadCachedData();
   }, [calculateBounds]);
 
-  // Poll server for labels version changes every 30 seconds
-  // This allows other clients' consent changes to propagate to all browsers
-  // Polling is paused when the tab is not visible to save resources
-  const labelsVersionRef = useRef<number>(0);
-  
-  useEffect(() => {
-    const checkLabelsVersion = async () => {
-      // Skip polling if tab is not visible
-      if (document.visibilityState !== 'visible') {
-        return;
-      }
+  // ===== SSE for real-time updates (replaces polling) =====
+  // SSE handlers for labels, node types, and following status updates
+  const handleSSELabels = useCallback(async (data: SSELabelsData) => {
+    console.log('🔌 [SSE] Labels update received:', data);
+    
+    if (data.invalidated) {
+      // Reset the loaded flag to force a fresh fetch
+      globalGraphState.personalLabelsLoaded = false;
+      globalGraphState.personalLabelMap = {};
+      globalGraphState.personalFloatingLabels = [];
+      personalLabelsPromiseRef.current = null;
       
+      // Delete old cache
+      await graphIDB.delete(CACHE_KEYS.PERSONAL_LABELS);
+      
+      // Reset state
+      setPersonalLabelMapState({});
+      setPersonalFloatingLabelsState([]);
+      setIsPersonalLabelsLoaded(false);
+      
+      // Fetch fresh labels from server
       try {
-        const response = await fetch('/api/graph/refresh-labels-cache', {
+        const labelsResponse = await fetch('/api/graph/consent_labels', {
           method: 'GET',
-          headers: { 'Cache-Control': 'no-cache' },
+          headers: { 'Content-Type': 'application/json' },
         });
         
-        if (response.ok) {
-          const data = await response.json();
-          const serverVersion = data.version || 0;
-
-          // First successful poll: initialize local version reference.
-          // We don't refetch on init; we only refetch when the server version increases later.
-          if (labelsVersionRef.current === 0) {
-            labelsVersionRef.current = serverVersion;
-            return;
-          }
-
-        if (serverVersion > labelsVersionRef.current) {
-          console.log('🔄 [Labels Sync] Server version changed, refetching labels...');
-                    
-          // Reset the loaded flag to force a fresh fetch
-          globalGraphState.personalLabelsLoaded = false;
-          globalGraphState.personalLabelMap = {};
-          globalGraphState.personalFloatingLabels = [];
-          personalLabelsPromiseRef.current = null;
-                    
-          // Delete old cache
-          await graphIDB.delete(CACHE_KEYS.PERSONAL_LABELS);
-                    
-          // Reset state
-          setPersonalLabelMapState({});
-          setPersonalFloatingLabelsState([]);
-          setIsPersonalLabelsLoaded(false);
-                    
-          // Fetch fresh labels from server
-          try {
-            const labelsResponse = await fetch('/api/graph/consent_labels', {
-              method: 'GET',
-              headers: { 'Content-Type': 'application/json' },
-            });
-                      
-            if (labelsResponse.ok) {
-              const labelsData = await labelsResponse.json();
-              if (labelsData.success) {
-                const labelMap = labelsData.labelMap || {};
-                const floatingLabels: FloatingLabel[] = (labelsData.floatingLabels || []).map((label: any) => ({
-                  coord_hash: label.coord_hash,
-                  x: label.x,
-                  y: label.y,
-                  text: label.text,
-                  priority: label.priority,
-                  level: label.level,
-                }));
-                          
-                globalGraphState.personalLabelMap = labelMap;
-                globalGraphState.personalFloatingLabels = floatingLabels;
-                globalGraphState.personalLabelsLoaded = true;
-                setPersonalLabelMapState(labelMap);
-                setPersonalFloatingLabelsState(floatingLabels);
-                setIsPersonalLabelsLoaded(true);
-                          
-                // Save to IndexedDB cache with version
-                graphIDB.save(CACHE_KEYS.PERSONAL_LABELS, { labelMap, floatingLabels, version: serverVersion }).catch(() => {});
-                          
-                console.log(`🔄 [Labels Sync] Refetched ${Object.keys(labelMap).length} labels`);
-              }
-            }
-          } catch (fetchError) {
-            console.warn('Failed to refetch labels:', fetchError);
-          }
-                    
-          graphDataEvents.emit('personalLabelsUpdated');
-        }
-          
-        // Update our version reference (always, even on first poll)
-        labelsVersionRef.current = serverVersion;
-      }
-    } catch (error) {
-        // Silent fail - polling should not break the app
-        console.warn('Failed to check labels version:', error);
-      }
-    };
-    
-    // Check immediately on mount to get initial version
-    checkLabelsVersion();
-    
-    // Then poll every 30 seconds for cross-client sync
-    const pollInterval = setInterval(checkLabelsVersion, SYNC_POLL_INTERVAL_MS);
-
-    // Also check when tab becomes visible again (user returns to tab)
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        checkLabelsVersion();
-      }
-    };
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    return () => {
-      clearInterval(pollInterval);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, []);
-
-  // Poll server for node_type changes every 30 seconds
-  // This allows consent changes to propagate node_type (generic ↔ member) to all browsers
-  // Polling is paused when the tab is not visible to save resources
-  const nodeTypeVersionRef = useRef<number>(0);
-  
-  useEffect(() => {
-    const checkNodeTypeChanges = async () => {
-      // Skip polling if tab is not visible
-      if (document.visibilityState !== 'visible') {
-        return;
-      }
-      
-      console.log('🔄 [NodeType Poll] Checking... (baseNodesLoaded:', globalGraphState.baseNodesLoaded, ', count:', globalGraphState.baseNodes.length, ', localVersion:', nodeTypeVersionRef.current, ')');
-      
-      // Only check if base nodes are loaded
-      if (!globalGraphState.baseNodesLoaded || globalGraphState.baseNodes.length === 0) {
-        console.log('🔄 [NodeType Poll] Skipping - base nodes not loaded yet');
-        return;
-      }
-      
-      try {
-        const response = await fetch(`/api/graph/node-type-changes?since=${nodeTypeVersionRef.current}`, {
-          method: 'GET',
-          headers: { 'Cache-Control': 'no-cache' },
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          const serverVersion = data.version || 0;
-          const changes = data.changes || [];
-          console.log('🔄 [NodeType Poll] Server version:', serverVersion, ', changes:', changes.length);
-          
-          // Apply changes to baseNodes in memory
-          if (changes.length > 0) {
-            console.log('🔄 [NodeType Poll] Applying', changes.length, 'changes:', changes);
-            let hasUpdates = false;
-            const updatedNodes = globalGraphState.baseNodes.map(node => {
-              const change = changes.find((c: { coord_hash: string; node_type: string }) => c.coord_hash === node.id);
-              if (change && node.nodeType !== change.node_type) {
-                hasUpdates = true;
-                console.log('🔄 [NodeType Poll] Updating node', node.id, 'from', node.nodeType, 'to', change.node_type);
-                return { ...node, nodeType: change.node_type as 'member' | 'generic' };
-              }
-              return node;
-            });
+        if (labelsResponse.ok) {
+          const labelsData = await labelsResponse.json();
+          if (labelsData.success) {
+            const labelMap = labelsData.labelMap || {};
+            const floatingLabels: FloatingLabel[] = (labelsData.floatingLabels || []).map((label: any) => ({
+              coord_hash: label.coord_hash,
+              x: label.x,
+              y: label.y,
+              text: label.text,
+              priority: label.priority,
+              level: label.level,
+            }));
             
-            if (hasUpdates) {
-              console.log('🔄 [NodeType Poll] Applied updates, refreshing state');
-              globalGraphState.baseNodes = updatedNodes;
-              setBaseNodesState(updatedNodes);
-              
-              // Also update IndexedDB cache with new node_type values
-              const cachedNodes: CachedGraphNode[] = updatedNodes.map(node => ({
-                coord_hash: node.id,
-                label: node.label,
-                x: node.x,
-                y: node.y,
-                community: node.community,
-                degree: node.degree,
-                tier: node.tier,
-                nodeType: node.nodeType,
-                graphLabel: node.graphLabel || undefined,
-                description: node.description || undefined,
-              }));
-              graphIDB.save(CACHE_KEYS.BASE_NODES, cachedNodes).catch(err => {
-                console.warn('💾 [IndexedDB] Failed to update base nodes cache:', err);
-              });
-              
-              graphDataEvents.emit('baseNodesUpdated');
-            }
+            globalGraphState.personalLabelMap = labelMap;
+            globalGraphState.personalFloatingLabels = floatingLabels;
+            globalGraphState.personalLabelsLoaded = true;
+            setPersonalLabelMapState(labelMap);
+            setPersonalFloatingLabelsState(floatingLabels);
+            setIsPersonalLabelsLoaded(true);
+            
+            // Save to IndexedDB cache with version
+            graphIDB.save(CACHE_KEYS.PERSONAL_LABELS, { labelMap, floatingLabels, version: data.version }).catch(() => {});
+            
+            console.log(`🔌 [SSE] Refetched ${Object.keys(labelMap).length} labels`);
           }
-          
-          // Update our version reference
-          nodeTypeVersionRef.current = serverVersion;
         }
-      } catch (error) {
-        // Silent fail - polling should not break the app
-        console.warn('Failed to check node_type changes:', error);
+      } catch (fetchError) {
+        console.warn('Failed to refetch labels after SSE notification:', fetchError);
       }
-    };
-    
-    // Check immediately on mount to get initial version
-    checkNodeTypeChanges();
-    
-    // Then poll every 30 seconds for cross-client sync
-    const pollInterval = setInterval(checkNodeTypeChanges, SYNC_POLL_INTERVAL_MS);
-
-    // Also check when tab becomes visible again (user returns to tab)
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        checkNodeTypeChanges();
-      }
-    };
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    return () => {
-      clearInterval(pollInterval);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
+      
+      graphDataEvents.emit('personalLabelsUpdated');
+    }
   }, []);
+
+  const handleSSENodeTypes = useCallback((data: SSENodeTypesData) => {
+    console.log('🔌 [SSE] NodeTypes update received:', data);
+    
+    // Only apply if base nodes are loaded
+    if (!globalGraphState.baseNodesLoaded || globalGraphState.baseNodes.length === 0) {
+      console.log('🔌 [SSE] Skipping node type update - base nodes not loaded yet');
+      return;
+    }
+    
+    const changes = data.changes || [];
+    if (changes.length > 0) {
+      console.log('🔌 [SSE] Applying', changes.length, 'node type changes');
+      let hasUpdates = false;
+      const updatedNodes = globalGraphState.baseNodes.map(node => {
+        const change = changes.find(c => c.coord_hash === node.id);
+        if (change && node.nodeType !== change.node_type) {
+          hasUpdates = true;
+          console.log('🔌 [SSE] Updating node', node.id, 'from', node.nodeType, 'to', change.node_type);
+          return { ...node, nodeType: change.node_type as 'member' | 'generic' };
+        }
+        return node;
+      });
+      
+      if (hasUpdates) {
+        globalGraphState.baseNodes = updatedNodes;
+        setBaseNodesState(updatedNodes);
+        
+        // Also update IndexedDB cache with new node_type values
+        const cachedNodes: CachedGraphNode[] = updatedNodes.map(node => ({
+          coord_hash: node.id,
+          label: node.label,
+          x: node.x,
+          y: node.y,
+          community: node.community,
+          degree: node.degree,
+          tier: node.tier,
+          nodeType: node.nodeType,
+          graphLabel: node.graphLabel || undefined,
+          description: node.description || undefined,
+        }));
+        graphIDB.save(CACHE_KEYS.BASE_NODES, cachedNodes).catch(err => {
+          console.warn('💾 [IndexedDB] Failed to update base nodes cache:', err);
+        });
+        
+        graphDataEvents.emit('baseNodesUpdated');
+      }
+    }
+  }, []);
+
+  const handleSSEFollowings = useCallback((data: SSEFollowingsData) => {
+    console.log('🔌 [SSE] Followings update received:', data);
+    
+    const updates = data.updates || [];
+    if (updates.length > 0) {
+      // Update followingHashes in memory
+      const newFollowingHashes = new Map(globalGraphState.followingHashes);
+      
+      updates.forEach(update => {
+        const existing = newFollowingHashes.get(update.coord_hash) || {
+          hasBlueskyFollow: false,
+          hasMastodonFollow: false,
+          hasMatching: true,
+        };
+        
+        if (update.platform === 'bluesky') {
+          existing.hasBlueskyFollow = update.followed;
+        } else if (update.platform === 'mastodon') {
+          existing.hasMastodonFollow = update.followed;
+        }
+        
+        newFollowingHashes.set(update.coord_hash, existing);
+      });
+      
+      globalGraphState.followingHashes = newFollowingHashes;
+      followingHashesRef.current = newFollowingHashes;
+      setHashesVersion(v => v + 1); // Trigger re-render
+      
+      // Save to IndexedDB cache
+      const hashesArray = Array.from(newFollowingHashes.entries()).map(([hash, status]) => ({
+        coord_hash: hash,
+        ...status,
+      }));
+      graphIDB.save(CACHE_KEYS.FOLLOWING_HASHES, hashesArray).catch(() => {});
+      
+      graphDataEvents.emit('followingHashesUpdated');
+      console.log(`🔌 [SSE] Updated ${updates.length} following statuses`);
+    }
+  }, []);
+
+  // Initialize SSE connection for real-time updates
+  useSSE({
+    onLabels: handleSSELabels,
+    onNodeTypes: handleSSENodeTypes,
+    onFollowings: handleSSEFollowings,
+    onConnected: (data) => {
+      console.log('🔌 [SSE] Connected to server:', data);
+    },
+    onError: (error) => {
+      console.warn('🔌 [SSE] Connection error:', error);
+    },
+  });
 
   // Set base nodes and update global state
   const setBaseNodes = useCallback((nodes: GraphNode[]) => {
@@ -1304,15 +1265,21 @@ export function GraphDataProvider({ children }: GraphDataProviderProps) {
       if (response.ok) {
         const data = await response.json();
         const hashes = data.hashes || [];
+        const effectiveHashes = data.effectiveHashes || []; // Followers who followed via OP
         
-        // Update ref (stable reference)
+        // Update refs (stable references)
         followerHashesRef.current = new Set(hashes);
+        effectiveFollowerHashesRef.current = new Set(effectiveHashes);
         globalGraphState.followerHashes = followerHashesRef.current;
+        globalGraphState.effectiveFollowerHashes = effectiveFollowerHashesRef.current;
         globalGraphState.followerHashesLoaded = true;
+        
+        console.log('📊 [GraphDataProvider] Loaded', hashes.length, 'follower hashes,', effectiveHashes.length, 'effective (via OP)');
         
         // Cache follower hashes to IndexedDB (24h TTL)
         const cacheData: CachedFollowerHashes = {
           hashes,
+          effectiveHashes, // Also cache effective hashes
           lastUpdated: data.timestamp || Date.now(),
         };
         graphIDB.save(CACHE_KEYS.FOLLOWER_HASHES, cacheData).catch(err => {
@@ -1688,6 +1655,7 @@ export function GraphDataProvider({ children }: GraphDataProviderProps) {
     normalizationBounds,
     followingHashes,
     followerHashes,
+    effectiveFollowerHashes,
     userNode,
     matchingData,
     personalLabelMap,
@@ -1716,6 +1684,7 @@ export function GraphDataProvider({ children }: GraphDataProviderProps) {
     normalizationBounds,
     followingHashes,
     followerHashes,
+    effectiveFollowerHashes,
     userNode,
     matchingData,
     personalLabelMap,

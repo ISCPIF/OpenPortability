@@ -109,10 +109,11 @@ interface ReconnectGraphVisualizationProps {
   lassoConnectedIds?: Set<string>; // IDs of nodes that have been successfully connected via lasso
   lassoActiveTab?: 'found' | 'connected'; // which tab is active in the lasso panel
   highlightVersion?: number; // increment to force re-apply highlight selection
-  highlightMode?: 'network' | 'node' | 'connected' | 'members' | null; // which highlight to show: network (all personal), node (user only), connected (lasso connected), members (member followers only), or null (all)
+  highlightMode?: 'network' | 'node' | 'connected' | 'members' | 'effective' | null; // which highlight to show: network (all personal), node (user only), connected (lasso connected), members (member followers only), effective (effective followers only), or null (all)
   // Hash-based highlighting (RGPD-friendly - no twitter_ids exposed)
   followingHashes?: Map<string, FollowingHashStatus>; // coordinate hashes of following accounts in graph with follow status
   followerHashes?: Set<string>; // coordinate hashes of follower accounts in graph
+  effectiveFollowerHashes?: Set<string>; // coordinate hashes of followers who actually followed via OP (purple highlight)
   // User onboarding status - affects highlight colors for non-onboarded users
   hasOnboarded?: boolean; // if false, force pink (11) for all following nodes since we don't have sources_targets data
   // Public floating labels (for discover mode without GraphDataContext)
@@ -155,6 +156,7 @@ export function ReconnectGraphVisualization({
   highlightMode = null,
   followingHashes = new Map<string, FollowingHashStatus>(),
   followerHashes = new Set<string>(),
+  effectiveFollowerHashes = new Set<string>(),
   hasOnboarded = true,
   publicFloatingLabels = [],
   publicNormalizationBounds = null,
@@ -226,10 +228,11 @@ export function ReconnectGraphVisualization({
   // Index 13: green (#22c55e) - reserved (default)
   // Index 14: blue (#3b82f6) - connected (lasso)
   // Index 15: red (#ef4444) - followers (members)
+  // Index 17: purple (#8b5cf6) - effective followers (followers who followed via OP)
   const baseCommunityColors = communityColorsProp || [
     '#011959', '#0e3268', '#234b6e', '#3d6370', '#577a6e',
     '#749166', '#97a65c', '#c0b84f', '#ebc844', '#fad541',
-    '#10b981', '#ec4899', '#fbbf24', '#22c55e', '#3b82f6', '#ef4444', // special colors: green, rose, yellow, green, blue, red
+    '#10b981', '#ec4899', '#fbbf24', '#22c55e', '#3b82f6', '#ef4444', '#808080', '#8b5cf6', // special colors: green, rose, yellow, green, blue, red, gray, purple
   ];
   
   // Extend colors array to include lasso selection colors at indices 100, 101, 102
@@ -452,20 +455,26 @@ export function ReconnectGraphVisualization({
       }
       
       // In followers view: highlight nodes that are in followerHashes
-      // Members get red (category 15), non-members get yellow (category 12)
+      // Priority: effective followers (purple 17) > members (red 15) > non-members (yellow 12)
+      // Effective followers = followers who actually followed via OpenPortability
       if (isFollowersView && isFollowerNode) {
         nodesWithMetadata++;
         const isMember = node.nodeType === 'member';
+        const isEffectiveFollower = effectiveFollowerHashes.size > 0 && effectiveFollowerHashes.has(nodeHash);
         if (data.category) {
-          data.category[index] = isMember ? 15 : 12; // 15 = rouge (member), 12 = jaune (non-member)
+          // Effective followers get purple (17), members get red (15), non-members get yellow (12)
+          data.category[index] = isEffectiveFollower ? 17 : (isMember ? 15 : 12);
         }
         // Add to auto-selection based on highlightMode
         if (shouldComputeAutoSelection) {
           // 'members' mode: only select member followers
+          // 'effective' mode: only select effective followers (those who followed via OP)
           // 'network' or null: select all followers
           const shouldSelect = highlightMode === 'members' 
             ? isMember 
-            : (highlightMode === 'network' || highlightMode === null);
+            : highlightMode === 'effective'
+              ? isEffectiveFollower
+              : (highlightMode === 'network' || highlightMode === null);
           if (shouldSelect) {
             personalPoints.push({
               x: data.x[index],
@@ -520,7 +529,7 @@ export function ReconnectGraphVisualization({
     const autoSel = shouldComputeAutoSelection && personalPoints.length > 0 ? personalPoints : null;
     
     return { embeddingData: data, computedAutoSelection: autoSel };
-  }, [staticEmbeddingData, filteredNodes, nodeHashMap, userNodeHash, isMembersView, isMosaicView, isFollowersView, isPersonalOnlyView, followingHashes, followerHashes, hasOnboarded, highlightMode, lassoConnectedIds, highlightVersion]);
+  }, [staticEmbeddingData, filteredNodes, nodeHashMap, userNodeHash, isMembersView, isMosaicView, isFollowersView, isPersonalOnlyView, followingHashes, followerHashes, effectiveFollowerHashes, hasOnboarded, highlightMode, lassoConnectedIds, highlightVersion]);
 
   // Community colors are now managed by useCommunityColors hook (see line ~70)
   // The hook provides colors with cookie persistence and palette selection

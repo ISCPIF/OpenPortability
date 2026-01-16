@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, useCallback, useMemo, useEffect, useRef, ReactNode } from 'react';
 import { GraphNode } from '@/lib/types/graph';
 import { tableFromIPC } from 'apache-arrow';
+import { useSSE, SSELabelsData } from '@/hooks/useSSE';
 
 // Helper to create coordinate hash (same format as used in API)
 function coordHash(x: number, y: number): string {
@@ -51,8 +52,9 @@ const IDB_STORE_NAME = 'public_graph_data';
 // Cache TTL: 24 hours for graph data
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 
-// Polling interval for cross-client sync (30 seconds)
-const SYNC_POLL_INTERVAL_MS = 30 * 1000;
+// SSE replaces polling for cross-client sync
+// Kept for reference but no longer used
+// const SYNC_POLL_INTERVAL_MS = 30 * 1000;
 
 // IndexedDB helper class
 class PublicGraphIndexedDB {
@@ -401,114 +403,75 @@ export function PublicGraphDataProvider({ children }: PublicGraphDataProviderPro
     loadCachedData();
   }, [calculateBounds]);
 
-  // Poll server for labels version changes every 30 seconds
-  // This allows consent changes to propagate to all browsers (including public/discover mode)
-  // Polling is paused when the tab is not visible to save resources
-  useEffect(() => {
-    const checkLabelsVersion = async () => {
-      // Skip polling if tab is not visible
-      if (document.visibilityState !== 'visible') {
-        return;
-      }
+  // ===== SSE for real-time updates (replaces polling) =====
+  // SSE handler for labels updates
+  const handleSSELabels = useCallback(async (data: SSELabelsData) => {
+    console.log('🔌 [Public SSE] Labels update received:', data);
+    
+    if (data.invalidated) {
+      // Reset the loaded flag to force a fresh fetch
+      globalPublicState.labelsLoaded = false;
+      globalPublicState.labelMap = {};
+      globalPublicState.floatingLabels = [];
+      labelsPromiseRef.current = null;
       
+      // Delete old cache
+      await publicGraphIDB.save(CACHE_KEYS.FLOATING_LABELS, { labelMap: {}, floatingLabels: [] });
+      
+      // Reset state
+      setLabelMapState({});
+      setFloatingLabelsState([]);
+      setIsLabelsLoaded(false);
+      
+      // Fetch fresh labels from server
       try {
-        const response = await fetch('/api/graph/refresh-labels-cache', {
+        const labelsResponse = await fetch('/api/graph/consent_labels', {
           method: 'GET',
-          headers: { 'Cache-Control': 'no-cache' },
+          headers: { 'Content-Type': 'application/json' },
         });
         
-        if (response.ok) {
-          const data = await response.json();
-          const serverVersion = data.version || 0;
-
-          // First successful poll: initialize local version reference
-          if (labelsVersionRef.current === 0) {
-            labelsVersionRef.current = serverVersion;
-            return;
+        if (labelsResponse.ok) {
+          const labelsData = await labelsResponse.json();
+          if (labelsData.success) {
+            const newLabelMap = labelsData.labelMap || {};
+            const newFloatingLabels: FloatingLabel[] = (labelsData.floatingLabels || []).map((label: any) => ({
+              coord_hash: label.coord_hash,
+              x: label.x,
+              y: label.y,
+              text: label.text,
+              priority: label.priority,
+              level: label.level,
+            }));
+            
+            globalPublicState.labelMap = newLabelMap;
+            globalPublicState.floatingLabels = newFloatingLabels;
+            globalPublicState.labelsLoaded = true;
+            setLabelMapState(newLabelMap);
+            setFloatingLabelsState(newFloatingLabels);
+            setIsLabelsLoaded(true);
+            
+            // Save to IndexedDB cache with version
+            publicGraphIDB.save(CACHE_KEYS.FLOATING_LABELS, { labelMap: newLabelMap, floatingLabels: newFloatingLabels, version: data.version }).catch(() => {});
+            
+            console.log(`🔌 [Public SSE] Refetched ${Object.keys(newLabelMap).length} labels`);
           }
-
-          if (serverVersion > labelsVersionRef.current) {
-            console.log('🔄 [Public Labels Sync] Server version changed, refetching labels...');
-            
-            // Reset the loaded flag to force a fresh fetch
-            globalPublicState.labelsLoaded = false;
-            globalPublicState.labelMap = {};
-            globalPublicState.floatingLabels = [];
-            labelsPromiseRef.current = null;
-            
-            // Delete old cache
-            await publicGraphIDB.save(CACHE_KEYS.FLOATING_LABELS, { labelMap: {}, floatingLabels: [] });
-            
-            // Reset state
-            setLabelMapState({});
-            setFloatingLabelsState([]);
-            setIsLabelsLoaded(false);
-            
-            // Fetch fresh labels from server
-            try {
-              const labelsResponse = await fetch('/api/graph/consent_labels', {
-                method: 'GET',
-                headers: { 'Content-Type': 'application/json' },
-              });
-              
-              if (labelsResponse.ok) {
-                const labelsData = await labelsResponse.json();
-                if (labelsData.success) {
-                  const newLabelMap = labelsData.labelMap || {};
-                  const newFloatingLabels: FloatingLabel[] = (labelsData.floatingLabels || []).map((label: any) => ({
-                    coord_hash: label.coord_hash,
-                    x: label.x,
-                    y: label.y,
-                    text: label.text,
-                    priority: label.priority,
-                    level: label.level,
-                  }));
-                  
-                  globalPublicState.labelMap = newLabelMap;
-                  globalPublicState.floatingLabels = newFloatingLabels;
-                  globalPublicState.labelsLoaded = true;
-                  setLabelMapState(newLabelMap);
-                  setFloatingLabelsState(newFloatingLabels);
-                  setIsLabelsLoaded(true);
-                  
-                  // Save to IndexedDB cache with version
-                  publicGraphIDB.save(CACHE_KEYS.FLOATING_LABELS, { labelMap: newLabelMap, floatingLabels: newFloatingLabels, version: serverVersion }).catch(() => {});
-                  
-                  console.log(`🔄 [Public Labels Sync] Refetched ${Object.keys(newLabelMap).length} labels`);
-                }
-              }
-            } catch (fetchError) {
-              console.warn('Failed to refetch public labels:', fetchError);
-            }
-          }
-          
-          // Update our version reference
-          labelsVersionRef.current = serverVersion;
         }
-      } catch (error) {
-        console.warn('Failed to check public labels version:', error);
+      } catch (fetchError) {
+        console.warn('Failed to refetch public labels after SSE notification:', fetchError);
       }
-    };
-    
-    // Check immediately on mount
-    checkLabelsVersion();
-    
-    // Then poll every 30 seconds
-    const pollInterval = setInterval(checkLabelsVersion, SYNC_POLL_INTERVAL_MS);
-
-    // Also check when tab becomes visible again (user returns to tab)
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        checkLabelsVersion();
-      }
-    };
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    return () => {
-      clearInterval(pollInterval);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
+    }
   }, []);
+
+  // Initialize SSE connection for real-time updates
+  useSSE({
+    onLabels: handleSSELabels,
+    onConnected: (data) => {
+      console.log('🔌 [Public SSE] Connected to server:', data);
+    },
+    onError: (error) => {
+      console.warn('🔌 [Public SSE] Connection error:', error);
+    },
+  });
 
   // Fetch base nodes from Mosaic/DuckDB (public, no auth required)
   const fetchBaseNodes = useCallback(async () => {
