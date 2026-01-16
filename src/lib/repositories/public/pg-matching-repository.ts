@@ -903,6 +903,55 @@ export const pgMatchingRepository = {
   },
 
   /**
+   * Récupère les coord_hashes des "effective followers" pour une source (onboarded user)
+   * Ce sont les followers qui ont effectivement suivi l'utilisateur via OpenPortability
+   * (has_follow_bluesky = TRUE OR has_follow_mastodon = TRUE dans sources_targets)
+   * 
+   * @param twitterId - twitter_id de l'utilisateur (p_twitter_id)
+   * @returns { data: string[], error } - Liste des coord_hashes des effective followers
+   */
+  async getEffectiveFollowerHashesForSource(
+    twitterId: string
+  ): Promise<{ data: string[] | null; error: any }> {
+    try {
+      // Query similaire à get_effective_followers mais retourne les coord_hashes
+      // Les effective followers sont les source_id dans sources_targets qui ont
+      // has_follow_bluesky = TRUE OR has_follow_mastodon = TRUE pour le node_id = twitterId
+      const result = await queryPublic(
+        `SELECT DISTINCT 
+           CONCAT(gn.x::text, '_', gn.y::text) as coord_hash
+         FROM public.sources_targets st
+         INNER JOIN "next-auth".users u ON u.id = st.source_id
+         INNER JOIN public.graph_nodes_03_11_25 gn ON gn.id = u.twitter_id
+         WHERE st.node_id = $1::bigint
+           AND (st.has_follow_bluesky = TRUE OR st.has_follow_mastodon = TRUE)`,
+        [twitterId]
+      )
+
+      // Format coord_hash avec 6 décimales comme le frontend
+      const data = result.rows.map((row: any) => {
+        const parts = row.coord_hash.split('_')
+        const x = parseFloat(parts[0])
+        const y = parseFloat(parts[1])
+        return `${x.toFixed(6)}_${y.toFixed(6)}`
+      })
+      
+      console.log("📊 [getEffectiveFollowerHashesForSource] Found", data.length, "effective follower hashes for twitter_id", twitterId)
+      return { data, error: null }
+    } catch (error) {
+      const errorString = error instanceof Error ? error.message : String(error)
+      logger.logError(
+        'Repository',
+        'pgMatchingRepository.getEffectiveFollowerHashesForSource',
+        errorString,
+        'system',
+        { twitterId }
+      )
+      return { data: null, error }
+    }
+  },
+
+  /**
    * Récupère directement les coord_hashes des sources (followings) pour un follower
    * Utilise une fonction RPC pour combiner toutes les requêtes en une seule
    * 

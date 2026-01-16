@@ -16,6 +16,7 @@ import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Trash2, Settings, LogOut, AlertTriangle, Upload } from 'lucide-react';
+import { clearCacheOnLogout, clearCacheOnAccountDelete } from '@/lib/utils/clearUserCache';
 import { Dialog, Transition } from '@headlessui/react';
 import Image from 'next/image';
 import { ParticulesBackground } from '@/app/_components/layouts/ParticulesBackground';
@@ -123,8 +124,8 @@ export default function SettingsPage() {
         throw new Error('Failed to delete account');
       }
 
-      // Supprimer la préférence de langue du localStorage
-      localStorage.removeItem(`user_language_${session?.user?.id}`);
+      // Clear all user cache (IndexedDB, localStorage, sessionStorage)
+      await clearCacheOnAccountDelete(session?.user?.id);
       
       signOut({ callbackUrl: '/' });
     } catch (error) {
@@ -218,7 +219,10 @@ export default function SettingsPage() {
                         </span>
                       </div>
                       <button
-                        onClick={() => signOut()}
+                        onClick={async () => {
+                          await clearCacheOnLogout(session?.user?.id);
+                          signOut();
+                        }}
                         className="px-4 py-2 text-[12px] font-medium rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white transition-all shadow-md"
                       >
                         {t('logout') ?? 'Logout'}
@@ -306,7 +310,10 @@ export default function SettingsPage() {
                     </span>
                   </div>
                   <button
-                    onClick={() => signOut()}
+                    onClick={async () => {
+                      await clearCacheOnLogout(session?.user?.id);
+                      signOut();
+                    }}
                     className="px-4 py-2 text-[12px] font-medium rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white transition-all shadow-md"
                   >
                     {t('logout') ?? 'Logout'}

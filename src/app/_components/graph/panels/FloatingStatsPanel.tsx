@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { ArrowUpRight, Check, Users, UserPlus, Activity, Layers, Star, Upload, LogIn, Info, X, ChevronUp, ChevronDown } from 'lucide-react';
+import { ArrowUpRight, Check, Users, UserPlus, Activity, Layers, Star, Upload, LogIn, Info, X, ChevronUp, ChevronDown, Network, UserCheck } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
@@ -94,9 +94,18 @@ interface FloatingStatsPanelProps {
   onShowMyNetwork?: () => void;
   onShowMyNode?: () => void;
   onShowConnected?: () => void;
-  onShowMemberFollowers?: () => void; // callback to highlight only member followers (red)
+  onShowEffectiveFollowers?: () => void; // callback to highlight only effective followers (purple) - followers who followed via OP
   onResetView?: () => void; // callback to reset graph viewport to initial state
   lassoConnectedCount?: number; // number of lasso connected nodes to show in legend
+  globalStats?: {
+    users: { total: number; onboarded: number };
+    connections: {
+      followers: number;
+      following: number;
+      followedOnBluesky: number;
+      followedOnMastodon: number;
+    };
+  };
 }
 
 export function FloatingStatsPanel({
@@ -116,9 +125,10 @@ export function FloatingStatsPanel({
   onShowMyNetwork,
   onShowMyNode,
   onShowConnected,
-  onShowMemberFollowers,
+  onShowEffectiveFollowers,
   onResetView,
   lassoConnectedCount = 0,
+  globalStats,
 }: FloatingStatsPanelProps) {
   const t = useTranslations('floatingStatsPanel');
   
@@ -185,12 +195,10 @@ export function FloatingStatsPanel({
   const importedFollowing = stats?.connections?.following ?? 0;
   const effectiveFollowers = stats?.connections?.totalEffectiveFollowers ?? 0;
 
-  // Determine title and description based on user state
-  // Title is always "Your Network", only description and status change
+  // Determine title and description based on user state and view mode
   const getTitleInfo = () => {
     if (!isLoggedIn) {
       return {
-        // title: t('header.yourNetwork.title'),
         description: t('header.exploration.description'),
         status: t('header.exploration.status'),
         statusColor: 'text-slate-500',
@@ -198,15 +206,24 @@ export function FloatingStatsPanel({
     }
     if (!hasOnboarded) {
       return {
-        // title: t('header.yourNetwork.title'),
         description: t('header.discovery.description'),
         status: t('header.discovery.status'),
         statusColor: 'text-blue-400',
       };
     }
+    
+    // Adapt description based on view mode
+    let modeDescription = t('header.yourNetwork.description');
+    if (showFollowers && !showFollowing) {
+      modeDescription = t('header.modes.followers.description');
+    } else if (showFollowing && !showFollowers) {
+      modeDescription = t('header.modes.following.description');
+    } else if (!showFollowers && !showFollowing) {
+      modeDescription = t('header.modes.discover.description');
+    }
+    
     return {
-      // title: t('header.yourNetwork.title'),
-      description: t('header.yourNetwork.description'),
+      description: modeDescription,
       status: hasPersonalNetwork ? t('header.yourNetwork.statusReady') : isLoadingPersonal ? t('header.yourNetwork.statusLoading') : t('header.yourNetwork.statusPending'),
       statusColor: hasPersonalNetwork ? 'text-emerald-500' : isLoadingPersonal ? 'text-amber-500' : 'text-slate-500',
     };
@@ -512,61 +529,80 @@ export function FloatingStatsPanel({
               </span>
             </div>
             
-            {/* Communities */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
-                <Layers className="w-3 h-3 text-slate-400" />
-                <span className="text-[11px] text-white">{t('graph.communities')}</span>
-              </div>
-              <span className="text-[13px] text-white font-medium tabular-nums">
-                {communityCount}
-              </span>
-            </div>
+            {/* OpenPortability Stats */}
+            {globalStats && (
+              <>
+                <div className="mt-2 pt-2 border-t border-slate-700/30">
+                  <span className="text-[10px] text-slate-400 uppercase tracking-wider">OPENPORTABILITY</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <Users className="w-3 h-3 text-slate-400" />
+                    <span className="text-[11px] text-white">Total users</span>
+                  </div>
+                  <span className="text-[13px] text-white font-medium tabular-nums">
+                    {globalStats.users.total.toLocaleString()}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <Network className="w-3 h-3 text-slate-400" />
+                    <span className="text-[11px] text-white">Total connections</span>
+                  </div>
+                  <span className="text-[13px] text-white font-medium tabular-nums">
+                    {(globalStats.connections.followers + globalStats.connections.following).toLocaleString()}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <UserCheck className="w-3 h-3 text-purple-400" />
+                    <span className="text-[11px] text-white">Total reconnections</span>
+                  </div>
+                  <span className="text-[13px] text-purple-300 font-medium tabular-nums">
+                    {(globalStats.connections.followedOnBluesky + globalStats.connections.followedOnMastodon).toLocaleString()}
+                  </span>
+                </div>
+              </>
+            )}
 
-            {/* Reconnection Stats per Platform */}
-            {stats && (hasBluesky || hasMastodon) && (
+            {/* Reconnection Stats per Platform - Both on same line */}
+            {stats && (hasBluesky || hasMastodon) && (stats.matches.bluesky.total > 0 || stats.matches.mastodon.total > 0) && (
               <div className="mt-2 pt-2 border-t border-slate-700/30 space-y-1.5">
                 <span className="text-[10px] text-slate-400 uppercase tracking-wider">
-                  {hasOnboarded ? 'Reconnected' : 'Found'}
+                  {hasOnboarded ? t('reconnectionStats.reconnected') : t('reconnectionStats.found')}
                 </span>
                 
-                {/* Bluesky reconnection stats */}
-                {hasBluesky && stats.matches.bluesky.total > 0 && (
-                  <div className="flex items-center justify-between">
+                {/* Both platforms on same line */}
+                <div className="flex items-center justify-between gap-3">
+                  {hasBluesky && stats.matches.bluesky.total > 0 && (
                     <div className="flex items-center gap-1.5">
                       <div className="w-2 h-2 rounded-full bg-sky-400" />
-                      <span className="text-[11px] text-slate-300">Bluesky</span>
+                      <span className="text-[10px] text-slate-300">Bluesky</span>
+                      <span className="text-[10px] text-white tabular-nums">
+                        {stats.matches.bluesky.total.toLocaleString()}
+                      </span>
                     </div>
-                    <span className="text-[11px] text-white tabular-nums">
-                      {stats.matches.bluesky.hasFollowed}
-                      <span className="text-slate-500">/{stats.matches.bluesky.total}</span>
-                    </span>
-                  </div>
-                )}
-                
-                {/* Mastodon reconnection stats */}
-                {hasMastodon && stats.matches.mastodon.total > 0 && (
-                  <div className="flex items-center justify-between">
+                  )}
+                  {hasMastodon && stats.matches.mastodon.total > 0 && (
                     <div className="flex items-center gap-1.5">
                       <div className="w-2 h-2 rounded-full bg-purple-400" />
-                      <span className="text-[11px] text-slate-300">Mastodon</span>
+                      <span className="text-[10px] text-slate-300">Mastodon</span>
+                      <span className="text-[10px] text-white tabular-nums">
+                        {stats.matches.mastodon.total.toLocaleString()}
+                      </span>
                     </div>
-                    <span className="text-[11px] text-white tabular-nums">
-                      {stats.matches.mastodon.hasFollowed}
-                      <span className="text-slate-500">/{stats.matches.mastodon.total}</span>
-                    </span>
-                  </div>
-                )}
-
-                {/* Connected stat - moved here from Your Network */}
-                {hasAnyPlatform && connected > 0 && (
+                  )}
+                </div>
+                
+                {/* Effective Followers - Only show in followers mode */}
+                {showFollowers && !showFollowing && effectiveFollowers > 0 && (
                   <div className="flex items-center justify-between pt-1">
                     <div className="flex items-center gap-1.5">
-                      <Check className="w-3 h-3 text-emerald-400" />
-                      <span className="text-[11px] text-emerald-400 font-medium">{t('stats.connected')}</span>
+                      <UserCheck className="w-3 h-3 text-purple-400" />
+                      <span className="text-[10px] text-purple-300">{t('reconnectionStats.effectiveFollowers')}</span>
                     </div>
-                    <span className="text-[11px] text-emerald-400 font-medium tabular-nums">
-                      {connected.toLocaleString()}
+                    <span className="text-[10px] text-purple-300 font-medium tabular-nums">
+                      {effectiveFollowers.toLocaleString()}
                     </span>
                   </div>
                 )}
@@ -600,12 +636,12 @@ export function FloatingStatsPanel({
                 {showFollowers && (
                   <>
                     <div className="flex items-center gap-2">
-                      <div className="w-3 h-3 rounded-full bg-red-500" />
-                      <span className="text-[10px] text-slate-300">Followers (members)</span>
+                      <div className="w-3 h-3 rounded-full bg-purple-500" />
+                      <span className="text-[10px] text-slate-300">Gained followers (via OP)</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="w-3 h-3 rounded-full bg-yellow-400" />
-                      <span className="text-[10px] text-slate-300">Followers (non-members)</span>
+                      <span className="text-[10px] text-slate-300">Other followers</span>
                     </div>
                   </>
                 )}
@@ -624,37 +660,69 @@ export function FloatingStatsPanel({
               {/* Re-highlight buttons */}
               <div className="flex flex-col gap-1.5 mt-2">
                 {onShowMyNetwork && (
-                  <button
-                    onClick={onShowMyNetwork}
-                    className="w-full py-1.5 px-2 text-[10px] font-medium text-amber-300 bg-amber-600/20 hover:bg-amber-600/30 border border-amber-500/30 rounded transition-colors"
-                  >
-                    {showFollowers && !showFollowing ? 'Show all my followers' : 'Show my network'}
-                  </button>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={onShowMyNetwork}
+                      className="flex-1 py-1.5 px-2 text-[10px] font-medium text-amber-300 bg-amber-600/20 hover:bg-amber-600/30 border border-amber-500/30 rounded transition-colors"
+                    >
+                      {showFollowers && !showFollowing ? t('buttons.showAllFollowers') : t('buttons.showMyNetwork')}
+                    </button>
+                    <div className="relative group">
+                      <Info className="w-3.5 h-3.5 text-amber-400 cursor-help" />
+                      <div className="absolute bottom-full right-0 mb-1 w-48 p-2 bg-slate-800 border border-slate-600 rounded text-[9px] text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                        {showFollowers && !showFollowing ? t('buttons.showAllFollowersTooltip') : t('buttons.showMyNetworkTooltip')}
+                      </div>
+                    </div>
+                  </div>
                 )}
                 {onShowMyNode && (
-                  <button
-                    onClick={onShowMyNode}
-                    className="w-full py-1.5 px-2 text-[10px] font-medium text-emerald-300 bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/30 rounded transition-colors"
-                  >
-                    Show my node
-                  </button>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={onShowMyNode}
+                      className="flex-1 py-1.5 px-2 text-[10px] font-medium text-emerald-300 bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/30 rounded transition-colors"
+                    >
+                      {t('buttons.showMyNode')}
+                    </button>
+                    <div className="relative group">
+                      <Info className="w-3.5 h-3.5 text-emerald-400 cursor-help" />
+                      <div className="absolute bottom-full right-0 mb-1 w-48 p-2 bg-slate-800 border border-slate-600 rounded text-[9px] text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                        {t('buttons.showMyNodeTooltip')}
+                      </div>
+                    </div>
+                  </div>
                 )}
                 {/* Hide Show Discovered in FOLLOWER mode (showFollowers && !showFollowing) */}
                 {onShowConnected && lassoConnectedCount > 0 && !(showFollowers && !showFollowing) && (
-                  <button
-                    onClick={onShowConnected}
-                    className="w-full py-1.5 px-2 text-[10px] font-medium text-blue-300 bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/30 rounded transition-colors"
-                  >
-                    Show discovered
-                  </button>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={onShowConnected}
+                      className="flex-1 py-1.5 px-2 text-[10px] font-medium text-blue-300 bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/30 rounded transition-colors"
+                    >
+                      {t('buttons.showDiscovered')}
+                    </button>
+                    <div className="relative group">
+                      <Info className="w-3.5 h-3.5 text-blue-400 cursor-help" />
+                      <div className="absolute bottom-full right-0 mb-1 w-48 p-2 bg-slate-800 border border-slate-600 rounded text-[9px] text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                        {t('buttons.showDiscoveredTooltip')}
+                      </div>
+                    </div>
+                  </div>
                 )}
-                {onShowMemberFollowers && showFollowers && (
-                  <button
-                    onClick={onShowMemberFollowers}
-                    className="w-full py-1.5 px-2 text-[10px] font-medium text-red-300 bg-red-600/20 hover:bg-red-600/30 border border-red-500/30 rounded transition-colors"
-                  >
-                    Show member followers
-                  </button>
+                {onShowEffectiveFollowers && showFollowers && (
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={onShowEffectiveFollowers}
+                      className="flex-1 py-1.5 px-2 text-[10px] font-medium text-purple-300 bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/30 rounded transition-colors"
+                    >
+                      {t('buttons.showEffectiveFollowers')}
+                    </button>
+                    <div className="relative group">
+                      <Info className="w-3.5 h-3.5 text-purple-400 cursor-help" />
+                      <div className="absolute bottom-full right-0 mb-1 w-48 p-2 bg-slate-800 border border-slate-600 rounded text-[9px] text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                        {t('buttons.showEffectiveFollowersTooltip')}
+                      </div>
+                    </div>
+                  </div>
                 )}
               </div>
             </div>
@@ -685,7 +753,7 @@ export function FloatingStatsPanel({
                 >
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
-                {isResetting ? 'Resetting...' : 'Reset view'}
+                {isResetting ? t('buttons.resetting') : t('buttons.resetView')}
               </button>
             </div>
           )}

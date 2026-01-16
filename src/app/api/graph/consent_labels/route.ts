@@ -5,6 +5,7 @@ import { withValidation, withPublicValidation } from '@/lib/validation/middlewar
 import { z } from 'zod';
 import { auth } from '@/app/auth';
 import { redis } from '@/lib/redis';
+import { publishLabelsUpdate, publishNodeTypeChanges } from '@/lib/sse-publisher';
 
 // Redis keys for node_type changes sync
 const NODE_TYPE_CHANGES_KEY = 'graph:node-type-changes';
@@ -200,6 +201,12 @@ async function updateConsentLabelsHandler(
             redis.set(NODE_TYPE_VERSION_KEY, now.toString()),
             redis.expire(NODE_TYPE_CHANGES_KEY, NODE_TYPE_CHANGES_TTL),
           ]);
+          
+          // Publish SSE event for real-time updates to all connected clients
+          await publishNodeTypeChanges([{
+            coord_hash: nodeInfo.coord_hash,
+            node_type: newNodeType,
+          }]);
           
           logger.logInfo(
             'API',

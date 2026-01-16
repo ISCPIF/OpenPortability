@@ -71,8 +71,6 @@ export function withInternalValidation<T>(
       const INTERNAL_API_KEY = process.env.INTERNAL_API_KEY;
       const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET;
 
-      console.log("webhook internal secret ->", INTERNAL_API_KEY, WEBHOOK_SECRET)
-
       if (!INTERNAL_API_KEY || !WEBHOOK_SECRET) {
         return NextResponse.json(
           { error: 'Missing keys for internal security' },

@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter, useSearchParams, useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import Header from '../../../_components/layouts/Header';
+import { useSSE, SSEImportJobData } from '@/hooks/useSSE';
 
 import Image from 'next/image';
 import { quantico } from '../../../fonts/plex';
@@ -72,6 +73,7 @@ export default function LargeFilesPage() {
   const [reducedMotion, setReducedMotion] = useState(false);
   const [canUseWebGL, setCanUseWebGL] = useState(true);
   const [displayProgress, setDisplayProgress] = useState<number>(0);
+  const pollingIntervalRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
 
   // Vérifier l'authentification
@@ -82,9 +84,73 @@ export default function LargeFilesPage() {
     }
   }, [status, router, params.locale]);
 
-  // Vérifier le statut du job
+  // Helper to update job status from API or SSE data
+  const updateJobStatusFromData = useCallback((data: any) => {
+    // SSE data has stats as simple numbers, API has nested objects
+    const followersProcessed = typeof data.stats?.followers === 'number' 
+      ? data.stats.followers 
+      : (data.stats?.followers?.processed || 0);
+    const followingProcessed = typeof data.stats?.following === 'number'
+      ? data.stats.following
+      : (data.stats?.following?.processed || 0);
+    
+    const updatedData = {
+      ...data,
+      status: data.status || 'processing', // Preserve status from SSE/API
+      stats: {
+        total: data.stats?.total || 0,
+        progress: data.stats?.progress || 0,
+        processed: data.stats?.processed || 0,
+        followers: {
+          processed: followersProcessed,
+          total: followerCount
+        },
+        following: {
+          processed: followingProcessed,
+          total: followingCount
+        }
+      }
+    };
+    setJobStatus(updatedData);
+  }, [followerCount, followingCount]);
+
+  // SSE handler for real-time job updates
+  const handleSSEImportJob = useCallback((data: SSEImportJobData) => {
+    // Only process events for our job
+    if (data.jobId !== jobId) return;
+    
+    console.log('📡 [SSE] Received import job update:', data);
+    updateJobStatusFromData(data);
+  }, [jobId, updateJobStatusFromData]);
+
+  // Connect to SSE for real-time updates
+  const { isConnected: sseIsConnected } = useSSE({
+    onImportJob: handleSSEImportJob,
+    onConnected: () => {
+      console.log('📡 [SSE] Connected for import job updates');
+    },
+    onError: () => {
+      console.log('📡 [SSE] Disconnected, falling back to polling');
+    },
+  });
+
+  // Track SSE connection state in a ref for use in async callbacks
+  const sseConnectedRef = useRef(sseIsConnected);
+  useEffect(() => {
+    sseConnectedRef.current = sseIsConnected;
+    // When SSE connects, clear any pending polling
+    if (sseIsConnected && pollingIntervalRef.current) {
+      console.log('📡 [SSE] Connected - stopping polling');
+      clearTimeout(pollingIntervalRef.current);
+      pollingIntervalRef.current = null;
+    }
+  }, [sseIsConnected]);
+
+  // Initial fetch + fallback polling when SSE is not connected
   useEffect(() => {
     if (!jobId) return;
+    
+    let isMounted = true;
 
     const checkStatus = async () => {
       try {
@@ -95,25 +161,9 @@ export default function LargeFilesPage() {
           throw new Error(data.error || 'Failed to fetch job status');
         }
 
-        // S'assurer que la structure des stats est correcte
-        const updatedData = {
-          ...data,
-          stats: {
-            total: data.stats?.total || 0,
-            progress: data.stats?.progress || 0,
-            processed: data.stats?.processed || 0,
-            followers: {
-              processed: data.stats?.followers?.processed || 0,
-              total: followerCount
-            },
-            following: {
-              processed: data.stats?.following?.processed || 0,
-              total: followingCount
-            }
-          }
-        };
-
-        setJobStatus(updatedData);
+        if (isMounted) {
+          updateJobStatusFromData(data);
+        }
 
         // Si le job est terminé, arrêter le polling
         if (data.status === 'completed' || data.status === 'failed') {
@@ -122,20 +172,44 @@ export default function LargeFilesPage() {
         return false;
       } catch (error) {
         console.error('Error checking job status:', error);
-        setError((error as Error).message);
+        if (isMounted) {
+          setError((error as Error).message);
+        }
         return true;
       }
     };
 
     const pollStatus = async () => {
+      // Check ref for current SSE state
+      if (sseConnectedRef.current) {
+        console.log('📡 [Polling] SSE is connected, skipping poll');
+        return;
+      }
+      
       const shouldStop = await checkStatus();
-      if (!shouldStop) {
-        setTimeout(pollStatus, 5000);
+      
+      // Schedule next poll only if not connected to SSE and not stopped
+      if (!shouldStop && !sseConnectedRef.current && isMounted) {
+        pollingIntervalRef.current = setTimeout(pollStatus, 5000);
       }
     };
 
-    pollStatus();
-  }, [jobId, followerCount, followingCount]);
+    // Initial fetch (always do this to get initial state)
+    checkStatus();
+    
+    // Start polling only if SSE is not connected
+    if (!sseIsConnected) {
+      pollingIntervalRef.current = setTimeout(pollStatus, 5000);
+    }
+
+    return () => {
+      isMounted = false;
+      if (pollingIntervalRef.current) {
+        clearTimeout(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
+      }
+    };
+  }, [jobId, updateJobStatusFromData]);
 
   // Calculer les pourcentages de progression
   const totalItemCount = followerCount + followingCount;

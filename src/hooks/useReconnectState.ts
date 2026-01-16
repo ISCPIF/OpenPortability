@@ -172,7 +172,7 @@ export function useReconnectState() {
 
   // NOUVEAU: Fonction pour récupérer la liste des followers (chargé en background)
   const fetchFollowersList = useCallback(async () => {
-    // Check if already fetched via global state (shared with useFollowersNetwork)
+    // Check if already fetched via global state
     if (typeof window !== 'undefined') {
       const globalState = (window as any).__followersNetworkState;
       if (globalState?.fetched && globalState?.data) {
@@ -218,7 +218,7 @@ export function useReconnectState() {
         followersFetchedRef.current = true;
         globalFollowersFetched.current = true;
 
-        // Store in global state for useFollowersNetwork to reuse
+        // Store in global state for reuse
         if (typeof window !== 'undefined') {
           if (!(window as any).__followersNetworkState) {
             (window as any).__followersNetworkState = { fetched: false, data: null, promise: null };

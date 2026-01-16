@@ -12,6 +12,7 @@ import { z } from 'zod'
 import { StatsRepository } from '@/lib/repositories/statsRepository'
 import { checkRateLimit, consumeRateLimit } from '@/lib/services/rateLimitService'
 import { pgMatchingRepository } from '@/lib/repositories/public/pg-matching-repository'
+import { publishFollowingStatusUpdate } from '@/lib/sse-publisher'
 
 // Use the schema-inferred type to match the incoming payload shape
 type AccountToFollow = z.infer<typeof MatchingAccountSchema>;
@@ -515,6 +516,28 @@ export const POST = withValidation(
           })) || [],
           coordHashes: coordHashes.mastodon
         } : null
+      }
+
+      // Publish SSE event for real-time updates to the user's connected clients
+      // This allows other tabs/devices to update their UI immediately
+      const sseUpdates: Array<{ coord_hash: string; platform: 'bluesky' | 'mastodon'; followed: boolean }> = [];
+      
+      if (coordHashes.bluesky.length > 0) {
+        coordHashes.bluesky.forEach(hash => {
+          sseUpdates.push({ coord_hash: hash, platform: 'bluesky', followed: true });
+        });
+      }
+      if (coordHashes.mastodon.length > 0) {
+        coordHashes.mastodon.forEach(hash => {
+          sseUpdates.push({ coord_hash: hash, platform: 'mastodon', followed: true });
+        });
+      }
+      
+      if (sseUpdates.length > 0) {
+        // Fire and forget - don't block the response
+        publishFollowingStatusUpdate(userId, sseUpdates).catch(err => {
+          logger.logWarning('API', 'POST /api/migrate/send_follow', `Failed to publish SSE event: ${err}`, userId);
+        });
       }
 
       return NextResponse.json(formattedResults)
