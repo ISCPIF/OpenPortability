@@ -75,28 +75,19 @@ export function useStats(options?: { skipInitialFetch?: boolean }) {
     // SSE handlers for real-time stats updates
     const handleGlobalStatsSSE = useCallback((data: SSEGlobalStatsData) => {
       console.log('📊 [useStats] SSE global stats update received:', data);
-      // Merge SSE data with existing cached stats (SSE only sends partial data)
+      // SSE now sends full GlobalStats structure - use it directly
       const updatedStats: GlobalStats = {
-        ...cachedGlobalStats,
-        users: { 
-          total: data.users, 
-          onboarded: cachedGlobalStats?.users?.onboarded || 0 
-        },
-        connections: { 
-          ...cachedGlobalStats?.connections,
-          followers: cachedGlobalStats?.connections?.followers || 0,
-          following: cachedGlobalStats?.connections?.following || 0,
-          withHandle: data.connections,
-          withHandleBluesky: cachedGlobalStats?.connections?.withHandleBluesky || 0,
-          withHandleMastodon: cachedGlobalStats?.connections?.withHandleMastodon || 0,
-          followedOnBluesky: cachedGlobalStats?.connections?.followedOnBluesky || 0,
-          followedOnMastodon: cachedGlobalStats?.connections?.followedOnMastodon || 0,
-        },
+        users: data.users,
+        connections: data.connections,
         updated_at: data.updated_at,
       };
       cachedGlobalStats = updatedStats;
       setGlobalStats(updatedStats);
       setGlobalStatsCookie(updatedStats);
+      // Mark data as fetched since we have complete stats from SSE
+      dataFetchedRef.current = true;
+      globalDataFetched.current = true;
+      setIsLoading(false);
     }, []);
 
     const handleUserStatsSSE = useCallback((data: SSEUserStatsData) => {
@@ -166,33 +157,16 @@ export function useStats(options?: { skipInitialFetch?: boolean }) {
             }
           }
 
-          // Fetch global stats from API if not in cookie or force refresh
-          if (forceRefresh || !cachedGlobalStats) {
-            const globalStatsResponse = await fetch('/api/stats/total', { 
-              headers: { 
-                'Cache-Control': 'no-cache',
-                'X-Request-ID': `stats-total-${Date.now()}`
-              } 
-            });
-            const fetchedGlobalStats = await globalStatsResponse.json();
-            cachedGlobalStats = fetchedGlobalStats;
-            setGlobalStats(fetchedGlobalStats);
-            // Save to cookie for future requests
-            setGlobalStatsCookie(fetchedGlobalStats);
+          // Global stats are now received via SSE (initial stats sent on connection)
+          // No need to fetch from /api/stats/total - SSE will provide them
+          // If we don't have cached stats yet, SSE will send them shortly after connection
+          if (!cachedGlobalStats) {
+            console.log('📊 [useStats] Waiting for global stats from SSE...');
           }
 
-          // Conditionally fetch user stats only on reconnect pages and not dashboard
-          if (isReconnect && !isDashboard) {
-            const userStatsResponse = await fetch('/api/stats', { 
-              headers: { 
-                'Cache-Control': 'no-cache',
-                'X-Request-ID': `stats-${Date.now()}`
-              } 
-            });
-            const userStats = await userStatsResponse.json();
-            cachedUserStats = userStats;
-            setStats(userStats);
-          } else {
+          // User stats are received via SSE (initial user stats sent on connection for authenticated users)
+          // We only display user stats on reconnect pages and not dashboard
+          if (!(isReconnect && !isDashboard)) {
             setStats(null);
           }
           dataFetchedRef.current = true;

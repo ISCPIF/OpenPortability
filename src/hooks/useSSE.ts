@@ -47,9 +47,21 @@ export interface SSEFollowingsData {
   updates: Array<{ coord_hash: string; platform: 'bluesky' | 'mastodon'; followed: boolean }>;
 }
 
+// Full GlobalStats structure received from SSE (matches GlobalStats type)
 export interface SSEGlobalStatsData {
-  users: number;
-  connections: number;
+  users: {
+    total: number;
+    onboarded: number;
+  };
+  connections: {
+    followers: number;
+    following: number;
+    withHandle: number;
+    withHandleBluesky: number;
+    withHandleMastodon: number;
+    followedOnBluesky: number;
+    followedOnMastodon: number;
+  };
   updated_at: string;
 }
 

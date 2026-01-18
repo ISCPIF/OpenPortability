@@ -48,6 +48,44 @@ export async function GET(request: NextRequest) {
         const connectEvent = `data: ${JSON.stringify({ type: 'connected', userId, timestamp: Date.now() })}\n\n`;
         controller.enqueue(encoder.encode(connectEvent));
 
+        // Send initial global stats from Redis cache
+        try {
+          const cachedStats = await redis.get('stats:global');
+          if (cachedStats) {
+            const stats = JSON.parse(cachedStats);
+            const initialStatsEvent: SSEEvent = {
+              type: 'stats:global',
+              data: stats,
+              userId: null,
+              timestamp: Date.now(),
+            };
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify(initialStatsEvent)}\n\n`));
+            logger.logInfo('SSE', 'Sent initial global stats', `users.total=${stats.users?.total}`, userId || 'anonymous');
+          }
+        } catch (statsError) {
+          logger.logWarning('SSE', 'Failed to send initial stats', statsError instanceof Error ? statsError.message : String(statsError), userId || 'anonymous');
+        }
+
+        // Send initial user stats from Redis cache (authenticated users only)
+        if (userId) {
+          try {
+            const cachedUserStats = await redis.get(`user:stats:${userId}`);
+            if (cachedUserStats) {
+              const stats = JSON.parse(cachedUserStats);
+              const initialUserStatsEvent: SSEEvent = {
+                type: 'stats:user',
+                data: stats,
+                userId,
+                timestamp: Date.now(),
+              };
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify(initialUserStatsEvent)}\n\n`));
+              logger.logInfo('SSE', 'Sent initial user stats', `User: ${userId}`, userId);
+            }
+          } catch (userStatsError) {
+            logger.logWarning('SSE', 'Failed to send initial user stats', userStatsError instanceof Error ? userStatsError.message : String(userStatsError), userId);
+          }
+        }
+
         // Handle incoming messages from Redis pub/sub
         subscriber.on('message', (channel: string, message: string) => {
           if (isControllerClosed) return;
