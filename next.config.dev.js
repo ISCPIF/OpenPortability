@@ -13,6 +13,9 @@ const nextConfig = {
 
   // 🚀 OPTIMISATIONS DE CACHE ET PERFORMANCES POUR LE DÉVELOPPEMENT
   experimental: {
+    // Enable instrumentation hook for pg-notify listener startup
+    instrumentationHook: true,
+    
     // Cache les réponses fetch dans les Server Components pendant le HMR
     serverComponentsHmrCache: true,
 
