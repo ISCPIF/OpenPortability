@@ -1,7 +1,8 @@
 import logger from '../../log_utils';
 import { redis } from '../../redis';
-import { publishGlobalStatsUpdate } from '../../sse-publisher';
+import { publishSSEEvent } from '../../sse-publisher';
 import type { GlobalStatsCacheInvalidationPayload } from '../types';
+import type { GlobalStats } from '../../types/stats';
 
 export async function handleGlobalStatsCacheInvalidation(payload: GlobalStatsCacheInvalidationPayload): Promise<void> {
   try {
@@ -15,15 +16,18 @@ export async function handleGlobalStatsCacheInvalidation(payload: GlobalStatsCac
     // Keep behavior identical to /api/internal/refresh-redis-cache
     await redis.set('stats:global', JSON.stringify(stats), 86400);
 
-    // Additionally notify connected clients.
+    // Additionally notify connected clients via SSE with FULL stats
     try {
-      const updated_at = (stats as any).updated_at;
-      if (typeof (stats as any).users === 'number' && typeof (stats as any).connections === 'number' && typeof updated_at === 'string') {
-        await publishGlobalStatsUpdate({
-          users: (stats as any).users,
-          connections: (stats as any).connections,
-          updated_at,
-        });
+      // Send the complete stats object to SSE clients
+      const fullStats = stats as GlobalStats;
+      
+      if (fullStats.users && fullStats.connections && fullStats.updated_at) {
+        await publishSSEEvent('stats:global', fullStats);
+        logger.logInfo('PgNotify', 'SSE event published (full stats)', 
+          `users.total=${fullStats.users.total}, connections.withHandle=${fullStats.connections.withHandle}`, 'system');
+      } else {
+        logger.logWarning('PgNotify', 'Skipping SSE publish - incomplete stats structure', 
+          JSON.stringify(stats).substring(0, 100), 'system');
       }
     } catch (sseError) {
       logger.logWarning('PgNotify', 'Failed to publish SSE event', 'stats:global', 'system', {
