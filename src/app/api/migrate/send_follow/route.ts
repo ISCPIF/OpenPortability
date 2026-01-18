@@ -269,11 +269,14 @@ export const POST = withValidation(
             // Verify Mastodon token is valid before attempting follows
             const mastodonTokenCheck = await accountService.verifyAndRefreshMastodonToken(userId)
             if (!mastodonTokenCheck.success) {
-              logger.logWarning('API', 'POST /api/migrate/send_follow', 'Mastodon token invalid, requires reauth', userId)
+              logger.logWarning('API', 'POST /api/migrate/send_follow', 'Mastodon token invalid, requires reauth', userId, {
+                errorCode: mastodonTokenCheck.errorCode
+              })
               return NextResponse.json({
                 error: 'Mastodon authentication required',
                 requiresReauth: true,
                 providers: ['mastodon'],
+                errorCode: mastodonTokenCheck.errorCode,  // Pass rate limit error code to frontend
               }, { status: 401 })
             }
 

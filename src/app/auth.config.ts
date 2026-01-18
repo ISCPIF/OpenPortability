@@ -333,6 +333,15 @@ export const authConfig = {
       issuer: "https://mastodon.space",
       profile(profile: MastodonProfile) {
         try {
+          // Check for rate limit error from Mastodon API (429)
+          // When rate limited, profile contains { error: "Trop de requêtes..." } or similar
+          if ((profile as any)?.error) {
+            const errorMsg = (profile as any).error;
+            const isRateLimit = errorMsg.includes('requêtes') || errorMsg.includes('Too Many') || errorMsg.includes('rate');
+            logger.logError("Auth", "mastodon.profile", isRateLimit ? "Mastodon rate limit" : "Mastodon API error", undefined, { profile });
+            throw new Error(isRateLimit ? "MASTODON_RATE_LIMIT" : "INVALID_MASTODON_PROFILE");
+          }
+          
           // Si le profil est invalide
           if (!profile || !profile.id) {
             logger.logError("Auth", "mastodon.profile", "Invalid Mastodon profile", undefined, { profile });

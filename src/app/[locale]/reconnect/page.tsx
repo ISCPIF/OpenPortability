@@ -72,6 +72,7 @@ export default function ReconnectPage() {
     selectedAccounts,
     invalidTokenProviders,
     setInvalidTokenProviders,
+    tokenErrorCode,
     selectedBreakdown,
   } = useReconnectState()
 
@@ -118,6 +119,7 @@ export default function ReconnectPage() {
           mastodonInstances={mastodonInstances}
           invalidTokenProviders={invalidTokenProviders}
           onClearInvalidTokenProviders={() => setInvalidTokenProviders([])}
+          tokenErrorCode={tokenErrorCode}
           selectedBreakdown={selectedBreakdown}
           globalStats={globalStats}
         />

@@ -9,6 +9,7 @@ export interface AuthRefreshState {
   invalidProviders: string[];
   error: string | null;
   noAccountsConfigured: boolean;
+  errorCode?: string;  // Specific error code (e.g., 'MastodonRateLimit')
 }
 
 // Module-level variables to prevent duplicate API calls across component instances
@@ -143,6 +144,7 @@ export function useAuthRefresh() {
             invalidProviders: data.providers || [],
             error: null,
             noAccountsConfigured: false,
+            errorCode: data.errorCode,  // Pass specific error code (e.g., 'MastodonRateLimit')
           };
         } else {
           result = {

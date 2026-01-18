@@ -123,16 +123,32 @@ export class AccountService {
 
       if (!response.ok) {
         console.error(' [AccountService.verifyAndRefreshMastodonToken] Token validation failed:', response.status);
+        
+        // Specific handling for rate limit (429)
+        if (response.status === 429) {
+          return { 
+            success: false, 
+            error: 'Rate limit exceeded',
+            requiresReauth: true,
+            errorCode: 'MastodonRateLimit'
+          };
+        }
+        
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
       return { success: true };
     } catch (error: any) {
       console.error(' [AccountService.verifyAndRefreshMastodonToken] Token validation failed:', error.message);
+      
+      // Check if error message contains rate limit info
+      const isRateLimit = error.message?.includes('429') || error.message?.includes('Too Many Requests');
+      
       return { 
         success: false, 
         error: error.message,
-        requiresReauth: true 
+        requiresReauth: true,
+        errorCode: isRateLimit ? 'MastodonRateLimit' : undefined
       };
     }
   }

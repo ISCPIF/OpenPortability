@@ -18,6 +18,7 @@ export interface RefreshResult {
   success: boolean;
   error?: string;
   requiresReauth?: boolean;
+  errorCode?: string;  // Specific error code for frontend handling (e.g., 'MastodonRateLimit')
 }
 
 export interface BlueskyCredentials {
