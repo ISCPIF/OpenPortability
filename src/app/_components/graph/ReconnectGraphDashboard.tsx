@@ -138,6 +138,10 @@ export function ReconnectGraphDashboard({
   // Use GraphDataContext for personal data (matching + hashes)
   const graphData = useGraphData();
   
+  // Get nodeTypeVersion to react to SSE node_type changes
+  const nodeTypeVersion = graphData?.nodeTypeVersion ?? 0;
+  const contextBaseNodes = graphData?.baseNodes ?? [];
+  
   // Get initial view mode from centralized cookie helper
   // On mobile: always force 'followings' mode to show FloatingAccountsPanel
   
@@ -507,6 +511,67 @@ export function ReconnectGraphDashboard({
     setMosaicNodes(nodes);
     setLoadingMessageKey('initializing');
   }, []);
+
+  // Sync mosaicNodes with updated nodeType values from context when SSE updates happen
+  // This ensures the lasso selection correctly filters by current nodeType
+  const prevNodeTypeVersionRef = useRef(nodeTypeVersion);
+  useEffect(() => {
+    // Skip initial render
+    if (prevNodeTypeVersionRef.current === nodeTypeVersion) return;
+    prevNodeTypeVersionRef.current = nodeTypeVersion;
+    
+    // Only sync if we have both mosaicNodes and contextBaseNodes
+    if (mosaicNodes.length === 0 || contextBaseNodes.length === 0) return;
+    
+    console.log('🔄 [Dashboard] nodeTypeVersion changed, syncing mosaicNodes with context...');
+    
+    // Create a map of coord_hash -> nodeType from context
+    const coordHash = (x: number, y: number): string => `${x.toFixed(6)}_${y.toFixed(6)}`;
+    const nodeTypeMap = new Map<string, 'member' | 'generic'>();
+    for (const node of contextBaseNodes) {
+      const hash = coordHash(node.x, node.y);
+      if (node.nodeType) {
+        nodeTypeMap.set(hash, node.nodeType);
+      }
+    }
+    
+    // Update mosaicNodes with new nodeType values
+    let hasChanges = false;
+    const updatedMosaicNodes = mosaicNodes.map(node => {
+      const hash = coordHash(node.x, node.y);
+      const newNodeType = nodeTypeMap.get(hash);
+      if (newNodeType && node.nodeType !== newNodeType) {
+        hasChanges = true;
+        console.log(`🔄 [Dashboard] Updating node ${hash} from ${node.nodeType} to ${newNodeType}`);
+        return { ...node, nodeType: newNodeType };
+      }
+      return node;
+    });
+    
+    if (hasChanges) {
+      setMosaicNodes(updatedMosaicNodes);
+      
+      // Also re-filter lassoSelectedMembers to remove nodes that are no longer 'member'
+      if (lassoSelectedMembers.length > 0) {
+        const filteredLassoMembers = lassoSelectedMembers.filter(node => {
+          const hash = coordHash(node.x, node.y);
+          const currentNodeType = nodeTypeMap.get(hash) || node.nodeType;
+          return currentNodeType === 'member';
+        });
+        
+        if (filteredLassoMembers.length !== lassoSelectedMembers.length) {
+          console.log(`🔄 [Dashboard] Filtered lasso selection: ${lassoSelectedMembers.length} -> ${filteredLassoMembers.length} members`);
+          setLassoSelectedMembersState(filteredLassoMembers);
+          // Update sessionStorage
+          if (filteredLassoMembers.length > 0) {
+            setLassoSelection(filteredLassoMembers.map(m => m.id));
+          } else {
+            deleteLassoSelection();
+          }
+        }
+      }
+    }
+  }, [nodeTypeVersion, mosaicNodes, contextBaseNodes, lassoSelectedMembers, setLassoSelection, deleteLassoSelection]);
 
   // Callback quand le graphe est complètement rendu
   const handleGraphReady = useCallback(() => {
