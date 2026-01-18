@@ -763,7 +763,9 @@
     "expiredTitle": "Session expirée",
     "expiredMessage": "Votre session {providers} a expiré. Veuillez vous reconnecter pour accéder à votre réseau personnel et vos followers.",
     "message": "Veuillez vous authentifier pour continuer.",
-    "skipButton": "Continuer avec la vue globale uniquement"
+    "skipButton": "Continuer avec la vue globale uniquement",
+    "rateLimitTitle": "Limite Mastodon atteinte",
+    "rateLimitMessage": "Le serveur Mastodon limite temporairement les requêtes. Veuillez patienter quelques minutes avant de réessayer."
   },
   "SuccessAutomaticReconnexion": {
     "congratulations": "Bravo",
@@ -972,6 +974,71 @@
     "largeFiles": "Traitement de vos fichiers...",
     "dashboard": "Chargement du tableau de bord...",
     "settings": "Chargement des paramètres..."
+  },
+  "authError": {
+    "subtitle": "Erreur d'authentification",
+    "home": "Accueil",
+    "support": "Support",
+    "retry": "Réessayer",
+    "errorCode": "Code",
+    "errors": {
+      "MastodonAccountAlreadyLinked": {
+        "title": "Compte déjà lié",
+        "message": "Ce compte Mastodon est déjà lié à un autre utilisateur. Veuillez utiliser un autre compte ou contacter le support.",
+        "action": "Retour à l'accueil"
+      },
+      "BlueskyAccountAlreadyLinked": {
+        "title": "Compte déjà lié",
+        "message": "Ce compte Bluesky est déjà lié à un autre utilisateur. Veuillez utiliser un autre compte ou contacter le support.",
+        "action": "Retour à l'accueil"
+      },
+      "TwitterAccountAlreadyLinked": {
+        "title": "Compte déjà lié",
+        "message": "Ce compte Twitter/X est déjà lié à un autre utilisateur. Veuillez utiliser un autre compte ou contacter le support.",
+        "action": "Retour à l'accueil"
+      },
+      "RateLimit": {
+        "title": "Trop de requêtes",
+        "message": "Limite de l'API Twitter dépassée. Veuillez réessayer plus tard.",
+        "messageWithTime": "Limite de l'API Twitter dépassée. Veuillez réessayer dans {minutes} minutes et {seconds} secondes.",
+        "action": "Réessayer"
+      },
+      "MastodonRateLimit": {
+        "title": "Limite Mastodon dépassée",
+        "message": "Le serveur Mastodon limite temporairement les requêtes. Veuillez patienter quelques minutes avant de réessayer.",
+        "action": "Réessayer"
+      },
+      "InvalidProfile": {
+        "title": "Profil invalide",
+        "message": "Impossible de récupérer votre profil Twitter. Veuillez vérifier que votre compte Twitter est actif et réessayer.",
+        "action": "Réessayer"
+      },
+      "Configuration": {
+        "title": "Erreur de configuration",
+        "message": "Une erreur de configuration s'est produite. Veuillez contacter le support.",
+        "action": "Retour à l'accueil"
+      },
+      "OAuthSignin": {
+        "title": "Erreur de connexion",
+        "message": "Une erreur s'est produite lors de l'initialisation de la connexion.",
+        "action": "Réessayer"
+      },
+      "OAuthCallback": {
+        "title": "Erreur de callback",
+        "message": "Une erreur s'est produite lors de la validation de votre connexion.",
+        "action": "Réessayer"
+      },
+      "AccessDenied": {
+        "title": "Accès refusé",
+        "message": "Vous avez refusé l'accès à votre compte.",
+        "action": "Réessayer"
+      },
+      "Default": {
+        "title": "Erreur d'authentification",
+        "message": "Une erreur inattendue s'est produite lors de l'authentification.",
+        "action": "Réessayer"
+      }
+    }
   },
   "notFound": {
     "title": "Page introuvable",

@@ -33,6 +33,7 @@ export function useReconnectState() {
   const [showOptions, setShowOptions] = useState(true);
   const [isAutomaticReconnect, setIsAutomaticReconnect] = useState(false);
   const [invalidTokenProviders, setInvalidTokenProviders] = useState<string[]>([]);
+  const [tokenErrorCode, setTokenErrorCode] = useState<string | undefined>(undefined);
   // Breakdown of selected accounts by platform (for progress panel)
   const [selectedBreakdown, setSelectedBreakdown] = useState<{ bluesky: number; mastodon: number } | null>(null);
   
@@ -482,9 +483,10 @@ export function useReconnectState() {
 
         // Handle reauth required (401 with requiresReauth)
         if (response.status === 401 && result?.requiresReauth) {
-          console.log('🔐 [useReconnectState] Reauth required for providers:', result.providers);
+          console.log('🔐 [useReconnectState] Reauth required for providers:', result.providers, 'errorCode:', result.errorCode);
           const providers = result.providers || [];
           setInvalidTokenProviders(providers);
+          setTokenErrorCode(result.errorCode);  // Capture rate limit error code
           setIsMigrating(false);
           return;
         }
@@ -677,6 +679,7 @@ export function useReconnectState() {
     setIsAutomaticReconnect,
     invalidTokenProviders,
     setInvalidTokenProviders,
+    tokenErrorCode,
     accountsToProcess,
     setAccountsToProcess,
     selectedAccounts,

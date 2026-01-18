@@ -4,7 +4,7 @@ import { useTranslations } from 'next-intl'
 import { useTheme } from '@/hooks/useTheme'
 import { ModalShell } from './ModalShell'
 import DashboardLoginButtons from '../logins/DashboardLoginButtons'
-import { AlertTriangle, RefreshCw } from 'lucide-react'
+import { AlertTriangle, RefreshCw, Clock } from 'lucide-react'
 import { plex } from '@/app/fonts/plex'
 
 interface ReconnectLoginModalProps {
@@ -22,6 +22,7 @@ interface ReconnectLoginModalProps {
   allowDismiss?: boolean
   mode?: 'default' | 'addPlatform'
   userId?: string // For account linking
+  errorCode?: string // Specific error code (e.g., 'MastodonRateLimit')
 }
 
 export function ReconnectLoginModal({
@@ -35,6 +36,7 @@ export function ReconnectLoginModal({
   allowDismiss = false,
   mode = 'default',
   userId,
+  errorCode,
 }: ReconnectLoginModalProps) {
   const { isDark } = useTheme()
   const t = useTranslations('loginModal')
@@ -45,8 +47,14 @@ export function ReconnectLoginModal({
     }
   }
 
+  // Check if this is a rate limit error
+  const isRateLimitError = errorCode === 'MastodonRateLimit'
+
   // Determine which message to show
   const getTitle = () => {
+    if (isRateLimitError) {
+      return t('rateLimitTitle')
+    }
     if (mode === 'addPlatform') {
       return t('addPlatformTitle')
     }
@@ -60,6 +68,9 @@ export function ReconnectLoginModal({
   }
 
   const getMessage = () => {
+    if (isRateLimitError) {
+      return t('rateLimitMessage')
+    }
     if (mode === 'addPlatform') {
       return t('addPlatformMessage')
     }
@@ -90,13 +101,17 @@ export function ReconnectLoginModal({
           <div 
             className={`
               flex items-center justify-center w-16 h-16 rounded-full
-              ${mode === 'addPlatform' || noAccountsConfigured 
-                ? 'bg-blue-500/20 text-blue-400' 
-                : 'bg-amber-500/20 text-amber-400'
+              ${isRateLimitError
+                ? 'bg-orange-500/20 text-orange-400'
+                : mode === 'addPlatform' || noAccountsConfigured 
+                  ? 'bg-blue-500/20 text-blue-400' 
+                  : 'bg-amber-500/20 text-amber-400'
               }
             `}
           >
-            {mode === 'addPlatform' || noAccountsConfigured ? (
+            {isRateLimitError ? (
+              <Clock className="w-8 h-8" />
+            ) : mode === 'addPlatform' || noAccountsConfigured ? (
               <RefreshCw className="w-8 h-8" />
             ) : (
               <AlertTriangle className="w-8 h-8" />
@@ -133,16 +148,18 @@ export function ReconnectLoginModal({
           </div>
         )}
 
-        {/* Login buttons */}
-        <DashboardLoginButtons
-          connectedServices={connectedServices}
-          hasUploadedArchive={true}
-          onLoadingChange={handleLoadingChange}
-          mastodonInstances={mastodonInstances}
-          isRefreshToken={invalidProviders.length > 0}
-          userId={userId}
-          invalidProviders={invalidProviders}
-        />
+        {/* Login buttons - hide when rate limit error (user just needs to wait) */}
+        {!isRateLimitError && (
+          <DashboardLoginButtons
+            connectedServices={connectedServices}
+            hasUploadedArchive={true}
+            onLoadingChange={handleLoadingChange}
+            mastodonInstances={mastodonInstances}
+            isRefreshToken={invalidProviders.length > 0}
+            userId={userId}
+            invalidProviders={invalidProviders}
+          />
+        )}
 
         {/* Skip button - allows viewing global view only */}
         <div className="flex justify-center pt-2">

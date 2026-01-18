@@ -57,6 +57,7 @@ interface ReconnectGraphDashboardProps {
   mastodonInstances?: string[];
   invalidTokenProviders?: string[];
   onClearInvalidTokenProviders?: () => void;
+  tokenErrorCode?: string;  // Error code from token validation (e.g., 'MastodonRateLimit')
   selectedBreakdown?: { bluesky: number; mastodon: number } | null;
   globalStats?: {
     users: { total: number; onboarded: number };
@@ -85,6 +86,7 @@ export function ReconnectGraphDashboard({
   mastodonInstances = [],
   invalidTokenProviders = [],
   onClearInvalidTokenProviders,
+  tokenErrorCode,
   selectedBreakdown,
   globalStats,
 }: ReconnectGraphDashboardProps) {
@@ -318,6 +320,7 @@ export function ReconnectGraphDashboard({
     invalidProviders,
     noAccountsConfigured,
     recheckAuth,
+    errorCode: authErrorCode,
   } = useAuthRefresh();
 
   // Modal state for login prompt
@@ -1231,6 +1234,7 @@ export function ReconnectGraphDashboard({
         }}
         onLoginComplete={handleLoginComplete}
         userId={session?.user?.id}
+        errorCode={tokenErrorCode || authErrorCode}
       />
 
       {/* Migration Success Modal - shown when migration completes */}

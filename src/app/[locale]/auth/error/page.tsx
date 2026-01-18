@@ -35,8 +35,19 @@ export default function AuthError() {
   }, [error, searchParams])
 
   const getErrorInfo = (errorCode: string, customMessage?: string) => {
-    const validCodes = ['MastodonAccountAlreadyLinked', 'BlueskyAccountAlreadyLinked', 'TwitterAccountAlreadyLinked', 'RateLimit', 'InvalidProfile', 'Configuration', 'OAuthSignin', 'OAuthCallback', 'AccessDenied']
-    const code = validCodes.includes(errorCode) ? errorCode : 'Default'
+    const validCodes = ['MastodonAccountAlreadyLinked', 'BlueskyAccountAlreadyLinked', 'TwitterAccountAlreadyLinked', 'RateLimit', 'MastodonRateLimit', 'InvalidProfile', 'Configuration', 'OAuthSignin', 'OAuthCallback', 'AccessDenied']
+    let code = validCodes.includes(errorCode) ? errorCode : 'Default'
+    
+    // Detect Mastodon rate limit from OAuthProfileParseError or message content
+    // When Mastodon returns 429, the error message contains rate limit keywords
+    if (customMessage && (
+      customMessage.includes('requêtes') || 
+      customMessage.includes('Too Many') || 
+      customMessage.includes('rate') ||
+      customMessage.includes('MASTODON_RATE_LIMIT')
+    )) {
+      code = 'MastodonRateLimit'
+    }
     
     // Special handling for RateLimit with time
     if (code === 'RateLimit' && retryTime) {

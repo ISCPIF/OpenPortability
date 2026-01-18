@@ -28,10 +28,12 @@ async function refreshHandler(_request: Request, _data: z.infer<typeof EmptySche
     }
 
     // Vérifier Mastodon si l'utilisateur a un compte
+    let mastodonErrorCode: string | undefined;
     if (session.user.mastodon_username) {
       results.mastodon = await accountService.verifyAndRefreshMastodonToken(session.user.id)
       if (results.mastodon.requiresReauth) {
         invalidProviders.push('mastodon')
+        mastodonErrorCode = results.mastodon.errorCode
       }
     }
 
@@ -45,13 +47,17 @@ async function refreshHandler(_request: Request, _data: z.infer<typeof EmptySche
 
     // Si des providers nécessitent une réauthentification
     if (invalidProviders.length > 0) {
-      logger.logWarning('API', 'POST /api/auth/refresh', 'Reauth required for providers', session.user.id, { providers: invalidProviders })
+      logger.logWarning('API', 'POST /api/auth/refresh', 'Reauth required for providers', session.user.id, { 
+        providers: invalidProviders,
+        mastodonErrorCode 
+      })
       return NextResponse.json(
         { 
           success: false,
           error: 'Token refresh failed',
           requiresReauth: true,
-          providers: invalidProviders
+          providers: invalidProviders,
+          errorCode: mastodonErrorCode  // Pass specific error code to frontend
         },
         { status: 401 }
       )

@@ -481,7 +481,9 @@
     "message": "Please authenticate to continue.",
     "skipButton": "Continue with the view only",
     "addPlatformTitle": "Add another platform",
-    "addPlatformMessage": "Connect additional accounts to continue your reconnection and find more of your contacts on other platforms."
+    "addPlatformMessage": "Connect additional accounts to continue your reconnection and find more of your contacts on other platforms.",
+    "rateLimitTitle": "Mastodon rate limit reached",
+    "rateLimitMessage": "The Mastodon server is temporarily limiting requests. Please wait a few minutes before trying again."
   },
   "floatingStatsPanel": {
     "header": {
@@ -874,6 +876,11 @@
         "title": "Too many requests",
         "message": "Twitter API limit exceeded. Please try again later.",
         "messageWithTime": "Twitter API limit exceeded. Please try again in {minutes} minutes and {seconds} seconds.",
+        "action": "Retry"
+      },
+      "MastodonRateLimit": {
+        "title": "Mastodon rate limit exceeded",
+        "message": "The Mastodon server is temporarily limiting requests. Please wait a few minutes before trying again.",
         "action": "Retry"
       },
       "InvalidProfile": {
