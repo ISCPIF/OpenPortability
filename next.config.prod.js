@@ -24,6 +24,9 @@ const nextConfig = {
   swcMinify: false,
 
   experimental: {
+    // Enable instrumentation hook for pg-notify listener startup
+    instrumentationHook: true,
+    
     staleTimes: {
       dynamic: 30,  // 30 secondes pour les pages dynamiques
       static: 300,  // 5 minutes pour les pages statiques
