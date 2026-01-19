@@ -53,7 +53,7 @@ async function createMastodonApp(instance: string): Promise<MastodonAppCreds>{
       // https://docs.joinmastodon.org/api/oauth-scopes/#granular
       // read: profil, write:follows: follow/unfollow, write:statuses: poster, write:media: images
       "scopes": "read write:follows write:statuses write:media",
-      "website": "https://app.beta.v2.helloquitx.com/"
+      "website": "https://openportability.org/"
     };
     
     logger.logInfo('Auth', 'createMastodonApp', `Création d'une app OAuth pour ${lcInstance}`, undefined, { 
