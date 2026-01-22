@@ -265,7 +265,7 @@ interface PublicGraphDataContextValue {
   isTileLoading: boolean;
   currentZoom: number;
   tileConfig: TileConfig;
-  fetchDetailNodes: () => Promise<void>;
+  fetchDetailNodes: (bbox?: BoundingBox) => Promise<void>;
   onViewportChange: (boundingBox: BoundingBox, zoomLevel: number) => void;
   clearTileCache: () => void;
 }
@@ -320,7 +320,7 @@ export function PublicGraphDataProvider({ children }: PublicGraphDataProviderPro
   const [baseNodesMinDegree, setBaseNodesMinDegree] = useState<number>(0); // Min degree of baseNodes, tiles load nodes below this
   const tilePromiseRef = useRef<Promise<void> | null>(null);
   const viewportDebounceRef = useRef<NodeJS.Timeout | null>(null);
-  const fetchDetailNodesRef = useRef<(() => Promise<void>) | null>(null);
+  const fetchDetailNodesRef = useRef<((bbox?: BoundingBox) => Promise<void>) | null>(null);
   const tileConfig = DEFAULT_TILE_CONFIG;
 
   // Helper to calculate normalization bounds from nodes
@@ -808,9 +808,15 @@ export function PublicGraphDataProvider({ children }: PublicGraphDataProviderPro
   // Start with baseNodesMinDegree, then decrease as we load more batches
   const [currentMinDegree, setCurrentMinDegree] = useState<number>(0);
   
+  // Track previous zoom level to detect zoom in/out
+  const prevZoomRef = useRef<number>(0);
+  // Track current viewport bounding box for spatial filtering
+  const currentBboxRef = useRef<BoundingBox | null>(null);
+  
   // Fetch additional nodes progressively - each call loads the next batch by degree
   // This allows loading 100k initial → +50k → +50k → etc as user zooms
-  const fetchDetailNodes = useCallback(async () => {
+  // If bbox is provided, also filter by spatial location for pan support
+  const fetchDetailNodes = useCallback(async (bbox?: BoundingBox) => {
     // Use currentMinDegree if set, otherwise use baseNodesMinDegree
     const degreeThreshold = currentMinDegree > 0 ? currentMinDegree : baseNodesMinDegree;
     
@@ -835,16 +841,23 @@ export function PublicGraphDataProvider({ children }: PublicGraphDataProviderPro
 
     tilePromiseRef.current = (async () => {
       try {
+        // Build SQL with optional spatial filter
+        // Note: bbox is in original coordinates (0-1 range for this dataset)
+        const spatialFilter = bbox ? `
+            AND g.x BETWEEN ${bbox.minX} AND ${bbox.maxX}
+            AND g.y BETWEEN ${bbox.minY} AND ${bbox.maxY}` : '';
+        
         const sql = `
           SELECT g.label, g.x, g.y, g.community, g.degree, g.tier, g.node_type
           FROM postgres_db.public.graph_nodes_03_11_25 g
           WHERE g.community != 8
-            AND g.degree < ${degreeThreshold}
+            AND g.degree < ${degreeThreshold}${spatialFilter}
           ORDER BY g.degree DESC
           LIMIT ${tileConfig.NODES_PER_TILE}
         `;
         
-        console.log(`📦 [Public Tiles] Fetching ${tileConfig.NODES_PER_TILE} nodes with degree < ${degreeThreshold.toFixed(4)}`);
+        const bboxInfo = bbox ? ` in bbox [${bbox.minX.toFixed(2)},${bbox.maxX.toFixed(2)}]x[${bbox.minY.toFixed(2)},${bbox.maxY.toFixed(2)}]` : '';
+        console.log(`📦 [Public Tiles] Fetching ${tileConfig.NODES_PER_TILE} nodes with degree < ${degreeThreshold.toFixed(4)}${bboxInfo}`);
 
         const response = await fetch('/api/mosaic/sql', {
           method: 'POST',
@@ -904,25 +917,82 @@ export function PublicGraphDataProvider({ children }: PublicGraphDataProviderPro
   // Keep ref updated to the latest fetchDetailNodes to avoid stale closures in debounce
   fetchDetailNodesRef.current = fetchDetailNodes;
   
-  // Handle viewport change with debounce
+  // Unload detail nodes when zooming out significantly
+  const unloadDetailNodes = useCallback(() => {
+    if (tileNodes.length > 0) {
+      console.log(`📦 [Public Tiles] Unloading ${tileNodes.length} detail nodes (zoom out)`);
+      setTileNodes([]);
+      setCurrentMinDegree(0); // Reset so next zoom-in starts fresh
+    }
+  }, [tileNodes.length]);
+  
+  // Check if viewport has moved significantly (pan detection)
+  const hasMovedSignificantly = useCallback((oldBbox: BoundingBox | null, newBbox: BoundingBox): boolean => {
+    if (!oldBbox) return true;
+    const oldCenterX = (oldBbox.minX + oldBbox.maxX) / 2;
+    const oldCenterY = (oldBbox.minY + oldBbox.maxY) / 2;
+    const newCenterX = (newBbox.minX + newBbox.maxX) / 2;
+    const newCenterY = (newBbox.minY + newBbox.maxY) / 2;
+    const oldWidth = oldBbox.maxX - oldBbox.minX;
+    const oldHeight = oldBbox.maxY - oldBbox.minY;
+    // Consider significant if moved more than 30% of viewport size
+    const threshold = Math.max(oldWidth, oldHeight) * 0.3;
+    const distance = Math.sqrt((newCenterX - oldCenterX) ** 2 + (newCenterY - oldCenterY) ** 2);
+    return distance > threshold;
+  }, []);
+  
+  // Handle viewport change with smart loading/unloading
   const onViewportChange = useCallback((boundingBox: BoundingBox, zoomLevel: number) => {
+    const prevZoom = prevZoomRef.current;
+    const prevBbox = currentBboxRef.current;
+    prevZoomRef.current = zoomLevel;
+    currentBboxRef.current = boundingBox;
     setCurrentZoom(zoomLevel);
     
-    // In embedding-atlas: lower scale = zoomed OUT, higher scale = zoomed IN
-    // Initial view is ~0.025, zoomed in is 0.1-5+
-    // Load more nodes progressively as user zooms in
+    // Detect zoom direction and pan
+    const isPanning = hasMovedSignificantly(prevBbox, boundingBox) && Math.abs(zoomLevel - prevZoom) < prevZoom * 0.1;
+    
+    // Below threshold: unload detail nodes and don't load new ones
     if (zoomLevel < tileConfig.ZOOM_THRESHOLD) {
+      // Unload detail nodes when zooming out to overview
+      if (viewportDebounceRef.current) {
+        clearTimeout(viewportDebounceRef.current);
+      }
+      viewportDebounceRef.current = setTimeout(() => {
+        // Check inside timeout to get latest state
+        setTileNodes(prev => {
+          if (prev.length > 0) {
+            console.log(`📦 [Public Tiles] Unloading ${prev.length} detail nodes (zoom out below threshold)`);
+            setCurrentMinDegree(0);
+            return [];
+          }
+          return prev;
+        });
+      }, tileConfig.DEBOUNCE_MS);
       return;
     }
 
-    // Debounce the detail node loading
+    // PAN: Clear old detail nodes and load new ones for the new area
+    if (isPanning) {
+      setTileNodes(prev => {
+        if (prev.length > 0) {
+          console.log(`📦 [Public Tiles] Pan detected - clearing ${prev.length} old nodes`);
+          setCurrentMinDegree(0);
+          return [];
+        }
+        return prev;
+      });
+    }
+
+    // ZOOM IN or PAN: Load more detail nodes
     if (viewportDebounceRef.current) {
       clearTimeout(viewportDebounceRef.current);
     }
     viewportDebounceRef.current = setTimeout(() => {
-      fetchDetailNodesRef.current?.();
+      // Pass bbox for spatial filtering when panning
+      fetchDetailNodesRef.current?.(boundingBox);
     }, tileConfig.DEBOUNCE_MS);
-  }, [tileConfig.ZOOM_THRESHOLD, tileConfig.DEBOUNCE_MS]);
+  }, [tileConfig.ZOOM_THRESHOLD, tileConfig.DEBOUNCE_MS, hasMovedSignificantly]);
 
   // Clear tile cache
   const clearTileCache = useCallback(() => {

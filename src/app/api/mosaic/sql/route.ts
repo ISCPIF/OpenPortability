@@ -28,6 +28,9 @@ const ALLOWED_SQL_PATTERNS = [
   // Allow detail nodes query (no bounding box, just degree filter)
   // Pattern: SELECT ... FROM graph_nodes g WHERE g.community != 8 AND g.degree < X ORDER BY ... LIMIT ...
   /^\s*SELECT\s+[\w\s,.*]+\s+FROM\s+postgres_db\.public\.graph_nodes_\d{2}_\d{2}_\d{2}\s+\w+\s+WHERE\s+\w+\.community\s*!=\s*\d+\s+AND\s+\w+\.degree\s*<\s*[-\d.]+\s+ORDER\s+BY\s+[\w.]+\s+(ASC|DESC)\s+LIMIT\s+\d+\s*$/i,
+  // Allow detail nodes query with spatial filter (degree + bbox)
+  // Pattern: SELECT ... FROM graph_nodes g WHERE g.community != 8 AND g.degree < X AND g.x BETWEEN ... AND g.y BETWEEN ... ORDER BY ... LIMIT ...
+  /^\s*SELECT\s+[\w\s,.*]+\s+FROM\s+postgres_db\.public\.graph_nodes_\d{2}_\d{2}_\d{2}\s+\w+\s+WHERE\s+\w+\.community\s*!=\s*\d+\s+AND\s+\w+\.degree\s*<\s*[-\d.]+\s+AND\s+\w+\.x\s+BETWEEN\s+[-\d.]+\s+AND\s+[-\d.]+\s+AND\s+\w+\.y\s+BETWEEN\s+[-\d.]+\s+AND\s+[-\d.]+\s+ORDER\s+BY\s+[\w.]+\s+(ASC|DESC)\s+LIMIT\s+\d+\s*$/i,
 ];
 
 // Dangerous SQL patterns to block
