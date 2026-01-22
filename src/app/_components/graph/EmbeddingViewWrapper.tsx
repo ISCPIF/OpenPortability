@@ -67,57 +67,16 @@ export function EmbeddingViewWrapper(props: EmbeddingViewWrapperProps) {
   onSelectionRef.current = props.onSelection;
   onViewportStateRef.current = props.onViewportState;
 
-  // Refs for zoom clamping
-  const isClampingRef = useRef(false);
-  const clampTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const lastValidScaleRef = useRef<number>(1);
+  // Ref to track programmatic viewport changes (to avoid re-applying user changes)
+  const lastAppliedViewportRef = useRef<string | null>(null);
+  
+  // Track if view has been created with data (to trigger initial creation but not recreate on data changes)
+  const hasCreatedWithDataRef = useRef(false);
 
-  // Clamped viewport state handler - intercepts and clamps before passing to parent
-  const handleClampedViewportState = useCallback((state: ViewportState) => {
-    // If we're currently clamping, ignore this callback to prevent loops
-    if (isClampingRef.current) {
-      return;
-    }
-
-    // Clamp all values to limits
-    const clampedScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, state.scale));
-    const clampedX = Math.max(MIN_X, Math.min(MAX_X, state.x));
-    const clampedY = Math.max(MIN_Y, Math.min(MAX_Y, state.y));
-    const needsClamp = clampedScale !== state.scale || clampedX !== state.x || clampedY !== state.y;
-
-    if (needsClamp) {
-      // Set clamping flag to ignore subsequent callbacks
-      isClampingRef.current = true;
-      
-      // Clear any existing timeout
-      if (clampTimeoutRef.current) {
-        clearTimeout(clampTimeoutRef.current);
-      }
-
-      const clampedState: ViewportState = { x: clampedX, y: clampedY, scale: clampedScale };
-      
-      // Force update embedding-atlas immediately
-      if (viewRef.current?.update) {
-        try {
-          viewRef.current.update({ viewportState: clampedState });
-        } catch (err) {
-          // Ignore errors
-        }
-      }
-
-      // Notify parent of clamped state
-      onViewportStateRef.current?.(clampedState);
-      lastValidScaleRef.current = clampedScale;
-
-      // Reset clamping flag after a delay to allow embedding-atlas to settle
-      clampTimeoutRef.current = setTimeout(() => {
-        isClampingRef.current = false;
-      }, 100);
-    } else {
-      // No clamping needed, pass through to parent
-      lastValidScaleRef.current = state.scale;
-      onViewportStateRef.current?.(state);
-    }
+  // Simple viewport state passthrough - no clamping, let embedding-atlas handle its own limits
+  // This avoids infinite loops and FPS drops from fighting with the library
+  const handleViewportStateSimple = useCallback((state: ViewportState) => {
+    onViewportStateRef.current?.(state);
   }, []);
 
   const variant: EmbeddingVariant = props.variant ?? 'standard';
@@ -161,12 +120,21 @@ export function EmbeddingViewWrapper(props: EmbeddingViewWrapperProps) {
   }, [embeddingModule, variant]);
 
   // Create / recreate the view when structural props change
+  // IMPORTANT: We only create the view once when data is first available
+  // Subsequent data changes (e.g., tile nodes added) use update() to preserve viewport
   useEffect(() => {
     if (!SelectedEmbeddingClass || !containerRef.current || !props.data?.x?.length) {
       return;
     }
+    
+    // Skip if view already exists and was created with data
+    // This prevents viewport reset when tile nodes are added
+    if (viewRef.current && hasCreatedWithDataRef.current) {
+      return;
+    }
 
     setIsLoading(true);
+    hasCreatedWithDataRef.current = true;
 
     if (viewRef.current) {
       viewRef.current.destroy?.();
@@ -206,8 +174,8 @@ export function EmbeddingViewWrapper(props: EmbeddingViewWrapperProps) {
       onSelectionRef.current?.(data);
     };
     
-    // Use clamped handler instead of direct passthrough
-    const stableOnViewportState = handleClampedViewportState;
+    // Simple passthrough - no clamping to avoid infinite loops
+    const stableOnViewportState = handleViewportStateSimple;
     
     const viewProps: any = {
       data: props.data,
@@ -274,15 +242,14 @@ export function EmbeddingViewWrapper(props: EmbeddingViewWrapperProps) {
     return () => {
       view.destroy?.();
       viewRef.current = null;
-      // Cleanup clamp timeout
-      if (clampTimeoutRef.current) {
-        clearTimeout(clampTimeoutRef.current);
-      }
+      hasCreatedWithDataRef.current = false; // Reset so view can be recreated if needed
     };
   // Note: We use refs for onSelection and onRangeSelection to avoid recreating the view when callbacks change
   // selectionLocked is kept as dependency because it changes the view behavior
-  // handleClampedViewportState is stable (useCallback with empty deps)
-  }, [SelectedEmbeddingClass, props.width, props.height, props.data?.x?.length, props.onReady, props.theme?.backgroundColor, props.selectionLocked, handleClampedViewportState]);
+  // handleViewportStateSimple is stable (useCallback with empty deps)
+  // IMPORTANT: Do NOT include props.data?.x?.length - data changes should use update(), not recreate the view
+  // This prevents viewport reset when tile nodes are added
+  }, [SelectedEmbeddingClass, props.width, props.height, props.onReady, props.theme?.backgroundColor, props.selectionLocked, handleViewportStateSimple]);
   // Update existing view when content/config props change
   // Note: We wrap in try-catch to avoid WeakMap errors from embedding-atlas
   useEffect(() => {
@@ -353,13 +320,22 @@ export function EmbeddingViewWrapper(props: EmbeddingViewWrapperProps) {
     // Don't include props.querySelection, props.onTooltip - they are stable callbacks
   ]);
 
-  // Update viewport state when it changes (e.g., when clamped by parent)
-  // This allows the parent to force a viewport reset when zoom limits are exceeded
+  // Update viewport state when it changes programmatically (e.g., centering on a search result)
+  // Only apply if this is a NEW viewport state (not one we already applied)
   useEffect(() => {
     if (!viewRef.current || !viewRef.current.update || !props.viewportState) {
       return;
     }
     
+    // Create a key to identify this viewport state
+    const viewportKey = `${props.viewportState.x.toFixed(4)}_${props.viewportState.y.toFixed(4)}_${props.viewportState.scale.toFixed(4)}`;
+    
+    // Only apply if this is a new programmatic change (not a re-render with same values)
+    if (lastAppliedViewportRef.current === viewportKey) {
+      return;
+    }
+    
+    lastAppliedViewportRef.current = viewportKey;
     
     try {
       viewRef.current.update({

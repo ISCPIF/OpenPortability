@@ -109,3 +109,54 @@ export interface GraphCacheConfig {
   userViewTTL: number;        // TTL pour les vues utilisateur
   metadataTTL: number;        // TTL pour les métadonnées
 }
+
+// ============================================
+// Tile-based progressive loading types
+// ============================================
+
+// Configuration for tile-based loading
+export interface TileConfig {
+  INITIAL_NODES: number;        // Nodes loaded at startup (top degree)
+  ZOOM_THRESHOLD: number;       // Zoom level to trigger tile loading
+  NODES_PER_TILE: number;       // Max nodes per tile request
+  MAX_MEMORY_NODES: number;     // Total memory limit for nodes
+  DEBOUNCE_MS: number;          // Debounce delay before fetch
+  TILE_CACHE_SIZE: number;      // Number of tiles in LRU cache
+}
+
+// Default tile configuration
+// NOTE: In embedding-atlas, scale works as follows:
+//   - scale = 0.02-0.03 = zoomed OUT (see whole graph)
+//   - scale = 0.1-5+ = zoomed IN (see details)
+// So we load tiles when scale > ZOOM_THRESHOLD (user is zooming in)
+export const DEFAULT_TILE_CONFIG: TileConfig = {
+  INITIAL_NODES: 100_000,
+  ZOOM_THRESHOLD: 0.05,         // Load tiles when scale > 0.05 (zooming in from initial ~0.025)
+  NODES_PER_TILE: 50_000,
+  MAX_MEMORY_NODES: 400_000,    // Allow up to 400k nodes (100k initial + 6x50k progressive)
+  DEBOUNCE_MS: 500,             // 500ms debounce to avoid too frequent loads
+  TILE_CACHE_SIZE: 20,
+};
+
+// Viewport state for tracking zoom/pan
+export interface ViewportState {
+  boundingBox: BoundingBox;
+  zoom: number;
+  timestamp: number;
+}
+
+// Tile request for DuckDB API
+export interface TileRequest {
+  boundingBox: BoundingBox;
+  zoomLevel: number;
+  limit: number;
+  excludeCommunity?: number;  // e.g., exclude community 8
+}
+
+// Cached tile entry
+export interface TileCacheEntry {
+  key: string;
+  nodes: GraphNode[];
+  timestamp: number;
+  boundingBox: BoundingBox;
+}

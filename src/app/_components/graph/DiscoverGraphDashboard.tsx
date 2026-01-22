@@ -32,7 +32,7 @@ export function DiscoverGraphDashboard({ onLoginClick }: DiscoverGraphDashboardP
   const { colors: communityColors } = useCommunityColors();
   const communityColorsHook = useCommunityColors();
   
-  // Public graph data (no auth required)
+  // Public graph data (no auth required) with tile-based loading
   const {
     baseNodes,
     isBaseNodesLoaded,
@@ -42,6 +42,10 @@ export function DiscoverGraphDashboard({ onLoginClick }: DiscoverGraphDashboardP
     isLabelsLoaded,
     fetchLabels,
     normalizationBounds,
+    // Tile-based progressive loading
+    mergedNodes,
+    onViewportChange,
+    isTileLoading,
   } = usePublicGraphData();
   
   // Loader contrast color
@@ -163,8 +167,27 @@ export function DiscoverGraphDashboard({ onLoginClick }: DiscoverGraphDashboardP
   const handleResetView = useCallback(() => {
     // Clear all graph UI cookies so the view resets to default position
     clearGraphUiState();
+    setHighlightedSearchNode(null);
     setViewResetKey(prev => prev + 1);
   }, []);
+
+  const handleClearSearchHighlight = useCallback(() => {
+    setHighlightedSearchNode(null);
+  }, []);
+
+  // Callback for tile-based viewport changes (progressive loading)
+  const handleTileViewportChange = useCallback((boundingBox: { minX: number; maxX: number; minY: number; maxY: number }, zoomLevel: number) => {
+    if (onViewportChange) {
+      onViewportChange(boundingBox, zoomLevel);
+    }
+  }, [onViewportChange]);
+
+  // Use mergedNodes (baseNodes + tileNodes) when available
+  const displayNodes = useMemo(() => {
+    const result = (mergedNodes && mergedNodes.length > baseNodes.length) ? mergedNodes : baseNodes;
+    console.log(`📊 [DiscoverDashboard] displayNodes: ${result.length} (baseNodes: ${baseNodes.length}, mergedNodes: ${mergedNodes?.length ?? 0})`);
+    return result;
+  }, [baseNodes, mergedNodes]);
 
   // Empty sets/maps for non-authenticated mode
   const emptySet = useMemo(() => new Set<string>(), []);
@@ -227,7 +250,7 @@ export function DiscoverGraphDashboard({ onLoginClick }: DiscoverGraphDashboardP
         {containerSize.width > 0 && containerSize.height > 0 && (
           <ReconnectGraphVisualization
             key={`graph-${viewResetKey}`}
-            nodes={baseNodes}
+            nodes={displayNodes}
             width={containerSize.width}
             height={containerSize.height}
             hasPersonalNetwork={false}
@@ -252,6 +275,8 @@ export function DiscoverGraphDashboard({ onLoginClick }: DiscoverGraphDashboardP
             publicFloatingLabels={floatingLabels}
             publicNormalizationBounds={normalizationBounds}
             highlightedSearchNode={highlightedSearchNode}
+            onClearSearchHighlight={handleClearSearchHighlight}
+            onTileViewportChange={handleTileViewportChange}
           />
         )}
       </div>

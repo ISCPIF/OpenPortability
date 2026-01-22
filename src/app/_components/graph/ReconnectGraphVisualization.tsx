@@ -101,6 +101,9 @@ interface ReconnectGraphVisualizationProps {
   publicNormalizationBounds?: { minX: number; maxX: number; minY: number; maxY: number; scale: number; centerX: number; centerY: number } | null;
   // Highlighted search node (from search in discover mode)
   highlightedSearchNode?: { x: number; y: number; label: string; description: string | null; community: number | null } | null;
+  onClearSearchHighlight?: () => void;
+  // Tile-based loading callback - called when viewport changes for progressive loading
+  onTileViewportChange?: (boundingBox: { minX: number; maxX: number; minY: number; maxY: number }, zoomLevel: number) => void;
 }
 
 interface TooltipData {
@@ -140,15 +143,18 @@ export function ReconnectGraphVisualization({
   publicFloatingLabels = [],
   publicNormalizationBounds = null,
   highlightedSearchNode = null,
+  onClearSearchHighlight,
+  onTileViewportChange,
 }: ReconnectGraphVisualizationProps) {
   const [tooltip, setTooltip] = useState<TooltipData | null>(null);
   const [selection, setSelection] = useState<TooltipData[] | null>(null);
-  const [autoSelection, setAutoSelection] = useState<TooltipData[] | null>(null);
-  const [lassoSelection, setLassoSelection] = useState<TooltipData[] | null>(null);
-  const [searchSelection, setSearchSelection] = useState<TooltipData[] | null>(null);
+  // autoSelection, lassoSelection, and searchSelection are now computed directly in useMemo
+  // This avoids infinite loops from useEffect + setState
   const nodeMapRef = useRef<Map<string, GraphNode>>(new Map());
   const embeddingDataRef = useRef<any>(null);
   const normalizationBoundsRef = useRef<any>(null);
+  // Track which search node we've already centered on (to avoid re-centering on re-renders)
+  const lastCenteredSearchNodeRef = useRef<string | null>(null);
 
   // Viewport state for persistence (uses centralized cookie helper)
   const [viewportState, setViewportState] = useState<ViewportState | null>(() => {
@@ -625,23 +631,19 @@ export function ReconnectGraphVisualization({
 
   // REMOVED: Old auto-selection useEffect - now computed in combined useMemo above
   // This avoids iterating over 658k nodes twice
-  
-  // Sync computedAutoSelection to autoSelection state
-  useEffect(() => {
-    setAutoSelection(computedAutoSelection);
-  }, [computedAutoSelection]);
+  // computedAutoSelection is used directly instead of syncing to state (which caused infinite loops)
 
   // Special category indices for lasso selection colors
   const LASSO_CATEGORY_FOUND = 100; // Rose/pink for found but not connected
   const LASSO_CATEGORY_CONNECTED = 101; // Blue for connected
 
-  // Update lasso selection when lassoSelectedMembers changes (for highlighting in density view)
-  useEffect(() => {
+  // Compute lasso selection as useMemo instead of useEffect to avoid infinite loops
+  // (useEffect with setState causes re-renders which re-trigger the effect)
+  const computedLassoSelection = useMemo(() => {
     // When "Connected" tab is active, show only connected nodes (even if no lasso selection)
     if (lassoActiveTab === 'connected') {
       if (!isMosaicView || !embeddingData || !embeddingData.x || lassoConnectedIds.size === 0) {
-        setLassoSelection(null);
-        return;
+        return null;
       }
       
       // Find connected nodes in the embedding data
@@ -659,14 +661,12 @@ export function ReconnectGraphVisualization({
         }
       }
       
-      setLassoSelection(connectedPoints.length > 0 ? connectedPoints : null);
-      return;
+      return connectedPoints.length > 0 ? connectedPoints : null;
     }
     
     // "Found" tab - show lasso-selected members with color based on connection status
     if (!isMosaicView || !embeddingData || !embeddingData.x || lassoSelectedMembers.length === 0) {
-      setLassoSelection(null);
-      return;
+      return null;
     }
 
     // Create a Set of lasso-selected node IDs for fast lookup
@@ -689,58 +689,32 @@ export function ReconnectGraphVisualization({
       }
     }
     
-    const connectedCount = lassoPoints.filter(p => p.category === LASSO_CATEGORY_CONNECTED).length;
-    setLassoSelection(lassoPoints.length > 0 ? lassoPoints : null);
+    return lassoPoints.length > 0 ? lassoPoints : null;
   }, [isMosaicView, embeddingData, filteredNodes, lassoSelectedMembers, lassoConnectedIds, lassoActiveTab]);
-
-  // Combine search and lasso selections (both can be active at the same time)
-  const combinedMosaicSelection = useMemo(() => {
-    const combined: TooltipData[] = [];
-    if (searchSelection) combined.push(...searchSelection);
-    if (lassoSelection) combined.push(...lassoSelection);
-    if (combined.length === 0) return null;
-    return combined;
-  }, [searchSelection, lassoSelection]);
-
-  // Callback pour le tooltip
-  const handleTooltip = useCallback((dataPoint: TooltipData | null) => {
-    setTooltip(dataPoint);
-  }, []);
 
   // Special category index for search highlight (amber/orange color)
   const SEARCH_CATEGORY = 102;
 
-  // Center view on highlighted search node and create selection for highlighting
-  // Depend on embeddingData to ensure bounds are computed first
-  useEffect(() => {
+  // Compute search selection as useMemo to avoid infinite loops
+  const computedSearchSelection = useMemo(() => {
     if (!highlightedSearchNode || !isMosaicView) {
-      setSearchSelection(null);
-      return;
+      return null;
     }
     
     // Wait for embedding data to be ready (which means bounds are computed)
     if (!embeddingData) {
-      return;
+      return null;
     }
     
     const bounds = contextNormalizationBounds || publicNormalizationBounds || normalizationBoundsRef.current;
     
-    if (!bounds) {
-      return;
+    if (!bounds || !bounds.scale || !Number.isFinite(bounds.scale)) {
+      return null;
     }
     
     // Convert to normalized coordinates
     const normalizedX = (highlightedSearchNode.x - bounds.centerX) * bounds.scale;
     const normalizedY = (highlightedSearchNode.y - bounds.centerY) * bounds.scale;
-    
-    // Set viewport to center on the node with a reasonable zoom level
-    const newViewport: ViewportState = {
-      x: normalizedX,
-      y: normalizedY,
-      scale: 8, // Zoom in to see the node clearly
-    };
-    
-    setViewportState(newViewport);
     
     // Create selection for highlighting the searched node
     const searchPoint: TooltipData = {
@@ -749,33 +723,70 @@ export function ReconnectGraphVisualization({
       category: SEARCH_CATEGORY,
       text: highlightedSearchNode.label,
     };
-    setSearchSelection([searchPoint]);
-    
-    // Save to cookie (using centralized helper)
-    setGraphViewport(newViewport);
+    return [searchPoint];
   }, [highlightedSearchNode, isMosaicView, embeddingData, contextNormalizationBounds, publicNormalizationBounds]);
 
-  // Callback for viewport state changes - debounced save to cookie
-  // Also clamps zoom level and position to prevent infinite zoom out / panning
-  const handleViewportState = useCallback((state: ViewportState) => {
-    // Clamp all values to limits
-    const clampedScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, state.scale));
-    const clampedX = Math.max(MIN_X, Math.min(MAX_X, state.x));
-    const clampedY = Math.max(MIN_Y, Math.min(MAX_Y, state.y));
-    const needsClamp = clampedScale !== state.scale || clampedX !== state.x || clampedY !== state.y;
-    
-    // If any value was clamped, update the viewport state to force embedding-atlas to respect limits
-    if (needsClamp) {
-      const clampedState: ViewportState = { x: clampedX, y: clampedY, scale: clampedScale };
-      setViewportState(clampedState);
-      // Save clamped state to cookie immediately
-      setGraphViewport(clampedState);
+  // Combine search and lasso selections (both can be active at the same time)
+  const combinedMosaicSelection = useMemo(() => {
+    const combined: TooltipData[] = [];
+    if (computedSearchSelection) combined.push(...computedSearchSelection);
+    if (computedLassoSelection) combined.push(...computedLassoSelection);
+    if (combined.length === 0) return null;
+    return combined;
+  }, [computedSearchSelection, computedLassoSelection]);
+
+  // Callback pour le tooltip
+  const handleTooltip = useCallback((dataPoint: TooltipData | null) => {
+    setTooltip(dataPoint);
+  }, []);
+
+  // Center viewport on search node - only when highlightedSearchNode changes (not embeddingData)
+  // This effect only handles viewport centering, not selection (which is computed above)
+  useEffect(() => {
+    if (!highlightedSearchNode || !isMosaicView) {
+      lastCenteredSearchNodeRef.current = null;
       return;
     }
     
-    // Always update local state immediately for consistency
-    setViewportState(state);
+    const bounds = contextNormalizationBounds || publicNormalizationBounds || normalizationBoundsRef.current;
     
+    if (!bounds || !bounds.scale || !Number.isFinite(bounds.scale)) {
+      return;
+    }
+    
+    // Create a unique key for this search node to avoid re-centering on re-renders
+    const searchNodeKey = `${highlightedSearchNode.x}_${highlightedSearchNode.y}_${highlightedSearchNode.label}`;
+    
+    // Only center viewport if this is a NEW search node (not a re-render)
+    if (lastCenteredSearchNodeRef.current !== searchNodeKey) {
+      lastCenteredSearchNodeRef.current = searchNodeKey;
+      
+      // Convert to normalized coordinates
+      const normalizedX = (highlightedSearchNode.x - bounds.centerX) * bounds.scale;
+      const normalizedY = (highlightedSearchNode.y - bounds.centerY) * bounds.scale;
+      
+      // Set viewport to center on the node with a reasonable zoom level
+      const newViewport: ViewportState = {
+        x: normalizedX,
+        y: normalizedY,
+        scale: 8, // Zoom in to see the node clearly
+      };
+      
+      setViewportState(newViewport);
+      
+      // Save to cookie (using centralized helper)
+      setGraphViewport(newViewport);
+    }
+  // IMPORTANT: Do NOT include embeddingData in deps - it changes on every render
+  // We only want to center when highlightedSearchNode actually changes
+  }, [highlightedSearchNode, isMosaicView, contextNormalizationBounds, publicNormalizationBounds]);
+
+  // Callback for viewport state changes - debounced save to cookie
+  // IMPORTANT: Do NOT call setViewportState here for user-initiated changes!
+  // That would create an infinite loop: onViewportState -> setViewportState -> 
+  // EmbeddingViewWrapper effect -> update() -> onViewportState -> ...
+  // Only save to cookie for persistence, let embedding-atlas manage its own state.
+  const handleViewportState = useCallback((state: ViewportState) => {
     // Debounce cookie save to avoid too many writes
     if (viewportSaveTimeoutRef.current) {
       clearTimeout(viewportSaveTimeoutRef.current);
@@ -783,7 +794,54 @@ export function ReconnectGraphVisualization({
     viewportSaveTimeoutRef.current = setTimeout(() => {
       setGraphViewport(state);
     }, 100); // 100ms debounce - fast save to preserve viewport on remount
-  }, []);
+    
+    // DEBUG: Log raw viewport state from embedding-atlas
+    console.log(`🎯 [Viewport] Raw state: x=${state.x.toFixed(2)}, y=${state.y.toFixed(2)}, scale=${state.scale.toFixed(4)}`);
+    
+    // Notify parent for tile-based loading if callback is provided
+    if (onTileViewportChange && normalizationBoundsRef.current) {
+      const bounds = normalizationBoundsRef.current;
+      const normScale = bounds.scale || 1;
+      const centerX = bounds.centerX || 0;
+      const centerY = bounds.centerY || 0;
+      
+      // embedding-atlas viewport:
+      // - state.x, state.y: center of viewport in NORMALIZED coordinates (after * normScale)
+      // - state.scale: pixels per normalized unit (higher = more zoomed in)
+      // 
+      // Visible area in normalized coords = screen pixels / state.scale
+      // Then convert to original coords by dividing by normScale and adding center
+      
+      const viewportWidthNorm = width / state.scale;
+      const viewportHeightNorm = height / state.scale;
+      
+      // Bounding box in normalized space centered on viewport
+      const minXNorm = state.x - viewportWidthNorm / 2;
+      const maxXNorm = state.x + viewportWidthNorm / 2;
+      const minYNorm = state.y - viewportHeightNorm / 2;
+      const maxYNorm = state.y + viewportHeightNorm / 2;
+      
+      // Convert back to original coordinate space
+      // Formula: originalX = (normalizedX / normScale) + centerX
+      const boundingBox = {
+        minX: (minXNorm / normScale) + centerX,
+        maxX: (maxXNorm / normScale) + centerX,
+        minY: (minYNorm / normScale) + centerY,
+        maxY: (maxYNorm / normScale) + centerY,
+      };
+      
+      // DEBUG: Log conversion details (only when zoomed in enough to be useful)
+      if (state.scale > 0.1) {
+        console.log(`🎯 [Viewport] zoom=${state.scale.toFixed(3)}, center=(${state.x.toFixed(2)}, ${state.y.toFixed(2)}), screen=${width}x${height}`);
+        console.log(`🎯 [Viewport] viewportNorm: ${viewportWidthNorm.toFixed(1)}x${viewportHeightNorm.toFixed(1)}, normScale=${normScale}`);
+        console.log(`🎯 [Viewport] original bbox: [${boundingBox.minX.toFixed(4)}, ${boundingBox.maxX.toFixed(4)}] x [${boundingBox.minY.toFixed(4)}, ${boundingBox.maxY.toFixed(4)}]`);
+      }
+      
+      onTileViewportChange(boundingBox, state.scale);
+    } else {
+      console.log(`🎯 [Viewport] NOT calling onTileViewportChange: callback=${!!onTileViewportChange}, bounds=${!!normalizationBoundsRef.current}`);
+    }
+  }, [onTileViewportChange, width, height]);
 
   // Helper function to check if a point is inside a polygon (ray casting algorithm)
   const isPointInPolygon = useCallback((x: number, y: number, polygon: { x: number; y: number }[]): boolean => {
@@ -1173,7 +1231,7 @@ export function ReconnectGraphVisualization({
         categoryColors={communityColors}
         labels={validLabels}
         tooltip={tooltip}
-        selection={isMosaicView ? (combinedMosaicSelection ?? autoSelection ?? selection ?? undefined) : (isPersonalOnlyView || isMembersView || isFollowersView) ? (autoSelection ?? undefined) : (selection ?? undefined)}
+        selection={isMosaicView ? (combinedMosaicSelection ?? computedAutoSelection ?? selection ?? undefined) : (isPersonalOnlyView || isMembersView || isFollowersView) ? (computedAutoSelection ?? undefined) : (selection ?? undefined)}
         onTooltip={handleTooltip}
         onSelection={isMosaicView ? handleSelection : (isPersonalOnlyView || isMembersView || isFollowersView) ? undefined : handleSelection}
         onRangeSelection={isMosaicView ? handleRangeSelection : undefined}

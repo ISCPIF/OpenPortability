@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, useCallback, useMemo, useEffect, useRef, ReactNode } from 'react';
-import { GraphNode } from '@/lib/types/graph';
+import { GraphNode, BoundingBox, DEFAULT_TILE_CONFIG, TileConfig } from '@/lib/types/graph';
 import { MatchingTarget } from '@/lib/types/matching';
 import { FollowingHashStatus } from '@/hooks/usePersonalNetwork';
 import { tableFromIPC, Table } from 'apache-arrow';
@@ -73,6 +73,95 @@ class GraphDataEventEmitter {
 
 // Singleton event emitter
 const graphDataEvents = new GraphDataEventEmitter();
+
+// ============================================
+// Tile Cache for progressive loading
+// ============================================
+
+interface TileCacheEntry {
+  nodes: GraphNode[];
+  timestamp: number;
+}
+
+class TileCache {
+  private cache: Map<string, TileCacheEntry> = new Map();
+  private maxSize: number;
+
+  constructor(maxSize: number = DEFAULT_TILE_CONFIG.TILE_CACHE_SIZE) {
+    this.cache = new Map();
+    this.maxSize = maxSize;
+  }
+
+  getTileKey(bbox: BoundingBox, zoom: number): string {
+    // Round to 2 decimals for reasonable tile granularity
+    return `${bbox.minX.toFixed(2)}_${bbox.maxX.toFixed(2)}_${bbox.minY.toFixed(2)}_${bbox.maxY.toFixed(2)}_z${zoom.toFixed(1)}`;
+  }
+
+  get(key: string): GraphNode[] | null {
+    const entry = this.cache.get(key);
+    if (entry) {
+      // Move to end (most recently used) - LRU behavior
+      this.cache.delete(key);
+      this.cache.set(key, entry);
+      return entry.nodes;
+    }
+    return null;
+  }
+
+  set(key: string, nodes: GraphNode[]): void {
+    // Remove oldest if at capacity
+    if (this.cache.size >= this.maxSize) {
+      const firstKey = this.cache.keys().next().value;
+      if (firstKey) {
+        this.cache.delete(firstKey);
+      }
+    }
+    this.cache.set(key, { nodes, timestamp: Date.now() });
+  }
+
+  has(key: string): boolean {
+    return this.cache.has(key);
+  }
+
+  clear(): void {
+    this.cache.clear();
+  }
+
+  getAllNodes(): GraphNode[] {
+    const allNodes: GraphNode[] = [];
+    const seenIds = new Set<string>();
+    
+    this.cache.forEach(entry => {
+      entry.nodes.forEach(node => {
+        if (!seenIds.has(node.id)) {
+          seenIds.add(node.id);
+          allNodes.push(node);
+        }
+      });
+    });
+    
+    return allNodes;
+  }
+
+  getTotalNodeCount(): number {
+    let count = 0;
+    const seenIds = new Set<string>();
+    
+    this.cache.forEach(entry => {
+      entry.nodes.forEach(node => {
+        if (!seenIds.has(node.id)) {
+          seenIds.add(node.id);
+          count++;
+        }
+      });
+    });
+    
+    return count;
+  }
+}
+
+// Singleton tile cache
+const tileCache = new TileCache();
 
 // User node type (from personal-hashes API)
 interface UserNode {
@@ -397,6 +486,16 @@ interface GraphDataContextValue {
   
   // Version counter for nodeType changes (triggers re-renders when nodeTypes change via SSE)
   nodeTypeVersion: number;
+  
+  // Tile-based progressive loading
+  tileNodes: GraphNode[];
+  mergedNodes: GraphNode[];  // baseNodes + tileNodes (deduplicated)
+  isTileLoading: boolean;
+  currentZoom: number;
+  tileConfig: TileConfig;
+  fetchNodesInTile: (boundingBox: BoundingBox, zoomLevel: number) => Promise<void>;
+  onViewportChange: (boundingBox: BoundingBox, zoomLevel: number) => void;
+  clearTileCache: () => void;
 }
 
 const GraphDataContext = createContext<GraphDataContextValue | null>(null);
@@ -462,6 +561,17 @@ export function GraphDataProvider({ children }: GraphDataProviderProps) {
   
   // Labels version ref for SSE cache validation
   const labelsVersionRef = useRef<number>(0);
+  
+  // ============================================
+  // Tile-based progressive loading state
+  // ============================================
+  const [tileNodes, setTileNodes] = useState<GraphNode[]>([]);
+  const [isTileLoading, setIsTileLoading] = useState(false);
+  const [currentZoom, setCurrentZoom] = useState(1);
+  const [baseNodesMinDegree, setBaseNodesMinDegree] = useState<number>(0); // Min degree of baseNodes, tiles load nodes below this
+  const tilePromiseRef = useRef<Promise<void> | null>(null);
+  const viewportDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  const tileConfig = DEFAULT_TILE_CONFIG;
 
   // Stable Set references via useMemo (only changes when version changes)
   const followingHashes = useMemo(() => followingHashesRef.current, [hashesVersion]);
@@ -1054,8 +1164,8 @@ export function GraphDataProvider({ children }: GraphDataProviderProps) {
   }, []);
 
   // Fetch base nodes from Mosaic/DuckDB with LOD (Level of Detail) loading
-  // Phase 1: Load high-degree nodes first (degree >= 0.3) for instant display
-  // Phase 2: Load remaining nodes in background
+  // Load top N nodes by degree for initial display
+  // Additional nodes are loaded via tile-based progressive loading when user zooms in
   // Cache stores CachedGraphNode (with coord_hash instead of twitter_id) for RGPD compliance
   const fetchBaseNodes = useCallback(async () => {
     // Return existing promise if already fetching
@@ -1070,10 +1180,9 @@ export function GraphDataProvider({ children }: GraphDataProviderProps) {
 
     setIsBaseNodesLoading(true);
     
-    // LOD threshold - nodes with degree >= this value are loaded first
-    // degree is normalized 0-1, higher = more important nodes
-    // Target: Phase 1 should load ~50-100k nodes for fast initial render
-    const LOD_DEGREE_THRESHOLD = 0.90;
+    // Initial load limit - top N nodes by degree
+    // Additional nodes loaded via tiles when user zooms in
+    const INITIAL_NODES_LIMIT = tileConfig.INITIAL_NODES; // 100,000
     
     baseNodesPromiseRef.current = (async () => {
       try {
@@ -1110,11 +1219,13 @@ export function GraphDataProvider({ children }: GraphDataProviderProps) {
           return;
         }
 
-        // === LOD Phase 1: Load high-degree nodes first ===
+        // === Load top N nodes by degree ===
         const startTime = performance.now();
+        console.log(`📊 [GraphData] Loading initial ${INITIAL_NODES_LIMIT} nodes (top by degree)...`);
         
         // LEFT JOIN with users_with_name_consent (all members) + public_accounts (only for public accounts' description)
-        const sqlPhase1 = `
+        // ORDER BY degree DESC LIMIT to get top N most important nodes
+        const sqlInitial = `
           SELECT g.label, g.x, g.y, g.community, g.degree, g.tier, g.node_type, pa.raw_description AS description
           FROM postgres_db.public.graph_nodes_03_11_25 g
           LEFT JOIN postgres_db.public.users_with_name_consent u
@@ -1122,93 +1233,53 @@ export function GraphDataProvider({ children }: GraphDataProviderProps) {
           LEFT JOIN postgres_db.public.public_accounts pa
             ON pa.twitter_id = u.twitter_id
             AND u.is_public_account = true
-          WHERE g.degree >= ${LOD_DEGREE_THRESHOLD}
-            AND g.community != 8
+          WHERE g.community != 8
+          ORDER BY g.degree DESC
+          LIMIT ${INITIAL_NODES_LIMIT}
         `;
         
-        const responsePhase1 = await fetch('/api/mosaic/sql', {
+        const responseInitial = await fetch('/api/mosaic/sql', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sql: sqlPhase1, type: 'arrow' }),
+          body: JSON.stringify({ sql: sqlInitial, type: 'arrow' }),
         });
 
-        if (!responsePhase1.ok) throw new Error('Failed to load Phase 1 nodes from Mosaic');
+        if (!responseInitial.ok) throw new Error('Failed to load initial nodes from Mosaic');
 
-        const bufferPhase1 = await responsePhase1.arrayBuffer();
-        const arrowTablePhase1 = tableFromIPC(bufferPhase1);
-        const phase1Time = performance.now() - startTime;
+        const bufferInitial = await responseInitial.arrayBuffer();
+        const arrowTableInitial = tableFromIPC(bufferInitial);
+        const loadTime = performance.now() - startTime;
         
-        const { loadedNodes: phase1Nodes, cachedNodes: phase1Cached } = parseArrowToNodes(arrowTablePhase1);
+        const { loadedNodes: initialNodes, cachedNodes: initialCached } = parseArrowToNodes(arrowTableInitial);
         
         // Count nodes with description
-        const nodesWithDescription = phase1Nodes.filter((node: GraphNode) => node.description).length;
+        const nodesWithDescription = initialNodes.filter((node: GraphNode) => node.description).length;
         
         // DEBUG: Count member nodes received from DuckDB
-        const memberNodesPhase1 = phase1Nodes.filter((node: GraphNode) => node.nodeType === 'member').length;
+        const memberNodes = initialNodes.filter((node: GraphNode) => node.nodeType === 'member').length;
         
-        // Set Phase 1 nodes immediately for fast initial render
-        globalGraphState.baseNodes = phase1Nodes;
+        console.log(`📊 [GraphData] Loaded ${initialNodes.length} initial nodes in ${loadTime.toFixed(0)}ms (${memberNodes} members, ${nodesWithDescription} with description)`);
+        console.log(`📊 [GraphData] Additional nodes will be loaded via tiles when zooming in (scale < ${tileConfig.ZOOM_THRESHOLD})`);
+        
+        // Set initial nodes for display
+        globalGraphState.baseNodes = initialNodes;
         globalGraphState.baseNodesLoaded = true;
-        setBaseNodesState(phase1Nodes);
+        setBaseNodesState(initialNodes);
         setIsBaseNodesLoaded(true);
-
+        
+        // Calculate min degree of baseNodes for tile filtering
+        if (initialNodes.length > 0) {
+          const minDegree = Math.min(...initialNodes.map(n => n.degree));
+          setBaseNodesMinDegree(minDegree);
+          console.log(`📊 [GraphData] Base nodes min degree: ${minDegree.toFixed(4)} - tiles will load nodes below this`);
+        }
 
         graphDataEvents.emit('baseNodesUpdated');
         
-        // === LOD Phase 2: Load remaining nodes in background ===
-        const startTimePhase2 = performance.now();
-        
-        // LEFT JOIN with users_with_name_consent (all members) + public_accounts (only for public accounts' description)
-        const sqlPhase2 = `
-          SELECT g.label, g.x, g.y, g.community, g.degree, g.tier, g.node_type, pa.raw_description AS description
-          FROM postgres_db.public.graph_nodes_03_11_25 g
-          LEFT JOIN postgres_db.public.users_with_name_consent u
-            ON g.id = u.twitter_id
-          LEFT JOIN postgres_db.public.public_accounts pa
-            ON pa.twitter_id = u.twitter_id
-            AND u.is_public_account = true
-          WHERE g.degree < ${LOD_DEGREE_THRESHOLD}
-            AND g.community != 8
-        `;
-        
-        const responsePhase2 = await fetch('/api/mosaic/sql', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sql: sqlPhase2, type: 'arrow' }),
+        // Save to IndexedDB cache
+        graphIDB.save(CACHE_KEYS.BASE_NODES, initialCached).catch(err => {
+          console.warn('💾 [IndexedDB] Failed to cache base nodes:', err);
         });
-
-        if (responsePhase2.ok) {
-          const bufferPhase2 = await responsePhase2.arrayBuffer();
-          const arrowTablePhase2 = tableFromIPC(bufferPhase2);
-          const phase2Time = performance.now() - startTimePhase2;
-          
-          const { loadedNodes: phase2Nodes, cachedNodes: phase2Cached } = parseArrowToNodes(arrowTablePhase2);
-          
-          // DEBUG: Count member nodes received from DuckDB in Phase 2
-          const memberNodesPhase2 = phase2Nodes.filter((node: GraphNode) => node.nodeType === 'member').length;
-                    
-          // Merge Phase 1 and Phase 2 nodes
-          const allNodes = [...phase1Nodes, ...phase2Nodes];
-          
-          // DEBUG: Total member nodes
-          const totalMemberNodes = allNodes.filter((node: GraphNode) => node.nodeType === 'member').length;
-          const allCached = [...phase1Cached, ...phase2Cached];
-          
-          globalGraphState.baseNodes = allNodes;
-          setBaseNodesState(allNodes);
-          graphDataEvents.emit('baseNodesUpdated');
-          
-          // Save all nodes to IndexedDB cache
-          graphIDB.save(CACHE_KEYS.BASE_NODES, allCached).catch(err => {
-            console.warn('💾 [IndexedDB] Failed to cache base nodes:', err);
-          });
-        } else {
-          console.warn('⚠️ [GraphDataProvider] LOD Phase 2 failed, using Phase 1 only');
-          // Still cache Phase 1 nodes
-          graphIDB.save(CACHE_KEYS.BASE_NODES, phase1Cached).catch(err => {
-            console.warn('💾 [IndexedDB] Failed to cache base nodes:', err);
-          });
-        }
         
       } catch (error) {
         console.error('❌ [GraphDataProvider] Error fetching base nodes:', error);
@@ -1219,7 +1290,7 @@ export function GraphDataProvider({ children }: GraphDataProviderProps) {
     })();
 
     return baseNodesPromiseRef.current;
-  }, [parseArrowToNodes]);
+  }, [parseArrowToNodes, tileConfig.INITIAL_NODES, tileConfig.ZOOM_THRESHOLD]);
 
   // Fetch personal labels (for tooltips and floating labels) with IndexedDB cache
   // API now returns coord_hash instead of twitter_id for RGPD compliance
@@ -1717,6 +1788,154 @@ export function GraphDataProvider({ children }: GraphDataProviderProps) {
     return graphDataEvents.on(event, callback);
   }, []);
 
+  // ============================================
+  // Tile-based progressive loading functions
+  // ============================================
+
+  // Fetch nodes in a specific tile (bounding box)
+  const fetchNodesInTile = useCallback(async (boundingBox: BoundingBox, zoomLevel: number) => {
+    // Generate tile key
+    const tileKey = tileCache.getTileKey(boundingBox, zoomLevel);
+    
+    // Check cache first
+    const cachedNodes = tileCache.get(tileKey);
+    if (cachedNodes) {
+      console.log(`📦 [Tiles] Cache hit for ${tileKey} (${cachedNodes.length} nodes)`);
+      return;
+    }
+
+    // Return existing promise if already fetching this tile
+    if (tilePromiseRef.current) {
+      return tilePromiseRef.current;
+    }
+
+    setIsTileLoading(true);
+
+    tilePromiseRef.current = (async () => {
+      try {
+        // Only load nodes with degree < baseNodesMinDegree to avoid duplicates
+        // These are the "detail" nodes not loaded in the initial 100k
+        const degreeFilter = baseNodesMinDegree > 0 ? `AND g.degree < ${baseNodesMinDegree}` : '';
+        const sql = `
+          SELECT g.label, g.x, g.y, g.community, g.degree, g.tier, g.node_type
+          FROM postgres_db.public.graph_nodes_03_11_25 g
+          WHERE g.x BETWEEN ${boundingBox.minX} AND ${boundingBox.maxX}
+            AND g.y BETWEEN ${boundingBox.minY} AND ${boundingBox.maxY}
+            AND g.community != 8
+            ${degreeFilter}
+          ORDER BY g.degree DESC
+          LIMIT ${tileConfig.NODES_PER_TILE}
+        `;
+        
+        console.log(`📦 [Tiles] Fetching nodes with degree < ${baseNodesMinDegree.toFixed(4)} in bbox`);
+
+        const response = await fetch('/api/mosaic/sql', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sql, type: 'arrow' }),
+        });
+
+        if (!response.ok) {
+          console.warn('⚠️ [Tiles] Failed to fetch tile:', response.statusText);
+          return;
+        }
+
+        const buffer = await response.arrayBuffer();
+        const arrowTable = tableFromIPC(buffer);
+        const { loadedNodes } = parseArrowToNodes(arrowTable);
+
+        // Store in cache
+        tileCache.set(tileKey, loadedNodes);
+
+        // Update tile nodes state (merge with existing)
+        setTileNodes(prev => {
+          const existingIds = new Set(prev.map(n => n.id));
+          const newNodes = loadedNodes.filter(n => !existingIds.has(n.id));
+          
+          // Check memory limit
+          const totalNodes = prev.length + newNodes.length;
+          if (totalNodes > tileConfig.MAX_MEMORY_NODES - baseNodes.length) {
+            // Evict oldest nodes (keep most recent)
+            const maxTileNodes = tileConfig.MAX_MEMORY_NODES - baseNodes.length;
+            const combined = [...prev, ...newNodes];
+            return combined.slice(-maxTileNodes);
+          }
+          
+          return [...prev, ...newNodes];
+        });
+
+        console.log(`📦 [Tiles] Loaded ${loadedNodes.length} nodes for ${tileKey}`);
+
+      } catch (error) {
+        console.error('❌ [Tiles] Error fetching tile:', error);
+      } finally {
+        setIsTileLoading(false);
+        tilePromiseRef.current = null;
+      }
+    })();
+
+    return tilePromiseRef.current;
+  }, [parseArrowToNodes, baseNodes.length, baseNodesMinDegree, tileConfig.NODES_PER_TILE, tileConfig.MAX_MEMORY_NODES]);
+
+  // Handle viewport change with debounce
+  const onViewportChange = useCallback((boundingBox: BoundingBox, zoomLevel: number) => {
+    setCurrentZoom(zoomLevel);
+    
+    // DEBUG: Log viewport changes to understand scale values
+    // console.log(`🔍 [Tiles] Viewport change: scale=${zoomLevel.toFixed(2)}, bbox=[${boundingBox.minX.toFixed(2)}, ${boundingBox.maxX.toFixed(2)}, ${boundingBox.minY.toFixed(2)}, ${boundingBox.maxY.toFixed(2)}], threshold=${tileConfig.ZOOM_THRESHOLD}`);
+
+    // Clear previous debounce
+    if (viewportDebounceRef.current) {
+      clearTimeout(viewportDebounceRef.current);
+    }
+
+    // In embedding-atlas: lower scale = zoomed OUT, higher scale = zoomed IN
+    // Initial view is ~0.025, zoomed in is 0.1-5+
+    // So we load tiles when scale > threshold (user is zooming in to see details)
+    if (zoomLevel < tileConfig.ZOOM_THRESHOLD) {
+      console.log(`🔍 [Tiles] Skipping tile load: scale ${zoomLevel.toFixed(3)} < threshold ${tileConfig.ZOOM_THRESHOLD} (too zoomed out)`);
+      return;
+    }
+
+    // console.log(`🔍 [Tiles] Triggering tile load: scale ${zoomLevel.toFixed(3)} > threshold ${tileConfig.ZOOM_THRESHOLD}`);
+    // Debounce the fetch
+    viewportDebounceRef.current = setTimeout(() => {
+      fetchNodesInTile(boundingBox, zoomLevel);
+    }, tileConfig.DEBOUNCE_MS);
+  }, [fetchNodesInTile, tileConfig.ZOOM_THRESHOLD, tileConfig.DEBOUNCE_MS]);
+
+  // Clear tile cache
+  const clearTileCache = useCallback(() => {
+    tileCache.clear();
+    setTileNodes([]);
+    console.log('🗑️ [Tiles] Cache cleared');
+  }, []);
+
+  // Merged nodes: baseNodes + tileNodes (deduplicated)
+  const mergedNodes = useMemo(() => {
+    if (tileNodes.length === 0) {
+      return baseNodes;
+    }
+
+    // Create a map of base node IDs for fast lookup
+    const baseNodeIds = new Set(baseNodes.map(n => n.id));
+    
+    // Filter tile nodes that are not in base nodes
+    const uniqueTileNodes = tileNodes.filter(n => !baseNodeIds.has(n.id));
+    
+    // Merge: base nodes first, then unique tile nodes
+    return [...baseNodes, ...uniqueTileNodes];
+  }, [baseNodes, tileNodes]);
+
+  // Cleanup debounce on unmount
+  useEffect(() => {
+    return () => {
+      if (viewportDebounceRef.current) {
+        clearTimeout(viewportDebounceRef.current);
+      }
+    };
+  }, []);
+
   // Context value with stable references
   const contextValue = useMemo<GraphDataContextValue>(() => ({
     baseNodes,
@@ -1748,6 +1967,15 @@ export function GraphDataProvider({ children }: GraphDataProviderProps) {
     updateFollowingStatus,
     subscribeToUpdates,
     nodeTypeVersion,
+    // Tile-based progressive loading
+    tileNodes,
+    mergedNodes,
+    isTileLoading,
+    currentZoom,
+    tileConfig,
+    fetchNodesInTile,
+    onViewportChange,
+    clearTileCache,
   }), [
     baseNodes,
     setBaseNodes,
@@ -1778,6 +2006,15 @@ export function GraphDataProvider({ children }: GraphDataProviderProps) {
     updateFollowingStatus,
     nodeTypeVersion,
     subscribeToUpdates,
+    // Tile-based progressive loading dependencies
+    tileNodes,
+    mergedNodes,
+    isTileLoading,
+    currentZoom,
+    tileConfig,
+    fetchNodesInTile,
+    onViewportChange,
+    clearTileCache,
   ]);
 
   return (

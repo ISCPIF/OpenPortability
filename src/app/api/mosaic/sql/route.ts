@@ -13,11 +13,21 @@ const DUCKDB_API_KEY = process.env.DUCKDB_API_KEY ?? '';
 // Only allow SELECT queries on specific tables
 const ALLOWED_SQL_PATTERNS = [
   /^SELECT\s+[\w\s,.*]+\s+FROM\s+postgres_db\.public\.graph_nodes_\d{2}_\d{2}_\d{2}(\s+WHERE\s+.+)?$/i,
+  // Allow simple SELECT with ORDER BY and LIMIT (for public initial load)
+  /^SELECT\s+[\w\s,.*]+\s+FROM\s+postgres_db\.public\.graph_nodes_\d{2}_\d{2}_\d{2}\s+WHERE\s+[\s\S]+?\s+ORDER\s+BY\s+[\w.]+\s+(ASC|DESC)\s+LIMIT\s+\d+\s*$/i,
   /^SELECT\s+[\w\s,.*]+\s+FROM\s+postgres_db\.public\.users_with_name_consent(\s+WHERE\s+.+)?$/i,
   /^SELECT\s+[\w\s,.*]+\s+FROM\s+postgres_db\.public\.public_accounts(\s+WHERE\s+.+)?$/i,
   // Allow LEFT JOIN patterns for label tooltips (consented labels + optional public description)
   /^\s*SELECT\s+[\w\s,.*]+\s+FROM\s+postgres_db\.public\.graph_nodes_\d{2}_\d{2}_\d{2}\s+\w+\s+LEFT\s+JOIN\s+postgres_db\.public\.users_with_name_consent\s+\w+\s+ON\s+[\w.=\s]+(\s+WHERE\s+.+)?$/i,
   /^\s*SELECT\s+[\w\s,.*]+\s+FROM\s+postgres_db\.public\.graph_nodes_\d{2}_\d{2}_\d{2}\s+\w+\s+LEFT\s+JOIN\s+postgres_db\.public\.users_with_name_consent\s+\w+\s+ON\s+[\s\S]+?\s+LEFT\s+JOIN\s+postgres_db\.public\.public_accounts\s+\w+\s+ON\s+[\s\S]+?(\s+WHERE\s+[\s\S]+)?$/i,
+  // Allow double LEFT JOIN with ORDER BY and LIMIT (for initial load with top N nodes by degree)
+  /^\s*SELECT\s+[\w\s,.*]+\s+FROM\s+postgres_db\.public\.graph_nodes_\d{2}_\d{2}_\d{2}\s+\w+\s+LEFT\s+JOIN\s+postgres_db\.public\.users_with_name_consent\s+\w+\s+ON\s+[\s\S]+?\s+LEFT\s+JOIN\s+postgres_db\.public\.public_accounts\s+\w+\s+ON\s+[\s\S]+?\s+WHERE\s+[\s\S]+?\s+ORDER\s+BY\s+[\w.]+\s+(ASC|DESC)\s+LIMIT\s+\d+\s*$/i,
+  // Allow tile-based queries with bounding box (x BETWEEN ... AND y BETWEEN ...)
+  // Pattern: SELECT ... FROM graph_nodes WHERE x BETWEEN ... AND ... AND y BETWEEN ... AND ... ORDER BY ... LIMIT ...
+  /^\s*SELECT\s+[\w\s,.*]+\s+FROM\s+postgres_db\.public\.graph_nodes_\d{2}_\d{2}_\d{2}\s+\w+\s+WHERE\s+[\s\S]*\w+\.x\s+BETWEEN\s+[-\d.]+\s+AND\s+[-\d.]+[\s\S]*\w+\.y\s+BETWEEN\s+[-\d.]+\s+AND\s+[-\d.]+[\s\S]*$/i,
+  // Allow detail nodes query (no bounding box, just degree filter)
+  // Pattern: SELECT ... FROM graph_nodes g WHERE g.community != 8 AND g.degree < X ORDER BY ... LIMIT ...
+  /^\s*SELECT\s+[\w\s,.*]+\s+FROM\s+postgres_db\.public\.graph_nodes_\d{2}_\d{2}_\d{2}\s+\w+\s+WHERE\s+\w+\.community\s*!=\s*\d+\s+AND\s+\w+\.degree\s*<\s*[-\d.]+\s+ORDER\s+BY\s+[\w.]+\s+(ASC|DESC)\s+LIMIT\s+\d+\s*$/i,
 ];
 
 // Dangerous SQL patterns to block

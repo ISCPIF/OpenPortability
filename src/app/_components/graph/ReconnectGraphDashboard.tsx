@@ -137,8 +137,11 @@ export function ReconnectGraphDashboard({
   const hasOnboarded = session?.user?.has_onboarded ?? false;
   const hasTwitterUsername = !!session?.user?.twitter_username;
   
-  // Use GraphDataContext for personal data (matching + hashes)
+  // Use GraphDataContext for personal data (matching + hashes) and tile-based loading
   const graphData = useGraphData();
+  
+  // Tile-based loading: use mergedNodes instead of baseNodes when available
+  const { mergedNodes, onViewportChange, isTileLoading, tileConfig } = graphData;
   
   // Get nodeTypeVersion to react to SSE node_type changes
   const nodeTypeVersion = graphData?.nodeTypeVersion ?? 0;
@@ -515,6 +518,14 @@ export function ReconnectGraphDashboard({
     setLoadingMessageKey('initializing');
   }, []);
 
+  // Callback for tile-based viewport changes (progressive loading)
+  const handleTileViewportChange = useCallback((boundingBox: { minX: number; maxX: number; minY: number; maxY: number }, zoomLevel: number) => {
+    // Only trigger tile loading if zoom is above threshold
+    if (onViewportChange) {
+      onViewportChange(boundingBox, zoomLevel);
+    }
+  }, [onViewportChange]);
+
   // Sync mosaicNodes with updated nodeType values from context when SSE updates happen
   // This ensures the lasso selection correctly filters by current nodeType
   const prevNodeTypeVersionRef = useRef(nodeTypeVersion);
@@ -747,10 +758,15 @@ export function ReconnectGraphDashboard({
   // NOTE: All modes now use the same baseNodes (loaded from /api/mosaic/query)
   // Highlighting is done via hashes (followingHashes/followerHashes) in ReconnectGraphVisualization
   // No more merging of different node sets - just use baseNodes and let visualization handle highlighting
+  // With tile-based loading: use mergedNodes (baseNodes + tileNodes) when available
   const displayNodes = useMemo(() => {
+    // Use mergedNodes if tile loading is active (has more nodes than base)
+    if (mergedNodes && mergedNodes.length > baseNodes.length) {
+      return mergedNodes;
+    }
     // All modes use the same base graph - highlighting is done via coordinate hashes
     return baseNodes;
-  }, [baseNodes]);
+  }, [baseNodes, mergedNodes]);
 
   // Gérer le redimensionnement
   useEffect(() => {
@@ -946,6 +962,7 @@ export function ReconnectGraphDashboard({
             effectiveFollowerHashes={graphData.effectiveFollowerHashes}
             hasOnboarded={hasOnboarded}
             highlightedSearchNode={highlightedSearchNode}
+            onTileViewportChange={handleTileViewportChange}
           />
         )}
       </div>
