@@ -455,6 +455,8 @@ export function PublicGraphDataProviderV3({ children }: PublicGraphDataProviderV
   const labelsVersionRef = useRef<number>(0);
 
   const detailDegreeCeilingRef = useRef<number | null>(null);
+  const prevZoomLevelIndexRef = useRef<number>(-1);
+  const prevBboxRef = useRef<BoundingBox | null>(null);
 
   // Computed
   const currentZoomLevel = useMemo(() => getZoomLevel(currentScale), [currentScale]);
@@ -905,7 +907,10 @@ export function PublicGraphDataProviderV3({ children }: PublicGraphDataProviderV
     zoomLevelIndex: number,
     tileKeys: TileKey[]
   ) => {
-    if (fetchPromiseRef.current) return;
+    // If a fetch is in progress, just return - the finally block will check for missing tiles
+    if (fetchPromiseRef.current) {
+      return;
+    }
     if (zoomLevel.maxNodesPerViewport === 0) return;
 
     const degreeCeiling = detailDegreeCeilingRef.current;
@@ -1041,13 +1046,35 @@ export function PublicGraphDataProviderV3({ children }: PublicGraphDataProviderV
       } finally {
         setIsTileLoading(false);
         fetchPromiseRef.current = null;
+        
+        // Check if there are still missing tiles for the current viewport
+        // This handles both pending requests and cases where we need to continue fetching
+        const currentViewport = currentViewportRef.current;
+        const currentZoomIdx = prevZoomLevelIndexRef.current;
+        if (currentViewport && currentZoomIdx >= 0) {
+          const zoomLevel = ZOOM_LEVELS[currentZoomIdx];
+          if (zoomLevel.maxNodesPerViewport > 0) {
+            const clampedBbox: BoundingBox = {
+              minX: Math.max(0, Math.min(1, currentViewport.minX)),
+              maxX: Math.max(0, Math.min(1, currentViewport.maxX)),
+              minY: Math.max(0, Math.min(1, currentViewport.minY)),
+              maxY: Math.max(0, Math.min(1, currentViewport.maxY)),
+            };
+            const { visible, prefetch } = getVisibleTileKeys(clampedBbox, currentZoomIdx, zoomLevel.gridSize, CONFIG.PREFETCH_MARGIN);
+            const allTileKeys = [...visible, ...prefetch];
+            const missingTiles = tileManagerRef.current.getMissingTiles(allTileKeys);
+            
+            if (missingTiles.length > 0) {
+              // Use setTimeout to avoid stack overflow
+              setTimeout(() => {
+                fetchViewportNodes(clampedBbox, zoomLevel, currentZoomIdx, missingTiles);
+              }, 0);
+            }
+          }
+        }
       }
     })();
   }, [parseArrowToNodes]);
-
-  // Track previous zoom level to detect changes
-  const prevZoomLevelIndexRef = useRef<number>(-1);
-  const prevBboxRef = useRef<BoundingBox | null>(null);
 
   // Handle viewport change - SIMPLIFIED: just fetch bbox directly
   const onViewportChange = useCallback((bbox: BoundingBox, scale: number) => {
@@ -1057,13 +1084,14 @@ export function PublicGraphDataProviderV3({ children }: PublicGraphDataProviderV
     const zoomLevelIndex = getZoomLevelIndex(scale);
     
     // Debug: log scale and zoom level
-    console.log(`🔍 [V3] onViewportChange: scale=${scale.toFixed(4)}, zoomLevelIndex=${zoomLevelIndex}, minDegree=${ZOOM_LEVELS[zoomLevelIndex].minDegree}`);
+    // console.log(`🔍 [V3] onViewportChange: scale=${scale.toFixed(4)}, zoomLevelIndex=${zoomLevelIndex}, minDegree=${ZOOM_LEVELS[zoomLevelIndex].minDegree}`);
     const zoomLevel = ZOOM_LEVELS[zoomLevelIndex];
 
     // At low zoom, just use initial nodes
     if (zoomLevel.maxNodesPerViewport === 0) {
-      if (tileNodes.length > 0) {
-        console.log(`📦 [V3] Zoom out - clearing ${tileNodes.length} tile nodes`);
+      // Use ref to check if we need to clear, avoiding dependency on tileNodes.length
+      if (tileNodeMapRef.current.size > 0) {
+        console.log(`📦 [V3] Zoom out - clearing ${tileNodeMapRef.current.size} tile nodes`);
         setTileNodes([]);
         tileNodeMapRef.current.clear();
       }
@@ -1079,19 +1107,15 @@ export function PublicGraphDataProviderV3({ children }: PublicGraphDataProviderV
     viewportDebounceRef.current = setTimeout(() => {
       // Check if zoom level changed - if so, clear cache and reload
       const zoomLevelChanged = prevZoomLevelIndexRef.current !== zoomLevelIndex;
-      
-      // Check if viewport moved significantly (pan detection)
-      const prevBbox = prevBboxRef.current;
-      const bboxChanged = !prevBbox || 
-        Math.abs(bbox.minX - prevBbox.minX) > 0.1 ||
-        Math.abs(bbox.maxX - prevBbox.maxX) > 0.1 ||
-        Math.abs(bbox.minY - prevBbox.minY) > 0.1 ||
-        Math.abs(bbox.maxY - prevBbox.maxY) > 0.1;
 
       if (zoomLevelChanged) {
         console.log(`📦 [V3] Zoom level changed: ${prevZoomLevelIndexRef.current} -> ${zoomLevelIndex}`);
-        // Clear tile cache when zoom level changes
+        // Clear tile cache so new tiles can be fetched for this zoom level
+        // BUT keep accumulated nodes to avoid UI flicker - they'll be deduplicated anyway
         tileManagerRef.current.clear();
+        
+        // The finally block in fetchViewportNodes will check for missing tiles
+        // using the current viewport state after each fetch completes
 
         // Keep the ceiling stable (it's the cutoff under the initial top 100k by degree)
         // Do NOT reset it to minDegree(initialNodes) (polluted by consent-first low-degree nodes).
@@ -1104,20 +1128,41 @@ export function PublicGraphDataProviderV3({ children }: PublicGraphDataProviderV
       prevZoomLevelIndexRef.current = zoomLevelIndex;
       prevBboxRef.current = bbox;
 
-      // Always fetch if zoom changed or bbox changed significantly
-      if (zoomLevelChanged || bboxChanged) {
-        const clampedBbox: BoundingBox = {
-          minX: Math.max(0, Math.min(1, bbox.minX)),
-          maxX: Math.max(0, Math.min(1, bbox.maxX)),
-          minY: Math.max(0, Math.min(1, bbox.minY)),
-          maxY: Math.max(0, Math.min(1, bbox.maxY)),
+      // Compute visible tiles and check if any are missing from cache
+      const clampedBbox: BoundingBox = {
+        minX: Math.max(0, Math.min(1, bbox.minX)),
+        maxX: Math.max(0, Math.min(1, bbox.maxX)),
+        minY: Math.max(0, Math.min(1, bbox.minY)),
+        maxY: Math.max(0, Math.min(1, bbox.maxY)),
+      };
+      const { visible, prefetch } = getVisibleTileKeys(clampedBbox, zoomLevelIndex, zoomLevel.gridSize, CONFIG.PREFETCH_MARGIN);
+      
+      // Check if there are any missing tiles - if so, fetch them
+      const allTileKeys = [...visible, ...prefetch];
+      const missingTiles = tileManagerRef.current.getMissingTiles(allTileKeys);
+      
+      if (missingTiles.length > 0) {
+        // Sort tiles by distance to viewport center for more logical loading order
+        const centerX = (clampedBbox.minX + clampedBbox.maxX) / 2;
+        const centerY = (clampedBbox.minY + clampedBbox.maxY) / 2;
+        const distanceToCenter = (key: TileKey): number => {
+          const parts = key.split('_');
+          if (parts.length !== 3) return Infinity;
+          const gx = Number(parts[1]);
+          const gy = Number(parts[2]);
+          const tileCenterX = (gx + 0.5) * zoomLevel.gridSize;
+          const tileCenterY = (gy + 0.5) * zoomLevel.gridSize;
+          return Math.sqrt((tileCenterX - centerX) ** 2 + (tileCenterY - centerY) ** 2);
         };
-        const { visible, prefetch } = getVisibleTileKeys(clampedBbox, zoomLevelIndex, zoomLevel.gridSize, CONFIG.PREFETCH_MARGIN);
-        const orderedKeys = [...visible, ...prefetch];
-        fetchViewportNodes(clampedBbox, zoomLevel, zoomLevelIndex, orderedKeys);
+        
+        // Sort missing tiles by distance to center
+        const sortedMissing = [...missingTiles].sort((a, b) => distanceToCenter(a) - distanceToCenter(b));
+        
+        console.log(`📦 [V3] Found ${missingTiles.length} missing tiles for viewport, fetching...`);
+        fetchViewportNodes(clampedBbox, zoomLevel, zoomLevelIndex, sortedMissing);
       }
     }, CONFIG.DEBOUNCE_MS);
-  }, [fetchViewportNodes, tileNodes.length, computeMinDegree]);
+  }, [fetchViewportNodes]);
 
   // Clear tile cache
   const clearTileCache = useCallback(() => {
@@ -1127,7 +1172,7 @@ export function PublicGraphDataProviderV3({ children }: PublicGraphDataProviderV
     detailDegreeCeilingRef.current = globalState.detailDegreeCeiling;
     setDetailDegreeCeiling(detailDegreeCeilingRef.current);
     console.log('🗑️ [V3] Tile cache cleared');
-  }, [computeMinDegree]);
+  }, []);
 
   // Merged nodes: initial + tiles (deduplicated)
   const mergedNodes = useMemo(() => {
