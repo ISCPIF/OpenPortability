@@ -153,6 +153,7 @@ export function ReconnectGraphVisualization({
   const nodeMapRef = useRef<Map<string, GraphNode>>(new Map());
   const embeddingDataRef = useRef<any>(null);
   const normalizationBoundsRef = useRef<any>(null);
+  const viewportScaleCorrectionRef = useRef<number | null>(null);
   // Track which search node we've already centered on (to avoid re-centering on re-renders)
   const lastCenteredSearchNodeRef = useRef<string | null>(null);
 
@@ -796,7 +797,7 @@ export function ReconnectGraphVisualization({
     }, 100); // 100ms debounce - fast save to preserve viewport on remount
     
     // DEBUG: Log raw viewport state from embedding-atlas
-    console.log(`🎯 [Viewport] Raw state: x=${state.x.toFixed(2)}, y=${state.y.toFixed(2)}, scale=${state.scale.toFixed(4)}`);
+    // console.log(`🎯 [Viewport] Raw state: x=${state.x.toFixed(2)}, y=${state.y.toFixed(2)}, scale=${state.scale.toFixed(4)}`);
     
     // Notify parent for tile-based loading if callback is provided
     if (onTileViewportChange && normalizationBoundsRef.current) {
@@ -804,6 +805,18 @@ export function ReconnectGraphVisualization({
       const normScale = bounds.scale || 1;
       const centerX = bounds.centerX || 0;
       const centerY = bounds.centerY || 0;
+
+      if (viewportScaleCorrectionRef.current == null) {
+        const dataWidthNorm = Math.max(1e-9, (Number(bounds.maxX) - Number(bounds.minX)) * normScale);
+        const dataHeightNorm = Math.max(1e-9, (Number(bounds.maxY) - Number(bounds.minY)) * normScale);
+        const targetPixelsPerNormUnit = Math.min(width / dataWidthNorm, height / dataHeightNorm);
+        if (Number.isFinite(targetPixelsPerNormUnit) && Number.isFinite(state.scale) && state.scale > 0) {
+          viewportScaleCorrectionRef.current = targetPixelsPerNormUnit / state.scale;
+        }
+      }
+
+      const correction = viewportScaleCorrectionRef.current ?? 1;
+      const effectiveScale = state.scale * correction;
       
       // embedding-atlas viewport:
       // - state.x, state.y: center of viewport in NORMALIZED coordinates (after * normScale)
@@ -812,8 +825,8 @@ export function ReconnectGraphVisualization({
       // Visible area in normalized coords = screen pixels / state.scale
       // Then convert to original coords by dividing by normScale and adding center
       
-      const viewportWidthNorm = width / state.scale;
-      const viewportHeightNorm = height / state.scale;
+      const viewportWidthNorm = width / effectiveScale;
+      const viewportHeightNorm = height / effectiveScale;
       
       // Bounding box in normalized space centered on viewport
       const minXNorm = state.x - viewportWidthNorm / 2;
@@ -830,12 +843,6 @@ export function ReconnectGraphVisualization({
         maxY: (maxYNorm / normScale) + centerY,
       };
       
-      // DEBUG: Log conversion details (only when zoomed in enough to be useful)
-      if (state.scale > 0.1) {
-        console.log(`🎯 [Viewport] zoom=${state.scale.toFixed(3)}, center=(${state.x.toFixed(2)}, ${state.y.toFixed(2)}), screen=${width}x${height}`);
-        console.log(`🎯 [Viewport] viewportNorm: ${viewportWidthNorm.toFixed(1)}x${viewportHeightNorm.toFixed(1)}, normScale=${normScale}`);
-        console.log(`🎯 [Viewport] original bbox: [${boundingBox.minX.toFixed(4)}, ${boundingBox.maxX.toFixed(4)}] x [${boundingBox.minY.toFixed(4)}, ${boundingBox.maxY.toFixed(4)}]`);
-      }
       
       onTileViewportChange(boundingBox, state.scale);
     } else {

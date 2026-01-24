@@ -166,6 +166,7 @@ const CACHE_KEYS = {
   BASE_NODES: 'public_base_nodes',
   FLOATING_LABELS: 'public_floating_labels',
   NORMALIZATION_BOUNDS: 'public_normalization_bounds',
+  TILE_STATE: 'public_tile_state',
 };
 
 // ============================================
@@ -265,6 +266,7 @@ interface PublicGraphDataContextValue {
   isTileLoading: boolean;
   currentZoom: number;
   tileConfig: TileConfig;
+  setMaxMemoryNodes: (maxNodes: number) => void;
   fetchDetailNodes: (bbox?: BoundingBox) => Promise<void>;
   onViewportChange: (boundingBox: BoundingBox, zoomLevel: number) => void;
   clearTileCache: () => void;
@@ -314,14 +316,36 @@ export function PublicGraphDataProvider({ children }: PublicGraphDataProviderPro
   // ============================================
   // Tile-based progressive loading state
   // ============================================
-  const [tileNodes, setTileNodes] = useState<GraphNode[]>([]);
+  const [tileNodes, setTileNodes] = useState<GraphNode[]>([]); // Currently displayed tile nodes
   const [isTileLoading, setIsTileLoading] = useState(false);
   const [currentZoom, setCurrentZoom] = useState(1);
   const [baseNodesMinDegree, setBaseNodesMinDegree] = useState<number>(0); // Min degree of baseNodes, tiles load nodes below this
+  const tileNodesRef = useRef<GraphNode[]>([]);
   const tilePromiseRef = useRef<Promise<void> | null>(null);
+  const pendingTileRequestRef = useRef<{ bbox?: BoundingBox; batchMultiplier: number } | null>(null);
   const viewportDebounceRef = useRef<NodeJS.Timeout | null>(null);
-  const fetchDetailNodesRef = useRef<((bbox?: BoundingBox) => Promise<void>) | null>(null);
-  const tileConfig = DEFAULT_TILE_CONFIG;
+  const fetchDetailNodesRef = useRef<((bbox?: BoundingBox, batchMultiplier?: number) => Promise<void>) | null>(null);
+  
+  // Accumulated cache of ALL tile nodes ever loaded (persisted to IndexedDB)
+  // This is separate from tileNodes (which is what's currently displayed)
+  // When user zooms out, tileNodes is cleared but allCachedTileNodes remains
+  // When user zooms back in, we first restore from cache, then fetch missing nodes
+  const allCachedTileNodesRef = useRef<GraphNode[]>([]);
+  const cachedMinDegreeRef = useRef<number>(0); // Lowest degree ever loaded (for progressive fetch)
+  
+  // Customizable tile config (user can adjust MAX_MEMORY_NODES)
+  const [maxMemoryNodes, setMaxMemoryNodesState] = useState(DEFAULT_TILE_CONFIG.MAX_MEMORY_NODES);
+  const tileConfig = useMemo(() => ({
+    ...DEFAULT_TILE_CONFIG,
+    MAX_MEMORY_NODES: maxMemoryNodes,
+  }), [maxMemoryNodes]);
+  
+  // Setter for max memory nodes (exposed to UI)
+  const setMaxMemoryNodes = useCallback((maxNodes: number) => {
+    const clamped = Math.max(50_000, Math.min(660_000, maxNodes));
+    setMaxMemoryNodesState(clamped);
+    console.log(`📊 [PublicGraphData] Max memory nodes set to ${clamped.toLocaleString()}`);
+  }, []);
 
   // Helper to calculate normalization bounds from nodes
   const calculateBounds = useCallback((nodes: GraphNode[]): NormalizationBounds => {
@@ -431,6 +455,45 @@ export function PublicGraphDataProvider({ children }: PublicGraphDataProviderPro
         } catch (err) {
           console.warn('💾 [PublicIDB] Failed to auto-load base nodes:', err);
         }
+      }
+
+      // Load tile state (accumulated cache + currentMinDegree + baseNodesMinDegree) from cache
+      // The cache is ACCUMULATIVE - we never delete nodes, only add new ones
+      try {
+        const cachedTileState = await publicGraphIDB.load<{ tileNodes: CachedGraphNode[]; currentMinDegree: number; baseNodesMinDegree?: number }>(CACHE_KEYS.TILE_STATE);
+        if (cachedTileState && publicGraphIDB.isCacheValid(cachedTileState.timestamp)) {
+          const restoredTileNodes: GraphNode[] = (cachedTileState.data.tileNodes || []).map(node => ({
+            id: node.coord_hash,
+            label: node.label,
+            x: node.x,
+            y: node.y,
+            community: node.community,
+            degree: node.degree,
+            tier: node.tier as GraphNode['tier'],
+            nodeType: node.nodeType as GraphNode['nodeType'],
+            graphLabel: node.graphLabel,
+            size: 1,
+            color: '#ffffff',
+          }));
+
+          // Restore baseNodesMinDegree first (needed for fetch fallback)
+          const restoredBaseMinDegree = Number(cachedTileState.data.baseNodesMinDegree || 0);
+          if (restoredBaseMinDegree > 0) {
+            setBaseNodesMinDegree(restoredBaseMinDegree);
+            console.log(`💾 [PublicIDB] Restored baseNodesMinDegree=${restoredBaseMinDegree.toFixed(4)}`);
+          }
+
+          if (restoredTileNodes.length > 0) {
+            const restoredMinDegree = Number(cachedTileState.data.currentMinDegree || 0);
+            // Store in accumulated cache ref (this is the persistent cache)
+            allCachedTileNodesRef.current = restoredTileNodes;
+            cachedMinDegreeRef.current = restoredMinDegree;
+            setCurrentMinDegree(restoredMinDegree);
+            console.log(`💾 [PublicIDB] Restored ${restoredTileNodes.length} tile nodes to cache (display will be rebuilt from viewport), currentMinDegree=${restoredMinDegree.toFixed(4)}`);
+          }
+        }
+      } catch (err) {
+        console.warn('💾 [PublicIDB] Failed to auto-load tile state:', err);
       }
 
       // Load labels from cache if not already loaded
@@ -593,9 +656,40 @@ export function PublicGraphDataProvider({ children }: PublicGraphDataProviderPro
         
         // Fetch only public data (no twitter_id), exclude community 8
         // Limit to top N nodes by degree for initial load - additional nodes loaded via tiles
+        // PRIORITY: First load all nodes present in users_with_name_consent (members with consent)
+        // Then fill up to INITIAL_NODES with highest degree nodes
         const INITIAL_NODES_LIMIT = tileConfig.INITIAL_NODES; // 100,000
-        console.log(`📊 [PublicGraphData] Loading initial ${INITIAL_NODES_LIMIT} nodes (top by degree)...`);
-        const sql = `SELECT label, x, y, community, degree, tier, node_type FROM postgres_db.public.graph_nodes_03_11_25 WHERE community != 8 ORDER BY degree DESC LIMIT ${INITIAL_NODES_LIMIT}`;
+        console.log(`📊 [PublicGraphData] Loading initial ${INITIAL_NODES_LIMIT} nodes (members with consent first, then top by degree)...`);
+        
+        // Use a CTE to prioritize members with consent:
+        // 1. First get all nodes that are in users_with_name_consent (priority = 0)
+        // 2. Then get remaining nodes ordered by degree (priority = 1)
+        // 3. Union and limit to INITIAL_NODES
+        const sql = `
+          WITH consent_nodes AS (
+            SELECT g.label, g.x, g.y, g.community, g.degree, g.tier, g.node_type, 0 as priority
+            FROM postgres_db.public.graph_nodes_03_11_25 g
+            INNER JOIN postgres_db.public.users_with_name_consent u ON g.id = u.twitter_id
+            WHERE g.community != 8
+          ),
+          other_nodes AS (
+            SELECT g.label, g.x, g.y, g.community, g.degree, g.tier, g.node_type, 1 as priority
+            FROM postgres_db.public.graph_nodes_03_11_25 g
+            WHERE g.community != 8
+              AND NOT EXISTS (
+                SELECT 1 FROM postgres_db.public.users_with_name_consent u WHERE u.twitter_id = g.id
+              )
+          ),
+          combined AS (
+            SELECT * FROM consent_nodes
+            UNION ALL
+            SELECT * FROM other_nodes
+          )
+          SELECT label, x, y, community, degree, tier, node_type, priority
+          FROM combined
+          ORDER BY priority ASC, degree DESC
+          LIMIT ${INITIAL_NODES_LIMIT}
+        `;
         
         const response = await fetch('/api/mosaic/sql', {
           method: 'POST',
@@ -610,6 +704,7 @@ export function PublicGraphDataProvider({ children }: PublicGraphDataProviderPro
 
         const loadedNodes: GraphNode[] = [];
         const cachedNodes: CachedGraphNode[] = [];
+        const degreeBasedNodes: number[] = []; // Track degrees of non-consent nodes for threshold calculation
         const labelCol = arrowTable.getChild('graph_label') || arrowTable.getChild('label');
         const xCol = arrowTable.getChild('x');
         const yCol = arrowTable.getChild('y');
@@ -617,7 +712,9 @@ export function PublicGraphDataProvider({ children }: PublicGraphDataProviderPro
         const degreeCol = arrowTable.getChild('degree');
         const tierCol = arrowTable.getChild('tier');
         const nodeTypeCol = arrowTable.getChild('node_type');
+        const priorityCol = arrowTable.getChild('priority');
 
+        let consentNodesCount = 0;
         for (let i = 0; i < arrowTable.numRows; i++) {
           const x = Number(xCol?.get(i) ?? 0);
           const y = Number(yCol?.get(i) ?? 0);
@@ -628,6 +725,14 @@ export function PublicGraphDataProvider({ children }: PublicGraphDataProviderPro
           const tier = (tierCol?.get(i) as string) ?? 'minor';
           const nodeType = nodeTypeCol?.get(i) ? String(nodeTypeCol.get(i)) : undefined;
           const graphLabel = labelCol?.get(i) ? String(labelCol.get(i)) : undefined;
+          const priority = priorityCol?.get(i) != null ? Number(priorityCol.get(i)) : 1;
+          
+          // Track consent vs degree-based nodes
+          if (priority === 0) {
+            consentNodesCount++;
+          } else {
+            degreeBasedNodes.push(degree);
+          }
           
           loadedNodes.push({
             id: hash,
@@ -661,12 +766,19 @@ export function PublicGraphDataProvider({ children }: PublicGraphDataProviderPro
         setBaseNodesState(loadedNodes);
         setIsBaseNodesLoaded(true);
         
-        // Calculate min degree of baseNodes for tile filtering
-        // Tiles will load nodes with degree < this value to avoid duplicates
-        if (loadedNodes.length > 0) {
+        // Calculate min degree for tile filtering based on DEGREE-BASED nodes only (not consent nodes)
+        // This ensures tiles load nodes below the degree threshold of the "top by degree" nodes
+        // Consent nodes are already loaded regardless of their degree
+        if (degreeBasedNodes.length > 0) {
+          const minDegree = Math.min(...degreeBasedNodes);
+          setBaseNodesMinDegree(minDegree);
+          console.log(`📊 [PublicGraphData] Loaded ${consentNodesCount} consent nodes + ${degreeBasedNodes.length} by degree`);
+          console.log(`📊 [PublicGraphData] Base nodes min degree (degree-based only): ${minDegree.toFixed(4)} - tiles will load nodes below this`);
+        } else {
+          // All nodes are consent nodes, use global min degree
           const minDegree = Math.min(...loadedNodes.map(n => n.degree));
           setBaseNodesMinDegree(minDegree);
-          console.log(`📊 [PublicGraphData] Base nodes min degree: ${minDegree.toFixed(4)} - tiles will load nodes below this`);
+          console.log(`📊 [PublicGraphData] All ${loadedNodes.length} nodes are consent nodes, min degree: ${minDegree.toFixed(4)}`);
         }
         
         // Calculate and cache bounds
@@ -812,117 +924,255 @@ export function PublicGraphDataProvider({ children }: PublicGraphDataProviderPro
   const prevZoomRef = useRef<number>(0);
   // Track current viewport bounding box for spatial filtering
   const currentBboxRef = useRef<BoundingBox | null>(null);
+  const tileStateSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Save accumulated cache to IndexedDB (debounced)
+  // We save allCachedTileNodesRef (the full cache), not tileNodes (which may be empty after dezoom)
+  const saveTileCacheToIDB = useCallback(() => {
+    if (tileStateSaveTimeoutRef.current) {
+      clearTimeout(tileStateSaveTimeoutRef.current);
+    }
+
+    tileStateSaveTimeoutRef.current = setTimeout(() => {
+      const cachedNodes = allCachedTileNodesRef.current;
+      if (cachedNodes.length === 0) return;
+      
+      const cachedTileNodes: CachedGraphNode[] = cachedNodes.map(n => ({
+        coord_hash: n.id,
+        label: n.label,
+        x: n.x,
+        y: n.y,
+        community: n.community,
+        degree: n.degree,
+        tier: n.tier,
+        nodeType: n.nodeType,
+        graphLabel: n.graphLabel ?? undefined,
+      }));
+
+      publicGraphIDB.save(CACHE_KEYS.TILE_STATE, {
+        tileNodes: cachedTileNodes,
+        currentMinDegree: cachedMinDegreeRef.current,
+        baseNodesMinDegree,
+      }).catch(() => {});
+      
+      console.log(`💾 [PublicIDB] Saved ${cachedNodes.length} tile nodes to cache, minDegree=${cachedMinDegreeRef.current.toFixed(4)}`);
+    }, 1000);
+  }, [baseNodesMinDegree]);
+
+  useEffect(() => {
+    tileNodesRef.current = tileNodes;
+  }, [tileNodes]);
   
   // Fetch additional nodes progressively - each call loads the next batch by degree
   // This allows loading 100k initial → +50k → +50k → etc as user zooms
   // If bbox is provided, also filter by spatial location for pan support
-  const fetchDetailNodes = useCallback(async (bbox?: BoundingBox) => {
-    // Use currentMinDegree if set, otherwise use baseNodesMinDegree
-    const degreeThreshold = currentMinDegree > 0 ? currentMinDegree : baseNodesMinDegree;
+  // batchMultiplier: load more nodes per request during aggressive zoom (1-5x)
+  // 
+  // CACHE STRATEGY:
+  // 1. First check accumulated cache (allCachedTileNodesRef) for nodes matching criteria
+  // 2. If cache has enough nodes, use them directly (no fetch)
+  // 3. If cache doesn't have enough, fetch from server and ADD to cache
+  // 4. Cache is NEVER cleared - only accumulated (persisted to IndexedDB)
+  const fetchDetailNodes = useCallback(async (bbox?: BoundingBox, batchMultiplier: number = 1) => {
+    // Use cachedMinDegree if set (from accumulated cache), otherwise use baseNodesMinDegree
+    // This ensures we continue from where we left off, even after dezoom/rezoom
+    const degreeThreshold = cachedMinDegreeRef.current > 0 ? cachedMinDegreeRef.current : baseNodesMinDegree;
     
     if (degreeThreshold <= 0) {
-      console.log(`📦 [Public Tiles] Skipping: no degree threshold set yet`);
+      // Don't log spam - this is expected during initial load before baseNodes are ready
       return;
     }
 
     if (tilePromiseRef.current) {
-      console.log(`📦 [Public Tiles] Skipping: already loading`);
+      // Don't drop the request: store the latest desired bbox/batchMultiplier
+      pendingTileRequestRef.current = { bbox, batchMultiplier };
+      console.log(`📦 [Public Tiles] Skipping: already loading (queued latest request)`);
       return tilePromiseRef.current;
     }
 
-    // Check if we've reached the limit
-    const currentTotal = baseNodes.length + tileNodes.length;
-    if (currentTotal >= tileConfig.MAX_MEMORY_NODES) {
-      console.log(`📦 [Public Tiles] Skipping: reached max nodes (${currentTotal}/${tileConfig.MAX_MEMORY_NODES})`);
+    // Check if we've reached the limit for DISPLAY (not cache)
+    const currentDisplayTotal = baseNodes.length + tileNodes.length;
+    if (currentDisplayTotal >= tileConfig.MAX_MEMORY_NODES) {
+      console.log(`📦 [Public Tiles] Skipping: reached max display nodes (${currentDisplayTotal}/${tileConfig.MAX_MEMORY_NODES})`);
       return;
     }
 
     setIsTileLoading(true);
 
+    // Calculate how many nodes we want to display
+    const maxDetailBudget = Math.max(0, tileConfig.MAX_MEMORY_NODES - tileConfig.INITIAL_NODES);
+    const remainingDisplayBudget = Math.max(0, tileConfig.MAX_MEMORY_NODES - currentDisplayTotal);
+    const targetBatchSize = Math.min(
+      tileConfig.NODES_PER_TILE * batchMultiplier,
+      maxDetailBudget,
+      remainingDisplayBudget
+    );
+
     tilePromiseRef.current = (async () => {
       try {
-        // Build SQL with optional spatial filter
-        // Note: bbox is in original coordinates (0-1 range for this dataset)
-        const spatialFilter = bbox ? `
-            AND g.x BETWEEN ${bbox.minX} AND ${bbox.maxX}
-            AND g.y BETWEEN ${bbox.minY} AND ${bbox.maxY}` : '';
-        
-        const sql = `
-          SELECT g.label, g.x, g.y, g.community, g.degree, g.tier, g.node_type
-          FROM postgres_db.public.graph_nodes_03_11_25 g
-          WHERE g.community != 8
-            AND g.degree < ${degreeThreshold}${spatialFilter}
-          ORDER BY g.degree DESC
-          LIMIT ${tileConfig.NODES_PER_TILE}
-        `;
-        
-        const bboxInfo = bbox ? ` in bbox [${bbox.minX.toFixed(2)},${bbox.maxX.toFixed(2)}]x[${bbox.minY.toFixed(2)},${bbox.maxY.toFixed(2)}]` : '';
-        console.log(`📦 [Public Tiles] Fetching ${tileConfig.NODES_PER_TILE} nodes with degree < ${degreeThreshold.toFixed(4)}${bboxInfo}`);
+        // STEP 1: Check accumulated cache for nodes we can reuse
+        const cachedNodes = allCachedTileNodesRef.current;
+        const displayedIds = new Set(tileNodes.map(n => n.id));
+        const baseIds = new Set(baseNodes.map(n => n.id));
 
-        const response = await fetch('/api/mosaic/sql', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sql, type: 'arrow' }),
+        // If we are re-zooming after a dezoom (display cleared), prefer replaying cached nodes
+        // based on bbox only (ignore degree threshold) to avoid re-fetching the same nodes.
+        const isReplayFromCache = tileNodes.length === 0 && !!bbox;
+        
+        // Find cached nodes that:
+        // - Are not already displayed
+        // - Are not in baseNodes
+        // - Match the bbox (if provided)
+        // - Have degree below threshold (except during replay-from-cache)
+        let cachedCandidates = cachedNodes.filter(n => {
+          if (displayedIds.has(n.id) || baseIds.has(n.id)) return false;
+          if (!isReplayFromCache && n.degree >= degreeThreshold) return false;
+          if (bbox) {
+            if (n.x < bbox.minX || n.x > bbox.maxX || n.y < bbox.minY || n.y > bbox.maxY) return false;
+          }
+          return true;
         });
+        
+        // Sort by degree DESC (highest first, to match server behavior)
+        cachedCandidates.sort((a, b) => b.degree - a.degree);
+        
+        // Take up to targetBatchSize from cache
+        const fromCache = cachedCandidates.slice(0, targetBatchSize);
+        const needFromServer = targetBatchSize - fromCache.length;
+        
+        if (fromCache.length > 0) {
+          console.log(
+            isReplayFromCache
+              ? `📦 [Public Tiles] Replayed ${fromCache.length} nodes from cache in bbox (need ${needFromServer} more from server)`
+              : `📦 [Public Tiles] Found ${fromCache.length} nodes in cache (need ${needFromServer} more from server)`
+          );
+        }
+        
+        let loadedFromServer: GraphNode[] = [];
+        
+        // STEP 2: Fetch from server if we need more nodes
+        if (needFromServer > 0) {
+          // Use the lowest degree from cache candidates as the new threshold
+          // This ensures we don't re-fetch nodes we already have
+          const serverDegreeThreshold = fromCache.length > 0 
+            ? Math.min(...fromCache.map(n => n.degree))
+            : degreeThreshold;
+          
+          const spatialFilter = bbox ? `
+              AND g.x BETWEEN ${bbox.minX} AND ${bbox.maxX}
+              AND g.y BETWEEN ${bbox.minY} AND ${bbox.maxY}` : '';
+          
+          const sql = `
+            SELECT g.label, g.x, g.y, g.community, g.degree, g.tier, g.node_type
+            FROM postgres_db.public.graph_nodes_03_11_25 g
+            WHERE g.community != 8
+              AND g.degree < ${serverDegreeThreshold}${spatialFilter}
+            ORDER BY g.degree DESC
+            LIMIT ${needFromServer}
+          `;
+          
+          const bboxInfo = bbox ? ` in bbox [${bbox.minX.toFixed(2)},${bbox.maxX.toFixed(2)}]x[${bbox.minY.toFixed(2)},${bbox.maxY.toFixed(2)}]` : '';
+          console.log(`📦 [Public Tiles] Fetching ${needFromServer} nodes with degree < ${serverDegreeThreshold.toFixed(4)}${bboxInfo}`);
 
-        if (!response.ok) {
-          console.warn('⚠️ [Public Tiles] Failed to fetch tile:', response.statusText);
-          return;
+          const response = await fetch('/api/mosaic/sql', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sql, type: 'arrow' }),
+          });
+
+          if (response.ok) {
+            const buffer = await response.arrayBuffer();
+            const arrowTable = tableFromIPC(buffer);
+            loadedFromServer = parseArrowToNodes(arrowTable);
+            
+            if (loadedFromServer.length > 0) {
+              // Add new nodes to accumulated cache (deduplicated)
+              const existingCacheIds = new Set(cachedNodes.map(n => n.id));
+              const newForCache = loadedFromServer.filter(n => !existingCacheIds.has(n.id));
+              if (newForCache.length > 0) {
+                allCachedTileNodesRef.current = [...cachedNodes, ...newForCache];
+                console.log(`📦 [Public Tiles] Added ${newForCache.length} new nodes to cache (total: ${allCachedTileNodesRef.current.length})`);
+              }
+            }
+          } else {
+            console.warn('⚠️ [Public Tiles] Failed to fetch tile:', response.statusText);
+          }
         }
 
-        const buffer = await response.arrayBuffer();
-        const arrowTable = tableFromIPC(buffer);
-        const loadedNodes = parseArrowToNodes(arrowTable);
-
-        if (loadedNodes.length === 0) {
+        // STEP 3: Combine cache + server results and update display
+        const allNewNodes = [...fromCache, ...loadedFromServer];
+        
+        if (allNewNodes.length === 0) {
           console.log(`📦 [Public Tiles] No more nodes to load (all nodes loaded)`);
           return;
         }
 
-        // Update currentMinDegree to the minimum degree of loaded nodes
-        // This allows the next batch to load nodes with even lower degree
-        const minDegreeInBatch = Math.min(...loadedNodes.map(n => n.degree));
-        setCurrentMinDegree(minDegreeInBatch);
-        console.log(`📦 [Public Tiles] Next batch will load degree < ${minDegreeInBatch.toFixed(4)}`);
+        // Update cachedMinDegree to the minimum degree we've ever loaded.
+        // Apply a small epsilon to ensure the next query threshold strictly decreases
+        // (otherwise we can get stuck repeatedly requesting the same degree boundary).
+        const minDegreeInBatch = Math.min(...allNewNodes.map(n => n.degree));
+        const nextThreshold = Math.max(0, minDegreeInBatch - 1e-6);
+        if (cachedMinDegreeRef.current === 0 || nextThreshold < cachedMinDegreeRef.current) {
+          cachedMinDegreeRef.current = nextThreshold;
+        }
+        setCurrentMinDegree(cachedMinDegreeRef.current);
+        console.log(`📦 [Public Tiles] Next batch will load degree < ${cachedMinDegreeRef.current.toFixed(4)}`);
 
+        // STEP 4: Update displayed tileNodes
         setTileNodes(prev => {
           const existingIds = new Set(prev.map(n => n.id));
-          const newNodes = loadedNodes.filter(n => !existingIds.has(n.id));
+          const newNodes = allNewNodes.filter(n => !existingIds.has(n.id));
           
           const totalNodes = prev.length + newNodes.length;
-          if (totalNodes > tileConfig.MAX_MEMORY_NODES - baseNodes.length) {
-            const maxTileNodes = tileConfig.MAX_MEMORY_NODES - baseNodes.length;
+          const maxTileNodes = tileConfig.MAX_MEMORY_NODES - baseNodes.length;
+          
+          if (totalNodes > maxTileNodes) {
             const combined = [...prev, ...newNodes];
             console.log(`📦 [Public Tiles] setTileNodes: prev=${prev.length}, new=${newNodes.length}, trimmed to ${maxTileNodes}`);
             return combined.slice(-maxTileNodes);
           }
           
-          console.log(`📦 [Public Tiles] setTileNodes: prev=${prev.length}, new=${newNodes.length}, total=${prev.length + newNodes.length}`);
+          console.log(`📦 [Public Tiles] setTileNodes: prev=${prev.length}, new=${newNodes.length}, total=${totalNodes}`);
           return [...prev, ...newNodes];
         });
 
-        console.log(`📦 [Public Tiles] Loaded ${loadedNodes.length} nodes (degree range: ${minDegreeInBatch.toFixed(4)} - ${degreeThreshold.toFixed(4)})`);
+        // STEP 5: Persist accumulated cache to IndexedDB (debounced)
+        saveTileCacheToIDB();
+
+        console.log(`📦 [Public Tiles] Loaded ${allNewNodes.length} nodes (${fromCache.length} from cache, ${loadedFromServer.length} from server)`);
 
       } catch (error) {
         console.error('❌ [Public Tiles] Error fetching tile:', error);
       } finally {
         setIsTileLoading(false);
         tilePromiseRef.current = null;
+
+        // If viewport changed while we were loading, immediately run the latest queued request.
+        const pending = pendingTileRequestRef.current;
+        if (pending) {
+          pendingTileRequestRef.current = null;
+          setTimeout(() => {
+            void fetchDetailNodesRef.current?.(pending.bbox, pending.batchMultiplier);
+          }, 0);
+        }
       }
     })();
 
     return tilePromiseRef.current;
-  }, [parseArrowToNodes, baseNodes.length, tileNodes.length, baseNodesMinDegree, currentMinDegree, tileConfig.NODES_PER_TILE, tileConfig.MAX_MEMORY_NODES]);
+  }, [parseArrowToNodes, baseNodes, tileNodes, baseNodesMinDegree, tileConfig.NODES_PER_TILE, tileConfig.MAX_MEMORY_NODES, saveTileCacheToIDB]);
 
   // Keep ref updated to the latest fetchDetailNodes to avoid stale closures in debounce
   fetchDetailNodesRef.current = fetchDetailNodes;
   
-  // Unload detail nodes when zooming out significantly
+  // Unload detail nodes from DISPLAY when zooming out significantly
+  // NOTE: This only clears the React state (tileNodes), NOT the accumulated cache
+  // The cache (allCachedTileNodesRef) is preserved so rezoom can reuse cached nodes
   const unloadDetailNodes = useCallback(() => {
     if (tileNodes.length > 0) {
-      console.log(`📦 [Public Tiles] Unloading ${tileNodes.length} detail nodes (zoom out)`);
+      console.log(`📦 [Public Tiles] Hiding ${tileNodes.length} detail nodes from display (zoom out) - cache preserved (${allCachedTileNodesRef.current.length} nodes)`);
       setTileNodes([]);
-      setCurrentMinDegree(0); // Reset so next zoom-in starts fresh
+      // Don't reset currentMinDegree - we want to continue from cache on rezoom
+      // setCurrentMinDegree(0); // REMOVED - keep cache state
     }
   }, [tileNodes.length]);
   
@@ -942,19 +1192,33 @@ export function PublicGraphDataProvider({ children }: PublicGraphDataProviderPro
   }, []);
   
   // Handle viewport change with smart loading/unloading
+  // Supports aggressive zoom: loads multiple batches when zoom delta is large
   const onViewportChange = useCallback((boundingBox: BoundingBox, zoomLevel: number) => {
     const prevZoom = prevZoomRef.current;
     const prevBbox = currentBboxRef.current;
+    const isFirstViewportChange = prevBbox === null;
     prevZoomRef.current = zoomLevel;
     currentBboxRef.current = boundingBox;
     setCurrentZoom(zoomLevel);
     
-    // Detect zoom direction and pan
-    const isPanning = hasMovedSignificantly(prevBbox, boundingBox) && Math.abs(zoomLevel - prevZoom) < prevZoom * 0.1;
+    // Detect zoom direction and pan (but not on first viewport change after restore)
+    const isPanning = !isFirstViewportChange && hasMovedSignificantly(prevBbox, boundingBox) && Math.abs(zoomLevel - prevZoom) < prevZoom * 0.1;
     
-    // Below threshold: unload detail nodes and don't load new ones
+    // Calculate zoom aggressiveness: how many batches to load based on zoom delta
+    // If user zooms from 0.1 to 2.0 (20x), we want to load more batches than 0.1 to 0.2 (2x)
+    const zoomRatio = prevZoom > 0 ? zoomLevel / prevZoom : 1;
+    const isZoomingIn = zoomRatio > 1.1; // More than 10% zoom in
+    // Calculate batches: 1 batch per 50% zoom increase, max 5 batches
+    const batchCount = isZoomingIn ? Math.min(5, Math.max(1, Math.floor(Math.log2(zoomRatio) * 2) + 1)) : 1;
+    
+    // Below threshold: hide detail nodes from display (but keep cache intact)
+    // But skip on first viewport change (preserve restored tiles)
     if (zoomLevel < tileConfig.ZOOM_THRESHOLD) {
-      // Unload detail nodes when zooming out to overview
+      if (isFirstViewportChange) {
+        // First viewport change after mount/restore - don't unload restored tiles
+        return;
+      }
+      // Hide detail nodes when zooming out to overview (cache is preserved)
       if (viewportDebounceRef.current) {
         clearTimeout(viewportDebounceRef.current);
       }
@@ -962,8 +1226,8 @@ export function PublicGraphDataProvider({ children }: PublicGraphDataProviderPro
         // Check inside timeout to get latest state
         setTileNodes(prev => {
           if (prev.length > 0) {
-            console.log(`📦 [Public Tiles] Unloading ${prev.length} detail nodes (zoom out below threshold)`);
-            setCurrentMinDegree(0);
+            console.log(`📦 [Public Tiles] Hiding ${prev.length} detail nodes (zoom out) - cache preserved (${allCachedTileNodesRef.current.length} nodes)`);
+            // Don't reset currentMinDegree - cache state is preserved for rezoom
             return [];
           }
           return prev;
@@ -972,25 +1236,30 @@ export function PublicGraphDataProvider({ children }: PublicGraphDataProviderPro
       return;
     }
 
-    // PAN: Clear old detail nodes and load new ones for the new area
+    // PAN: Clear displayed nodes and load new ones for the new area
+    // Cache is preserved - we'll check it first before fetching
+    // Skip on first viewport change to preserve restored tiles
     if (isPanning) {
       setTileNodes(prev => {
         if (prev.length > 0) {
-          console.log(`📦 [Public Tiles] Pan detected - clearing ${prev.length} old nodes`);
-          setCurrentMinDegree(0);
+          console.log(`📦 [Public Tiles] Pan detected - clearing display, will reload from cache + server`);
+          // Don't reset currentMinDegree - cache state is preserved
           return [];
         }
         return prev;
       });
     }
 
-    // ZOOM IN or PAN: Load more detail nodes
+    // ZOOM IN or PAN: Load detail nodes (larger batch for aggressive zoom)
     if (viewportDebounceRef.current) {
       clearTimeout(viewportDebounceRef.current);
     }
-    viewportDebounceRef.current = setTimeout(() => {
-      // Pass bbox for spatial filtering when panning
-      fetchDetailNodesRef.current?.(boundingBox);
+    viewportDebounceRef.current = setTimeout(async () => {
+      if (batchCount > 1) {
+        console.log(`🚀 [Public Tiles] Aggressive zoom detected (${zoomRatio.toFixed(2)}x) - loading ${batchCount}x batch size`);
+      }
+      // Pass batchCount as multiplier to load more nodes in one request
+      await fetchDetailNodesRef.current?.(boundingBox, batchCount);
     }, tileConfig.DEBOUNCE_MS);
   }, [tileConfig.ZOOM_THRESHOLD, tileConfig.DEBOUNCE_MS, hasMovedSignificantly]);
 
@@ -998,8 +1267,16 @@ export function PublicGraphDataProvider({ children }: PublicGraphDataProviderPro
   const clearTileCache = useCallback(() => {
     publicTileCache.clear();
     setTileNodes([]);
+    allCachedTileNodesRef.current = [];
+    cachedMinDegreeRef.current = 0;
+    setCurrentMinDegree(0);
+    publicGraphIDB.save(CACHE_KEYS.TILE_STATE, {
+      tileNodes: [],
+      currentMinDegree: 0,
+      baseNodesMinDegree,
+    }).catch(() => {});
     console.log('🗑️ [Public Tiles] Cache cleared');
-  }, []);
+  }, [baseNodesMinDegree]);
 
   // Merged nodes: baseNodes + tileNodes (deduplicated)
   const mergedNodes = useMemo(() => {
@@ -1043,6 +1320,7 @@ export function PublicGraphDataProvider({ children }: PublicGraphDataProviderPro
     isTileLoading,
     currentZoom,
     tileConfig,
+    setMaxMemoryNodes,
     fetchDetailNodes,
     onViewportChange,
     clearTileCache,
@@ -1063,6 +1341,7 @@ export function PublicGraphDataProvider({ children }: PublicGraphDataProviderPro
     isTileLoading,
     currentZoom,
     tileConfig,
+    setMaxMemoryNodes,
     fetchDetailNodes,
     onViewportChange,
     clearTileCache,

@@ -31,6 +31,12 @@ const ALLOWED_SQL_PATTERNS = [
   // Allow detail nodes query with spatial filter (degree + bbox)
   // Pattern: SELECT ... FROM graph_nodes g WHERE g.community != 8 AND g.degree < X AND g.x BETWEEN ... AND g.y BETWEEN ... ORDER BY ... LIMIT ...
   /^\s*SELECT\s+[\w\s,.*]+\s+FROM\s+postgres_db\.public\.graph_nodes_\d{2}_\d{2}_\d{2}\s+\w+\s+WHERE\s+\w+\.community\s*!=\s*\d+\s+AND\s+\w+\.degree\s*<\s*[-\d.]+\s+AND\s+\w+\.x\s+BETWEEN\s+[-\d.]+\s+AND\s+[-\d.]+\s+AND\s+\w+\.y\s+BETWEEN\s+[-\d.]+\s+AND\s+[-\d.]+\s+ORDER\s+BY\s+[\w.]+\s+(ASC|DESC)\s+LIMIT\s+\d+\s*$/i,
+  // Allow detail nodes query with spatial filter (degree >= X for zoom-based loading)
+  // Pattern: SELECT ... FROM graph_nodes g WHERE g.community != 8 AND g.degree >= X AND g.x BETWEEN ... AND g.y BETWEEN ... ORDER BY ... LIMIT ...
+  /^\s*SELECT\s+[\w\s,.*]+\s+FROM\s+postgres_db\.public\.graph_nodes_\d{2}_\d{2}_\d{2}\s+\w+\s+WHERE\s+\w+\.community\s*!=\s*\d+\s+AND\s+\w+\.degree\s*>=\s*[-\d.]+\s+AND\s+\w+\.x\s+BETWEEN\s+[-\d.]+\s+AND\s+[-\d.]+\s+AND\s+\w+\.y\s+BETWEEN\s+[-\d.]+\s+AND\s+[-\d.]+\s+ORDER\s+BY\s+[\w.]+\s+(ASC|DESC)\s+LIMIT\s+\d+\s*$/i,
+  // Allow CTE (WITH ... AS) queries for prioritized loading (consent nodes first, then by degree)
+  // Pattern: WITH consent_nodes AS (...), other_nodes AS (...), combined AS (...) SELECT ... ORDER BY ... LIMIT ...
+  /^\s*WITH\s+\w+\s+AS\s*\([\s\S]+?\)\s*,\s*\w+\s+AS\s*\([\s\S]+?\)\s*,\s*\w+\s+AS\s*\([\s\S]+?\)\s*SELECT\s+[\w\s,.*]+\s+FROM\s+\w+\s+ORDER\s+BY\s+[\w\s,]+\s+(ASC|DESC)\s*,?\s*[\w\s]*(ASC|DESC)?\s*LIMIT\s+\d+\s*$/i,
 ];
 
 // Dangerous SQL patterns to block

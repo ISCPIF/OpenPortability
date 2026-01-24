@@ -8,10 +8,9 @@ import Header from '@/app/_components/layouts/Header'
 import Footer from '@/app/_components/layouts/Footer'
 import { useTheme } from '@/hooks/useTheme'
 import { useCommunityColors } from '@/hooks/useCommunityColors'
-import { PublicGraphDataProvider } from '@/contexts/PublicGraphDataContext_v2';
+import { PublicGraphDataProviderV3 } from '@/contexts/PublicGraphDataContextV3';
 
-// Loading component with theme-aware colors
-function DiscoverLoader() {
+function DiscoverV3Loader() {
   const { isDark } = useTheme()
   const { colors: communityColors } = useCommunityColors()
   
@@ -38,45 +37,38 @@ function DiscoverLoader() {
           className="font-mono tracking-wider text-sm"
           style={{ color: contrastColor }}
         >
-          Chargement...
+          Chargement V3...
         </p>
       </div>
     </div>
   )
 }
 
-// Dynamic import for discover dashboard (lighter than full reconnect)
-const DiscoverGraphDashboard = dynamic(
-  () => import('@/app/_components/graph/DiscoverGraphDashboard').then(mod => ({ default: mod.DiscoverGraphDashboard })),
+const DiscoverGraphDashboardV3 = dynamic(
+  () => import('@/app/_components/graph/DiscoverGraphDashboardV3').then(mod => ({ default: mod.DiscoverGraphDashboardV3 })),
   { 
-    loading: () => <DiscoverLoader />,
+    loading: () => <DiscoverV3Loader />,
     ssr: false 
   }
 )
 
-/**
- * Public discover page - no authentication required.
- * Shows the graph in discover mode with labels only.
- * Users can explore the graph and click "Se connecter" to access personal features.
- */
-export default function DiscoverPage() {
+export default function DiscoverV3Page() {
   const router = useRouter()
   const params = useParams()
   const locale = params.locale as string || 'en'
   
   const handleLoginClick = useCallback(() => {
-    // Redirect to signin page with locale
     router.push(`/${locale}/auth/signin`)
   }, [router, locale])
 
   return (
-    <PublicGraphDataProvider>
+    <PublicGraphDataProviderV3>
       <div className="relative w-full h-screen overflow-hidden">
-        <DiscoverGraphDashboard onLoginClick={handleLoginClick} />
+        <DiscoverGraphDashboardV3 onLoginClick={handleLoginClick} />
         
         <Header />
         <Footer />
       </div>
-    </PublicGraphDataProvider>
+    </PublicGraphDataProviderV3>
   )
 }

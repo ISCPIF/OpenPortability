@@ -133,8 +133,8 @@ export const DEFAULT_TILE_CONFIG: TileConfig = {
   INITIAL_NODES: 100_000,
   ZOOM_THRESHOLD: 0.05,         // Load tiles when scale > 0.05 (zooming in from initial ~0.025)
   NODES_PER_TILE: 50_000,
-  MAX_MEMORY_NODES: 400_000,    // Allow up to 400k nodes (100k initial + 6x50k progressive)
-  DEBOUNCE_MS: 500,             // 500ms debounce to avoid too frequent loads
+  MAX_MEMORY_NODES: 600_000,    // Allow up to 400k nodes (100k initial + 6x50k progressive)
+  DEBOUNCE_MS: 250,             // 250ms debounce to avoid too frequent loads
   TILE_CACHE_SIZE: 20,
 };
 

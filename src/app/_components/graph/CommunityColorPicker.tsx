@@ -3,7 +3,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { CRAMERI_PALETTES, MIN_POINT_SIZE, MAX_POINT_SIZE, DEFAULT_POINT_SIZE } from '@/hooks/useCommunityColors';
-import { RotateCcw, Palette, ChevronDown, Move } from 'lucide-react';
+import { RotateCcw, Palette, ChevronDown, Move, Database } from 'lucide-react';
+import { DEFAULT_TILE_CONFIG } from '@/lib/types/graph';
 
 // Type for the hook return value
 interface CommunityColorsHook {
@@ -24,11 +25,22 @@ interface CommunityColorPickerProps {
   communityLabels: Record<number, string>;
   className?: string;
   colorHook: CommunityColorsHook;
+  // Optional: Node limit controls
+  currentNodeCount?: number;
+  maxMemoryNodes?: number;
+  onMaxMemoryNodesChange?: (value: number) => void;
 }
 
 type ActiveDropdown = 'palettes' | 'colors' | null;
 
-export function CommunityColorPicker({ communityLabels, className = '', colorHook }: CommunityColorPickerProps) {
+export function CommunityColorPicker({ 
+  communityLabels, 
+  className = '', 
+  colorHook,
+  currentNodeCount,
+  maxMemoryNodes,
+  onMaxMemoryNodesChange,
+}: CommunityColorPickerProps) {
   const t = useTranslations('communityColorPicker');
   const {
     colors,
@@ -185,6 +197,41 @@ export function CommunityColorPicker({ communityLabels, className = '', colorHoo
                   )}
                 </div>
               </div>
+
+              {onMaxMemoryNodesChange && maxMemoryNodes !== undefined && (
+                <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+                  <div className="flex items-center gap-2">
+                    <Database className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />
+                    <input
+                      type="range"
+                      min={50_000}
+                      max={660_000}
+                      step={10_000}
+                      value={maxMemoryNodes}
+                      onChange={(e) => onMaxMemoryNodesChange(parseInt(e.target.value, 10))}
+                      className="flex-1 h-1 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                      title={t('maxNodes')}
+                    />
+                    <span className="text-[10px] font-medium text-gray-600 dark:text-gray-400 w-12 text-right">
+                      {maxMemoryNodes >= 660_000 ? 'Max' : `${(maxMemoryNodes / 1000).toFixed(0)}k`}
+                    </span>
+                    {maxMemoryNodes !== DEFAULT_TILE_CONFIG.MAX_MEMORY_NODES && (
+                      <button
+                        onClick={() => onMaxMemoryNodesChange(DEFAULT_TILE_CONFIG.MAX_MEMORY_NODES)}
+                        className="p-0.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                        title={t('resetMaxNodes')}
+                      >
+                        <RotateCcw className="w-2.5 h-2.5" />
+                      </button>
+                    )}
+                  </div>
+                  {currentNodeCount !== undefined && (
+                    <div className="mt-1 text-[9px] text-gray-400 dark:text-gray-500">
+                      {(currentNodeCount / 1000).toFixed(0)}k
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>

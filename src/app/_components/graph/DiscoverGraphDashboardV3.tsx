@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
 import { useTheme } from '@/hooks/useTheme';
-import { usePublicGraphData } from '@/contexts/PublicGraphDataContext_v2';
+import { usePublicGraphDataV3 } from '@/contexts/PublicGraphDataContextV3';
 import { ParticulesBackground } from '../layouts/ParticulesBackground';
 import { CommunityColorPicker } from './CommunityColorPicker';
 import { FloatingLassoSelectionPanelLight } from './panels/FloatingLassoSelectionPanelLight';
@@ -12,43 +12,39 @@ import { useCommunityColors } from '@/hooks/useCommunityColors';
 import { GraphNode } from '@/lib/types/graph';
 import { clearGraphUiState } from '@/lib/utils/graphCookies';
 
-// Dynamic import to avoid SSR issues with embedding-atlas WASM
 const ReconnectGraphVisualization = dynamic(
   () => import('./ReconnectGraphVisualization').then(mod => mod.ReconnectGraphVisualization),
   { ssr: false }
 );
 
-interface DiscoverGraphDashboardProps {
+interface DiscoverGraphDashboardV3Props {
   onLoginClick?: () => void;
 }
 
-/**
- * Simplified graph dashboard for non-authenticated users.
- * Shows only the discover mode with labels - no personal network features.
- */
-export function DiscoverGraphDashboard({ onLoginClick }: DiscoverGraphDashboardProps) {
+export function DiscoverGraphDashboardV3({ onLoginClick }: DiscoverGraphDashboardV3Props) {
   const t = useTranslations('discoverPage');
   const { isDark, colors } = useTheme();
   const { colors: communityColors } = useCommunityColors();
   const communityColorsHook = useCommunityColors();
   
-  // Public graph data (no auth required) with tile-based loading
   const {
-    baseNodes,
-    isBaseNodesLoaded,
-    isBaseNodesLoading,
-    fetchBaseNodes,
-    floatingLabels,
-    isLabelsLoading,
-    normalizationBounds,
-    // Tile-based progressive loading
+    initialNodes,
+    tileNodes,
     mergedNodes,
-    onViewportChange,
+    isInitialLoading,
+    isInitialLoaded,
     isTileLoading,
-    config: tileConfig,
-  } = usePublicGraphData();
+    currentScale,
+    currentZoomLevel,
+    normalizationBounds,
+    floatingLabels,
+    isLabelsLoaded,
+    fetchInitialNodes,
+    fetchLabels,
+    onViewportChange,
+    clearTileCache,
+  } = usePublicGraphDataV3();
   
-  // Loader contrast color
   const loaderContrastColor = isDark 
     ? (communityColors[9] || communityColors[8] || '#fad541')
     : (communityColors[0] || communityColors[1] || '#011959');
@@ -56,13 +52,11 @@ export function DiscoverGraphDashboard({ onLoginClick }: DiscoverGraphDashboardP
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
   const [isGraphRendered, setIsGraphRendered] = useState(false);
-  const [loadingMessage, setLoadingMessage] = useState('Chargement du graphe...');
+  const [loadingMessage, setLoadingMessage] = useState('Chargement du graphe V3...');
   const [viewResetKey, setViewResetKey] = useState(0);
   
-  // Lasso selection (discover mode feature)
   const [lassoSelectedMembers, setLassoSelectedMembers] = useState<GraphNode[]>([]);
   
-  // Highlighted search node (from lasso panel search)
   const [highlightedSearchNode, setHighlightedSearchNode] = useState<{
     x: number;
     y: number;
@@ -71,18 +65,16 @@ export function DiscoverGraphDashboard({ onLoginClick }: DiscoverGraphDashboardP
     community: number | null;
   } | null>(null);
   
-  // Global stats from public API
   const [globalStats, setGlobalStats] = useState<{
     users?: { total: number; onboarded: number };
     connections?: { followers: number; following: number; followedOnBluesky: number; followedOnMastodon: number };
   } | null>(null);
   const [isStatsLoading, setIsStatsLoading] = useState(false);
 
-  // Fetch data on mount
   useEffect(() => {
-    fetchBaseNodes();
+    fetchInitialNodes();
+    fetchLabels();
     
-    // Fetch global stats
     const fetchGlobalStats = async () => {
       setIsStatsLoading(true);
       try {
@@ -100,21 +92,19 @@ export function DiscoverGraphDashboard({ onLoginClick }: DiscoverGraphDashboardP
       }
     };
     fetchGlobalStats();
-  }, [fetchBaseNodes]);
+  }, [fetchInitialNodes, fetchLabels]);
 
-  // Update loading message
   useEffect(() => {
-    if (isBaseNodesLoading) {
-      setLoadingMessage('Chargement des nœuds...');
-    } else if (baseNodes.length > 0 && !isGraphRendered) {
+    if (isInitialLoading) {
+      setLoadingMessage('Chargement des nœuds initiaux (100k)...');
+    } else if (initialNodes.length > 0 && !isGraphRendered) {
       setLoadingMessage('Initialisation du graphe...');
     }
-  }, [isBaseNodesLoading, baseNodes.length, isGraphRendered]);
+  }, [isInitialLoading, initialNodes.length, isGraphRendered]);
 
-  // Handle container resize
   useEffect(() => {
     const updateSize = () => {
-      const container = document.getElementById('discover-graph-container');
+      const container = document.getElementById('discover-v3-graph-container');
       if (container) {
         const width = container.clientWidth;
         const height = container.clientHeight;
@@ -137,10 +127,9 @@ export function DiscoverGraphDashboard({ onLoginClick }: DiscoverGraphDashboardP
     };
   }, []);
 
-  // Recalculate when nodes are loaded
   useEffect(() => {
-    if (baseNodes.length > 0 && containerSize.width === 0) {
-      const container = document.getElementById('discover-graph-container');
+    if (initialNodes.length > 0 && containerSize.width === 0) {
+      const container = document.getElementById('discover-v3-graph-container');
       if (container) {
         setContainerSize({
           width: container.clientWidth,
@@ -148,7 +137,7 @@ export function DiscoverGraphDashboard({ onLoginClick }: DiscoverGraphDashboardP
         });
       }
     }
-  }, [baseNodes.length, containerSize.width]);
+  }, [initialNodes.length, containerSize.width]);
 
   const handleNodeSelect = useCallback((node: GraphNode | null) => {
     setSelectedNode(node);
@@ -162,37 +151,30 @@ export function DiscoverGraphDashboard({ onLoginClick }: DiscoverGraphDashboardP
     setIsGraphRendered(true);
   }, []);
 
-  // Callback to reset the graph view (forces remount of EmbeddingView)
   const handleResetView = useCallback(() => {
-    // Clear all graph UI cookies so the view resets to default position
     clearGraphUiState();
     setHighlightedSearchNode(null);
+    clearTileCache();
     setViewResetKey(prev => prev + 1);
-  }, []);
+  }, [clearTileCache]);
 
   const handleClearSearchHighlight = useCallback(() => {
     setHighlightedSearchNode(null);
   }, []);
 
-  // Callback for tile-based viewport changes (progressive loading)
   const handleTileViewportChange = useCallback((boundingBox: { minX: number; maxX: number; minY: number; maxY: number }, zoomLevel: number) => {
-    if (onViewportChange) {
-      onViewportChange(boundingBox, zoomLevel);
-    }
+    onViewportChange(boundingBox, zoomLevel);
   }, [onViewportChange]);
 
-  // Use mergedNodes (baseNodes + tileNodes) when available
   const displayNodes = useMemo(() => {
-    const result = (mergedNodes && mergedNodes.length > baseNodes.length) ? mergedNodes : baseNodes;
-    console.log(`📊 [DiscoverDashboard] displayNodes: ${result.length} (baseNodes: ${baseNodes.length}, mergedNodes: ${mergedNodes?.length ?? 0})`);
+    const result = mergedNodes.length > 0 ? mergedNodes : initialNodes;
+    console.log(`📊 [V3 Dashboard] displayNodes: ${result.length} (initial: ${initialNodes.length}, tiles: ${tileNodes.length}, merged: ${mergedNodes.length})`);
     return result;
-  }, [baseNodes, mergedNodes]);
+  }, [initialNodes, tileNodes, mergedNodes]);
 
-  // Empty sets/maps for non-authenticated mode
   const emptySet = useMemo(() => new Set<string>(), []);
   const emptyMap = useMemo(() => new Map<string, { hasBlueskyFollow: boolean; hasMastodonFollow: boolean; hasMatching: boolean }>(), []);
 
-  // Header/Footer heights
   const headerHeight = 40;
   const [footerHeight, setFooterHeight] = useState(84);
   
@@ -206,7 +188,7 @@ export function DiscoverGraphDashboard({ onLoginClick }: DiscoverGraphDashboardP
     return () => window.removeEventListener('resize', updateFooterHeight);
   }, []);
 
-  const isGraphReady = baseNodes.length > 0;
+  const isGraphReady = initialNodes.length > 0;
 
   return (
     <div 
@@ -245,10 +227,10 @@ export function DiscoverGraphDashboard({ onLoginClick }: DiscoverGraphDashboardP
       )}
 
       {/* Graph Container */}
-      <div id="discover-graph-container" className="absolute left-0 right-0" style={{ top: `${headerHeight}px`, bottom: `${footerHeight}px` }}>
+      <div id="discover-v3-graph-container" className="absolute left-0 right-0" style={{ top: `${headerHeight}px`, bottom: `${footerHeight}px` }}>
         {containerSize.width > 0 && containerSize.height > 0 && (
           <ReconnectGraphVisualization
-            key={`graph-${viewResetKey}`}
+            key={`graph-v3-${viewResetKey}`}
             nodes={displayNodes}
             width={containerSize.width}
             height={containerSize.height}
@@ -280,11 +262,14 @@ export function DiscoverGraphDashboard({ onLoginClick }: DiscoverGraphDashboardP
         )}
       </div>
 
-      {/* View Mode Indicator - Discover Only */}
+      {/* V3 Badge + View Mode Indicator */}
       <div 
         className="absolute left-1/2 -translate-x-1/2 z-40 flex items-center bg-slate-900/95 backdrop-blur-sm rounded border border-slate-700/50 shadow-xl"
         style={{ top: `${headerHeight + 16}px` }}
       >
+        <div className="px-2 py-1 text-[10px] font-bold tracking-wide text-emerald-400 bg-emerald-900/50 rounded-l">
+          V3 TILE
+        </div>
         <div className="relative px-4 py-2 text-[11px] font-medium tracking-wide text-white bg-slate-800">
           <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-blue-500" />
           {t('title')}
@@ -303,27 +288,52 @@ export function DiscoverGraphDashboard({ onLoginClick }: DiscoverGraphDashboardP
         )}
       </div>
 
-      {/* Stats Panel - With global stats */}
+      {/* Stats Panel - V3 specific info */}
       <div 
-        className="absolute right-4 z-40 bg-slate-900/95 backdrop-blur-sm rounded-lg border border-slate-700/50 shadow-xl p-4 min-w-[180px]"
+        className="absolute right-4 z-40 bg-slate-900/95 backdrop-blur-sm rounded-lg border border-slate-700/50 shadow-xl p-4 min-w-[200px]"
         style={{ top: `${headerHeight + 16}px` }}
       >
-        <div className="text-xs text-slate-400 mb-3 uppercase tracking-wider">{t('stats')}</div>
+        <div className="text-xs text-slate-400 mb-3 uppercase tracking-wider flex items-center gap-2">
+          {t('stats')}
+          <span className="px-1.5 py-0.5 text-[9px] bg-emerald-900/50 text-emerald-400 rounded">V3</span>
+        </div>
         
-        {/* Graph nodes - show mergedNodes (real-time count) */}
+        {/* Zoom Level Info */}
+        <div className="mb-3 p-2 bg-slate-800/50 rounded">
+          <div className="text-[10px] text-slate-500 uppercase">Zoom Level</div>
+          <div className="text-sm font-mono text-white">
+            Scale: {currentScale.toFixed(3)}
+          </div>
+          <div className="text-[10px] text-slate-400">
+            minDegree: {currentZoomLevel.minDegree} | grid: {currentZoomLevel.gridSize}
+          </div>
+        </div>
+        
+        {/* Node counts */}
         <div className="mb-3">
-          <div className="text-xs text-slate-500">{t('graphNodes')}</div>
+          <div className="text-xs text-slate-500">Nœuds affichés</div>
           <div className="text-lg font-mono text-white flex items-center gap-2">
             {mergedNodes.length.toLocaleString()}
             {isTileLoading && (
-              <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" title="Loading..." />
+              <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" title="Loading tiles..." />
             )}
           </div>
-          {mergedNodes.length > baseNodes.length && (
-            <div className="text-[10px] text-slate-500">
-              {baseNodes.length.toLocaleString()} base + {(mergedNodes.length - baseNodes.length).toLocaleString()} detail
-            </div>
-          )}
+        </div>
+        
+        {/* Breakdown */}
+        <div className="text-[10px] text-slate-500 space-y-1">
+          <div className="flex justify-between">
+            <span>Initial (100k):</span>
+            <span className="text-slate-300">{initialNodes.length.toLocaleString()}</span>
+          </div>
+          <div className="flex justify-between">
+            <span>Tiles:</span>
+            <span className="text-slate-300">{tileNodes.length.toLocaleString()}</span>
+          </div>
+          <div className="flex justify-between">
+            <span>Merged (unique):</span>
+            <span className="text-white font-medium">{mergedNodes.length.toLocaleString()}</span>
+          </div>
         </div>
         
         {/* Global stats from API */}
@@ -331,7 +341,6 @@ export function DiscoverGraphDashboard({ onLoginClick }: DiscoverGraphDashboardP
           <>
             <div className="border-t border-slate-700/50 my-3" />
             
-            {/* Users */}
             <div className="mb-2">
               <div className="text-xs text-slate-500">{t('users')}</div>
               <div className="text-sm font-mono text-white">
@@ -339,7 +348,6 @@ export function DiscoverGraphDashboard({ onLoginClick }: DiscoverGraphDashboardP
               </div>
             </div>
             
-            {/* Registered links (followers + following) */}
             <div className="mb-2">
               <div className="text-xs text-slate-500">{t('registeredLinks')}</div>
               <div className="text-sm font-mono text-white">
@@ -347,7 +355,6 @@ export function DiscoverGraphDashboard({ onLoginClick }: DiscoverGraphDashboardP
               </div>
             </div>
             
-            {/* Recreated links (followedOnBluesky + followedOnMastodon) */}
             <div className="mb-2">
               <div className="text-xs text-slate-500">{t('recreatedLinks')}</div>
               <div className="text-sm font-mono text-white">
@@ -374,7 +381,7 @@ export function DiscoverGraphDashboard({ onLoginClick }: DiscoverGraphDashboardP
         </button>
       </div>
 
-      {/* Lasso Selection Panel Light - for non-authenticated users */}
+      {/* Lasso Selection Panel Light */}
       <FloatingLassoSelectionPanelLight
         lassoMembers={lassoSelectedMembers}
         onClearSelection={() => setLassoSelectedMembers([])}
@@ -383,7 +390,7 @@ export function DiscoverGraphDashboard({ onLoginClick }: DiscoverGraphDashboardP
         onHighlightNode={setHighlightedSearchNode}
       />
 
-      {/* Community Color Picker with Node Limit Slider */}
+      {/* Community Color Picker */}
       <div className="absolute left-6 z-40" style={{ bottom: `${footerHeight + 16}px` }}>
         <CommunityColorPicker
           communityLabels={{
@@ -401,7 +408,7 @@ export function DiscoverGraphDashboard({ onLoginClick }: DiscoverGraphDashboardP
           colorHook={communityColorsHook}
           className="max-w-xs"
           currentNodeCount={mergedNodes.length}
-          maxMemoryNodes={tileConfig.MAX_MEMORY_NODES}
+          maxMemoryNodes={600_000}
         />
       </div>
     </div>
