@@ -753,7 +753,9 @@
     "clickToCustomize": "Cliquez sur une couleur pour la personnaliser",
     "changeColorOf": "Changer la couleur de {label}",
     "resetThisColor": "Réinitialiser cette couleur",
-    "resetAllColors": "Réinitialiser toutes les couleurs"
+    "resetAllColors": "Réinitialiser toutes les couleurs",
+    "maxNodes": "Nombre maximum de nœuds à afficher",
+    "resetMaxNodes": "Réinitialiser par défaut"
   },
   "floatingDiscoverPanel": {
     "header": "Mode Découverte",

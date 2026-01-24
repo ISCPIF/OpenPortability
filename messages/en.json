@@ -753,7 +753,9 @@
     "clickToCustomize": "Click on a color to customize it",
     "changeColorOf": "Change color of {label}",
     "resetThisColor": "Reset this color",
-    "resetAllColors": "Reset all colors"
+    "resetAllColors": "Reset all colors",
+    "maxNodes": "Maximum nodes to display",
+    "resetMaxNodes": "Reset to default"
   },
   "floatingDiscoverPanel": {
     "header": "Discovery Mode",
