@@ -154,6 +154,7 @@ export function ReconnectGraphVisualization({
   const embeddingDataRef = useRef<any>(null);
   const normalizationBoundsRef = useRef<any>(null);
   const viewportScaleCorrectionRef = useRef<number | null>(null);
+  const viewportSyncedRef = useRef<boolean>(false);
   // Track which search node we've already centered on (to avoid re-centering on re-renders)
   const lastCenteredSearchNodeRef = useRef<string | null>(null);
 
@@ -162,6 +163,10 @@ export function ReconnectGraphVisualization({
     return getInitialViewport();
   });
   const viewportSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    viewportSyncedRef.current = false;
+  }, [viewportState?.x, viewportState?.y, viewportState?.scale]);
 
   // Personal labels and normalization bounds from context (fetched centrally)
   // Use optional hook - context may not be available in public/discover mode
@@ -788,6 +793,23 @@ export function ReconnectGraphVisualization({
   // EmbeddingViewWrapper effect -> update() -> onViewportState -> ...
   // Only save to cookie for persistence, let embedding-atlas manage its own state.
   const handleViewportState = useCallback((state: ViewportState) => {
+    // If we have a saved viewport, wait until embedding-atlas reports a matching state
+    // before persisting or triggering tile loads. This avoids using the initial default
+    // viewport (centered) that happens before the saved viewport is applied.
+    if (viewportState && !viewportSyncedRef.current) {
+      const positionTolerance = 0.5;
+      const scaleTolerance = Math.max(0.1, viewportState.scale * 0.05);
+      const isSynced =
+        Math.abs(state.x - viewportState.x) <= positionTolerance &&
+        Math.abs(state.y - viewportState.y) <= positionTolerance &&
+        Math.abs(state.scale - viewportState.scale) <= scaleTolerance;
+
+      if (!isSynced) {
+        return;
+      }
+      viewportSyncedRef.current = true;
+    }
+
     // Debounce cookie save to avoid too many writes
     if (viewportSaveTimeoutRef.current) {
       clearTimeout(viewportSaveTimeoutRef.current);
@@ -848,7 +870,7 @@ export function ReconnectGraphVisualization({
     } else {
       console.log(`🎯 [Viewport] NOT calling onTileViewportChange: callback=${!!onTileViewportChange}, bounds=${!!normalizationBoundsRef.current}`);
     }
-  }, [onTileViewportChange, width, height]);
+  }, [onTileViewportChange, width, height, viewportState]);
 
   // Helper function to check if a point is inside a polygon (ray casting algorithm)
   const isPointInPolygon = useCallback((x: number, y: number, polygon: { x: number; y: number }[]): boolean => {

@@ -73,7 +73,7 @@ const ZOOM_LEVELS: ZoomLevel[] = [
 const CONFIG = {
   INITIAL_NODES: 100_000,
   MAX_MEMORY_NODES: 600_000,
-  TILE_CACHE_SIZE: 50,
+  TILE_CACHE_SIZE: 500, // Must be >= max tiles at highest zoom (20x20=400 at level 4)
   DEBOUNCE_MS: 200,
   PREFETCH_MARGIN: 1,
 };
@@ -1046,32 +1046,9 @@ export function PublicGraphDataProviderV3({ children }: PublicGraphDataProviderV
       } finally {
         setIsTileLoading(false);
         fetchPromiseRef.current = null;
-        
-        // Check if there are still missing tiles for the current viewport
-        // This handles both pending requests and cases where we need to continue fetching
-        const currentViewport = currentViewportRef.current;
-        const currentZoomIdx = prevZoomLevelIndexRef.current;
-        if (currentViewport && currentZoomIdx >= 0) {
-          const zoomLevel = ZOOM_LEVELS[currentZoomIdx];
-          if (zoomLevel.maxNodesPerViewport > 0) {
-            const clampedBbox: BoundingBox = {
-              minX: Math.max(0, Math.min(1, currentViewport.minX)),
-              maxX: Math.max(0, Math.min(1, currentViewport.maxX)),
-              minY: Math.max(0, Math.min(1, currentViewport.minY)),
-              maxY: Math.max(0, Math.min(1, currentViewport.maxY)),
-            };
-            const { visible, prefetch } = getVisibleTileKeys(clampedBbox, currentZoomIdx, zoomLevel.gridSize, CONFIG.PREFETCH_MARGIN);
-            const allTileKeys = [...visible, ...prefetch];
-            const missingTiles = tileManagerRef.current.getMissingTiles(allTileKeys);
-            
-            if (missingTiles.length > 0) {
-              // Use setTimeout to avoid stack overflow
-              setTimeout(() => {
-                fetchViewportNodes(clampedBbox, zoomLevel, currentZoomIdx, missingTiles);
-              }, 0);
-            }
-          }
-        }
+        // Do NOT continue fetching remaining tiles automatically.
+        // User must pan/zoom to trigger loading of new tiles.
+        // This prevents infinite background loading when viewport covers large area.
       }
     })();
   }, [parseArrowToNodes]);
@@ -1091,9 +1068,11 @@ export function PublicGraphDataProviderV3({ children }: PublicGraphDataProviderV
     if (zoomLevel.maxNodesPerViewport === 0) {
       // Use ref to check if we need to clear, avoiding dependency on tileNodes.length
       if (tileNodeMapRef.current.size > 0) {
-        console.log(`📦 [V3] Zoom out - clearing ${tileNodeMapRef.current.size} tile nodes`);
+        console.log(`📦 [V3] Zoom out - clearing ${tileNodeMapRef.current.size} tile nodes and tile cache`);
         setTileNodes([]);
         tileNodeMapRef.current.clear();
+        // IMPORTANT: Also clear tile cache so tiles are re-fetched when zooming back in
+        tileManagerRef.current.clear();
       }
       prevZoomLevelIndexRef.current = zoomLevelIndex;
       return;
@@ -1110,12 +1089,9 @@ export function PublicGraphDataProviderV3({ children }: PublicGraphDataProviderV
 
       if (zoomLevelChanged) {
         console.log(`📦 [V3] Zoom level changed: ${prevZoomLevelIndexRef.current} -> ${zoomLevelIndex}`);
-        // Clear tile cache so new tiles can be fetched for this zoom level
-        // BUT keep accumulated nodes to avoid UI flicker - they'll be deduplicated anyway
-        tileManagerRef.current.clear();
-        
-        // The finally block in fetchViewportNodes will check for missing tiles
-        // using the current viewport state after each fetch completes
+        // DON'T clear tile cache - tile keys include zoom level so they won't conflict
+        // This avoids wasteful re-fetches when zooming back to a previously visited level
+        // The tileNodeMapRef accumulates nodes across all zoom levels (deduplicated by id)
 
         // Keep the ceiling stable (it's the cutoff under the initial top 100k by degree)
         // Do NOT reset it to minDegree(initialNodes) (polluted by consent-first low-degree nodes).
@@ -1141,6 +1117,12 @@ export function PublicGraphDataProviderV3({ children }: PublicGraphDataProviderV
       const allTileKeys = [...visible, ...prefetch];
       const missingTiles = tileManagerRef.current.getMissingTiles(allTileKeys);
       
+      // Sanity check: don't try to fetch too many tiles at once (e.g., when viewport covers entire graph)
+      const MAX_TILES_TO_FETCH = 50;
+      if (missingTiles.length > MAX_TILES_TO_FETCH) {
+        console.log(`📦 [V3] Too many missing tiles (${missingTiles.length}), limiting to ${MAX_TILES_TO_FETCH} closest to center`);
+      }
+      
       if (missingTiles.length > 0) {
         // Sort tiles by distance to viewport center for more logical loading order
         const centerX = (clampedBbox.minX + clampedBbox.maxX) / 2;
@@ -1155,10 +1137,12 @@ export function PublicGraphDataProviderV3({ children }: PublicGraphDataProviderV
           return Math.sqrt((tileCenterX - centerX) ** 2 + (tileCenterY - centerY) ** 2);
         };
         
-        // Sort missing tiles by distance to center
-        const sortedMissing = [...missingTiles].sort((a, b) => distanceToCenter(a) - distanceToCenter(b));
+        // Sort missing tiles by distance to center and limit to MAX_TILES_TO_FETCH
+        const sortedMissing = [...missingTiles]
+          .sort((a, b) => distanceToCenter(a) - distanceToCenter(b))
+          .slice(0, MAX_TILES_TO_FETCH);
         
-        console.log(`📦 [V3] Found ${missingTiles.length} missing tiles for viewport, fetching...`);
+        console.log(`📦 [V3] Found ${missingTiles.length} missing tiles for viewport, fetching ${sortedMissing.length}...`);
         fetchViewportNodes(clampedBbox, zoomLevel, zoomLevelIndex, sortedMissing);
       }
     }, CONFIG.DEBOUNCE_MS);
