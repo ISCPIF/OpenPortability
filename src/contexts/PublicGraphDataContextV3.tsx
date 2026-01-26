@@ -648,52 +648,12 @@ export function PublicGraphDataProviderV3({ children }: PublicGraphDataProviderV
 
     initialNodesPromiseRef.current = (async () => {
       try {
-        const sql = `
-          WITH degree_ceiling_all AS (
-            SELECT MIN(degree) AS detail_degree_ceiling
-            FROM (
-              SELECT degree
-              FROM postgres_db.public.graph_nodes_03_11_25
-              WHERE community != 8
-              ORDER BY degree DESC
-              LIMIT ${CONFIG.INITIAL_NODES}
-            ) t
-          ),
-          consent_nodes AS (
-            SELECT g.label, g.x, g.y, g.community, g.degree, g.tier, g.node_type,
-                   c.detail_degree_ceiling AS detail_degree_ceiling,
-                   0 AS priority
-            FROM postgres_db.public.graph_nodes_03_11_25 g
-            INNER JOIN postgres_db.public.users_with_name_consent u ON g.id = u.twitter_id
-            CROSS JOIN degree_ceiling_all c
-            WHERE g.community != 8
-          ),
-          combined AS (
-            SELECT * FROM consent_nodes
-            UNION ALL
-            SELECT g.label, g.x, g.y, g.community, g.degree, g.tier, g.node_type,
-                   c.detail_degree_ceiling AS detail_degree_ceiling,
-                   1 AS priority
-            FROM postgres_db.public.graph_nodes_03_11_25 g
-            CROSS JOIN degree_ceiling_all c
-            WHERE g.community != 8
-              AND NOT EXISTS (
-                SELECT 1 FROM postgres_db.public.users_with_name_consent u WHERE u.twitter_id = g.id
-              )
-          )
-          SELECT label, x, y, community, degree, tier, node_type, detail_degree_ceiling
-          FROM combined
-          ORDER BY priority ASC, degree DESC
-          LIMIT ${CONFIG.INITIAL_NODES}
-        `;
-
         console.log(`📊 [V3] Fetching ${CONFIG.INITIAL_NODES} initial nodes...`);
         const startTime = performance.now();
 
-        const response = await fetch('/api/mosaic/sql', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sql, type: 'arrow' }),
+        // Use new GET endpoint (cache-friendly)
+        const response = await fetch(`/api/graph/v3/base-nodes?limit=${CONFIG.INITIAL_NODES}`, {
+          method: 'GET',
         });
 
         if (!response.ok) throw new Error('Failed to fetch initial nodes');
@@ -756,21 +716,9 @@ export function PublicGraphDataProviderV3({ children }: PublicGraphDataProviderV
 
     detailDegreeCeilingPromiseRef.current = (async () => {
       try {
-        const sql = `
-          SELECT MIN(degree) AS detail_degree_ceiling
-          FROM (
-            SELECT degree
-            FROM postgres_db.public.graph_nodes_03_11_25
-            WHERE community != 8
-            ORDER BY degree DESC
-            LIMIT ${CONFIG.INITIAL_NODES}
-          ) t
-        `;
-
-        const response = await fetch('/api/mosaic/sql', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sql, type: 'arrow' }),
+        // Use the base-nodes endpoint which includes detail_degree_ceiling in the response
+        const response = await fetch(`/api/graph/v3/base-nodes?limit=${CONFIG.INITIAL_NODES}`, {
+          method: 'GET',
         });
 
         if (!response.ok) {
@@ -977,22 +925,19 @@ export function PublicGraphDataProviderV3({ children }: PublicGraphDataProviderV
               `[${tileBounds.minY.toFixed(2)}, ${tileBounds.maxY.toFixed(2)}])`
           );
 
-          const sql = `
-            SELECT label, x, y, community, degree, tier, node_type
-            FROM postgres_db.public.graph_nodes_03_11_25
-            WHERE community != 8
-              AND degree < ${degreeCeiling - INITIAL_DEGREE_CEILING_EPSILON}
-              AND degree >= ${degreeFloor}
-              AND x BETWEEN ${tileBounds.minX} AND ${tileBounds.maxX}
-              AND y BETWEEN ${tileBounds.minY} AND ${tileBounds.maxY}
-            ORDER BY degree DESC
-            LIMIT ${perTileLimit}
-          `;
+          // Use new GET endpoint with band index (cache-friendly)
+          // Band index + ceiling are used server-side to derive degreeFloor/degreeCeiling
+          // This reduces URL variability and improves nginx cache hit ratio
+          const tileUrl = new URL('/api/graph/v3/tiles', window.location.origin);
+          tileUrl.searchParams.set('z', String(zoomLevelIndex));
+          tileUrl.searchParams.set('gx', String(gx));
+          tileUrl.searchParams.set('gy', String(gy));
+          tileUrl.searchParams.set('band', String(zoomLevelIndex)); // band = zoom level index
+          tileUrl.searchParams.set('ceiling', String(degreeCeiling)); // server rounds to 4 decimals
+          tileUrl.searchParams.set('limit', String(perTileLimit));
 
-          const response = await fetch('/api/mosaic/sql', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ sql, type: 'arrow' }),
+          const response = await fetch(tileUrl.toString(), {
+            method: 'GET',
           });
 
           if (!response.ok) {
