@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, useCallback, useMemo, useEffect, useRef, ReactNode } from 'react';
-import { GraphNode, BoundingBox, DEFAULT_TILE_CONFIG, TileConfig } from '@/lib/types/graph';
+import { GraphNode, BoundingBox, AUTH_TILE_CONFIG, TileConfig } from '@/lib/types/graph';
 import { MatchingTarget } from '@/lib/types/matching';
 import { FollowingHashStatus } from '@/hooks/usePersonalNetwork';
 import { tableFromIPC, Table } from 'apache-arrow';
@@ -87,7 +87,7 @@ class TileCache {
   private cache: Map<string, TileCacheEntry> = new Map();
   private maxSize: number;
 
-  constructor(maxSize: number = DEFAULT_TILE_CONFIG.TILE_CACHE_SIZE) {
+  constructor(maxSize: number = AUTH_TILE_CONFIG.TILE_CACHE_SIZE) {
     this.cache = new Map();
     this.maxSize = maxSize;
   }
@@ -578,9 +578,9 @@ export function GraphDataProvider({ children }: GraphDataProviderProps) {
   const currentBboxRef = useRef<BoundingBox | null>(null);
   
   // Customizable tile config (user can adjust MAX_MEMORY_NODES)
-  const [maxMemoryNodes, setMaxMemoryNodesState] = useState(DEFAULT_TILE_CONFIG.MAX_MEMORY_NODES);
+  const [maxMemoryNodes, setMaxMemoryNodesState] = useState(AUTH_TILE_CONFIG.MAX_MEMORY_NODES);
   const tileConfig = useMemo(() => ({
-    ...DEFAULT_TILE_CONFIG,
+    ...AUTH_TILE_CONFIG,
     MAX_MEMORY_NODES: maxMemoryNodes,
   }), [maxMemoryNodes]);
   
@@ -1237,49 +1237,15 @@ export function GraphDataProvider({ children }: GraphDataProviderProps) {
           return;
         }
 
-        // === Load top N nodes by degree, prioritizing members with consent ===
+        // === Load prioritized nodes via auth endpoint ===
+        // Priority: consent/labels > personal network (followings + effectiveFollowers) > top degree
         const startTime = performance.now();
-        console.log(`📊 [GraphData] Loading initial ${INITIAL_NODES_LIMIT} nodes (members with consent first, then top by degree)...`);
+        console.log(`📊 [GraphData] Loading initial ${INITIAL_NODES_LIMIT} nodes via auth endpoint (consent + network + degree)...`);
         
-        // Use CTE to prioritize members with consent:
-        // 1. First get all nodes that are in users_with_name_consent (priority = 0)
-        // 2. Then get remaining nodes ordered by degree (priority = 1)
-        // 3. Union and limit to INITIAL_NODES
-        // Also LEFT JOIN with public_accounts for description on public accounts
-        const sqlInitial = `
-          WITH consent_nodes AS (
-            SELECT g.label, g.x, g.y, g.community, g.degree, g.tier, g.node_type, 
-                   pa.raw_description AS description, 0 as priority
-            FROM postgres_db.public.graph_nodes_03_11_25 g
-            INNER JOIN postgres_db.public.users_with_name_consent u ON g.id = u.twitter_id
-            LEFT JOIN postgres_db.public.public_accounts pa
-              ON pa.twitter_id = u.twitter_id AND u.is_public_account = true
-            WHERE g.community != 8
-          ),
-          other_nodes AS (
-            SELECT g.label, g.x, g.y, g.community, g.degree, g.tier, g.node_type,
-                   NULL AS description, 1 as priority
-            FROM postgres_db.public.graph_nodes_03_11_25 g
-            WHERE g.community != 8
-              AND NOT EXISTS (
-                SELECT 1 FROM postgres_db.public.users_with_name_consent u WHERE u.twitter_id = g.id
-              )
-          ),
-          combined AS (
-            SELECT * FROM consent_nodes
-            UNION ALL
-            SELECT * FROM other_nodes
-          )
-          SELECT label, x, y, community, degree, tier, node_type, description, priority
-          FROM combined
-          ORDER BY priority ASC, degree DESC
-          LIMIT ${INITIAL_NODES_LIMIT}
-        `;
-        
-        const responseInitial = await fetch('/api/mosaic/sql', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sql: sqlInitial, type: 'arrow' }),
+        // Use new GET endpoint (auth required, no-store cache)
+        // Server handles prioritization: consent > followings + effectiveFollowers + userNode > top degree
+        const responseInitial = await fetch(`/api/graph/v3/auth/base-nodes?limit=${INITIAL_NODES_LIMIT}`, {
+          method: 'GET',
         });
 
         if (!responseInitial.ok) throw new Error('Failed to load initial nodes from Mosaic');
@@ -1294,11 +1260,17 @@ export function GraphDataProvider({ children }: GraphDataProviderProps) {
         const priorityCol = arrowTableInitial.getChild('priority');
         const degreeBasedDegrees: number[] = [];
         let consentNodesCount = 0;
+        let networkNodesCount = 0;
+        let otherNodesCount = 0;
         for (let i = 0; i < arrowTableInitial.numRows; i++) {
-          const priority = priorityCol?.get(i) != null ? Number(priorityCol.get(i)) : 1;
+          const priority = priorityCol?.get(i) != null ? Number(priorityCol.get(i)) : 2;
           if (priority === 0) {
             consentNodesCount++;
+          } else if (priority === 1) {
+            networkNodesCount++;
+            // Network nodes don't count for min degree calculation (they're prioritized regardless of degree)
           } else {
+            otherNodesCount++;
             degreeBasedDegrees.push(initialNodes[i].degree);
           }
         }
@@ -1310,7 +1282,7 @@ export function GraphDataProvider({ children }: GraphDataProviderProps) {
         const memberNodes = initialNodes.filter((node: GraphNode) => node.nodeType === 'member').length;
         
         console.log(`📊 [GraphData] Loaded ${initialNodes.length} initial nodes in ${loadTime.toFixed(0)}ms (${memberNodes} members, ${nodesWithDescription} with description)`);
-        console.log(`📊 [GraphData] Loaded ${consentNodesCount} consent nodes + ${degreeBasedDegrees.length} by degree`);
+        console.log(`📊 [GraphData] Priority breakdown: ${consentNodesCount} consent (p0) + ${networkNodesCount} network (p1) + ${otherNodesCount} other (p2)`);
         console.log(`📊 [GraphData] Additional nodes will be loaded via tiles when zooming in (scale < ${tileConfig.ZOOM_THRESHOLD})`);
         
         // Set initial nodes for display
@@ -1320,13 +1292,14 @@ export function GraphDataProvider({ children }: GraphDataProviderProps) {
         setIsBaseNodesLoaded(true);
         
         // Calculate min degree for tile filtering based on DEGREE-BASED nodes only (not consent nodes)
+        // Note: Using reduce instead of Math.min(...arr) to avoid stack overflow with large arrays
         if (degreeBasedDegrees.length > 0) {
-          const minDegree = Math.min(...degreeBasedDegrees);
+          const minDegree = degreeBasedDegrees.reduce((min, d) => d < min ? d : min, degreeBasedDegrees[0]);
           setBaseNodesMinDegree(minDegree);
           console.log(`📊 [GraphData] Base nodes min degree (degree-based only): ${minDegree.toFixed(4)} - tiles will load nodes below this`);
         } else {
           // All nodes are consent nodes, use global min degree
-          const minDegree = Math.min(...initialNodes.map(n => n.degree));
+          const minDegree = initialNodes.reduce((min, n) => n.degree < min ? n.degree : min, initialNodes[0]?.degree ?? 0);
           setBaseNodesMinDegree(minDegree);
           console.log(`📊 [GraphData] All nodes are consent nodes, min degree: ${minDegree.toFixed(4)}`);
         }
@@ -1451,11 +1424,14 @@ export function GraphDataProvider({ children }: GraphDataProviderProps) {
 
   // Fetch follower hashes only (24h TTL - rarely changes)
   const fetchFollowerHashes = useCallback(async () => {
+    console.log('🔍 [GraphData] fetchFollowerHashes called, already loaded:', globalGraphState.followerHashesLoaded);
     // Skip if already loaded from cache
     if (globalGraphState.followerHashesLoaded) {
+      console.log('🔍 [GraphData] fetchFollowerHashes skipped (already loaded)');
       return;
     }
 
+    console.log('🔍 [GraphData] fetchFollowerHashes fetching from API...');
     try {
       const response = await fetch('/api/graph/followers-hashes', {
         method: 'GET',
@@ -1497,11 +1473,14 @@ export function GraphDataProvider({ children }: GraphDataProviderProps) {
 
   // Fetch following hashes only (30min TTL - changes after follow)
   const fetchFollowingHashes = useCallback(async () => {
+    console.log('🔍 [GraphData] fetchFollowingHashes called, already loaded:', globalGraphState.followingHashesLoaded);
     // Skip if already loaded from cache
     if (globalGraphState.followingHashesLoaded) {
+      console.log('🔍 [GraphData] fetchFollowingHashes skipped (already loaded)');
       return;
     }
 
+    console.log('🔍 [GraphData] fetchFollowingHashes fetching from API...');
     try {
       const response = await fetch('/api/graph/followings-hashes', {
         method: 'GET',
@@ -1553,11 +1532,24 @@ export function GraphDataProvider({ children }: GraphDataProviderProps) {
             globalGraphState.userNode = node;
             setUserNodeState(node);
             
+            // Add userNode hash to followingHashes so it gets highlighted
+            // Use same hash format as the rest of the system
+            const userNodeHash = `${node.x.toFixed(6)}_${node.y.toFixed(6)}`;
+            followingHashesRef.current.set(userNodeHash, {
+              hasBlueskyFollow: true, // Mark as "followed" so it shows in green
+              hasMastodonFollow: true,
+              hasMatching: true,
+            });
+            globalGraphState.followingHashes = followingHashesRef.current;
+            console.log('📊 [GraphData] UserNode received and added to followingHashes:', userNodeHash, node.label);
+            
             // Cache user node to IndexedDB
             graphIDB.save(CACHE_KEYS.USER_NODE, node).catch(err => {
               console.warn('💾 [IndexedDB] Failed to cache user node:', err);
             });
             
+          } else {
+            console.log('📊 [GraphData] No userNode in response');
           }
           
           // Trigger re-render
@@ -1573,17 +1565,21 @@ export function GraphDataProvider({ children }: GraphDataProviderProps) {
   // Fetch both hashes in parallel (for initial load)
   // Only fetches what's not already cached
   const fetchHashes = useCallback(async () => {
+    console.log('🔍 [GraphData] fetchHashes called, followerLoaded:', globalGraphState.followerHashesLoaded, 'followingLoaded:', globalGraphState.followingHashesLoaded);
     // Return existing promise if already fetching
     if (hashesPromiseRef.current) {
+      console.log('🔍 [GraphData] fetchHashes skipped (already fetching)');
       return hashesPromiseRef.current;
     }
     
     // Skip if both already loaded
     if (globalGraphState.followerHashesLoaded && globalGraphState.followingHashesLoaded) {
+      console.log('🔍 [GraphData] fetchHashes skipped (both already loaded)');
       globalGraphState.hashesLoaded = true;
       return;
     }
 
+    console.log('🔍 [GraphData] fetchHashes starting parallel fetch...');
     setIsHashesLoading(true);
     
     hashesPromiseRef.current = (async () => {
@@ -1886,27 +1882,42 @@ export function GraphDataProvider({ children }: GraphDataProviderProps) {
 
     tilePromiseRef.current = (async () => {
       try {
-        // Build SQL with optional spatial filter
-        const spatialFilter = bbox ? `
-            AND g.x BETWEEN ${bbox.minX} AND ${bbox.maxX}
-            AND g.y BETWEEN ${bbox.minY} AND ${bbox.maxY}` : '';
+        // Use PUBLIC tiles endpoint (cacheable via nginx) with band index
+        // Tiles are not user-specific, only base-nodes are prioritized per user
+        // This allows us to benefit from nginx cache for tiles
+        const zoomLevelIndex = Math.min(4, Math.max(0, Math.floor(currentZoom * 10))); // Rough mapping
+        const bandIndex = Math.min(4, Math.max(1, zoomLevelIndex)); // band 1-4 for progressive loading
         
-        const sql = `
-          SELECT g.label, g.x, g.y, g.community, g.degree, g.tier, g.node_type
-          FROM postgres_db.public.graph_nodes_03_11_25 g
-          WHERE g.community != 8
-            AND g.degree < ${degreeThreshold}${spatialFilter}
-          ORDER BY g.degree DESC
-          LIMIT ${actualBatchSize}
-        `;
+        // Build URL with optional spatial filter via gx/gy
+        const tileUrl = new URL('/api/graph/v3/tiles', window.location.origin);
+        
+        if (bbox) {
+          // Calculate grid indices from bbox (use center point)
+          const gridSize = [1.0, 0.5, 0.25, 0.1, 0.05][bandIndex] || 0.25;
+          const centerX = (bbox.minX + bbox.maxX) / 2;
+          const centerY = (bbox.minY + bbox.maxY) / 2;
+          const gx = Math.floor(centerX / gridSize);
+          const gy = Math.floor(centerY / gridSize);
+          
+          tileUrl.searchParams.set('z', String(bandIndex));
+          tileUrl.searchParams.set('gx', String(gx));
+          tileUrl.searchParams.set('gy', String(gy));
+        } else {
+          // Full graph tile (z=0, gx=0, gy=0)
+          tileUrl.searchParams.set('z', '0');
+          tileUrl.searchParams.set('gx', '0');
+          tileUrl.searchParams.set('gy', '0');
+        }
+        
+        tileUrl.searchParams.set('band', String(bandIndex));
+        tileUrl.searchParams.set('ceiling', String(degreeThreshold));
+        tileUrl.searchParams.set('limit', String(actualBatchSize));
         
         const bboxInfo = bbox ? ` in bbox [${bbox.minX.toFixed(2)},${bbox.maxX.toFixed(2)}]x[${bbox.minY.toFixed(2)},${bbox.maxY.toFixed(2)}]` : '';
-        console.log(`📦 [Tiles] Fetching ${actualBatchSize} nodes with degree < ${degreeThreshold.toFixed(4)}${bboxInfo}`);
+        console.log(`📦 [Tiles] Fetching ${actualBatchSize} nodes with degree < ${degreeThreshold.toFixed(4)}${bboxInfo} (band=${bandIndex})`);
 
-        const response = await fetch('/api/mosaic/sql', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sql, type: 'arrow' }),
+        const response = await fetch(tileUrl.toString(), {
+          method: 'GET',
         });
 
         if (!response.ok) {

@@ -447,12 +447,13 @@ export function ReconnectGraphDashboard({
   // L'utilisateur peut rester en mode discover même s'il a un réseau personnel
 
   // Show login modal when auth check fails (but only once)
-  // Don't show modal if user has twitter_username - they can still see their network from matching_found
+  // Don't show modal if user has twitter identity - they can still see their network
   useEffect(() => {
-    if (!isCheckingAuth && requiresReauth && !hasUserDismissedModal && !hasTwitterUsername) {
+    const hasTwitterIdentityForModal = hasTwitterUsername || !!session?.user?.twitter_id;
+    if (!isCheckingAuth && requiresReauth && !hasUserDismissedModal && !hasTwitterIdentityForModal) {
       setShowLoginModal(true);
     }
-  }, [isCheckingAuth, requiresReauth, hasUserDismissedModal, hasTwitterUsername]);
+  }, [isCheckingAuth, requiresReauth, hasUserDismissedModal, hasTwitterUsername, session?.user?.twitter_id]);
 
   // Show login modal when token validation fails during migration (from useReconnectState)
   useEffect(() => {
@@ -484,8 +485,14 @@ export function ReconnectGraphDashboard({
   }, [migrationResults]);
 
   // Determine if personal views are blocked
-  // NOT blocked if user has twitter_username (can show network from matching_found even without Bluesky/Mastodon)
-  const isPersonalViewBlocked = !isAuthValid && requiresReauth && !hasTwitterUsername;
+  // Personal views should NEVER be blocked if user has twitter_id (can fetch hashes)
+  // The requiresReauth check was causing issues - we only block if user truly can't access their network
+  // Having twitter_id OR twitter_username means we can show their network
+  const hasTwitterIdentity = hasTwitterUsername || !!session?.user?.twitter_id;
+  const isPersonalViewBlocked = !hasTwitterIdentity && !hasOnboarded;
+  
+  // Debug log for personal view blocking
+  console.log('🔍 [Dashboard] isPersonalViewBlocked:', isPersonalViewBlocked, '| hasTwitterIdentity:', hasTwitterIdentity, '| hasOnboarded:', hasOnboarded);
 
   // Les nœuds viennent de Mosaic (DuckDB)
   const baseNodes = mosaicNodes;
@@ -698,23 +705,39 @@ export function ReconnectGraphDashboard({
   }, [canFetchPersonalData, graphData.matchingData.length, graphData.isPersonalDataLoading, graphData.fetchPersonalData]);
   
   // Step 2: On desktop, fetch hashes when graph nodes are ready
+  // Use contextBaseNodes (from GraphDataContext) instead of mosaicNodes (local state)
+  // because contextBaseNodes updates when the context loads nodes
   useEffect(() => {
+    console.log('🔍 [Dashboard] Hashes useEffect - isMobile:', isMobile, 'canFetchPersonalData:', canFetchPersonalData, 'hashesLoaded:', graphData.hashesLoaded, 'isHashesLoading:', graphData.isHashesLoading, 'contextBaseNodes.length:', contextBaseNodes.length);
     // Skip on mobile (no graph to highlight)
-    if (isMobile) return;
+    if (isMobile) {
+      console.log('🔍 [Dashboard] Skipping hashes fetch (mobile)');
+      return;
+    }
     
     // Skip if user can't fetch personal data (no twitter_id and not onboarded)
-    if (!canFetchPersonalData) return;
+    if (!canFetchPersonalData) {
+      console.log('🔍 [Dashboard] Skipping hashes fetch (canFetchPersonalData=false)');
+      return;
+    }
     
     // Skip if already loaded or loading
-    if (graphData.hashesLoaded || graphData.isHashesLoading) return;
+    if (graphData.hashesLoaded || graphData.isHashesLoading) {
+      console.log('🔍 [Dashboard] Skipping hashes fetch (already loaded or loading)');
+      return;
+    }
     
-    // Wait for graph nodes to be loaded
-    if (baseNodes.length === 0) return;
+    // Wait for graph nodes to be loaded (use contextBaseNodes from GraphDataContext)
+    if (contextBaseNodes.length === 0) {
+      console.log('🔍 [Dashboard] Skipping hashes fetch (contextBaseNodes not loaded yet)');
+      return;
+    }
     
+    console.log('🔍 [Dashboard] Calling graphData.fetchHashes()...');
     // Fetch hashes for graph highlighting (fetchHashes checks each type independently)
     // It will only fetch what's not already cached
     graphData.fetchHashes();
-  }, [baseNodes.length, canFetchPersonalData, graphData.hashesLoaded, graphData.isHashesLoading, graphData.fetchHashes, isMobile]);
+  }, [contextBaseNodes.length, canFetchPersonalData, graphData.hashesLoaded, graphData.isHashesLoading, graphData.fetchHashes, isMobile]);
 
   // Auto-switch to followings mode once hashes are loaded (if user has personal network)
   // Now uses GraphDataContext as the source of truth
@@ -826,7 +849,9 @@ export function ReconnectGraphDashboard({
     setViewMode(mode);
   }, [isPersonalViewBlocked, setViewMode]);
 
-  const isGraphReady = baseNodes.length > 0;
+  // Use contextBaseNodes (from GraphDataContext) for isGraphReady check
+  // This is more reliable than mosaicNodes (local state) which depends on visualization callback
+  const isGraphReady = contextBaseNodes.length > 0;
   // hasPersonalNetwork is now based on hashes from context (RGPD-friendly)
   const hasPersonalNetwork = graphData.followingHashes.size > 0 || graphData.followerHashes.size > 0;
   
@@ -1208,7 +1233,7 @@ export function ReconnectGraphDashboard({
 
       {/* Community Color Picker - bottom left, above Footer */}
       {!isMobile && (
-        <div className="absolute left-4 z-40" style={{ bottom: `${footerHeight + 16}px` }}>
+        <div className="absolute left-4 z-40 flex items-end gap-3" style={{ bottom: `${footerHeight + 16}px` }}>
           <CommunityColorPicker
             communityLabels={{
               0: 'Gaming / Esports',
@@ -1223,7 +1248,25 @@ export function ReconnectGraphDashboard({
               9: 'Music / Art',
             }}
             colorHook={communityColorsHook}
+            currentNodeCount={displayNodes.length}
+            maxMemoryNodes={tileConfig.MAX_MEMORY_NODES}
           />
+          
+          {/* Node Counter */}
+          <div className="bg-slate-900/90 backdrop-blur-sm rounded border border-slate-700/50 px-3 py-2 shadow-lg">
+            <div className="text-[10px] text-slate-500 uppercase tracking-wide">Nodes</div>
+            <div className="text-lg font-mono text-white flex items-center gap-2">
+              {displayNodes.length.toLocaleString()}
+              {isTileLoading && (
+                <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" title="Loading tiles..." />
+              )}
+            </div>
+            {mergedNodes && mergedNodes.length > baseNodes.length && (
+              <div className="text-[9px] text-slate-500 mt-1">
+                <span className="text-slate-400">{baseNodes.length.toLocaleString()}</span> base + <span className="text-blue-400">{(mergedNodes.length - baseNodes.length).toLocaleString()}</span> tiles
+              </div>
+            )}
+          </div>
         </div>
       )}
 

@@ -138,6 +138,17 @@ export const DEFAULT_TILE_CONFIG: TileConfig = {
   TILE_CACHE_SIZE: 20,
 };
 
+// Auth tile configuration (higher limits for authenticated users)
+// Includes personal network prioritization (followings + effectiveFollowers + userNode)
+export const AUTH_TILE_CONFIG: TileConfig = {
+  INITIAL_NODES: 150_000,       // 150k for auth users (consent + network + top degree)
+  ZOOM_THRESHOLD: 0.05,
+  NODES_PER_TILE: 50_000,
+  MAX_MEMORY_NODES: 700_000,    // Allow up to 700k nodes (150k initial + progressive)
+  DEBOUNCE_MS: 250,
+  TILE_CACHE_SIZE: 20,
+};
+
 // Viewport state for tracking zoom/pan
 export interface ViewportState {
   boundingBox: BoundingBox;
