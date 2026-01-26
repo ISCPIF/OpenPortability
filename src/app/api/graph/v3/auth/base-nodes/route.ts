@@ -61,62 +61,10 @@ async function authBaseNodesHandler(
   try {
     const startTime = performance.now();
 
-    // Step 1: Collect personal network coord_hashes
-    const networkHashes = new Set<string>();
-
-    // Get user's own node coord_hash if they have a twitter_id
-    if (twitterId) {
-      const userNode = await pgGraphNodesRepository.getNodeByTwitterId(twitterId);
-      if (userNode) {
-        const userHash = `${userNode.x.toFixed(6)}_${userNode.y.toFixed(6)}`;
-        networkHashes.add(userHash);
-      }
-    }
-
-    // Get followings hashes
-    if (hasOnboarded) {
-      const { data: followingsData } = await pgMatchingRepository.getFollowingHashesForOnboardedUser(userId);
-      if (followingsData) {
-        for (const h of followingsData) {
-          networkHashes.add(h.coord_hash);
-        }
-      }
-    } else if (twitterId) {
-      const { data: followingsData } = await pgMatchingRepository.getFollowingHashesForFollower(twitterId);
-      if (followingsData) {
-        for (const hash of followingsData) {
-          networkHashes.add(hash);
-        }
-      }
-    }
-
-    // Get effective followers hashes (followers who followed via OP)
-    if (twitterId) {
-      const { data: effectiveFollowersData } = await pgMatchingRepository.getEffectiveFollowerHashesForSource(twitterId);
-      if (effectiveFollowersData) {
-        for (const hash of effectiveFollowersData) {
-          networkHashes.add(hash);
-        }
-      }
-    }
-
-    console.log(`📊 [auth/base-nodes] Collected ${networkHashes.size} personal network hashes for user ${userId}`);
-
-    // Step 2: Build SQL query with prioritization
+    // Step 1: Build SQL query with prioritization
     // Priority 0: consent nodes (users_with_name_consent)
     // Priority 1: personal network nodes (followings + effectiveFollowers + userNode)
     // Priority 2: top degree nodes (fill remaining)
-    
-    // Convert hashes to SQL array for the IN clause
-    // Limit network hashes to avoid huge IN clause (max ~10k)
-    const MAX_NETWORK_HASHES = 10_000;
-    const networkHashesArray = Array.from(networkHashes).slice(0, MAX_NETWORK_HASHES);
-    const hasNetworkHashes = networkHashesArray.length > 0;
-
-    // Build the network hashes SQL literal (escaped)
-    const networkHashesSql = hasNetworkHashes
-      ? networkHashesArray.map(h => `'${h.replace(/'/g, "''")}'`).join(',')
-      : "'__none__'"; // Placeholder that won't match anything
 
     const coordHashSql = `printf('%.6f_%.6f', round(g.x, 6), round(g.y, 6))`;
 
@@ -148,17 +96,51 @@ async function authBaseNodesHandler(
             SELECT 1 FROM postgres_db.public.users_with_name_consent u WHERE u.twitter_id = g.id
           )
       ),
-      network_nodes AS (
+      followings_nodes AS (
         SELECT g.label, g.x, g.y, g.community, g.degree, g.tier, g.node_type,
                NULL AS description,
                1 as priority
         FROM postgres_db.public.graph_nodes_${GRAPH_VERSION} g
+        ${hasOnboarded
+          ? `INNER JOIN postgres_db.public.sources_targets st
+               ON st.node_id = g.id
+              AND st.source_id = '${userId.replace(/'/g, "''")}'::uuid`
+          : (twitterId
+            ? `INNER JOIN postgres_db.public.get_following_hashes_for_follower(${twitterIdSql}::bigint) fh
+                 ON ${coordHashSql} = fh.coord_hash`
+            : `INNER JOIN (SELECT '__none__' AS coord_hash) fh ON ${coordHashSql} = fh.coord_hash`)
+        }
         WHERE g.community != 8
-          AND ${coordHashSql} IN (${networkHashesSql})
           AND ${twitterId ? `g.id != ${twitterIdSql}` : 'TRUE'}
           AND NOT EXISTS (
             SELECT 1 FROM postgres_db.public.users_with_name_consent u WHERE u.twitter_id = g.id
           )
+      ),
+      effective_followers_nodes AS (
+        SELECT g.label, g.x, g.y, g.community, g.degree, g.tier, g.node_type,
+               NULL AS description,
+               1 as priority
+        FROM postgres_db.public.graph_nodes_${GRAPH_VERSION} g
+        ${twitterId
+          ? `INNER JOIN postgres_db."next-auth".users u
+               ON u.twitter_id = g.id
+             INNER JOIN postgres_db.public.sources_targets st
+               ON st.source_id = u.id
+              AND st.node_id = ${twitterIdSql}::bigint
+              AND (st.has_follow_bluesky = TRUE OR st.has_follow_mastodon = TRUE)`
+          : `INNER JOIN (SELECT NULL::bigint AS id) u ON FALSE
+             INNER JOIN postgres_db.public.sources_targets st ON FALSE`
+        }
+        WHERE g.community != 8
+          AND ${twitterId ? `g.id != ${twitterIdSql}` : 'TRUE'}
+          AND NOT EXISTS (
+            SELECT 1 FROM postgres_db.public.users_with_name_consent u2 WHERE u2.twitter_id = g.id
+          )
+      ),
+      network_nodes AS (
+        SELECT * FROM followings_nodes
+        UNION
+        SELECT * FROM effective_followers_nodes
       ),
       other_nodes AS (
         SELECT g.label, g.x, g.y, g.community, g.degree, g.tier, g.node_type,
@@ -169,7 +151,6 @@ async function authBaseNodesHandler(
           AND NOT EXISTS (
             SELECT 1 FROM postgres_db.public.users_with_name_consent u WHERE u.twitter_id = g.id
           )
-          AND ${coordHashSql} NOT IN (${networkHashesSql})
           AND ${twitterId ? `g.id != ${twitterIdSql}` : 'TRUE'}
       ),
       combined AS (
@@ -216,7 +197,7 @@ async function authBaseNodesHandler(
     const arrayBuffer = await upstreamResponse.arrayBuffer();
     const loadTime = performance.now() - startTime;
 
-    console.log(`📊 [auth/base-nodes] Loaded ${arrayBuffer.byteLength} bytes in ${loadTime.toFixed(0)}ms for user ${userId} (network: ${networkHashes.size} hashes)`);
+    console.log(`📊 [auth/base-nodes] Loaded ${arrayBuffer.byteLength} bytes in ${loadTime.toFixed(0)}ms for user ${userId}`);
 
     // Return Arrow stream with NO cache (user-specific)
     return new NextResponse(arrayBuffer, {
@@ -227,7 +208,6 @@ async function authBaseNodesHandler(
         // NO cache - user-specific prioritization
         'Cache-Control': 'no-store',
         'X-Graph-Version': GRAPH_VERSION,
-        'X-Network-Hashes-Count': String(networkHashes.size),
       },
     });
   } catch (error) {

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { pgGraphNodesRepository } from '@/lib/repositories/public/pg-graph-nodes-repository';
 import { pgMatchingRepository } from '@/lib/repositories/public/pg-matching-repository';
 import { redisMatchingRepository } from '@/lib/repositories/redis-matching-repository';
+import { queryPublic } from '@/lib/database';
 import logger from '@/lib/log_utils';
 import { withValidation } from "@/lib/validation/middleware"
 import { z } from "zod"
@@ -69,6 +70,37 @@ async function followingsLabelsHandler(_request: Request, _data: z.infer<typeof 
         // Get node coordinates from graph_nodes for each node_id
         const nodeIds = hashes.map(h => h.node_id);
         const nodesArray = await pgGraphNodesRepository.getNodesByTwitterIds(nodeIds);
+
+        const nodeIdsBigInt = nodeIds
+          .filter((id) => /^\d+$/.test(id))
+          .map((id) => BigInt(id));
+
+        const displayLabelMap = new Map<string, string>();
+        if (nodeIdsBigInt.length > 0) {
+          const labelResult = await queryPublic(
+            `SELECT
+               gn.id::text as twitter_id,
+               COALESCE(
+                 uwnc.name,
+                 CASE WHEN uwnc.twitter_username IS NOT NULL THEN '@' || uwnc.twitter_username ELSE NULL END,
+                 CASE WHEN pa.twitter_username IS NOT NULL THEN '@' || pa.twitter_username ELSE NULL END,
+                 pa.name
+               ) as display_label
+             FROM public.graph_nodes_03_11_25 gn
+             LEFT JOIN public.users_with_name_consent uwnc
+               ON uwnc.twitter_id = gn.id
+              AND uwnc.consent_level = 'all_consent'
+             LEFT JOIN public.public_accounts pa
+               ON pa.twitter_id = gn.id
+             WHERE gn.id = ANY($1::bigint[])`,
+            [nodeIdsBigInt]
+          );
+          for (const row of labelResult.rows as any[]) {
+            if (row?.twitter_id && row?.display_label) {
+              displayLabelMap.set(String(row.twitter_id), String(row.display_label));
+            }
+          }
+        }
         
         // Convert array to Map for O(1) lookup
         const nodesMap = new Map<string, { x: number; y: number; label: string | null }>();
@@ -80,12 +112,13 @@ async function followingsLabelsHandler(_request: Request, _data: z.infer<typeof 
         for (const h of hashes) {
           const nodeInfo = nodesMap.get(h.node_id);
           if (nodeInfo) {
+            const resolvedLabel = displayLabelMap.get(h.node_id) || null;
             followingsData.push({
               coord_hash: h.coord_hash,
               x: nodeInfo.x,
               y: nodeInfo.y,
               source_twitter_id: h.node_id,
-              source_twitter_username: nodeInfo.label || null,
+              source_twitter_username: resolvedLabel,
               has_follow_bluesky: h.has_follow_bluesky,
               has_follow_mastodon: h.has_follow_mastodon,
             });
@@ -137,9 +170,8 @@ async function followingsLabelsHandler(_request: Request, _data: z.infer<typeof 
 
       // Priority 1: twitter_username from graph_nodes
       if (f.source_twitter_username) {
-        label = f.source_twitter_username.startsWith('@') 
-          ? f.source_twitter_username 
-          : `@${f.source_twitter_username}`;
+        const raw = f.source_twitter_username.trim();
+        label = raw.startsWith('@') || raw.includes(' ') ? raw : `@${raw}`;
         priority = 80;
       }
 
