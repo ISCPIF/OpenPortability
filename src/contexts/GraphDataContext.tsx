@@ -15,6 +15,15 @@ function coordHash(x: number, y: number): string {
   return `${x.toFixed(6)}_${y.toFixed(6)}`;
 }
 
+ function normalizeCoordHash(hash: string): string {
+   const [xStr, yStr] = hash.split('_');
+   if (!xStr || !yStr) return hash;
+   const x = Number(xStr);
+   const y = Number(yStr);
+   if (!Number.isFinite(x) || !Number.isFinite(y)) return hash;
+   return coordHash(x, y);
+ }
+
 // Personal label types - uses coord_hash instead of twitter_id for RGPD compliance
 interface FloatingLabel {
   coord_hash: string;  // Hash based on x,y coordinates
@@ -192,6 +201,10 @@ interface GlobalGraphState {
   personalLabelMap: Record<string, string>;
   personalFloatingLabels: FloatingLabel[];
   personalLabelsLoaded: boolean;
+  // Followings labels (mode Followings)
+  followingsLabelMap: Record<string, string>;
+  followingsFloatingLabels: FloatingLabel[];
+  followingsLabelsLoaded: boolean;
   // Personal data (unified: matching + hashes)
   personalDataLoaded: boolean;
 }
@@ -212,6 +225,10 @@ const globalGraphState: GlobalGraphState = {
   personalLabelMap: {},
   personalFloatingLabels: [],
   personalLabelsLoaded: false,
+  // Followings labels (mode Followings)
+  followingsLabelMap: {},
+  followingsFloatingLabels: [],
+  followingsLabelsLoaded: false,
   personalDataLoaded: false,
 };
 
@@ -462,6 +479,13 @@ interface GraphDataContextValue {
   fetchPersonalLabels: () => Promise<void>;
   invalidateLabelsCache: () => Promise<void>;
   
+  // Followings labels for mode Followings
+  followingsLabelMap: Record<string, string>;
+  followingsFloatingLabels: FloatingLabel[];
+  isFollowingsLabelsLoaded: boolean;
+  isFollowingsLabelsLoading: boolean;
+  fetchFollowingsLabels: () => Promise<void>;
+  
   // Loading states
   isHashesLoading: boolean;
   hashesLoaded: boolean;
@@ -533,6 +557,12 @@ export function GraphDataProvider({ children }: GraphDataProviderProps) {
   const [isPersonalLabelsLoaded, setIsPersonalLabelsLoaded] = useState(globalGraphState.personalLabelsLoaded);
   const [isPersonalLabelsLoading, setIsPersonalLabelsLoading] = useState(false);
   
+  // Followings labels state (mode Followings)
+  const [followingsLabelMap, setFollowingsLabelMapState] = useState<Record<string, string>>(globalGraphState.followingsLabelMap);
+  const [followingsFloatingLabels, setFollowingsFloatingLabelsState] = useState<FloatingLabel[]>(globalGraphState.followingsFloatingLabels);
+  const [isFollowingsLabelsLoaded, setIsFollowingsLabelsLoaded] = useState(globalGraphState.followingsLabelsLoaded);
+  const [isFollowingsLabelsLoading, setIsFollowingsLabelsLoading] = useState(false);
+  
   // Use refs for Sets/Maps to maintain stable references
   const followingHashesRef = useRef<Map<string, FollowingHashStatus>>(globalGraphState.followingHashes);
   const followerHashesRef = useRef<Set<string>>(globalGraphState.followerHashes);
@@ -559,6 +589,7 @@ export function GraphDataProvider({ children }: GraphDataProviderProps) {
   const baseNodesPromiseRef = useRef<Promise<void> | null>(null);
   const personalLabelsPromiseRef = useRef<Promise<void> | null>(null);
   const personalDataPromiseRef = useRef<Promise<void> | null>(null);
+  const followingsLabelsPromiseRef = useRef<Promise<void> | null>(null);
   
   // Labels version ref for SSE cache validation
   const labelsVersionRef = useRef<number>(0);
@@ -830,7 +861,7 @@ export function GraphDataProvider({ children }: GraphDataProviderProps) {
           if (cachedFollowings && graphIDB.isCacheValidForFollowingHashes(cachedFollowings.timestamp)) {
             const hashesMap = new Map<string, FollowingHashStatus>();
             for (const item of cachedFollowings.data.hashes) {
-              hashesMap.set(item.coord_hash, {
+              hashesMap.set(normalizeCoordHash(item.coord_hash), {
                 hasBlueskyFollow: item.has_follow_bluesky,
                 hasMastodonFollow: item.has_follow_mastodon,
                 hasMatching: item.has_matching,
@@ -847,8 +878,8 @@ export function GraphDataProvider({ children }: GraphDataProviderProps) {
         if (!globalGraphState.followerHashesLoaded) {
           const cachedFollowers = await graphIDB.load<CachedFollowerHashes>(CACHE_KEYS.FOLLOWER_HASHES);
           if (cachedFollowers && graphIDB.isCacheValidForFollowerHashes(cachedFollowers.timestamp)) {
-            const hashesSet = new Set(cachedFollowers.data.hashes);
-            const effectiveHashesSet = new Set(cachedFollowers.data.effectiveHashes || []);
+            const hashesSet = new Set(cachedFollowers.data.hashes.map(normalizeCoordHash));
+            const effectiveHashesSet = new Set((cachedFollowers.data.effectiveHashes || []).map(normalizeCoordHash));
             followerHashesRef.current = hashesSet;
             effectiveFollowerHashesRef.current = effectiveHashesSet;
             globalGraphState.followerHashes = hashesSet;
@@ -1422,6 +1453,61 @@ export function GraphDataProvider({ children }: GraphDataProviderProps) {
     
   }, []);
 
+  // Fetch followings labels for mode Followings (no cache - user-specific)
+  const fetchFollowingsLabels = useCallback(async () => {
+    // Return existing promise if already fetching
+    if (followingsLabelsPromiseRef.current) {
+      return followingsLabelsPromiseRef.current;
+    }
+
+    // Skip if already loaded
+    if (globalGraphState.followingsLabelsLoaded) {
+      console.log('🏷️ [GraphData] Followings labels already loaded, skipping fetch');
+      return;
+    }
+
+    setIsFollowingsLabelsLoading(true);
+
+    followingsLabelsPromiseRef.current = (async () => {
+      try {
+        console.log('🏷️ [GraphData] Fetching followings labels from API...');
+        const response = await fetch('/api/graph/followings-labels', {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          const labelMap = data.labelMap || {};
+          const floatingLabels: FloatingLabel[] = (data.floatingLabels || []).map((l: any) => ({
+            coord_hash: l.coord_hash,
+            x: l.x,
+            y: l.y,
+            text: l.text,
+            priority: l.priority || 50,
+            level: l.level || 0,
+          }));
+
+          console.log('🏷️ [GraphData] Loaded', floatingLabels.length, 'followings labels');
+
+          globalGraphState.followingsLabelMap = labelMap;
+          globalGraphState.followingsFloatingLabels = floatingLabels;
+          globalGraphState.followingsLabelsLoaded = true;
+          setFollowingsLabelMapState(labelMap);
+          setFollowingsFloatingLabelsState(floatingLabels);
+          setIsFollowingsLabelsLoaded(true);
+        }
+      } catch (error) {
+        console.error('❌ [GraphData] Error fetching followings labels:', error);
+      } finally {
+        setIsFollowingsLabelsLoading(false);
+        followingsLabelsPromiseRef.current = null;
+      }
+    })();
+
+    return followingsLabelsPromiseRef.current;
+  }, []);
+
   // Fetch follower hashes only (24h TTL - rarely changes)
   const fetchFollowerHashes = useCallback(async () => {
     console.log('🔍 [GraphData] fetchFollowerHashes called, already loaded:', globalGraphState.followerHashesLoaded);
@@ -1444,8 +1530,8 @@ export function GraphDataProvider({ children }: GraphDataProviderProps) {
         const effectiveHashes = data.effectiveHashes || []; // Followers who followed via OP
         
         // Update refs (stable references)
-        followerHashesRef.current = new Set(hashes);
-        effectiveFollowerHashesRef.current = new Set(effectiveHashes);
+        followerHashesRef.current = new Set(hashes.map(normalizeCoordHash));
+        effectiveFollowerHashesRef.current = new Set(effectiveHashes.map(normalizeCoordHash));
         globalGraphState.followerHashes = followerHashesRef.current;
         globalGraphState.effectiveFollowerHashes = effectiveFollowerHashesRef.current;
         globalGraphState.followerHashesLoaded = true;
@@ -1454,8 +1540,8 @@ export function GraphDataProvider({ children }: GraphDataProviderProps) {
         
         // Cache follower hashes to IndexedDB (24h TTL)
         const cacheData: CachedFollowerHashes = {
-          hashes,
-          effectiveHashes, // Also cache effective hashes
+          hashes: hashes.map(normalizeCoordHash),
+          effectiveHashes: effectiveHashes.map(normalizeCoordHash), // Also cache effective hashes
           lastUpdated: data.timestamp || Date.now(),
         };
         graphIDB.save(CACHE_KEYS.FOLLOWER_HASHES, cacheData).catch(err => {
@@ -1500,7 +1586,7 @@ export function GraphDataProvider({ children }: GraphDataProviderProps) {
               hasMastodonFollow: item.has_follow_mastodon || false,
               hasMatching: item.has_matching || false,
             };
-            hashesMap.set(item.coord_hash, status);
+            hashesMap.set(normalizeCoordHash(item.coord_hash), status);
           }
           
           // Update ref (stable reference)
@@ -1510,7 +1596,10 @@ export function GraphDataProvider({ children }: GraphDataProviderProps) {
           
           // Cache following hashes to IndexedDB (30min TTL)
           const cacheData: CachedFollowingHashes = {
-            hashes: hashesArray,
+            hashes: hashesArray.map((h: any) => ({
+              ...h,
+              coord_hash: typeof h?.coord_hash === 'string' ? normalizeCoordHash(h.coord_hash) : h.coord_hash,
+            })),
             lastUpdated: data.timestamp || Date.now(),
           };
           graphIDB.save(CACHE_KEYS.FOLLOWING_HASHES, cacheData).then(() => {
@@ -2099,6 +2188,11 @@ export function GraphDataProvider({ children }: GraphDataProviderProps) {
     isPersonalLabelsLoading,
     fetchPersonalLabels,
     invalidateLabelsCache,
+    followingsLabelMap,
+    followingsFloatingLabels,
+    isFollowingsLabelsLoaded,
+    isFollowingsLabelsLoading,
+    fetchFollowingsLabels,
     isHashesLoading,
     hashesLoaded: globalGraphState.hashesLoaded,
     isMatchingLoading,
@@ -2139,6 +2233,11 @@ export function GraphDataProvider({ children }: GraphDataProviderProps) {
     isPersonalLabelsLoading,
     fetchPersonalLabels,
     invalidateLabelsCache,
+    followingsLabelMap,
+    followingsFloatingLabels,
+    isFollowingsLabelsLoaded,
+    isFollowingsLabelsLoading,
+    fetchFollowingsLabels,
     isHashesLoading,
     hashesVersion,
     isMatchingLoading,

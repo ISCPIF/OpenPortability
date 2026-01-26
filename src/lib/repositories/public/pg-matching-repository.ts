@@ -1232,4 +1232,59 @@ export const pgMatchingRepository = {
       return { data: null, error }
     }
   },
+
+  /**
+   * Récupère les sources (followings) pour un follower non-onboardé
+   * Utilise la RPC get_followed_sources_for_follower qui fait le join
+   * sources_followers -> next-auth.users -> graph_nodes
+   * 
+   * @param followerTwitterId - twitter_id du follower
+   * @returns Liste des sources avec coord_hash, x, y, source_twitter_id, source_twitter_username
+   */
+  async getFollowedSourcesForFollower(
+    followerTwitterId: string
+  ): Promise<{ 
+    data: { 
+      coord_hash: string; 
+      x: number; 
+      y: number; 
+      source_twitter_id: string; 
+      source_twitter_username: string | null;
+    }[] | null; 
+    error: any 
+  }> {
+    try {
+      const result = await queryPublic(
+        `SELECT 
+           coord_hash,
+           x,
+           y,
+           source_twitter_id::text,
+           source_twitter_username
+         FROM public.get_followed_sources_for_follower($1::bigint)`,
+        [followerTwitterId]
+      )
+
+      const data = result.rows.map((row: any) => ({
+        coord_hash: row.coord_hash,
+        x: parseFloat(row.x),
+        y: parseFloat(row.y),
+        source_twitter_id: row.source_twitter_id,
+        source_twitter_username: row.source_twitter_username,
+      }))
+
+      console.log("📊 [getFollowedSourcesForFollower] Found", data.length, "sources for follower", followerTwitterId)
+      return { data, error: null }
+    } catch (error) {
+      const errorString = error instanceof Error ? error.message : String(error)
+      logger.logError(
+        'Repository',
+        'pgMatchingRepository.getFollowedSourcesForFollower',
+        errorString,
+        'system',
+        { followerTwitterId }
+      )
+      return { data: null, error }
+    }
+  },
 }

@@ -177,6 +177,9 @@ export function ReconnectGraphVisualization({
   const personalFloatingLabels = graphData?.personalFloatingLabels ?? [];
   const isPersonalLabelsLoaded = graphData?.isPersonalLabelsLoaded ?? true;
   const fetchPersonalLabels = graphData?.fetchPersonalLabels ?? (async () => {});
+  const followingsFloatingLabels = graphData?.followingsFloatingLabels ?? [];
+  const isFollowingsLabelsLoaded = graphData?.isFollowingsLabelsLoaded ?? false;
+  const fetchFollowingsLabels = graphData?.fetchFollowingsLabels ?? (async () => {});
   const contextBaseNodes = graphData?.baseNodes ?? [];
   const contextBaseNodesLoaded = graphData?.isBaseNodesLoaded ?? false;
   const contextBaseNodesLoading = graphData?.isBaseNodesLoading ?? false;
@@ -225,6 +228,14 @@ export function ReconnectGraphVisualization({
     if (isPersonalLabelsLoaded) return;
     fetchPersonalLabels();
   }, [isPersonalLabelsLoaded, fetchPersonalLabels]);
+
+  // Fetch followings labels when in Followings mode
+  useEffect(() => {
+    if (viewMode !== 'followings') return;
+    if (isFollowingsLabelsLoaded) return;
+    console.log('🏷️ [Viz] Fetching followings labels for Followings mode...');
+    fetchFollowingsLabels();
+  }, [viewMode, isFollowingsLabelsLoaded, fetchFollowingsLabels]);
 
   // Filtrer les nœuds selon le mode de vue
   const filteredNodes = useMemo(() => {
@@ -297,7 +308,7 @@ export function ReconnectGraphVisualization({
     const hashMap = new Map<number, string>();
     for (let i = 0; i < filteredNodes.length; i++) {
       const node = filteredNodes[i];
-      hashMap.set(i, coordHash(node.x, node.y));
+      hashMap.set(i, node.id);
     }
     return hashMap;
   }, [filteredNodes, staticEmbeddingData]);
@@ -595,6 +606,21 @@ export function ReconnectGraphVisualization({
     return [];
   }, [personalFloatingLabels, publicFloatingLabels, contextNormalizationBounds, publicNormalizationBounds]);
 
+  // Followings labels for Followings mode (from API - personal network handles)
+  const followingsLabels = useMemo(() => {
+    const bounds = contextNormalizationBounds || publicNormalizationBounds || normalizationBoundsRef.current;
+    if (followingsFloatingLabels.length > 0 && bounds) {
+      return followingsFloatingLabels.map(label => ({
+        x: (label.x - bounds.centerX) * bounds.scale,
+        y: (label.y - bounds.centerY) * bounds.scale,
+        text: label.text,
+        priority: label.priority,
+        level: label.level,
+      }));
+    }
+    return [];
+  }, [followingsFloatingLabels, contextNormalizationBounds, publicNormalizationBounds]);
+
   // Highlighted search node label (for discover mode search)
   // Depend on embeddingData to ensure normalizationBoundsRef is populated
   const searchNodeLabel = useMemo(() => {
@@ -620,7 +646,8 @@ export function ReconnectGraphVisualization({
 
   // Choose which labels to show based on view mode:
   // - Discover: consent labels only (from API) + search node label if present
-  // - Followings/Followers: community labels only
+  // - Followings: followings labels (personal network handles) or fallback to community labels
+  // - Followers: community labels only
   const validLabels = useMemo(() => {
     if (isMosaicView) {
       // Discover mode: show consent labels + search node label
@@ -629,11 +656,17 @@ export function ReconnectGraphVisualization({
         labels.push(searchNodeLabel);
       }
       return labels.length > 0 ? labels : undefined;
+    } else if (viewMode === 'followings') {
+      // Followings mode: show followings labels (personal network handles) or fallback to community labels
+      if (followingsLabels.length > 0) {
+        return followingsLabels;
+      }
+      return communityLabels.length > 0 ? communityLabels : undefined;
     } else {
-      // Followings/Followers mode: show community labels
+      // Followers mode: show community labels
       return communityLabels.length > 0 ? communityLabels : undefined;
     }
-  }, [isMosaicView, consentLabels, communityLabels, searchNodeLabel]);
+  }, [isMosaicView, viewMode, consentLabels, communityLabels, followingsLabels, searchNodeLabel]);
 
   // REMOVED: Old auto-selection useEffect - now computed in combined useMemo above
   // This avoids iterating over 658k nodes twice
