@@ -30,7 +30,10 @@ export const pgNewsletterListingRepository = {
       // Insère dans newsletter_listing
       await queryPublic(
         `INSERT INTO newsletter_listing (user_id, email, created_at, updated_at)
-         VALUES ($1, $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+        VALUES ($1, $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        ON CONFLICT (user_id) DO UPDATE SET
+          email = EXCLUDED.email,
+          updated_at = CURRENT_TIMESTAMP`,
         [userId, user.email]
       )
     } catch (error: any) {
