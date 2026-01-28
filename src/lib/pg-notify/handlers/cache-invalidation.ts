@@ -2,38 +2,20 @@ import logger from '../../log_utils';
 import { redis } from '../../redis';
 import { SSE_GRAPH_CHANNEL } from '../../sse/constants';
 import type { CacheInvalidationPayload, ConsentChangePayload } from '../types';
+import { queueLabelsInvalidation } from '../../sse-publisher';
 
 export async function handleCacheInvalidation(payload: CacheInvalidationPayload): Promise<void> {
   const { operation, twitter_id, consent_level, user_id, timestamp } = payload;
 
-  if (operation === 'DELETE' || consent_level === null) {
-    await redis.publish(SSE_GRAPH_CHANNEL, {
-      type: 'labels',
-      data: {
-        incremental: true,
-        change: {
-          twitter_id,
-          action: 'remove',
-        },
-      },
-      userId: null,
-      timestamp: timestamp || Date.now(),
-    });
-  } else {
-    await redis.publish(SSE_GRAPH_CHANNEL, {
-      type: 'labels',
-      data: {
-        incremental: true,
-        change: {
-          twitter_id,
-          action: 'add',
-          consent_level,
-        },
-      },
-      userId: null,
-      timestamp: timestamp || Date.now(),
-    });
-  }
+  // Labels changes are batched to avoid frequent UI flicker.
+  // PgNotify only queues an invalidation; clients will refetch labels on the next flush window.
+  await queueLabelsInvalidation('pg_notify:cache_invalidation', {
+    operation,
+    twitter_id,
+    consent_level,
+    user_id,
+    timestamp,
+  });
 
   await redis.publish(SSE_GRAPH_CHANNEL, {
     type: 'nodeTypes',

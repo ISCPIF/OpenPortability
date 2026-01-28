@@ -801,7 +801,9 @@ export function PublicGraphDataProviderV3({ children }: PublicGraphDataProviderV
 
   // SSE handler for labels
   const handleSSELabels = useCallback(async (data: SSELabelsData) => {
+    console.log('🔌 [V3 SSE] Labels event received:', data);
     if (data.invalidated) {
+      console.log('🔄 [V3 SSE] Labels invalidated, starting refetch', { version: data.version });
       globalState.labelsLoaded = false;
       globalState.labelMap = {};
       globalState.floatingLabels = [];
@@ -812,6 +814,7 @@ export function PublicGraphDataProviderV3({ children }: PublicGraphDataProviderV
 
       // Refetch
       try {
+        const t0 = performance.now();
         const response = await fetch('/api/graph/consent_labels');
         if (response.ok) {
           const labelsData = await response.json();
@@ -833,18 +836,52 @@ export function PublicGraphDataProviderV3({ children }: PublicGraphDataProviderV
             setFloatingLabels(newFloatingLabels);
             setIsLabelsLoaded(true);
 
+            const dt = performance.now() - t0;
+            console.log('✅ [V3 SSE] Labels refetched after invalidation', {
+              version: data.version,
+              labelMapCount: Object.keys(newLabelMap).length,
+              floatingLabelsCount: newFloatingLabels.length,
+              ms: Math.round(dt),
+            });
+
             graphIDB.save(CACHE_KEYS.FLOATING_LABELS, { labelMap: newLabelMap, floatingLabels: newFloatingLabels, version: data.version }).catch(() => {});
           }
         }
       } catch (err) {
-        console.warn('Failed to refetch labels after SSE:', err);
+        console.warn('❌ [V3 SSE] Failed to refetch labels after SSE invalidation:', err);
       }
     }
   }, []);
 
+  // Handler for SSE reconnect - check if labels changed while disconnected
+  const handleSSEConnected = useCallback(async (data: { userId: string | null; timestamp: number }) => {
+    console.log('🔌 [V3 SSE] Connected:', data);
+    
+    // Check if labels version changed while we were disconnected
+    try {
+      const response = await fetch('/api/graph/refresh-labels-cache');
+      if (response.ok) {
+        const { version } = await response.json();
+        const serverVersion = version || 0;
+        
+        if (labelsVersionRef.current > 0 && serverVersion > labelsVersionRef.current) {
+          console.log('� [V3 SSE] Labels changed while disconnected, refetching...', {
+            lastKnown: labelsVersionRef.current,
+            serverVersion,
+          });
+          // Trigger refetch by simulating invalidation
+          handleSSELabels({ invalidated: true, version: serverVersion });
+        }
+        labelsVersionRef.current = serverVersion;
+      }
+    } catch (err) {
+      console.warn('❌ [V3 SSE] Failed to check labels version on reconnect:', err);
+    }
+  }, [handleSSELabels]);
+
   useSSE({
     onLabels: handleSSELabels,
-    onConnected: (data) => console.log('🔌 [V3 SSE] Connected:', data),
+    onConnected: handleSSEConnected,
     onError: (error) => console.warn('🔌 [V3 SSE] Error:', error),
   });
 

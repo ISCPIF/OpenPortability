@@ -11,6 +11,7 @@ export async function register() {
   // Only run on the server (Node.js runtime)
   if (process.env.NEXT_RUNTIME === 'nodejs') {
     const { startPgNotifyListener, isPgNotifyListenerRunning } = await import('@/lib/pg-notify-listener');
+    const { startLabelsFlushScheduler } = await import('@/lib/sse-publisher');
     const logger = (await import('@/lib/log_utils')).default;
 
     // Check if listener is already running (handles HMR in development)
@@ -27,5 +28,8 @@ export async function register() {
     } else {
       logger.logInfo('Instrumentation', 'PgNotify listener already running', '', 'system');
     }
+
+    // Start periodic labels flush scheduler (HMR-safe guard inside implementation)
+    startLabelsFlushScheduler();
   }
 }

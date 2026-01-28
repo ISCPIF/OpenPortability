@@ -5,7 +5,7 @@ import { withValidation, withPublicValidation } from '@/lib/validation/middlewar
 import { z } from 'zod';
 import { auth } from '@/app/auth';
 import { redis } from '@/lib/redis';
-import { publishLabelChange, publishNodeTypeChanges } from '@/lib/sse-publisher';
+import { queueLabelChange, publishNodeTypeChanges } from '@/lib/sse-publisher';
 
 // Redis keys for node_type changes sync
 const NODE_TYPE_CHANGES_KEY = 'graph:node-type-changes';
@@ -213,7 +213,8 @@ async function updateConsentLabelsHandler(
           if (validatedData.consent_level === 'all_consent' && nodeInfo.x !== undefined && nodeInfo.y !== undefined) {
             // Get user's display name for the label
             const displayLabel = session?.user?.twitter_username || session?.user?.name || 'User';
-            await publishLabelChange({
+            // Queue change for batched SSE (flushes every 15 min to avoid blink spam)
+            await queueLabelChange({
               coord_hash: nodeInfo.coord_hash,
               action: 'add',
               label: {
@@ -224,7 +225,8 @@ async function updateConsentLabelsHandler(
               }
             });
           } else if (validatedData.consent_level === 'no_consent') {
-            await publishLabelChange({
+            // Queue change for batched SSE (flushes every 15 min to avoid blink spam)
+            await queueLabelChange({
               coord_hash: nodeInfo.coord_hash,
               action: 'remove',
             });

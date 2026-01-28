@@ -151,6 +151,22 @@ class RedisClient {
     }
   }
 
+  /**
+   * SETNX - Set if Not eXists (atomic)
+   * Returns true if the key was set, false if it already existed
+   */
+  async setnx(key: string, value: string): Promise<boolean> {
+    try {
+      await this.ensureConnection();
+      const result = await this.client.setnx(key, value);
+      return result === 1;
+    } catch (error) {
+      const errorString = error instanceof Error ? error.message : String(error);
+      logger.logError('Redis', 'Failed to SETNX', errorString, 'system', { key });
+      return false;
+    }
+  }
+
   // ===== Set helpers =====
   async sadd(key: string, members: string[] | string): Promise<number> {
     try {
