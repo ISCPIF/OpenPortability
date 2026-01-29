@@ -646,7 +646,7 @@ export function ReconnectGraphVisualization({
 
   // Choose which labels to show based on view mode:
   // - Discover: consent labels only (from API) + search node label if present
-  // - Followings: followings labels (personal network handles) or fallback to community labels
+  // - Followings: followings labels (matchings with consent) + community labels
   // - Followers: community labels only
   const validLabels = useMemo(() => {
     if (isMosaicView) {
@@ -657,11 +657,9 @@ export function ReconnectGraphVisualization({
       }
       return labels.length > 0 ? labels : undefined;
     } else if (viewMode === 'followings') {
-      // Followings mode: show followings labels (personal network handles) or fallback to community labels
-      if (followingsLabels.length > 0) {
-        return followingsLabels;
-      }
-      return communityLabels.length > 0 ? communityLabels : undefined;
+      // Followings mode: show followings labels (matchings with consent) + community labels
+      const combined = [...followingsLabels, ...communityLabels];
+      return combined.length > 0 ? combined : undefined;
     } else {
       // Followers mode: show community labels
       return communityLabels.length > 0 ? communityLabels : undefined;

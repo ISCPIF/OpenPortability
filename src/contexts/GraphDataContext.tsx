@@ -1454,6 +1454,7 @@ export function GraphDataProvider({ children }: GraphDataProviderProps) {
   }, []);
 
   // Fetch followings labels for mode Followings (no cache - user-specific)
+  // Uses matching-consent-labels API: only shows labels for matchings with consent
   const fetchFollowingsLabels = useCallback(async () => {
     // Return existing promise if already fetching
     if (followingsLabelsPromiseRef.current) {
@@ -1470,8 +1471,8 @@ export function GraphDataProvider({ children }: GraphDataProviderProps) {
 
     followingsLabelsPromiseRef.current = (async () => {
       try {
-        console.log('🏷️ [GraphData] Fetching followings labels from API...');
-        const response = await fetch('/api/graph/followings-labels', {
+        console.log('🏷️ [GraphData] Fetching matching-consent labels from API...');
+        const response = await fetch('/api/graph/matching-consent-labels', {
           method: 'GET',
           headers: { 'Content-Type': 'application/json' },
         });
