@@ -576,7 +576,10 @@
       "title": "Graphe",
       "statusReady": "Prêt",
       "statusLoading": "Chargement",
-      "totalNodes": "Nœuds totaux",
+      "statusLoadingTiles": "Chargement tiles",
+      "totalNodes": "Noeuds totaux",
+      "maxNodes": "Max noeuds",
+      "adjustMaxNodes": "Ajuster max noeuds",
       "communities": "Communautés"
     },
     "tooltips": {
@@ -755,7 +758,16 @@
     "resetThisColor": "Réinitialiser cette couleur",
     "resetAllColors": "Réinitialiser toutes les couleurs",
     "maxNodes": "Nombre maximum de nœuds à afficher",
-    "resetMaxNodes": "Réinitialiser par défaut"
+    "resetMaxNodes": "Réinitialiser par défaut",
+    "presets": "Presets",
+    "presetLight": "Leger",
+    "presetNormal": "Normal",
+    "presetMax": "Max",
+    "sliderTooltip": "Moins de noeuds = plus fluide, plus de noeuds = plus de details",
+    "loaded": "charges",
+    "perfSmooth": "Fluide",
+    "perfNormal": "Normal",
+    "perfHeavy": "Lourd"
   },
   "floatingDiscoverPanel": {
     "header": "Mode Découverte",
@@ -844,6 +856,11 @@
     "step4": {
       "title": "Panneau de reconnexion",
       "description": "Le panneau de droite affiche les comptes avec lesquels vous pouvez vous reconnecter sur Bluesky et Mastodon. Sélectionnez et cliquez 'Reconnecter' pour les suivre."
+    },
+    "step5": {
+      "title": "Personnalisez votre vue",
+      "description": "Personnalisez l'apparence du graphe avec le sélecteur de couleurs. Changez les couleurs des communautés, ajustez la taille des points et configurez le nombre maximum de noeuds affichés.",
+      "controls": "Palette = Changer le thème de couleurs\nSlider = Ajuster la taille des points\nMax noeuds = Controler la performance"
     }
   },
   "consentLabelModal": {

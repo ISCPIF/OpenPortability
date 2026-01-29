@@ -576,7 +576,10 @@
       "title": "Graph",
       "statusReady": "Ready",
       "statusLoading": "Loading",
+      "statusLoadingTiles": "Loading tiles",
       "totalNodes": "Total nodes",
+      "maxNodes": "Max nodes",
+      "adjustMaxNodes": "Adjust max nodes",
       "communities": "Communities"
     },
     "tooltips": {
@@ -755,7 +758,16 @@
     "resetThisColor": "Reset this color",
     "resetAllColors": "Reset all colors",
     "maxNodes": "Maximum nodes to display",
-    "resetMaxNodes": "Reset to default"
+    "resetMaxNodes": "Reset to default",
+    "presets": "Presets",
+    "presetLight": "Light",
+    "presetNormal": "Normal",
+    "presetMax": "Max",
+    "sliderTooltip": "Fewer nodes = smoother, more nodes = more details",
+    "loaded": "loaded",
+    "perfSmooth": "Smooth",
+    "perfNormal": "Normal",
+    "perfHeavy": "Heavy"
   },
   "floatingDiscoverPanel": {
     "header": "Discovery Mode",
@@ -844,6 +856,11 @@
     "step4": {
       "title": "Reconnection panel",
       "description": "The right panel displays accounts you can reconnect with on Bluesky and Mastodon. Select and click 'Reconnect' to follow them."
+    },
+    "step5": {
+      "title": "Customize your view",
+      "description": "Personalize the graph appearance with the color picker. Change community colors, adjust point size, and configure the maximum number of nodes displayed.",
+      "controls": "Palette = Change color scheme\nSlider = Adjust point size\nMax nodes = Control performance"
     }
   },
   "consentLabelModal": {

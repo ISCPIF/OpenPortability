@@ -11,6 +11,7 @@ import {
   UserCheck,
   Sparkles,
   Lasso,
+  Palette,
 } from 'lucide-react';
 import { useTheme } from '@/hooks/useTheme';
 
@@ -77,6 +78,15 @@ export function IntroOverlay({ onDismiss, onStepChange, initialStep = 0, hintMod
       selector: '[data-intro="accounts-panel"]', // Accounts panel
       position: 'left' as const,
     },
+    {
+      icon: Palette,
+      titleKey: 'step5.title',
+      descriptionKey: 'step5.description',
+      controlsKey: 'step5.controls',
+      color: 'from-indigo-500 to-violet-500',
+      selector: '[data-intro="color-picker"]', // Community color picker
+      position: 'top' as const,
+    },
   ];
 
   // Find and highlight the target element
@@ -91,12 +101,26 @@ export function IntroOverlay({ onDismiss, onStepChange, initialStep = 0, hintMod
     if (element) {
       const rect = element.getBoundingClientRect();
       const padding = 8;
-      setHighlightRect({
-        top: rect.top - padding,
-        left: rect.left - padding,
-        width: rect.width + padding * 2,
-        height: rect.height + padding * 2,
-      });
+      
+      // For color picker (step 4), include the open dropdown in the highlight
+      if (currentStep === 4) {
+        // The dropdown opens upward and is ~420px wide, ~300px tall
+        const dropdownHeight = 350;
+        const dropdownWidth = 440;
+        setHighlightRect({
+          top: rect.top - dropdownHeight - padding,
+          left: rect.left - padding,
+          width: dropdownWidth + padding * 2,
+          height: rect.height + dropdownHeight + padding * 2,
+        });
+      } else {
+        setHighlightRect({
+          top: rect.top - padding,
+          left: rect.left - padding,
+          width: rect.width + padding * 2,
+          height: rect.height + padding * 2,
+        });
+      }
     } else {
       setHighlightRect(null);
     }
@@ -136,11 +160,24 @@ export function IntroOverlay({ onDismiss, onStepChange, initialStep = 0, hintMod
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
     const preferLeft = currentStepData.position === 'left';
+    const preferTop = currentStepData.position === 'top';
 
     let top = highlightRect.top;
     let left: number;
 
-    if (preferLeft) {
+    if (preferTop) {
+      // For bottom elements (color picker with open dropdown), position card more centered
+      // The dropdown opens upward and is ~440px wide, so we position the card to the right of it
+      const dropdownWidth = 460; // Approximate width of the open dropdown with padding
+      left = highlightRect.left + dropdownWidth + margin;
+      // Position card more toward center of screen vertically
+      top = Math.max(margin, (viewportHeight - cardHeight) / 2 - 50);
+      
+      // If card would go off right edge, center it horizontally
+      if (left + cardWidth > viewportWidth - margin) {
+        left = Math.max(margin, (viewportWidth - cardWidth) / 2);
+      }
+    } else if (preferLeft) {
       // For right-side panels (lasso, accounts), position card to the left
       left = highlightRect.left - cardWidth - margin;
     } else {
@@ -149,18 +186,18 @@ export function IntroOverlay({ onDismiss, onStepChange, initialStep = 0, hintMod
     }
 
     // If card would go off right edge, position to the left
-    if (left + cardWidth > viewportWidth - margin) {
+    if (!preferTop && left + cardWidth > viewportWidth - margin) {
       left = highlightRect.left - cardWidth - margin;
     }
 
     // If card would go off left edge, center it below
-    if (left < margin) {
+    if (!preferTop && left < margin) {
       left = Math.max(margin, (viewportWidth - cardWidth) / 2);
       top = highlightRect.top + highlightRect.height + margin;
     }
 
     // If card would go off bottom, position above
-    if (top + cardHeight > viewportHeight - margin) {
+    if (!preferTop && top + cardHeight > viewportHeight - margin) {
       top = Math.max(margin, highlightRect.top - cardHeight - margin);
     }
 
@@ -265,7 +302,7 @@ export function IntroOverlay({ onDismiss, onStepChange, initialStep = 0, hintMod
               width: highlightRect.width,
               height: highlightRect.height,
               borderRadius: '12px',
-              boxShadow: `0 0 0 4px ${currentStep === 0 ? '#3b82f6' : currentStep === 1 ? '#a855f7' : currentStep === 2 ? '#f59e0b' : '#10b981'}, 0 0 30px 10px ${currentStep === 0 ? 'rgba(59,130,246,0.3)' : currentStep === 1 ? 'rgba(168,85,247,0.3)' : currentStep === 2 ? 'rgba(245,158,11,0.3)' : 'rgba(16,185,129,0.3)'}`,
+              boxShadow: `0 0 0 4px ${currentStep === 0 ? '#3b82f6' : currentStep === 1 ? '#a855f7' : currentStep === 2 ? '#f59e0b' : currentStep === 3 ? '#10b981' : '#6366f1'}, 0 0 30px 10px ${currentStep === 0 ? 'rgba(59,130,246,0.3)' : currentStep === 1 ? 'rgba(168,85,247,0.3)' : currentStep === 2 ? 'rgba(245,158,11,0.3)' : currentStep === 3 ? 'rgba(16,185,129,0.3)' : 'rgba(99,102,241,0.3)'}`,
             }}
           />
         )}
