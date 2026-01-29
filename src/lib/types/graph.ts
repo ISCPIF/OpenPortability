@@ -141,10 +141,10 @@ export const DEFAULT_TILE_CONFIG: TileConfig = {
 // Auth tile configuration (higher limits for authenticated users)
 // Includes personal network prioritization (followings + effectiveFollowers + userNode)
 export const AUTH_TILE_CONFIG: TileConfig = {
-  INITIAL_NODES: 150_000,       // 150k for auth users (consent + network + top degree)
+  INITIAL_NODES: 100_000,       // 100k for auth users (consent + network + top degree)
   ZOOM_THRESHOLD: 0.05,
   NODES_PER_TILE: 50_000,
-  MAX_MEMORY_NODES: 700_000,    // Allow up to 700k nodes (150k initial + progressive)
+  MAX_MEMORY_NODES: 700_000,    // Allow up to 700k nodes (100k initial + progressive)
   DEBOUNCE_MS: 250,
   TILE_CACHE_SIZE: 20,
 };

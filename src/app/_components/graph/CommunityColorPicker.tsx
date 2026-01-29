@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { CRAMERI_PALETTES, MIN_POINT_SIZE, MAX_POINT_SIZE, DEFAULT_POINT_SIZE } from '@/hooks/useCommunityColors';
 import { RotateCcw, Palette, ChevronDown, Move, Database } from 'lucide-react';
-import { DEFAULT_TILE_CONFIG } from '@/lib/types/graph';
+import { AUTH_TILE_CONFIG } from '@/lib/types/graph';
 
 // Type for the hook return value
 interface CommunityColorsHook {
@@ -29,6 +29,9 @@ interface CommunityColorPickerProps {
   currentNodeCount?: number;
   maxMemoryNodes?: number;
   onMaxMemoryNodesChange?: (value: number) => void;
+  // External control for opening the dropdown
+  isOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 type ActiveDropdown = 'palettes' | 'colors' | null;
@@ -40,6 +43,8 @@ export function CommunityColorPicker({
   currentNodeCount,
   maxMemoryNodes,
   onMaxMemoryNodesChange,
+  isOpen: externalIsOpen,
+  onOpenChange,
 }: CommunityColorPickerProps) {
   const t = useTranslations('communityColorPicker');
   const {
@@ -56,9 +61,22 @@ export function CommunityColorPicker({
     palettes,
   } = colorHook;
 
-  const [activeDropdown, setActiveDropdown] = useState<ActiveDropdown>(null);
+  const [activeDropdown, setActiveDropdownState] = useState<ActiveDropdown>(null);
   const [isMobile, setIsMobile] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
+  
+  // Sync with external control
+  useEffect(() => {
+    if (externalIsOpen !== undefined) {
+      setActiveDropdownState(externalIsOpen ? 'palettes' : null);
+    }
+  }, [externalIsOpen]);
+  
+  // Wrapper to notify parent of changes
+  const setActiveDropdown = (dropdown: ActiveDropdown) => {
+    setActiveDropdownState(dropdown);
+    onOpenChange?.(dropdown !== null);
+  };
   
   // Detect mobile on mount
   useEffect(() => {
@@ -200,34 +218,74 @@ export function CommunityColorPicker({
 
               {onMaxMemoryNodesChange && maxMemoryNodes !== undefined && (
                 <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
-                  <div className="flex items-center gap-2">
-                    <Database className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400" />
-                    <input
-                      type="range"
-                      min={50_000}
-                      max={660_000}
-                      step={10_000}
-                      value={maxMemoryNodes}
-                      onChange={(e) => onMaxMemoryNodesChange(parseInt(e.target.value, 10))}
-                      className="flex-1 h-1 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
-                      title={t('maxNodes')}
-                    />
-                    <span className="text-[10px] font-medium text-gray-600 dark:text-gray-400 w-12 text-right">
-                      {maxMemoryNodes >= 660_000 ? 'Max' : `${(maxMemoryNodes / 1000).toFixed(0)}k`}
-                    </span>
-                    {maxMemoryNodes !== DEFAULT_TILE_CONFIG.MAX_MEMORY_NODES && (
+                  {/* Preset buttons */}
+                  <div className="flex items-center gap-1 mb-2">
+                    <span className="text-[9px] text-gray-500 dark:text-gray-400 mr-1">{t('presets')}:</span>
+                    {[
+                      { label: t('presetLight'), value: 150_000 },
+                      { label: t('presetNormal'), value: 350_000 },
+                      { label: t('presetMax'), value: AUTH_TILE_CONFIG.MAX_MEMORY_NODES },
+                    ].map(({ label, value }) => (
                       <button
-                        onClick={() => onMaxMemoryNodesChange(DEFAULT_TILE_CONFIG.MAX_MEMORY_NODES)}
-                        className="p-0.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                        title={t('resetMaxNodes')}
+                        key={value}
+                        onClick={() => onMaxMemoryNodesChange(value)}
+                        className={`px-1.5 py-0.5 text-[8px] rounded transition-colors ${
+                          maxMemoryNodes === value
+                            ? 'bg-blue-500 text-white'
+                            : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                        }`}
                       >
-                        <RotateCcw className="w-2.5 h-2.5" />
+                        {label}
                       </button>
-                    )}
+                    ))}
                   </div>
+                  
+                  {/* Slider with tooltip */}
+                  <div className="flex items-center gap-2" title={t('sliderTooltip')}>
+                    <Database className="w-3.5 h-3.5 text-gray-500 dark:text-gray-400 flex-shrink-0" />
+                    <div className="flex-1 flex flex-col">
+                      <input
+                        type="range"
+                        min={100_000}
+                        max={AUTH_TILE_CONFIG.MAX_MEMORY_NODES}
+                        step={50_000}
+                        value={maxMemoryNodes}
+                        onChange={(e) => onMaxMemoryNodesChange(parseInt(e.target.value, 10))}
+                        className="w-full h-1 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                        title={t('sliderTooltip')}
+                      />
+                      <div className="flex justify-between mt-0.5 px-0.5">
+                        {[100, 200, 300, 400, 500, 600, 700].map((val) => (
+                          <span 
+                            key={val} 
+                            className={`text-[7px] ${maxMemoryNodes === val * 1000 ? 'text-blue-500 font-medium' : 'text-gray-400 dark:text-gray-600'}`}
+                          >
+                            {val === 700 ? 'Max' : `${val}k`}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                    <span className="text-[10px] font-medium text-blue-500 w-10 text-right flex-shrink-0">
+                      {maxMemoryNodes >= AUTH_TILE_CONFIG.MAX_MEMORY_NODES ? 'Max' : `${(maxMemoryNodes / 1000).toFixed(0)}k`}
+                    </span>
+                  </div>
+                  
+                  {/* Status: loaded count + performance indicator */}
                   {currentNodeCount !== undefined && (
-                    <div className="mt-1 text-[9px] text-gray-400 dark:text-gray-500">
-                      {(currentNodeCount / 1000).toFixed(0)}k
+                    <div className="mt-1.5 flex items-center justify-between">
+                      <div className="text-[9px] text-gray-400 dark:text-gray-500 flex items-center gap-1">
+                        <span className="text-blue-400">{(currentNodeCount / 1000).toFixed(0)}k</span>
+                        <span>/ {(maxMemoryNodes / 1000).toFixed(0)}k {t('loaded')}</span>
+                      </div>
+                      <div className={`text-[8px] px-1.5 py-0.5 rounded ${
+                        maxMemoryNodes <= 200_000
+                          ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'
+                          : maxMemoryNodes <= 400_000
+                            ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400'
+                            : 'bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400'
+                      }`}>
+                        {maxMemoryNodes <= 200_000 ? t('perfSmooth') : maxMemoryNodes <= 400_000 ? t('perfNormal') : t('perfHeavy')}
+                      </div>
                     </div>
                   )}
                 </div>

@@ -338,6 +338,8 @@ export function ReconnectGraphDashboard({
   
   // State to control progress panel visibility (user can close it)
   const [showProgressPanel, setShowProgressPanel] = useState(false);
+  // State to control CommunityColorPicker dropdown from FloatingStatsPanel
+  const [isNodeSettingsOpen, setIsNodeSettingsOpen] = useState(false);
   // Key to force re-mount of FloatingProgressPanel when a new migration starts
   // This resets internal state (initialTotals, hasCalledComplete)
   const [migrationKey, setMigrationKey] = useState(0);
@@ -434,6 +436,7 @@ export function ReconnectGraphDashboard({
   const isOnIntro = showIntroOverlay;
   const introShowLassoPanel = isOnIntro && introStep === 2;
   const introShowAccountsPanel = isOnIntro && introStep === 3;
+  const introShowColorPicker = isOnIntro && introStep === 4; // Step 4 is color picker (0-indexed)
   // Hide stats panel during entire intro
   const introHideStatsPanel = isOnIntro;
   // Hide accounts panel when showing lasso panel (step 2)
@@ -1113,7 +1116,7 @@ export function ReconnectGraphDashboard({
         <FloatingStatsPanel
           stats={stats}
           session={session}
-          totalNodes={baseNodes.length}
+          totalNodes={displayNodes.length}
           isLoadingPersonal={graphData.isPersonalDataLoading}
           isGraphReady={isGraphReady}
           hasPersonalNetwork={hasPersonalNetwork}
@@ -1132,6 +1135,9 @@ export function ReconnectGraphDashboard({
           currentConsentLevel={userConsentLevel}
           onConsentLevelChange={setUserConsentLevel}
           globalStats={globalStats}
+          isTileLoading={isTileLoading}
+          maxMemoryNodes={tileConfig.MAX_MEMORY_NODES}
+          onOpenNodeSettings={() => setIsNodeSettingsOpen(true)}
         />
       )}
 
@@ -1233,7 +1239,7 @@ export function ReconnectGraphDashboard({
 
       {/* Community Color Picker - bottom left, above Footer */}
       {!isMobile && (
-        <div className="absolute left-4 z-40 flex items-end gap-3" style={{ bottom: `${footerHeight + 16}px` }}>
+        <div data-intro="color-picker" className="absolute left-4 z-40 flex items-end gap-3" style={{ bottom: `${footerHeight + 16}px` }}>
           <CommunityColorPicker
             communityLabels={{
               0: 'Gaming / Esports',
@@ -1250,23 +1256,10 @@ export function ReconnectGraphDashboard({
             colorHook={communityColorsHook}
             currentNodeCount={displayNodes.length}
             maxMemoryNodes={tileConfig.MAX_MEMORY_NODES}
+            onMaxMemoryNodesChange={graphData.setMaxMemoryNodes}
+            isOpen={isNodeSettingsOpen || introShowColorPicker}
+            onOpenChange={setIsNodeSettingsOpen}
           />
-          
-          {/* Node Counter */}
-          <div className="bg-slate-900/90 backdrop-blur-sm rounded border border-slate-700/50 px-3 py-2 shadow-lg">
-            <div className="text-[10px] text-slate-500 uppercase tracking-wide">Nodes</div>
-            <div className="text-lg font-mono text-white flex items-center gap-2">
-              {displayNodes.length.toLocaleString()}
-              {isTileLoading && (
-                <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" title="Loading tiles..." />
-              )}
-            </div>
-            {mergedNodes && mergedNodes.length > baseNodes.length && (
-              <div className="text-[9px] text-slate-500 mt-1">
-                <span className="text-slate-400">{baseNodes.length.toLocaleString()}</span> base + <span className="text-blue-400">{(mergedNodes.length - baseNodes.length).toLocaleString()}</span> tiles
-              </div>
-            )}
-          </div>
         </div>
       )}
 

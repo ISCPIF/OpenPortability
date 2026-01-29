@@ -609,16 +609,31 @@ export function GraphDataProvider({ children }: GraphDataProviderProps) {
   const currentBboxRef = useRef<BoundingBox | null>(null);
   
   // Customizable tile config (user can adjust MAX_MEMORY_NODES)
-  const [maxMemoryNodes, setMaxMemoryNodesState] = useState(AUTH_TILE_CONFIG.MAX_MEMORY_NODES);
+  // Persist to localStorage for user preference
+  const STORAGE_KEY_MAX_NODES = 'hqx_graph_max_memory_nodes';
+  const [maxMemoryNodes, setMaxMemoryNodesState] = useState(() => {
+    if (typeof window === 'undefined') return AUTH_TILE_CONFIG.MAX_MEMORY_NODES;
+    const stored = localStorage.getItem(STORAGE_KEY_MAX_NODES);
+    if (stored) {
+      const parsed = parseInt(stored, 10);
+      if (!isNaN(parsed) && parsed >= 100_000 && parsed <= AUTH_TILE_CONFIG.MAX_MEMORY_NODES) {
+        return parsed;
+      }
+    }
+    return AUTH_TILE_CONFIG.MAX_MEMORY_NODES;
+  });
   const tileConfig = useMemo(() => ({
     ...AUTH_TILE_CONFIG,
     MAX_MEMORY_NODES: maxMemoryNodes,
   }), [maxMemoryNodes]);
   
-  // Setter for max memory nodes (exposed to UI)
+  // Setter for max memory nodes (exposed to UI) - persists to localStorage
   const setMaxMemoryNodes = useCallback((maxNodes: number) => {
-    const clamped = Math.max(50_000, Math.min(660_000, maxNodes));
+    const clamped = Math.max(100_000, Math.min(AUTH_TILE_CONFIG.MAX_MEMORY_NODES, maxNodes));
     setMaxMemoryNodesState(clamped);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(STORAGE_KEY_MAX_NODES, String(clamped));
+    }
     console.log(`📊 [GraphData] Max memory nodes set to ${clamped.toLocaleString()}`);
   }, []);
 

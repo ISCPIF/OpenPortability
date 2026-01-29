@@ -109,6 +109,9 @@ interface FloatingStatsPanelProps {
       followedOnMastodon: number;
     };
   };
+  isTileLoading?: boolean;
+  maxMemoryNodes?: number;
+  onOpenNodeSettings?: () => void;
 }
 
 export function FloatingStatsPanel({
@@ -134,6 +137,9 @@ export function FloatingStatsPanel({
   currentConsentLevel,
   onConsentLevelChange,
   globalStats,
+  isTileLoading = false,
+  maxMemoryNodes,
+  onOpenNodeSettings,
 }: FloatingStatsPanelProps) {
   const t = useTranslations('floatingStatsPanel');
   const graphData = useGraphDataOptional();
@@ -558,12 +564,21 @@ export function FloatingStatsPanel({
               </button>
             </div>
             <div className="flex items-center gap-1.5">
-              <Activity 
-                className={`w-3 h-3 ${!isGraphReady ? 'text-amber-500 animate-pulse' : 'text-emerald-500'}`}
-              />
-              <span className={`text-[9px] uppercase tracking-wider ${!isGraphReady ? 'text-amber-500' : 'text-emerald-500'}`}>
-                {isGraphReady ? t('graph.statusReady') : t('graph.statusLoading')}
-              </span>
+              {isTileLoading ? (
+                <>
+                  <Loader2 className="w-3 h-3 text-blue-400 animate-spin" />
+                  <span className="text-[9px] uppercase tracking-wider text-blue-400">
+                    {t('graph.statusLoadingTiles')}
+                  </span>
+                </>
+              ) : !isGraphReady ? (
+                <>
+                  <Activity className="w-3 h-3 text-amber-500 animate-pulse" />
+                  <span className="text-[9px] uppercase tracking-wider text-amber-500">
+                    {t('graph.statusLoading')}
+                  </span>
+                </>
+              ) : null}
             </div>
           </div>
           
@@ -575,6 +590,27 @@ export function FloatingStatsPanel({
                 {totalNodes.toLocaleString()}
               </span>
             </div>
+            
+            {/* Max Nodes with settings button */}
+            {maxMemoryNodes !== undefined && (
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] text-slate-400">{t('graph.maxNodes')}</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[13px] text-slate-400 font-medium tabular-nums">
+                    {(maxMemoryNodes / 1000).toFixed(0)}k
+                  </span>
+                  {onOpenNodeSettings && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onOpenNodeSettings(); }}
+                      className="p-0.5 rounded hover:bg-slate-700 transition-colors text-slate-400 hover:text-blue-400"
+                      title={t('graph.adjustMaxNodes')}
+                    >
+                      <Layers className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
             
             {/* OpenPortability Stats */}
             {globalStats && (
