@@ -198,7 +198,7 @@ export const pgStatsRepository = {
   },
 
   /**
-   * Récupère les stats globales depuis la table de cache
+   * Récupère les stats globales depuis la table de cache (legacy JSONB)
    * Utilisé comme fallback si les RPCs ne sont pas disponibles
    * 
    * @returns Stats globales ou null si pas de données
@@ -229,6 +229,71 @@ export const pgStatsRepository = {
         errorString,
         'system',
         { context: 'Failed to read from global_stats_cache table' }
+      )
+      return null
+    }
+  },
+
+  /**
+   * Récupère les stats globales depuis la table v2 (colonnes individuelles)
+   * Reconstruit le JSON à partir des colonnes pour backward compatibility
+   * 
+   * @returns Stats globales ou null si pas de données
+   */
+  async getGlobalStatsFromCacheV2(): Promise<GlobalStats | null> {
+    try {
+      const result = await queryPublic(`
+        SELECT 
+          users_total,
+          users_onboarded,
+          followers,
+          following,
+          with_handle,
+          with_handle_bluesky,
+          with_handle_mastodon,
+          followed_on_bluesky,
+          followed_on_mastodon,
+          updated_at
+        FROM global_stats_cache_v2 
+        WHERE id = true
+      `)
+
+      if (!result.rows[0]) {
+        logger.logWarning(
+          'Repository',
+          'pgStatsRepository.getGlobalStatsFromCacheV2',
+          'No data in global_stats_cache_v2',
+          'system',
+          { context: 'Cache v2 table empty' }
+        )
+        return null
+      }
+
+      const row = result.rows[0]
+      return {
+        users: {
+          total: Number(row.users_total) || 0,
+          onboarded: Number(row.users_onboarded) || 0,
+        },
+        connections: {
+          followers: Number(row.followers) || 0,
+          following: Number(row.following) || 0,
+          withHandle: Number(row.with_handle) || 0,
+          withHandleBluesky: Number(row.with_handle_bluesky) || 0,
+          withHandleMastodon: Number(row.with_handle_mastodon) || 0,
+          followedOnBluesky: Number(row.followed_on_bluesky) || 0,
+          followedOnMastodon: Number(row.followed_on_mastodon) || 0,
+        },
+        updated_at: row.updated_at?.toISOString?.() || row.updated_at || new Date().toISOString(),
+      }
+    } catch (error) {
+      const errorString = error instanceof Error ? error.message : String(error)
+      logger.logError(
+        'Repository',
+        'pgStatsRepository.getGlobalStatsFromCacheV2',
+        errorString,
+        'system',
+        { context: 'Failed to read from global_stats_cache_v2 table' }
       )
       return null
     }
@@ -294,7 +359,7 @@ export const pgStatsRepository = {
   },
 
   /**
-   * Rafraîchit le cache des stats globales
+   * Rafraîchit le cache des stats globales (legacy - full refresh)
    * Appelle la RPC refresh_global_stats_cache qui met à jour global_stats_cache
    */
   async refreshGlobalStatsCache(): Promise<void> {
@@ -328,6 +393,154 @@ export const pgStatsRepository = {
         'pgStatsRepository.refreshGlobalStatsCache',
         errorString,
         'unknown'
+      )
+      throw error
+    }
+  },
+
+  /**
+   * Rafraîchit uniquement les stats utilisateurs (rapide ~100ms)
+   * Appelle refresh_global_stats_users() sur la table v2
+   */
+  async refreshGlobalStatsUsers(): Promise<void> {
+    try {
+      await queryPublic(`SELECT public.refresh_global_stats_users()`)
+
+      try {
+        await redis.del('stats:global')
+        logger.logInfo(
+          'Repository',
+          'pgStatsRepository.refreshGlobalStatsUsers',
+          'Users stats refreshed and Redis invalidated',
+          'system'
+        )
+      } catch (redisError) {
+        logger.logWarning(
+          'Repository',
+          'pgStatsRepository.refreshGlobalStatsUsers',
+          'Failed to invalidate Redis cache',
+          'system',
+          { error: redisError instanceof Error ? redisError.message : 'Unknown Redis error' }
+        )
+      }
+    } catch (error) {
+      const errorString = error instanceof Error ? error.message : String(error)
+      logger.logError(
+        'Repository',
+        'pgStatsRepository.refreshGlobalStatsUsers',
+        errorString,
+        'system'
+      )
+      throw error
+    }
+  },
+
+  /**
+   * Rafraîchit les stats de connections légères (~1-5s)
+   * Appelle refresh_global_stats_connections() sur la table v2
+   */
+  async refreshGlobalStatsConnections(): Promise<void> {
+    try {
+      await queryPublic(`SELECT public.refresh_global_stats_connections()`)
+
+      try {
+        await redis.del('stats:global')
+        logger.logInfo(
+          'Repository',
+          'pgStatsRepository.refreshGlobalStatsConnections',
+          'Connections stats refreshed and Redis invalidated',
+          'system'
+        )
+      } catch (redisError) {
+        logger.logWarning(
+          'Repository',
+          'pgStatsRepository.refreshGlobalStatsConnections',
+          'Failed to invalidate Redis cache',
+          'system',
+          { error: redisError instanceof Error ? redisError.message : 'Unknown Redis error' }
+        )
+      }
+    } catch (error) {
+      const errorString = error instanceof Error ? error.message : String(error)
+      logger.logError(
+        'Repository',
+        'pgStatsRepository.refreshGlobalStatsConnections',
+        errorString,
+        'system'
+      )
+      throw error
+    }
+  },
+
+  /**
+   * Rafraîchit les stats lourdes (followers/following via MV, ~30s-5min)
+   * Appelle refresh_global_stats_heavy() sur la table v2
+   */
+  async refreshGlobalStatsHeavy(): Promise<void> {
+    try {
+      await queryPublic(`SELECT public.refresh_global_stats_heavy()`)
+
+      try {
+        await redis.del('stats:global')
+        logger.logInfo(
+          'Repository',
+          'pgStatsRepository.refreshGlobalStatsHeavy',
+          'Heavy stats refreshed and Redis invalidated',
+          'system'
+        )
+      } catch (redisError) {
+        logger.logWarning(
+          'Repository',
+          'pgStatsRepository.refreshGlobalStatsHeavy',
+          'Failed to invalidate Redis cache',
+          'system',
+          { error: redisError instanceof Error ? redisError.message : 'Unknown Redis error' }
+        )
+      }
+    } catch (error) {
+      const errorString = error instanceof Error ? error.message : String(error)
+      logger.logError(
+        'Repository',
+        'pgStatsRepository.refreshGlobalStatsHeavy',
+        errorString,
+        'system'
+      )
+      throw error
+    }
+  },
+
+  /**
+   * Rafraîchit toutes les stats v2 (full refresh)
+   * Appelle refresh_global_stats_cache_v2() qui appelle les 3 fonctions
+   */
+  async refreshGlobalStatsCacheV2(): Promise<void> {
+    try {
+      await queryPublic(`SELECT public.refresh_global_stats_cache_v2()`)
+
+      try {
+        await redis.del('stats:global')
+        logger.logInfo(
+          'Repository',
+          'pgStatsRepository.refreshGlobalStatsCacheV2',
+          'Full stats v2 refreshed and Redis invalidated',
+          'system'
+        )
+      } catch (redisError) {
+        logger.logWarning(
+          'Repository',
+          'pgStatsRepository.refreshGlobalStatsCacheV2',
+          'Failed to invalidate Redis cache',
+          'system',
+          { error: redisError instanceof Error ? redisError.message : 'Unknown Redis error' }
+        )
+      }
+    } catch (error) {
+      const errorString = error instanceof Error ? error.message : String(error)
+      logger.logError(
+        'Repository',
+        'pgStatsRepository.refreshGlobalStatsCacheV2',
+        errorString,
+        'system'
       )
       throw error
     }
