@@ -833,7 +833,9 @@
     "selected": "{count} sélectionnés",
     "resetView": "Réinitialiser la vue",
     "loginForMore": "Se connecter pour plus",
-    "loading": "Chargement..."
+    "loading": "Chargement...",
+    "returnToGraph": "Revenir au graphe",
+    "zoomedOutTooFar": "Vous avez trop dézoomé"
   },
   "introOverlay": {
     "skip": "Passer l'intro",

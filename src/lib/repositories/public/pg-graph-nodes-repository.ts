@@ -716,6 +716,8 @@ export const pgGraphNodesRepository = {
     x: number
     y: number
     community: number | null
+    bluesky_handle: string | null
+    mastodon_handle: string | null
   }[]> {
     try {
       const result = await queryPublic<{
@@ -725,6 +727,8 @@ export const pgGraphNodesRepository = {
         x: number
         y: number
         community: number | null
+        bluesky_handle: string | null
+        mastodon_handle: string | null
       }>(
         `WITH labeled AS (
           SELECT
@@ -752,7 +756,15 @@ export const pgGraphNodesRepository = {
             END as description,
             gn.x,
             gn.y,
-            gn.community
+            gn.community,
+            COALESCE(uwnc.bluesky_username, pa.bluesky_username) as bluesky_handle,
+            CASE
+              WHEN uwnc.mastodon_username IS NOT NULL AND uwnc.mastodon_instance IS NOT NULL
+              THEN uwnc.mastodon_username || '@' || uwnc.mastodon_instance
+              WHEN pa.mastodon_username IS NOT NULL AND pa.mastodon_instance IS NOT NULL
+              THEN pa.mastodon_username || '@' || pa.mastodon_instance
+              ELSE NULL
+            END as mastodon_handle
           FROM users_with_name_consent uwnc
           LEFT JOIN public_accounts pa
             ON pa.twitter_id = uwnc.twitter_id
@@ -760,7 +772,7 @@ export const pgGraphNodesRepository = {
           INNER JOIN ${GRAPH_NODES_TABLE} gn ON gn.id = uwnc.twitter_id
           WHERE uwnc.consent_level = 'all_consent'
         )
-        SELECT twitter_id, display_label, description, x, y, community
+        SELECT twitter_id, display_label, description, x, y, community, bluesky_handle, mastodon_handle
         FROM labeled
         WHERE searchable_text ILIKE $1
         ORDER BY

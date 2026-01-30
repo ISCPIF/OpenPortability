@@ -42,6 +42,8 @@ export async function GET(request: NextRequest) {
           x: r.x,
           y: r.y,
           community: r.community,
+          bluesky_handle: r.bluesky_handle,
+          mastodon_handle: r.mastodon_handle,
         })),
       })
     } else {

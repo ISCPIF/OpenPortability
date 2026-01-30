@@ -21,12 +21,10 @@ interface ViewportState {
 }
 
 // Viewport limits - prevent user from zooming/panning too far
-const MIN_SCALE = 0.01; // Minimum zoom level (zoomed out)
-const MAX_SCALE = 60;   // Maximum zoom level (zoomed in)
-const MIN_X = -50;      // Minimum x coordinate (left boundary)
-const MAX_X = 50;       // Maximum x coordinate (right boundary)
-const MIN_Y = -50;      // Minimum y coordinate (top boundary)
-const MAX_Y = 50;       // Maximum y coordinate (bottom boundary)
+// Warning shows at scale < 0.01 (in Dashboard), force reset at scale < 0.005
+const MIN_SCALE = 0.005; // Minimum zoom level (zoomed out) - triggers snap-back below this
+const MAX_SCALE = 60;    // Maximum zoom level (zoomed in)
+const SNAP_BACK_SCALE = 0.05; // Scale to snap back to when user zooms out too far (lower = wider view)
 
 interface EmbeddingViewWrapperProps {
   data: any;
@@ -73,10 +71,43 @@ export function EmbeddingViewWrapper(props: EmbeddingViewWrapperProps) {
   // Track if view has been created with data (to trigger initial creation but not recreate on data changes)
   const hasCreatedWithDataRef = useRef(false);
 
-  // Simple viewport state passthrough - no clamping, let embedding-atlas handle its own limits
-  // This avoids infinite loops and FPS drops from fighting with the library
-  const handleViewportStateSimple = useCallback((state: ViewportState) => {
+  // Ref to track if we're currently snapping back (to avoid loops)
+  const isSnappingBackRef = useRef(false);
+  const lastScaleRef = useRef<number>(1);
+
+  // Viewport state handler with snap-back on extreme zoom-out
+  // When user zooms out too far (scale < MIN_SCALE), snap back to a safe zoom level
+  const handleViewportStateWithSnapBack = useCallback((state: ViewportState) => {
+    // Always forward the state to parent
     onViewportStateRef.current?.(state);
+    
+    // Track the scale
+    lastScaleRef.current = state.scale;
+    
+    // Check if user has zoomed out too far
+    if (state.scale < MIN_SCALE && !isSnappingBackRef.current && viewRef.current?.update) {
+      isSnappingBackRef.current = true;
+      console.log('🔄 [Viewport] Snapping back from extreme zoom-out (scale:', state.scale.toFixed(6), ')');
+      
+      // Use requestAnimationFrame to ensure we're not fighting with the current frame
+      requestAnimationFrame(() => {
+        if (viewRef.current?.update && lastScaleRef.current < MIN_SCALE) {
+          try {
+            viewRef.current.update({
+              viewportState: { x: 0, y: 0, scale: SNAP_BACK_SCALE }
+            });
+            console.log('🔄 [Viewport] Snap-back executed to scale:', SNAP_BACK_SCALE);
+          } catch (err) {
+            console.warn('🔄 [Viewport] Snap-back error:', err);
+          }
+        }
+        
+        // Reset snap-back flag after a delay to allow the new viewport to settle
+        setTimeout(() => {
+          isSnappingBackRef.current = false;
+        }, 300);
+      });
+    }
   }, []);
 
   const variant: EmbeddingVariant = props.variant ?? 'standard';
@@ -175,7 +206,7 @@ export function EmbeddingViewWrapper(props: EmbeddingViewWrapperProps) {
     };
     
     // Simple passthrough - no clamping to avoid infinite loops
-    const stableOnViewportState = handleViewportStateSimple;
+    const stableOnViewportState = handleViewportStateWithSnapBack;
     
     const viewProps: any = {
       data: props.data,
@@ -249,7 +280,7 @@ export function EmbeddingViewWrapper(props: EmbeddingViewWrapperProps) {
   // handleViewportStateSimple is stable (useCallback with empty deps)
   // IMPORTANT: Do NOT include props.data?.x?.length - data changes should use update(), not recreate the view
   // This prevents viewport reset when tile nodes are added
-  }, [SelectedEmbeddingClass, props.width, props.height, props.onReady, props.theme?.backgroundColor, props.selectionLocked, handleViewportStateSimple]);
+  }, [SelectedEmbeddingClass, props.width, props.height, props.onReady, props.theme?.backgroundColor, props.selectionLocked, handleViewportStateWithSnapBack]);
   // Update existing view when content/config props change
   // Note: We wrap in try-catch to avoid WeakMap errors from embedding-atlas
   useEffect(() => {

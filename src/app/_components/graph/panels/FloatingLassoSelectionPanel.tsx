@@ -82,6 +82,8 @@ interface SearchResult {
   x: number;
   y: number;
   community: number | null;
+  bluesky_handle: string | null;
+  mastodon_handle: string | null;
 }
 
 // Migration result type for progress panel
@@ -600,6 +602,18 @@ export function FloatingLassoSelectionPanel({
                             <div className="text-[11px] text-white font-medium truncate">
                               {result.display_label}
                             </div>
+                            {/* Bluesky handle */}
+                            {result.bluesky_handle && (
+                              <div className="text-[10px] text-blue-400 truncate">
+                                @{result.bluesky_handle}
+                              </div>
+                            )}
+                            {/* Mastodon handle */}
+                            {result.mastodon_handle && (
+                              <div className="text-[10px] text-purple-400 truncate">
+                                {result.mastodon_handle}
+                              </div>
+                            )}
                             {result.description && (
                               <div className="text-[9px] text-slate-400 truncate mt-0.5">
                                 {result.description}

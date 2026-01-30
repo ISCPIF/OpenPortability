@@ -157,6 +157,8 @@ export function ReconnectGraphVisualization({
   const viewportSyncedRef = useRef<boolean>(false);
   // Track which search node we've already centered on (to avoid re-centering on re-renders)
   const lastCenteredSearchNodeRef = useRef<string | null>(null);
+  // Track if viewport change is programmatic (search zoom) vs initial load
+  const isProgrammaticViewportChangeRef = useRef<boolean>(false);
 
   // Viewport state for persistence (uses centralized cookie helper)
   const [viewportState, setViewportState] = useState<ViewportState | null>(() => {
@@ -165,6 +167,12 @@ export function ReconnectGraphVisualization({
   const viewportSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
+    // Don't reset sync flag for programmatic changes (like search zoom)
+    // Only reset for initial viewport restoration
+    if (isProgrammaticViewportChangeRef.current) {
+      isProgrammaticViewportChangeRef.current = false;
+      return;
+    }
     viewportSyncedRef.current = false;
   }, [viewportState?.x, viewportState?.y, viewportState?.scale]);
 
@@ -809,10 +817,17 @@ export function ReconnectGraphVisualization({
         scale: 8, // Zoom in to see the node clearly
       };
       
+      // Mark as programmatic change so the useEffect doesn't reset viewportSyncedRef
+      isProgrammaticViewportChangeRef.current = true;
       setViewportState(newViewport);
       
       // Save to cookie (using centralized helper)
       setGraphViewport(newViewport);
+      
+      // Mark viewport as synced so that subsequent user zoom/pan changes are saved
+      // Without this, the sync check in handleViewportState would block saves
+      // because the user's new viewport won't match the search viewport
+      viewportSyncedRef.current = true;
     }
   // IMPORTANT: Do NOT include embeddingData in deps - it changes on every render
   // We only want to center when highlightedSearchNode actually changes
