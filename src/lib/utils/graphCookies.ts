@@ -1,21 +1,19 @@
 /**
- * Centralized graph UI state cookie management
+ * Centralized graph UI state management using sessionStorage
  * 
- * Consolidates the following legacy cookies into a single source of truth:
- * - graph_ui_state (primary - contains both viewMode and viewport)
- * - graph_view_mode (legacy - viewMode only)
- * - graph_viewport_state (legacy - viewport only)
+ * Uses sessionStorage instead of cookies so state is cleared when the tab closes.
+ * Falls back to legacy cookies for backward compatibility (read-only).
  * 
- * Reading: Falls back to legacy cookies for backward compatibility
- * Writing: Only writes to graph_ui_state
+ * Storage: sessionStorage (cleared on tab close)
+ * Legacy: Reads from old cookies for migration, but never writes to them
  */
 
-export const GRAPH_UI_COOKIE_NAME = 'graph_ui_state';
-export const GRAPH_UI_COOKIE_EXPIRY_DAYS = 30;
+export const GRAPH_UI_STORAGE_KEY = 'graph_ui_state';
 
-// Legacy cookie names (read-only for backward compatibility)
+// Legacy cookie names (read-only for backward compatibility during migration)
 const LEGACY_VIEW_MODE_COOKIE = 'graph_view_mode';
 const LEGACY_VIEWPORT_COOKIE = 'graph_viewport_state';
+const LEGACY_UI_STATE_COOKIE = 'graph_ui_state';
 
 export type ViewMode = 'discover' | 'followings' | 'followers';
 
@@ -30,7 +28,37 @@ export interface GraphUiState {
   viewport?: ViewportState;
 }
 
-// Helper to get cookie value
+// Helper to get sessionStorage value
+function getStorageValue(key: string): string | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    return sessionStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+// Helper to set sessionStorage value
+function setStorageValue(key: string, value: string): void {
+  if (typeof window === 'undefined') return;
+  try {
+    sessionStorage.setItem(key, value);
+  } catch {
+    // sessionStorage might be full or disabled
+  }
+}
+
+// Helper to remove sessionStorage value
+function removeStorageValue(key: string): void {
+  if (typeof window === 'undefined') return;
+  try {
+    sessionStorage.removeItem(key);
+  } catch {
+    // Ignore errors
+  }
+}
+
+// Helper to get legacy cookie value (read-only for migration)
 function getCookieValue(name: string): string | null {
   if (typeof document === 'undefined') return null;
   const value = `; ${document.cookie}`;
@@ -39,30 +67,22 @@ function getCookieValue(name: string): string | null {
   return null;
 }
 
-// Helper to set cookie
-function setCookieValue(name: string, value: string, days: number): void {
-  if (typeof document === 'undefined') return;
-  const expires = new Date();
-  expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
-  document.cookie = `${name}=${encodeURIComponent(value)};expires=${expires.toUTCString()};path=/;SameSite=Lax`;
-}
-
-// Helper to delete cookie
+// Helper to delete legacy cookie
 function deleteCookie(name: string): void {
   if (typeof document === 'undefined') return;
   document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
 }
 
 /**
- * Get the current graph UI state from cookies
- * Falls back to legacy cookies for backward compatibility
+ * Get the current graph UI state from sessionStorage
+ * Falls back to legacy cookies for backward compatibility (one-time migration)
  */
 export function getGraphUiState(): GraphUiState {
-  // Try primary cookie first
-  const savedUi = getCookieValue(GRAPH_UI_COOKIE_NAME);
+  // Try sessionStorage first
+  const savedUi = getStorageValue(GRAPH_UI_STORAGE_KEY);
   if (savedUi) {
     try {
-      const parsed = JSON.parse(decodeURIComponent(savedUi));
+      const parsed = JSON.parse(savedUi);
       const result: GraphUiState = {};
       
       // Extract viewMode
@@ -78,27 +98,62 @@ export function getGraphUiState(): GraphUiState {
         result.viewport = parsed.viewport;
       }
       
-      // If we got at least one value, return it (with fallbacks for missing parts)
       if (result.viewMode || result.viewport) {
-        // Fill in missing parts from legacy cookies
-        if (!result.viewMode) {
-          result.viewMode = getLegacyViewMode();
-        }
-        if (!result.viewport) {
-          result.viewport = getLegacyViewport();
-        }
         return result;
       }
     } catch {
-      // Malformed cookie, fall through to legacy
+      // Malformed data, fall through to legacy
     }
   }
   
-  // Fall back to legacy cookies
-  return {
-    viewMode: getLegacyViewMode(),
-    viewport: getLegacyViewport(),
-  };
+  // Fall back to legacy cookies (for migration)
+  const legacyState = getLegacyStateFromCookies();
+  if (legacyState.viewMode || legacyState.viewport) {
+    // Migrate to sessionStorage and clean up legacy cookies
+    setStorageValue(GRAPH_UI_STORAGE_KEY, JSON.stringify(legacyState));
+    deleteCookie(LEGACY_UI_STATE_COOKIE);
+    deleteCookie(LEGACY_VIEW_MODE_COOKIE);
+    deleteCookie(LEGACY_VIEWPORT_COOKIE);
+    return legacyState;
+  }
+  
+  return {};
+}
+
+/**
+ * Get state from legacy cookies (for migration)
+ */
+function getLegacyStateFromCookies(): GraphUiState {
+  const result: GraphUiState = {};
+  
+  // Try legacy unified cookie first
+  const legacyUi = getCookieValue(LEGACY_UI_STATE_COOKIE);
+  if (legacyUi) {
+    try {
+      const parsed = JSON.parse(decodeURIComponent(legacyUi));
+      if (parsed?.viewMode && ['discover', 'followings', 'followers'].includes(parsed.viewMode)) {
+        result.viewMode = parsed.viewMode as ViewMode;
+      }
+      if (parsed?.viewport && 
+          typeof parsed.viewport.x === 'number' && 
+          typeof parsed.viewport.y === 'number' && 
+          typeof parsed.viewport.scale === 'number') {
+        result.viewport = parsed.viewport;
+      }
+    } catch {
+      // Ignore malformed cookie
+    }
+  }
+  
+  // Fill in from individual legacy cookies
+  if (!result.viewMode) {
+    result.viewMode = getLegacyViewMode();
+  }
+  if (!result.viewport) {
+    result.viewport = getLegacyViewport();
+  }
+  
+  return result;
 }
 
 /**
@@ -133,8 +188,7 @@ function getLegacyViewport(): ViewportState | undefined {
 }
 
 /**
- * Save the graph UI state to cookie
- * Only writes to the primary cookie (graph_ui_state)
+ * Save the graph UI state to sessionStorage
  */
 export function setGraphUiState(state: GraphUiState): void {
   // Get current state to merge with
@@ -145,7 +199,7 @@ export function setGraphUiState(state: GraphUiState): void {
     viewport: state.viewport ?? current.viewport,
   };
   
-  setCookieValue(GRAPH_UI_COOKIE_NAME, JSON.stringify(newState), GRAPH_UI_COOKIE_EXPIRY_DAYS);
+  setStorageValue(GRAPH_UI_STORAGE_KEY, JSON.stringify(newState));
 }
 
 /**
@@ -163,10 +217,12 @@ export function setGraphViewport(viewport: ViewportState): void {
 }
 
 /**
- * Clear all graph UI cookies (for reset view)
+ * Clear graph UI state (sessionStorage + legacy cookies)
  */
 export function clearGraphUiState(): void {
-  deleteCookie(GRAPH_UI_COOKIE_NAME);
+  removeStorageValue(GRAPH_UI_STORAGE_KEY);
+  // Also clean up any legacy cookies
+  deleteCookie(LEGACY_UI_STATE_COOKIE);
   deleteCookie(LEGACY_VIEW_MODE_COOKIE);
   deleteCookie(LEGACY_VIEWPORT_COOKIE);
 }

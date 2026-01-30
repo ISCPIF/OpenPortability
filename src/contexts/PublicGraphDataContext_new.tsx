@@ -60,8 +60,32 @@ class TileNodeIndexedDB {
   private db: IDBDatabase | null = null;
   private dbPromise: Promise<IDBDatabase> | null = null;
 
+  // Check if the connection is still valid
+  private isConnectionValid(): boolean {
+    if (!this.db) return false;
+    try {
+      return this.db.objectStoreNames.length >= 0;
+    } catch {
+      return false;
+    }
+  }
+
+  // Reset connection state (called after HMR or connection errors)
+  private resetConnection(): void {
+    this.db = null;
+    this.dbPromise = null;
+  }
+
   private async getDB(): Promise<IDBDatabase> {
-    if (this.db) return this.db;
+    if (this.db && this.isConnectionValid()) {
+      return this.db;
+    }
+    
+    if (this.db && !this.isConnectionValid()) {
+      console.log('💾 [TileIDB] Connection invalid, reopening...');
+      this.resetConnection();
+    }
+    
     if (this.dbPromise) return this.dbPromise;
 
     this.dbPromise = new Promise((resolve, reject) => {
@@ -74,11 +98,24 @@ class TileNodeIndexedDB {
 
       request.onerror = () => {
         console.error('💾 [TileIDB] Failed to open database:', request.error);
+        this.resetConnection();
         reject(request.error);
       };
 
       request.onsuccess = () => {
         this.db = request.result;
+        
+        this.db.onclose = () => {
+          console.log('💾 [TileIDB] Connection closed, will reopen on next access');
+          this.resetConnection();
+        };
+        
+        this.db.onversionchange = () => {
+          console.log('💾 [TileIDB] Version change detected, closing connection');
+          this.db?.close();
+          this.resetConnection();
+        };
+        
         resolve(request.result);
       };
 

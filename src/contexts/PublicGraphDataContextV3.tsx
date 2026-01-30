@@ -111,8 +111,32 @@ class GraphIndexedDB {
   private db: IDBDatabase | null = null;
   private dbPromise: Promise<IDBDatabase> | null = null;
 
+  // Check if the connection is still valid
+  private isConnectionValid(): boolean {
+    if (!this.db) return false;
+    try {
+      return this.db.objectStoreNames.length >= 0;
+    } catch {
+      return false;
+    }
+  }
+
+  // Reset connection state (called after HMR or connection errors)
+  private resetConnection(): void {
+    this.db = null;
+    this.dbPromise = null;
+  }
+
   private async getDB(): Promise<IDBDatabase> {
-    if (this.db) return this.db;
+    if (this.db && this.isConnectionValid()) {
+      return this.db;
+    }
+    
+    if (this.db && !this.isConnectionValid()) {
+      console.log('💾 [IDB-V3] Connection invalid, reopening...');
+      this.resetConnection();
+    }
+    
     if (this.dbPromise) return this.dbPromise;
 
     this.dbPromise = new Promise((resolve, reject) => {
@@ -125,11 +149,24 @@ class GraphIndexedDB {
 
       request.onerror = () => {
         console.error('💾 [IDB-V3] Failed to open database:', request.error);
+        this.resetConnection();
         reject(request.error);
       };
 
       request.onsuccess = () => {
         this.db = request.result;
+        
+        this.db.onclose = () => {
+          console.log('💾 [IDB-V3] Connection closed, will reopen on next access');
+          this.resetConnection();
+        };
+        
+        this.db.onversionchange = () => {
+          console.log('💾 [IDB-V3] Version change detected, closing connection');
+          this.db?.close();
+          this.resetConnection();
+        };
+        
         resolve(request.result);
       };
 
@@ -361,6 +398,8 @@ interface GlobalState {
   labelMap: Record<string, string>;
   floatingLabels: FloatingLabel[];
   labelsLoaded: boolean;
+  // HMR tracking - reset state when module is reloaded
+  _hmrId?: number;
 }
 
 const globalState: GlobalState = {
@@ -372,6 +411,27 @@ const globalState: GlobalState = {
   floatingLabels: [],
   labelsLoaded: false,
 };
+
+// HMR: Reset global state when module is hot-reloaded
+// This ensures fresh data loading after rebuild
+if (typeof window !== 'undefined') {
+  const currentHmrId = Date.now();
+  const windowWithHmr = window as typeof window & { __PUBLIC_GRAPH_V3_HMR_ID__?: number };
+  
+  if (windowWithHmr.__PUBLIC_GRAPH_V3_HMR_ID__ && windowWithHmr.__PUBLIC_GRAPH_V3_HMR_ID__ !== currentHmrId) {
+    // Module was reloaded - reset global state
+    console.log('🔄 [PublicGraphV3] HMR detected, resetting global state...');
+    globalState.initialNodes = [];
+    globalState.initialNodesLoaded = false;
+    globalState.detailDegreeCeiling = null;
+    globalState.normalizationBounds = null;
+    globalState.labelMap = {};
+    globalState.floatingLabels = [];
+    globalState.labelsLoaded = false;
+  }
+  
+  windowWithHmr.__PUBLIC_GRAPH_V3_HMR_ID__ = currentHmrId;
+}
 
 // ============================================
 // Context Value Interface
@@ -434,7 +494,7 @@ export function PublicGraphDataProviderV3({ children }: PublicGraphDataProviderV
 
   const tileNodeMapRef = useRef<Map<string, GraphNode>>(new Map());
 
-  const [detailDegreeCeiling, setDetailDegreeCeiling] = useState<number | null>(null);
+  const [detailDegreeCeiling, setDetailDegreeCeiling] = useState<number | null>(globalState.detailDegreeCeiling);
   
   const [currentScale, setCurrentScale] = useState(0.025);
   const [normalizationBounds, setNormalizationBounds] = useState<NormalizationBounds | null>(globalState.normalizationBounds);
@@ -454,7 +514,7 @@ export function PublicGraphDataProviderV3({ children }: PublicGraphDataProviderV
   const fetchPromiseRef = useRef<Promise<void> | null>(null);
   const labelsVersionRef = useRef<number>(0);
 
-  const detailDegreeCeilingRef = useRef<number | null>(null);
+  const detailDegreeCeilingRef = useRef<number | null>(globalState.detailDegreeCeiling);
   const prevZoomLevelIndexRef = useRef<number>(-1);
   const prevBboxRef = useRef<BoundingBox | null>(null);
 
