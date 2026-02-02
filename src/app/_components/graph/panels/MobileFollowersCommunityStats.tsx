@@ -30,7 +30,7 @@ export function MobileFollowersCommunityStats({
 }: MobileFollowersCommunityStatsProps) {
   const t = useTranslations('dashboard.followersPanel');
   
-  const [isCollapsed, setIsCollapsed] = useState(true);
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<FollowersCommunityStatsResponse | null>(null);

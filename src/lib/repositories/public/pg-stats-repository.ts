@@ -119,6 +119,48 @@ export const pgStatsRepository = {
    * @returns Stats globales du système
    */
   async getGlobalStats(): Promise<GlobalStats> {
+    const fetchGlobalStatsFromDb = async (): Promise<GlobalStats> => {
+      let data: GlobalStats | null = null
+
+      try {
+        const result = await queryPublic(`SELECT public.get_global_stats_v2() as stats`)
+        data = result.rows[0]?.stats ?? null
+      } catch (error) {
+        logger.logWarning(
+          'Repository',
+          'pgStatsRepository.getGlobalStats',
+          'get_global_stats_v2 failed, falling back to legacy',
+          'system',
+          { context: 'Fallback to legacy global stats function', error: error instanceof Error ? error.message : String(error) }
+        )
+      }
+
+      if (!data) {
+        data = await pgStatsRepository.getGlobalStatsFromCacheV2()
+      }
+
+      if (!data) {
+        try {
+          const result = await queryPublic(`SELECT public.get_global_stats() as stats`)
+          data = result.rows[0]?.stats ?? null
+        } catch (error) {
+          logger.logWarning(
+            'Repository',
+            'pgStatsRepository.getGlobalStats',
+            'get_global_stats failed, no legacy JSON cache available',
+            'system',
+            { context: 'Legacy global stats function failed', error: error instanceof Error ? error.message : String(error) }
+          )
+        }
+      }
+
+      if (!data) {
+        throw new Error('No global stats returned from database')
+      }
+
+      return data as GlobalStats
+    }
+
     try {
       // 1. Essayer Redis d'abord
       const cached = await redis.get('stats:global')
@@ -142,12 +184,7 @@ export const pgStatsRepository = {
         { context: 'Fallback to database for global stats' }
       )
 
-      const result = await queryPublic(`SELECT public.get_global_stats() as stats`)
-      const data = result.rows[0]?.stats
-
-      if (!data) {
-        throw new Error('No global stats returned from database')
-      }
+      const data = await fetchGlobalStatsFromDb()
 
       // 3. Mettre en cache pour éviter les futurs cache miss
       await redis.set('stats:global', JSON.stringify(data), 86400)
@@ -175,14 +212,7 @@ export const pgStatsRepository = {
       )
 
       try {
-        const result = await queryPublic(`SELECT public.get_global_stats() as stats`)
-        const data = result.rows[0]?.stats
-
-        if (!data) {
-          throw new Error('No global stats returned from database')
-        }
-
-        return data as GlobalStats
+        return await fetchGlobalStatsFromDb()
       } catch (dbError) {
         const errorString = dbError instanceof Error ? dbError.message : String(dbError)
         logger.logError(
@@ -223,14 +253,14 @@ export const pgStatsRepository = {
       return result.rows[0].stats as GlobalStats
     } catch (error) {
       const errorString = error instanceof Error ? error.message : String(error)
-      logger.logError(
+      logger.logWarning(
         'Repository',
         'pgStatsRepository.getGlobalStatsFromCache',
-        errorString,
+        'Legacy JSON cache unavailable, falling back to v2 columns',
         'system',
-        { context: 'Failed to read from global_stats_cache table' }
+        { context: 'Failed to read stats column from global_stats_cache', error: errorString }
       )
-      return null
+      return pgStatsRepository.getGlobalStatsFromCacheV2()
     }
   },
 
@@ -242,50 +272,66 @@ export const pgStatsRepository = {
    */
   async getGlobalStatsFromCacheV2(): Promise<GlobalStats | null> {
     try {
-      const result = await queryPublic(`
-        SELECT 
-          users_total,
-          users_onboarded,
-          followers,
-          following,
-          with_handle,
-          with_handle_bluesky,
-          with_handle_mastodon,
-          followed_on_bluesky,
-          followed_on_mastodon,
-          updated_at
-        FROM global_stats_cache_v2 
-        WHERE id = true
-      `)
+      const fetchFromTable = async (tableName: 'global_stats_cache' | 'global_stats_cache_v2') => {
+        const result = await queryPublic(`
+          SELECT 
+            users_total,
+            users_onboarded,
+            followers,
+            following,
+            with_handle,
+            with_handle_bluesky,
+            with_handle_mastodon,
+            followed_on_bluesky,
+            followed_on_mastodon,
+            updated_at
+          FROM ${tableName}
+          WHERE id = true
+        `)
 
-      if (!result.rows[0]) {
+        if (!result.rows[0]) {
+          logger.logWarning(
+            'Repository',
+            'pgStatsRepository.getGlobalStatsFromCacheV2',
+            `No data in ${tableName}`,
+            'system',
+            { context: 'Cache v2 table empty' }
+          )
+          return null
+        }
+
+        const row = result.rows[0]
+        return {
+          users: {
+            total: Number(row.users_total) || 0,
+            onboarded: Number(row.users_onboarded) || 0,
+          },
+          connections: {
+            followers: Number(row.followers) || 0,
+            following: Number(row.following) || 0,
+            withHandle: Number(row.with_handle) || 0,
+            withHandleBluesky: Number(row.with_handle_bluesky) || 0,
+            withHandleMastodon: Number(row.with_handle_mastodon) || 0,
+            followedOnBluesky: Number(row.followed_on_bluesky) || 0,
+            followedOnMastodon: Number(row.followed_on_mastodon) || 0,
+          },
+          updated_at: row.updated_at?.toISOString?.() || row.updated_at || new Date().toISOString(),
+        }
+      }
+
+      try {
+        return await fetchFromTable('global_stats_cache')
+      } catch (error) {
         logger.logWarning(
           'Repository',
           'pgStatsRepository.getGlobalStatsFromCacheV2',
-          'No data in global_stats_cache_v2',
+          'global_stats_cache v2 columns unavailable, trying legacy v2 table',
           'system',
-          { context: 'Cache v2 table empty' }
+          { context: 'Fallback to global_stats_cache_v2', error: error instanceof Error ? error.message : String(error) }
         )
-        return null
       }
 
-      const row = result.rows[0]
-      return {
-        users: {
-          total: Number(row.users_total) || 0,
-          onboarded: Number(row.users_onboarded) || 0,
-        },
-        connections: {
-          followers: Number(row.followers) || 0,
-          following: Number(row.following) || 0,
-          withHandle: Number(row.with_handle) || 0,
-          withHandleBluesky: Number(row.with_handle_bluesky) || 0,
-          withHandleMastodon: Number(row.with_handle_mastodon) || 0,
-          followedOnBluesky: Number(row.followed_on_bluesky) || 0,
-          followedOnMastodon: Number(row.followed_on_mastodon) || 0,
-        },
-        updated_at: row.updated_at?.toISOString?.() || row.updated_at || new Date().toISOString(),
-      }
+      return await fetchFromTable('global_stats_cache_v2')
     } catch (error) {
       const errorString = error instanceof Error ? error.message : String(error)
       logger.logError(
@@ -293,7 +339,7 @@ export const pgStatsRepository = {
         'pgStatsRepository.getGlobalStatsFromCacheV2',
         errorString,
         'system',
-        { context: 'Failed to read from global_stats_cache_v2 table' }
+        { context: 'Failed to read from v2 cache tables' }
       )
       return null
     }

@@ -158,8 +158,26 @@ export function useStats(options?: { skipInitialFetch?: boolean }) {
           }
 
           // Global stats are now received via SSE (initial stats sent on connection)
-          // No need to fetch from /api/stats/total - SSE will provide them
-          // If we don't have cached stats yet, SSE will send them shortly after connection
+          // Fallback to /api/stats/total when cache/SSE hasn't provided stats yet
+          if (!cachedGlobalStats || forceRefresh) {
+            try {
+              const response = await fetch('/api/stats/total', {
+                headers: { 'Cache-Control': 'no-cache' }
+              });
+
+              if (response.ok) {
+                const data = await response.json();
+                cachedGlobalStats = data;
+                setGlobalStats(data);
+                setGlobalStatsCookie(data);
+              } else if (response.status !== 401) {
+                console.warn('📊 [useStats] Failed to fetch global stats:', response.status);
+              }
+            } catch (error) {
+              console.warn('📊 [useStats] Global stats fetch failed:', error);
+            }
+          }
+
           if (!cachedGlobalStats) {
             console.log('📊 [useStats] Waiting for global stats from SSE...');
           }

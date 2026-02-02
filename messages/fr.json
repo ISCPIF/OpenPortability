@@ -206,6 +206,12 @@
       "foundInGraph": "{count} followers found in graph",
       "openPortabilityMembers": "{count} OpenPortability members"
     },
+    "globalStats": {
+      "title": "OPENPORTABILITY",
+      "totalUsers": "Utilisateurs totaux",
+      "totalConnections": "Connexions totales",
+      "totalReconnections": "Reconnexions totales"
+    },
     "bluesky": {
       "testDM": "Tester les messages directs Bluesky"
     }
@@ -742,7 +748,8 @@
     "mobileNotice": {
       "title": "Pour une expérience optimale",
       "message": "Utilisez OpenPortability sur un ordinateur pour des cartes sociales interactives et y afficher votre réseau.",
-      "cta": "Continuer sur ordinateur"
+      "cta": "Continuer sur ordinateur",
+      "close": "Fermer"
     }
   },
   "communityColorPicker": {

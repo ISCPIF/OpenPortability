@@ -12,6 +12,7 @@ import { FloatingDiscoverPanel } from './panels/FloatingDiscoverPanel';
 import { FloatingProgressPanel } from './panels/FloatingProgressPanel';
 import { FloatingFollowersCommunityPanel } from './panels/FloatingFollowersCommunityPanel';
 import { MobileFollowersCommunityStats } from './panels/MobileFollowersCommunityStats';
+import { MobileGlobalStats } from './panels/MobileGlobalStats';
 import { FloatingLassoSelectionPanel } from './panels/FloatingLassoSelectionPanel';
 import { ParticulesBackground } from '../layouts/ParticulesBackground';
 import { CommunityColorPicker } from './CommunityColorPicker';
@@ -23,7 +24,7 @@ import { ReconnectLoginModal } from '../modales/ReconnectLoginModal';
 import { MigrationSuccessModal } from '../modales/MigrationSuccessModal';
 import { IntroOverlay } from './IntroOverlay';
 import { ConsentLabelModal } from './ConsentLabelModal';
-import { Lock } from 'lucide-react';
+import { Lock, X } from 'lucide-react';
 import { getInitialViewMode, setGraphViewMode, clearGraphUiState, getGraphUiState } from '@/lib/utils/graphCookies';
 
 // Dynamic import to avoid SSR issues with embedding-atlas WASM
@@ -169,6 +170,7 @@ export function ReconnectGraphDashboard({
   // Membres sélectionnés via lasso
   const [lassoSelectedMembers, setLassoSelectedMembersState] = useState<GraphNode[]>([]);
   const [isLassoSelectionLoaded, setIsLassoSelectionLoaded] = useState(false);
+  const [showMobileNotice, setShowMobileNotice] = useState(true);
   
   // Highlighted node from search (in discover mode)
   const [highlightedSearchNode, setHighlightedSearchNode] = useState<{
@@ -1037,6 +1039,8 @@ export function ReconnectGraphDashboard({
           <MobileFollowersCommunityStats 
             totalFollowersFromStats={stats?.connections?.following || 0}
           />
+          {/* Global OpenPortability Stats */}
+          <MobileGlobalStats globalStats={globalStats} />
         </div>
       )}
 
@@ -1064,9 +1068,17 @@ export function ReconnectGraphDashboard({
       )}
 
       {/* Mobile Notice - Invite users to use desktop for optimal experience */}
-      {isMobile && (
-        <div className="absolute left-2 right-2 bottom-20 z-30">
-          <div className="bg-gradient-to-r from-blue-900/95 to-indigo-900/95 backdrop-blur-sm rounded-lg border border-blue-500/30 shadow-xl p-4">
+      {isMobile && showMobileNotice && (
+        <div className="absolute left-2 right-2 bottom-1 z-30">
+          <div className="relative bg-gradient-to-r from-blue-900/95 to-indigo-900/95 backdrop-blur-sm rounded-lg border border-blue-500/30 shadow-xl p-4">
+            <button
+              type="button"
+              onClick={() => setShowMobileNotice(false)}
+              aria-label={t('mobileNotice.close')}
+              className="absolute right-2 top-2 rounded-full p-1 text-blue-200/70 transition hover:text-white"
+            >
+              <X className="h-4 w-4" />
+            </button>
             <div className="flex items-start gap-3">
               <div className="flex-shrink-0 w-10 h-10 bg-blue-500/20 rounded-full flex items-center justify-center">
                 <svg className="w-5 h-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
