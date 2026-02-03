@@ -58,7 +58,7 @@ export default async function RootLayout({ children, params }: Props) {
       <head>
         <Script
           src="https://cloud.umami.is/script.js"
-          data-website-id="1ab53139-e458-4796-a0f5-ed330149637b"
+          data-website-id="7cf60f23-a610-4b31-839f-418e1ea9516f"
           strategy="afterInteractive"
         />
       </head>

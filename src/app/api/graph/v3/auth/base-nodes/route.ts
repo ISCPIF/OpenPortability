@@ -116,9 +116,15 @@ async function authBaseNodesHandler(
                ON st.node_id = g.id
               AND st.source_id = '${userId.replace(/'/g, "''")}'::uuid`
           : (twitterId
-            ? `INNER JOIN postgres_db.public.get_following_hashes_for_follower(${twitterIdSql}::bigint) fh
-                 ON ${coordHashSql} = fh.coord_hash`
-            : `INNER JOIN (SELECT '__none__' AS coord_hash) fh ON ${coordHashSql} = fh.coord_hash`)
+            ? `INNER JOIN (
+                 SELECT DISTINCT COALESCE(tbu.twitter_id, tmu.twitter_id) AS twitter_id
+                 FROM postgres_db.public.sources_followers sf
+                 LEFT JOIN postgres_db.public.twitter_bluesky_users tbu ON tbu.id = sf.source_id
+                 LEFT JOIN postgres_db.public.twitter_mastodon_users tmu ON tmu.id = sf.source_id
+                 WHERE sf.node_id = ${twitterIdSql}
+                   AND (tbu.twitter_id IS NOT NULL OR tmu.twitter_id IS NOT NULL)
+               ) s ON g.id = s.twitter_id`
+            : `INNER JOIN (SELECT NULL::bigint AS twitter_id) s ON FALSE`)
         }
         WHERE g.community != 8
           AND ${twitterId ? `g.id != ${twitterIdSql}` : 'TRUE'}
