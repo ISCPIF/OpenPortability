@@ -849,8 +849,25 @@
     "resetView": "Réinitialiser la vue",
     "loginForMore": "Se connecter pour plus",
     "loading": "Chargement...",
+    "loadingGraph": "Chargement du graphe...",
+    "loadingInitialNodes": "Chargement des nœuds initiaux (100k)...",
+    "initializingGraph": "Initialisation du graphe...",
+    "displayedNodes": "Nœuds affichés",
+    "loadingTiles": "Chargement des tuiles...",
     "returnToGraph": "Revenir au graphe",
-    "zoomedOutTooFar": "Vous avez trop dézoomé"
+    "zoomedOutTooFar": "Vous avez trop dézoomé",
+    "communities": {
+      "gamingEsports": "Gaming / Esport",
+      "scienceEnvironment": "Science / Environnement",
+      "sportsBusiness": "Sport / Business",
+      "journalismInternational": "Journalisme / International",
+      "entertainmentLgbtq": "Divertissement / LGBTQ+",
+      "spanishMedia": "Médias hispanophones",
+      "frenchMedia": "Médias français",
+      "scienceResearch": "Science / Recherche",
+      "adultContent": "Contenu adulte",
+      "musicArt": "Musique / Art"
+    }
   },
   "introOverlay": {
     "skip": "Passer l'intro",

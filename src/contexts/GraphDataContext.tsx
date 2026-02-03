@@ -2265,7 +2265,7 @@ export function GraphDataProvider({ children }: GraphDataProviderProps) {
         console.log(`📦 [Auth Tiles] Loaded ${totalFetched} nodes across ${prioritizedMissing.length} tiles in ${loadTime.toFixed(0)}ms`);
 
         const accumulated = Array.from(tileNodeMapRef.current.values());
-        const maxTileNodes = Math.max(0, CONFIG.MAX_MEMORY_NODES - baseNodes.length);
+        const maxTileNodes = Math.max(0, maxMemoryNodes - baseNodes.length);
         if (accumulated.length > maxTileNodes) {
           const trimmed = accumulated.slice(accumulated.length - maxTileNodes);
           tileNodeMapRef.current.clear();
@@ -2286,7 +2286,7 @@ export function GraphDataProvider({ children }: GraphDataProviderProps) {
         fetchPromiseRef.current = null;
       }
     })();
-  }, [parseArrowToNodes, baseNodes.length]);
+  }, [parseArrowToNodes, baseNodes.length, maxMemoryNodes]);
 
   // Handle viewport change - same logic as PublicGraphDataContextV3
   const onViewportChange = useCallback((bbox: BoundingBox, scale: number) => {
@@ -2397,8 +2397,24 @@ export function GraphDataProvider({ children }: GraphDataProviderProps) {
     const uniqueTileNodes = tileNodes.filter(n => !baseNodeIds.has(n.id));
     
     // Merge: base nodes first, then unique tile nodes
-    return [...baseNodes, ...uniqueTileNodes];
-  }, [baseNodes, tileNodes]);
+    const merged = [...baseNodes, ...uniqueTileNodes];
+    if (merged.length > maxMemoryNodes) {
+      return merged.slice(0, maxMemoryNodes);
+    }
+    return merged;
+  }, [baseNodes, tileNodes, maxMemoryNodes]);
+
+  useEffect(() => {
+    const maxTileNodes = Math.max(0, maxMemoryNodes - baseNodes.length);
+    if (tileNodeMapRef.current.size > maxTileNodes) {
+      const trimmed = Array.from(tileNodeMapRef.current.values()).slice(-maxTileNodes);
+      tileNodeMapRef.current.clear();
+      for (const n of trimmed) {
+        tileNodeMapRef.current.set(n.id, n);
+      }
+      setTileNodes(trimmed);
+    }
+  }, [maxMemoryNodes, baseNodes.length]);
 
   // Cleanup debounce on unmount
   useEffect(() => {

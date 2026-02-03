@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
-import { usePublicGraphDataOptional } from '@/contexts/PublicGraphDataContext';
+import { usePublicGraphDataV3Optional } from '@/contexts/PublicGraphDataContextV3';
 import { useGraphDataOptional } from '@/contexts/GraphDataContext';
 import { GraphNode } from '@/lib/types/graph';
 import { FollowingHashStatus } from '@/hooks/usePersonalNetwork';
@@ -57,13 +57,13 @@ interface GraphModeData {
 /**
  * Hook that provides graph data based on authentication status.
  * 
- * - For non-authenticated users: Uses PublicGraphDataContext (discover mode only)
+ * - For non-authenticated users: Uses PublicGraphDataContextV3 (discover mode only)
  * - For authenticated users: Uses GraphDataContext (full features)
  * 
  * This allows the graph to work in both modes without requiring auth.
  */
 export function useGraphMode(isAuthenticated: boolean): GraphModeData {
-  const publicData = usePublicGraphDataOptional();
+  const publicData = usePublicGraphDataV3Optional();
   const authData = useGraphDataOptional();
   
   // Empty set/map for non-authenticated mode
@@ -110,10 +110,10 @@ export function useGraphMode(isAuthenticated: boolean): GraphModeData {
     if (publicData) {
       return {
         // Base nodes
-        baseNodes: publicData.baseNodes,
-        isBaseNodesLoaded: publicData.isBaseNodesLoaded,
-        isBaseNodesLoading: publicData.isBaseNodesLoading,
-        fetchBaseNodes: publicData.fetchBaseNodes,
+        baseNodes: publicData.mergedNodes.length > 0 ? publicData.mergedNodes : publicData.initialNodes,
+        isBaseNodesLoaded: publicData.isInitialLoaded,
+        isBaseNodesLoading: publicData.isInitialLoading,
+        fetchBaseNodes: publicData.fetchInitialNodes,
         
         // Normalization bounds
         normalizationBounds: publicData.normalizationBounds,

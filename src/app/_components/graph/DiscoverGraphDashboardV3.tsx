@@ -17,11 +17,11 @@ const ReconnectGraphVisualization = dynamic(
   { ssr: false }
 );
 
-interface DiscoverGraphDashboardV3Props {
+interface DiscoverGraphDashboardProps {
   onLoginClick?: () => void;
 }
 
-export function DiscoverGraphDashboardV3({ onLoginClick }: DiscoverGraphDashboardV3Props) {
+export function DiscoverGraphDashboard({ onLoginClick }: DiscoverGraphDashboardProps) {
   const t = useTranslations('discoverPage');
   const { isDark, colors } = useTheme();
   const { colors: communityColors } = useCommunityColors();
@@ -58,7 +58,7 @@ export function DiscoverGraphDashboardV3({ onLoginClick }: DiscoverGraphDashboar
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
   const [isGraphRendered, setIsGraphRendered] = useState(false);
-  const [loadingMessage, setLoadingMessage] = useState('Chargement du graphe V3...');
+  const [loadingMessage, setLoadingMessage] = useState(() => t('loadingGraph'));
   const [viewResetKey, setViewResetKey] = useState(0);
   const [addedLabelsCount, setAddedLabelsCount] = useState(0);
   const previousLabelKeysRef = useRef<Set<string> | null>(null);
@@ -105,11 +105,11 @@ export function DiscoverGraphDashboardV3({ onLoginClick }: DiscoverGraphDashboar
 
   useEffect(() => {
     if (isInitialLoading) {
-      setLoadingMessage('Chargement des nœuds initiaux (100k)...');
+      setLoadingMessage(t('loadingInitialNodes'));
     } else if (initialNodes.length > 0 && !isGraphRendered) {
-      setLoadingMessage('Initialisation du graphe...');
+      setLoadingMessage(t('initializingGraph'));
     }
-  }, [isInitialLoading, initialNodes.length, isGraphRendered]);
+  }, [isInitialLoading, initialNodes.length, isGraphRendered, t]);
 
   useEffect(() => {
     const updateSize = () => {
@@ -198,8 +198,8 @@ export function DiscoverGraphDashboardV3({ onLoginClick }: DiscoverGraphDashboar
   }, []);
 
   const handleMosaicNodesReady = useCallback((nodes: GraphNode[]) => {
-    setLoadingMessage('Initialisation du graphe...');
-  }, []);
+    setLoadingMessage(t('initializingGraph'));
+  }, [t]);
 
   const handleGraphReady = useCallback(() => {
     setIsGraphRendered(true);
@@ -243,6 +243,19 @@ export function DiscoverGraphDashboardV3({ onLoginClick }: DiscoverGraphDashboar
   }, []);
 
   const isGraphReady = initialNodes.length > 0;
+
+  const communityLabels = useMemo(() => ({
+    0: t('communities.gamingEsports'),
+    1: t('communities.scienceEnvironment'),
+    2: t('communities.sportsBusiness'),
+    3: t('communities.journalismInternational'),
+    4: t('communities.entertainmentLgbtq'),
+    5: t('communities.spanishMedia'),
+    6: t('communities.frenchMedia'),
+    7: t('communities.scienceResearch'),
+    8: t('communities.adultContent'),
+    9: t('communities.musicArt'),
+  }), [t]);
 
   return (
     <div 
@@ -321,9 +334,7 @@ export function DiscoverGraphDashboardV3({ onLoginClick }: DiscoverGraphDashboar
         className="absolute left-1/2 -translate-x-1/2 z-40 flex items-center bg-slate-900/95 backdrop-blur-sm rounded border border-slate-700/50 shadow-xl"
         style={{ top: `${headerHeight + 16}px` }}
       >
-        <div className="px-2 py-1 text-[10px] font-bold tracking-wide text-emerald-400 bg-emerald-900/50 rounded-l">
-          V3 TILE
-        </div>
+  
         <div className="relative px-4 py-2 text-[11px] font-medium tracking-wide text-white bg-slate-800">
           <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-blue-500" />
           {t('title')}
@@ -349,7 +360,6 @@ export function DiscoverGraphDashboardV3({ onLoginClick }: DiscoverGraphDashboar
       >
         <div className="text-xs text-slate-400 mb-3 uppercase tracking-wider flex items-center gap-2">
           {t('stats')}
-          <span className="px-1.5 py-0.5 text-[9px] bg-emerald-900/50 text-emerald-400 rounded">V3</span>
         </div>
 
         {addedLabelsCount > 0 && (
@@ -363,43 +373,18 @@ export function DiscoverGraphDashboardV3({ onLoginClick }: DiscoverGraphDashboar
           </div>
         )}
         
-        {/* Zoom Level Info */}
-        <div className="mb-3 p-2 bg-slate-800/50 rounded">
-          <div className="text-[10px] text-slate-500 uppercase">Zoom Level</div>
-          <div className="text-sm font-mono text-white">
-            Scale: {currentScale.toFixed(3)}
-          </div>
-          <div className="text-[10px] text-slate-400">
-            minDegree: {currentZoomLevel.minDegree} | grid: {currentZoomLevel.gridSize}
-          </div>
-        </div>
         
         {/* Node counts */}
         <div className="mb-3">
-          <div className="text-xs text-slate-500">Nœuds affichés</div>
+          <div className="text-xs text-slate-500">{t('displayedNodes')}</div>
           <div className="text-lg font-mono text-white flex items-center gap-2">
             {mergedNodes.length.toLocaleString()}
             {isTileLoading && (
-              <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" title="Loading tiles..." />
+              <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" title={t('loadingTiles')} />
             )}
           </div>
         </div>
-        
-        {/* Breakdown */}
-        <div className="text-[10px] text-slate-500 space-y-1">
-          <div className="flex justify-between">
-            <span>Initial (100k):</span>
-            <span className="text-slate-300">{initialNodes.length.toLocaleString()}</span>
-          </div>
-          <div className="flex justify-between">
-            <span>Tiles:</span>
-            <span className="text-slate-300">{tileNodes.length.toLocaleString()}</span>
-          </div>
-          <div className="flex justify-between">
-            <span>Merged (unique):</span>
-            <span className="text-white font-medium">{mergedNodes.length.toLocaleString()}</span>
-          </div>
-        </div>
+      
         
         {/* Global stats from API */}
         {globalStats && (
@@ -468,10 +453,10 @@ export function DiscoverGraphDashboardV3({ onLoginClick }: DiscoverGraphDashboar
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.707-10.293a1 1 0 00-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414-1.414L9.414 11H13a1 1 0 100-2H9.414l1.293-1.293z" clipRule="evenodd" />
             </svg>
-            <span>{t('returnToGraph') || 'Return to Graph'}</span>
+            <span>{t('returnToGraph')}</span>
           </button>
           <p className="text-center text-xs text-amber-300 mt-2">
-            {t('zoomedOutTooFar') || 'You have zoomed out too far'}
+            {t('zoomedOutTooFar')}
           </p>
         </div>
       )}
@@ -479,18 +464,7 @@ export function DiscoverGraphDashboardV3({ onLoginClick }: DiscoverGraphDashboar
       {/* Community Color Picker */}
       <div className="absolute left-6 z-40" style={{ bottom: `${footerHeight + 16}px` }}>
         <CommunityColorPicker
-          communityLabels={{
-            0: 'Gaming / Esports',
-            1: 'Science / Environment',
-            2: 'Sports / Business',
-            3: 'Journalism / International',
-            4: 'Entertainment / LGBTQ+',
-            5: 'Spanish Media',
-            6: 'French Media',
-            7: 'Science / Research',
-            8: 'Adult Content',
-            9: 'Music / Art',
-          }}
+          communityLabels={communityLabels}
           colorHook={communityColorsHook}
           className="max-w-xs"
           currentNodeCount={mergedNodes.length}

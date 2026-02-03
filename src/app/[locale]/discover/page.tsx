@@ -8,10 +8,10 @@ import Header from '@/app/_components/layouts/Header'
 import Footer from '@/app/_components/layouts/Footer'
 import { useTheme } from '@/hooks/useTheme'
 import { useCommunityColors } from '@/hooks/useCommunityColors'
-import { PublicGraphDataProvider } from '@/contexts/PublicGraphDataContext_v2';
+import { PublicGraphDataProviderV3 } from '@/contexts/PublicGraphDataContextV3';
 
 // Loading component with theme-aware colors
-function DiscoverLoader() {
+function DiscoverV3Loader() {
   const { isDark } = useTheme()
   const { colors: communityColors } = useCommunityColors()
   
@@ -38,7 +38,7 @@ function DiscoverLoader() {
           className="font-mono tracking-wider text-sm"
           style={{ color: contrastColor }}
         >
-          Chargement...
+          Chargement V3...
         </p>
       </div>
     </div>
@@ -47,9 +47,9 @@ function DiscoverLoader() {
 
 // Dynamic import for discover dashboard (lighter than full reconnect)
 const DiscoverGraphDashboard = dynamic(
-  () => import('@/app/_components/graph/DiscoverGraphDashboard').then(mod => ({ default: mod.DiscoverGraphDashboard })),
+  () => import('@/app/_components/graph/DiscoverGraphDashboardV3').then(mod => ({ default: mod.DiscoverGraphDashboard })),
   { 
-    loading: () => <DiscoverLoader />,
+    loading: () => <DiscoverV3Loader />,
     ssr: false 
   }
 )
@@ -70,13 +70,13 @@ export default function DiscoverPage() {
   }, [router, locale])
 
   return (
-    <PublicGraphDataProvider>
+    <PublicGraphDataProviderV3>
       <div className="relative w-full h-screen overflow-hidden">
         <DiscoverGraphDashboard onLoginClick={handleLoginClick} />
         
         <Header />
         <Footer />
       </div>
-    </PublicGraphDataProvider>
+    </PublicGraphDataProviderV3>
   )
 }
