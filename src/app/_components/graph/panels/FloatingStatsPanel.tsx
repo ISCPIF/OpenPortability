@@ -112,6 +112,7 @@ interface FloatingStatsPanelProps {
   isTileLoading?: boolean;
   maxMemoryNodes?: number;
   onOpenNodeSettings?: () => void;
+  addedLabelsCount?: number;
 }
 
 export function FloatingStatsPanel({
@@ -140,6 +141,7 @@ export function FloatingStatsPanel({
   isTileLoading = false,
   maxMemoryNodes,
   onOpenNodeSettings,
+  addedLabelsCount = 0,
 }: FloatingStatsPanelProps) {
   const t = useTranslations('floatingStatsPanel');
   const graphData = useGraphDataOptional();
@@ -318,6 +320,16 @@ export function FloatingStatsPanel({
         {/* Collapsible Content */}
         {!isCollapsed && (
           <>
+        {addedLabelsCount > 0 && (
+          <div className="px-4 py-2 border-b border-emerald-500/20 bg-emerald-900/20">
+            <div className="text-[9px] uppercase tracking-wider text-emerald-300">
+              {t('labelsRefresh.title')}
+            </div>
+            <div className="text-[11px] text-emerald-100 font-medium">
+              {t('labelsRefresh.added', { count: addedLabelsCount })}
+            </div>
+          </div>
+        )}
         {/* Platform Section - Now first */}
         <div className="px-4 py-3 space-y-2">
           <div className="flex items-center gap-1.5">

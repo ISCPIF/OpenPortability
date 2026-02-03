@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { Inter, Space_Grotesk } from 'next/font/google'
+import Script from "next/script";
 import "../globals.css";
 import { Providers } from "../providers";
 import { auth } from "@/app/auth";
@@ -54,6 +55,13 @@ export default async function RootLayout({ children, params }: Props) {
 
   return (
     <html lang={locale} className={`${inter.variable} ${spaceGrotesk.variable}`}>
+      <head>
+        <Script
+          src="https://cloud.umami.is/script.js"
+          data-website-id="1ab53139-e458-4796-a0f5-ed330149637b"
+          strategy="afterInteractive"
+        />
+      </head>
       <body className={`${geistSans.variable} ${geistMono.variable} ${inter.className} antialiased bg-gray-800`}>
         <ReactScanWrapper>
           <NextIntlClientProvider messages={messages} locale={locale}>

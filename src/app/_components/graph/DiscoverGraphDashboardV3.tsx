@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
 import { useTheme } from '@/hooks/useTheme';
@@ -38,6 +38,7 @@ export function DiscoverGraphDashboardV3({ onLoginClick }: DiscoverGraphDashboar
     currentZoomLevel,
     normalizationBounds,
     floatingLabels,
+    labelMap,
     isLabelsLoaded,
     fetchInitialNodes,
     fetchLabels,
@@ -59,6 +60,9 @@ export function DiscoverGraphDashboardV3({ onLoginClick }: DiscoverGraphDashboar
   const [isGraphRendered, setIsGraphRendered] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('Chargement du graphe V3...');
   const [viewResetKey, setViewResetKey] = useState(0);
+  const [addedLabelsCount, setAddedLabelsCount] = useState(0);
+  const previousLabelKeysRef = useRef<Set<string> | null>(null);
+  const addedLabelsTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   
   const [lassoSelectedMembers, setLassoSelectedMembers] = useState<GraphNode[]>([]);
   
@@ -143,6 +147,51 @@ export function DiscoverGraphDashboardV3({ onLoginClick }: DiscoverGraphDashboar
       }
     }
   }, [initialNodes.length, containerSize.width]);
+
+  useEffect(() => {
+    if (!isLabelsLoaded) {
+      setAddedLabelsCount(0);
+      if (addedLabelsTimeoutRef.current) {
+        clearTimeout(addedLabelsTimeoutRef.current);
+        addedLabelsTimeoutRef.current = null;
+      }
+      return;
+    }
+
+    const currentKeys = new Set(Object.keys(labelMap));
+
+    if (!previousLabelKeysRef.current) {
+      previousLabelKeysRef.current = currentKeys;
+      return;
+    }
+
+    let addedCount = 0;
+    currentKeys.forEach((key) => {
+      if (!previousLabelKeysRef.current?.has(key)) {
+        addedCount += 1;
+      }
+    });
+
+    if (addedCount > 0) {
+      setAddedLabelsCount(addedCount);
+      if (addedLabelsTimeoutRef.current) {
+        clearTimeout(addedLabelsTimeoutRef.current);
+      }
+      addedLabelsTimeoutRef.current = setTimeout(() => {
+        setAddedLabelsCount(0);
+      }, 10000);
+    }
+
+    previousLabelKeysRef.current = currentKeys;
+  }, [labelMap, isLabelsLoaded]);
+
+  useEffect(() => {
+    return () => {
+      if (addedLabelsTimeoutRef.current) {
+        clearTimeout(addedLabelsTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleNodeSelect = useCallback((node: GraphNode | null) => {
     setSelectedNode(node);
@@ -302,6 +351,17 @@ export function DiscoverGraphDashboardV3({ onLoginClick }: DiscoverGraphDashboar
           {t('stats')}
           <span className="px-1.5 py-0.5 text-[9px] bg-emerald-900/50 text-emerald-400 rounded">V3</span>
         </div>
+
+        {addedLabelsCount > 0 && (
+          <div className="mb-3 rounded border border-emerald-500/20 bg-emerald-900/20 px-2 py-1.5">
+            <div className="text-[9px] uppercase tracking-wider text-emerald-300">
+              {t('labelsRefresh.title')}
+            </div>
+            <div className="text-[11px] text-emerald-100 font-medium">
+              {t('labelsRefresh.added', { count: addedLabelsCount })}
+            </div>
+          </div>
+        )}
         
         {/* Zoom Level Info */}
         <div className="mb-3 p-2 bg-slate-800/50 rounded">

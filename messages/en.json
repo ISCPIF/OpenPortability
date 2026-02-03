@@ -515,6 +515,10 @@
     "rateLimitTitle": "Mastodon limit reached"
   },
   "floatingStatsPanel": {
+    "labelsRefresh": {
+      "title": "Labels refreshed",
+      "added": "+{count} labels added"
+    },
     "header": {
       "exploration": {
         "title": "Exploration",
@@ -832,6 +836,10 @@
   "discoverPage": {
     "title": "Discover",
     "stats": "Statistics",
+    "labelsRefresh": {
+      "title": "Labels refreshed",
+      "added": "+{count} labels added"
+    },
     "graphNodes": "Map nodes",
     "nodes": "{count} nodes",
     "users": "Registered users",

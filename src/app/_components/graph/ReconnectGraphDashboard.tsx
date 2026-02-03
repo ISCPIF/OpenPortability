@@ -639,6 +639,9 @@ export function ReconnectGraphDashboard({
 
   // State to track labels version for triggering lasso panel refresh
   const [labelsVersion, setLabelsVersion] = useState(0);
+  const [addedLabelsCount, setAddedLabelsCount] = useState(0);
+  const previousLabelKeysRef = useRef<Set<string> | null>(null);
+  const addedLabelsTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Listen for label changes and refresh lasso stats when labels are updated
   // This ensures the lasso panel shows updated data when another user changes their consent
@@ -662,6 +665,51 @@ export function ReconnectGraphDashboard({
       graphDataEvents.off('personalLabelsUpdated', handleLabelsUpdated);
     };
   }, [fetchLassoStats, lassoSelectedMembers.length]);
+
+  useEffect(() => {
+    if (!graphData.isPersonalLabelsLoaded) {
+      setAddedLabelsCount(0);
+      if (addedLabelsTimeoutRef.current) {
+        clearTimeout(addedLabelsTimeoutRef.current);
+        addedLabelsTimeoutRef.current = null;
+      }
+      return;
+    }
+
+    const currentKeys = new Set(Object.keys(graphData.personalLabelMap));
+
+    if (!previousLabelKeysRef.current) {
+      previousLabelKeysRef.current = currentKeys;
+      return;
+    }
+
+    let addedCount = 0;
+    currentKeys.forEach((key) => {
+      if (!previousLabelKeysRef.current?.has(key)) {
+        addedCount += 1;
+      }
+    });
+
+    if (addedCount > 0) {
+      setAddedLabelsCount(addedCount);
+      if (addedLabelsTimeoutRef.current) {
+        clearTimeout(addedLabelsTimeoutRef.current);
+      }
+      addedLabelsTimeoutRef.current = setTimeout(() => {
+        setAddedLabelsCount(0);
+      }, 10000);
+    }
+
+    previousLabelKeysRef.current = currentKeys;
+  }, [graphData.personalLabelMap, graphData.isPersonalLabelsLoaded]);
+
+  useEffect(() => {
+    return () => {
+      if (addedLabelsTimeoutRef.current) {
+        clearTimeout(addedLabelsTimeoutRef.current);
+      }
+    };
+  }, []);
   
   
   // Wrapper for onStartMigration that updates graph highlights after completion
@@ -1069,7 +1117,7 @@ export function ReconnectGraphDashboard({
 
       {/* Mobile Notice - Invite users to use desktop for optimal experience */}
       {isMobile && showMobileNotice && (
-        <div className="absolute left-2 right-2 bottom-1 z-30">
+        <div className="absolute left-2 right-2 z-30">
           <div className="relative bg-gradient-to-r from-blue-900/95 to-indigo-900/95 backdrop-blur-sm rounded-lg border border-blue-500/30 shadow-xl p-4">
             <button
               type="button"
@@ -1150,6 +1198,7 @@ export function ReconnectGraphDashboard({
           isTileLoading={isTileLoading}
           maxMemoryNodes={tileConfig.MAX_MEMORY_NODES}
           onOpenNodeSettings={() => setIsNodeSettingsOpen(true)}
+          addedLabelsCount={addedLabelsCount}
         />
       )}
 

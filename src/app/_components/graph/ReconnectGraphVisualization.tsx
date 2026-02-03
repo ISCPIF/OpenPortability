@@ -164,7 +164,7 @@ export function ReconnectGraphVisualization({
   const [viewportState, setViewportState] = useState<ViewportState | null>(() => {
     return getInitialViewport();
   });
-  const viewportSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const latestViewportStateRef = useRef<ViewportState | null>(viewportState);
 
   useEffect(() => {
     // Don't reset sync flag for programmatic changes (like search zoom)
@@ -814,11 +814,12 @@ export function ReconnectGraphVisualization({
       const newViewport: ViewportState = {
         x: normalizedX,
         y: normalizedY,
-        scale: 8, // Zoom in to see the node clearly
+        scale: 2.5, // Zoom in, but less aggressive for search
       };
       
       // Mark as programmatic change so the useEffect doesn't reset viewportSyncedRef
       isProgrammaticViewportChangeRef.current = true;
+      latestViewportStateRef.current = newViewport;
       setViewportState(newViewport);
       
       // Save to cookie (using centralized helper)
@@ -856,13 +857,11 @@ export function ReconnectGraphVisualization({
       viewportSyncedRef.current = true;
     }
 
-    // Debounce cookie save to avoid too many writes
-    if (viewportSaveTimeoutRef.current) {
-      clearTimeout(viewportSaveTimeoutRef.current);
-    }
-    viewportSaveTimeoutRef.current = setTimeout(() => {
-      setGraphViewport(state);
-    }, 100); // 100ms debounce - fast save to preserve viewport on remount
+    // Persist immediately so refreshes restore the latest view
+    setGraphViewport(state);
+
+    // Keep latest viewport available for remounts (labels refresh)
+    latestViewportStateRef.current = state;
     
     // DEBUG: Log raw viewport state from embedding-atlas
     // console.log(`🎯 [Viewport] Raw state: x=${state.x.toFixed(2)}, y=${state.y.toFixed(2)}, scale=${state.scale.toFixed(4)}`);
@@ -1296,6 +1295,8 @@ export function ReconnectGraphVisualization({
   // Viewport is restored from cookie on remount (via getInitialViewport)
   const labelsKey = validLabels?.length ?? 0;
   
+  const effectiveViewportState = latestViewportStateRef.current ?? viewportState;
+
   return (
     <div className="w-full h-full relative">
       <EmbeddingViewWrapper
@@ -1318,7 +1319,7 @@ export function ReconnectGraphVisualization({
         config={viewConfig}
         theme={embeddingTheme}
         onReady={onGraphReady}
-        viewportState={viewportState}
+        viewportState={effectiveViewportState}
         onViewportState={handleViewportState}
       />
     </div>
