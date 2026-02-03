@@ -12,6 +12,7 @@ export interface DBUser {
   hqx_newsletter: boolean
   oep_accepted: boolean
   have_seen_newsletter: boolean
+  have_seen_v2: boolean
   research_accepted: boolean
   automatic_reconnect: boolean
   twitter_id: string | null

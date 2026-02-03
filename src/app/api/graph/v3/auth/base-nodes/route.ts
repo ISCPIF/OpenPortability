@@ -45,6 +45,16 @@ async function authBaseNodesHandler(
   const hasOnboarded = session?.user?.has_onboarded ?? false;
 
   if (!userId) {
+    logger.logError(
+      'API',
+      'GET /api/graph/v3/auth/base-nodes',
+      'Unauthorized access attempt',
+      'anonymous',
+      {
+        ip: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
+        userAgent: request.headers.get('user-agent') || 'unknown'
+      }
+    );
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -197,7 +207,17 @@ async function authBaseNodesHandler(
     const arrayBuffer = await upstreamResponse.arrayBuffer();
     const loadTime = performance.now() - startTime;
 
-    console.log(`📊 [auth/base-nodes] Loaded ${arrayBuffer.byteLength} bytes in ${loadTime.toFixed(0)}ms for user ${userId}`);
+    logger.logInfo(
+      'API',
+      'GET /api/graph/v3/auth/base-nodes',
+      'Authorized request succeeded',
+      userId,
+      {
+        bytes: arrayBuffer.byteLength,
+        durationMs: Math.round(loadTime),
+        limit
+      }
+    );
 
     // Return Arrow stream with NO cache (user-specific)
     return new NextResponse(arrayBuffer, {

@@ -110,31 +110,20 @@ export const RATE_LIMIT_CONFIGS: Record<string, RateLimitConfig> = {
     identifier: 'userId',
     message: 'Too many requests. Please wait before fetching again.'
   },
-  '/api/graph/highlights': {
-    windowMs: 1 * 60 * 1000,
-    maxRequests: 60,          // Lightweight status updates after follow actions
-    identifier: 'userId',
-    message: 'Too many highlight requests. Please wait before updating again.'
-  },
-  '/api/graph/names_labels': {
+
+  '/api/sse': {
     windowMs: 5 * 60 * 1000,
-    maxRequests: 20,          // Public labels endpoint
+    maxRequests: 20,          // Limit concurrent-ish reconnect bursts per IP
     identifier: 'ip',
     skipAuth: true,
-    message: 'Too many requests. Please wait before fetching again.'
+    message: 'Too many SSE connection attempts. Please wait before reconnecting.'
   },
+
   '/api/stats/lasso': {
     windowMs: 5 * 60 * 1000,
     maxRequests: 30,          // Stats fetching
     identifier: 'userId',
     message: 'Too many stats requests. Please wait before fetching again.'
-  },
-  '/api/mosaic/sql': {
-    windowMs: 24 * 60 * 60 * 1000,  // 24 heures
-    maxRequests: 5,                  // 5 requêtes max (résultat stocké en IndexedDB)
-    identifier: 'ip',
-    skipAuth: true,
-    message: 'Too many database queries. Graph data is cached locally - please clear your browser cache if you need to reload.'
   },
   
   // Configuration par défaut

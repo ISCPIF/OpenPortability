@@ -1420,7 +1420,7 @@ export function ReconnectGraphDashboard({
             if (!introHintMode) {
               setIntroSeenCookie();
               // Also persist to database (fire and forget)
-              fetch('/api/user/seen-v2', { method: 'POST' }).catch(() => {});
+              fetch('/api/users/seen-v2', { method: 'POST' }).catch(() => {});
             }
           }}
           onStepChange={setIntroStep}

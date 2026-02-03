@@ -3,6 +3,7 @@ import { redis } from '@/lib/redis';
 import { auth } from '@/app/auth';
 import logger from '@/lib/log_utils';
 import { SSE_GRAPH_CHANNEL, SSE_HEARTBEAT_INTERVAL_MS, type SSEEvent } from '@/lib/sse/constants';
+import { checkRateLimit, rateLimitResponse, RATE_LIMIT_CONFIGS } from '@/lib/validation/rate-limit';
 
 /**
  * GET /api/sse
@@ -19,6 +20,12 @@ import { SSE_GRAPH_CHANNEL, SSE_HEARTBEAT_INTERVAL_MS, type SSEEvent } from '@/l
  * - Anonymous users receive only public events (labels, nodeTypes, stats:global)
  */
 export async function GET(request: NextRequest) {
+  const clientIp = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
+  const rateLimitResult = checkRateLimit('/api/sse', clientIp);
+  if (!rateLimitResult.allowed) {
+    return rateLimitResponse(rateLimitResult, RATE_LIMIT_CONFIGS['/api/sse']);
+  }
+
   // Get session (optional - anonymous users can still receive public events)
   let userId: string | null = null;
   try {

@@ -344,6 +344,7 @@ if (typeof window !== 'undefined') {
 const IDB_NAME = 'hqx_graph_cache';
 const IDB_VERSION = 1;
 const IDB_STORE_NAME = 'graph_data';
+const CACHE_SCHEMA_VERSION = 4;
 
 // Cache TTL: different for nodes vs labels vs hashes
 const CACHE_TTL_NODES_MS = 24 * 60 * 60 * 1000; // 24 hours for base nodes (stable data)
@@ -550,6 +551,7 @@ const CACHE_KEYS = {
   FOLLOWER_HASHES: 'follower_hashes', // Followers hashes (simple set)
   USER_NODE: 'user_node', // User's own node in the graph
   DETAIL_DEGREE_CEILING: 'detail_degree_ceiling', // Min degree of base nodes for tile filtering
+  CACHE_SCHEMA_VERSION: 'cache_schema_version',
 };
 
 // Cached hash data structure
@@ -817,6 +819,24 @@ export function GraphDataProvider({ children }: GraphDataProviderProps) {
   // Auto-load data from IndexedDB cache on mount (for instant display)
   useEffect(() => {
     const loadCachedData = async () => {
+      const cachedSchema = await graphIDB.load<number>(CACHE_KEYS.CACHE_SCHEMA_VERSION);
+      if (cachedSchema?.data !== CACHE_SCHEMA_VERSION) {
+        console.log(`💾 [IndexedDB] Cache schema changed (${cachedSchema?.data ?? 'none'} -> ${CACHE_SCHEMA_VERSION}), invalidating base caches...`);
+        await graphIDB.delete(CACHE_KEYS.BASE_NODES);
+        await graphIDB.delete(CACHE_KEYS.NORMALIZATION_BOUNDS);
+        await graphIDB.delete(CACHE_KEYS.DETAIL_DEGREE_CEILING);
+        await graphIDB.delete(CACHE_KEYS.GRAPH_NODES_VERSION);
+        globalGraphState.baseNodesLoaded = false;
+        globalGraphState.baseNodes = [];
+        globalGraphState.baseNodesMinDegree = 0;
+        globalGraphState.normalizationBounds = null;
+        detailDegreeCeilingRef.current = null;
+        setBaseNodesState([]);
+        setIsBaseNodesLoaded(false);
+        setBaseNodesMinDegree(0);
+        setNormalizationBoundsState(null);
+        await graphIDB.save(CACHE_KEYS.CACHE_SCHEMA_VERSION, CACHE_SCHEMA_VERSION);
+      }
       // ALWAYS check labels version on mount, even if labels are already loaded in memory
       // This handles the case where user was on another page when cache was invalidated
       console.log('🔄 [Labels Mount] Checking server version... (labelsLoaded:', globalGraphState.personalLabelsLoaded, ', localVersion:', labelsVersionRef.current, ')');

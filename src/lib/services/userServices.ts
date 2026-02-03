@@ -69,6 +69,13 @@ export class UserService {
   }
 
   /**
+   * Met à jour le statut have_seen_v2 d'un utilisateur
+   */
+  async updateHaveSeenV2(userId: string): Promise<void> {
+    await this.repository.updateHaveSeenV2(userId);
+  }
+
+  /**
    * Met à jour un consentement spécifique pour un utilisateur
    */
   async updateConsent(

@@ -28,6 +28,24 @@ export class UserRepository {
   }
 
   /**
+   * Met à jour le statut have_seen_newsletter d'un utilisateur
+   */
+  async updateHaveSeenNewsletter(userId: string): Promise<void> {
+    await pgUserRepository.updateUser(userId, {
+      have_seen_newsletter: true
+    });
+  }
+
+  /**
+   * Met à jour le statut have_seen_v2 d'un utilisateur
+   */
+  async updateHaveSeenV2(userId: string): Promise<void> {
+    await pgUserRepository.updateUser(userId, {
+      have_seen_v2: true
+    });
+  }
+
+  /**
    * Gets a user by ID
    * @deprecated Use pgUserRepository.getUser() instead
    */

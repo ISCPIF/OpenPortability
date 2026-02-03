@@ -23,6 +23,7 @@ export interface User {
     automatic_reconnect: boolean;
     research_accepted: boolean;
     have_seen_newsletter: boolean;
+    have_seen_v2: boolean;
     personalized_support: boolean;
 }
 
