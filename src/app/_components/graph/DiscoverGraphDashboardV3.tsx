@@ -11,6 +11,7 @@ import { FloatingLassoSelectionPanelLight } from './panels/FloatingLassoSelectio
 import { useCommunityColors } from '@/hooks/useCommunityColors';
 import { GraphNode } from '@/lib/types/graph';
 import { clearGraphUiState } from '@/lib/utils/graphCookies';
+import { coordHash } from '@/hooks/useFollowersCoordinates';
 
 const ReconnectGraphVisualization = dynamic(
   () => import('./ReconnectGraphVisualization').then(mod => mod.ReconnectGraphVisualization),
@@ -34,8 +35,6 @@ export function DiscoverGraphDashboard({ onLoginClick }: DiscoverGraphDashboardP
     isInitialLoading,
     isInitialLoaded,
     isTileLoading,
-    currentScale,
-    currentZoomLevel,
     normalizationBounds,
     floatingLabels,
     labelMap,
@@ -46,17 +45,13 @@ export function DiscoverGraphDashboard({ onLoginClick }: DiscoverGraphDashboardP
     clearTileCache,
   } = usePublicGraphDataV3();
   
-  // Threshold for showing "Return to Graph" button (user zoomed out too far)
-  // Show warning at scale < 0.01, force reset happens at scale < 0.005 in EmbeddingViewWrapper
-  const ZOOM_OUT_WARNING_THRESHOLD = 0.01;
-  const isZoomedOutTooFar = currentScale > 0 && currentScale < ZOOM_OUT_WARNING_THRESHOLD;
-  
   const loaderContrastColor = isDark 
     ? (communityColors[9] || communityColors[8] || '#fad541')
     : (communityColors[0] || communityColors[1] || '#011959');
   
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
+  const [manualSelectedHash, setManualSelectedHash] = useState<string | null>(null);
   const [isGraphRendered, setIsGraphRendered] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState(() => t('loadingGraph'));
   const [viewResetKey, setViewResetKey] = useState(0);
@@ -195,6 +190,11 @@ export function DiscoverGraphDashboard({ onLoginClick }: DiscoverGraphDashboardP
 
   const handleNodeSelect = useCallback((node: GraphNode | null) => {
     setSelectedNode(node);
+    if (node && node.nodeType === 'member') {
+      setManualSelectedHash(coordHash(node.x, node.y));
+    } else if (!node) {
+      setManualSelectedHash(null);
+    }
   }, []);
 
   const handleMosaicNodesReady = useCallback((nodes: GraphNode[]) => {
@@ -325,6 +325,7 @@ export function DiscoverGraphDashboard({ onLoginClick }: DiscoverGraphDashboardP
             highlightedSearchNode={highlightedSearchNode}
             onClearSearchHighlight={handleClearSearchHighlight}
             onTileViewportChange={handleTileViewportChange}
+            disableViewportPersistence
           />
         )}
       </div>
@@ -435,31 +436,12 @@ export function DiscoverGraphDashboard({ onLoginClick }: DiscoverGraphDashboardP
       <FloatingLassoSelectionPanelLight
         lassoMembers={lassoSelectedMembers}
         onClearSelection={() => setLassoSelectedMembers([])}
+        manualSelectedHash={manualSelectedHash}
+        onClearManualSelection={() => setManualSelectedHash(null)}
         communityColors={communityColorsHook.colors}
         onLoginClick={onLoginClick}
         onHighlightNode={setHighlightedSearchNode}
       />
-
-      {/* Zoom Out Warning - Return to Graph Button */}
-      {isZoomedOutTooFar && isGraphRendered && (
-        <div 
-          className="absolute left-1/2 -translate-x-1/2 z-50 animate-pulse"
-          style={{ top: `${headerHeight + 80}px` }}
-        >
-          <button
-            onClick={handleResetView}
-            className="flex items-center gap-3 px-6 py-3 bg-amber-500/95 hover:bg-amber-400 text-slate-900 font-semibold rounded-lg shadow-xl backdrop-blur-sm border border-amber-400/50 transition-all hover:scale-105"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm.707-10.293a1 1 0 00-1.414-1.414l-3 3a1 1 0 000 1.414l3 3a1 1 0 001.414-1.414L9.414 11H13a1 1 0 100-2H9.414l1.293-1.293z" clipRule="evenodd" />
-            </svg>
-            <span>{t('returnToGraph')}</span>
-          </button>
-          <p className="text-center text-xs text-amber-300 mt-2">
-            {t('zoomedOutTooFar')}
-          </p>
-        </div>
-      )}
 
       {/* Community Color Picker */}
       <div className="absolute left-6 z-40" style={{ bottom: `${footerHeight + 16}px` }}>

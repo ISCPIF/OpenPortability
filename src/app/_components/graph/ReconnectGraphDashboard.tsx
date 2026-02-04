@@ -33,6 +33,10 @@ const ReconnectGraphVisualization = dynamic(
   { ssr: false }
 );
 
+function coordHash(x: number, y: number): string {
+  return `${x.toFixed(6)}_${y.toFixed(6)}`;
+}
+
 interface PlatformResult {
   succeeded: number;
   failed: number;
@@ -171,6 +175,7 @@ export function ReconnectGraphDashboard({
   const [lassoSelectedMembers, setLassoSelectedMembersState] = useState<GraphNode[]>([]);
   const [isLassoSelectionLoaded, setIsLassoSelectionLoaded] = useState(false);
   const [showMobileNotice, setShowMobileNotice] = useState(true);
+  const [manualSelectedHash, setManualSelectedHash] = useState<string | null>(null);
   
   // Highlighted node from search (in discover mode)
   const [highlightedSearchNode, setHighlightedSearchNode] = useState<{
@@ -422,6 +427,11 @@ export function ReconnectGraphDashboard({
   
   const handleShowConnected = useCallback(() => {
     setHighlightMode('connected');
+    setHighlightVersion(v => v + 1);
+  }, []);
+
+  const handleShowMembers = useCallback(() => {
+    setHighlightMode('members');
     setHighlightVersion(v => v + 1);
   }, []);
 
@@ -886,9 +896,25 @@ export function ReconnectGraphDashboard({
     }
   }, [baseNodes.length, containerSize.width]);
 
-  const handleNodeSelect = (node: GraphNode | null) => {
+  const handleNodeSelect = useCallback((node: GraphNode | null) => {
     setSelectedNode(node);
-  };
+
+    if (viewMode !== 'discover') {
+      return;
+    }
+
+    if (node && node.nodeType === 'member') {
+      setManualSelectedHash(coordHash(node.x, node.y));
+    } else if (!node) {
+      setManualSelectedHash(null);
+    }
+  }, [viewMode]);
+
+  useEffect(() => {
+    if (viewMode !== 'discover') {
+      setManualSelectedHash(null);
+    }
+  }, [viewMode]);
 
   const handleChangeView = useCallback((mode: 'discover' | 'followings' | 'followers') => {
     // If trying to access personal views while blocked, show login modal
@@ -1152,6 +1178,8 @@ export function ReconnectGraphDashboard({
           <FloatingLassoSelectionPanel
             lassoMembers={lassoSelectedMembers}
             onClearSelection={() => setLassoSelectedMembers([])}
+            manualSelectedHash={manualSelectedHash}
+            onClearManualSelection={() => setManualSelectedHash(null)}
             communityColors={communityColorsHook.colors}
             session={session}
             onShowLoginModal={() => setShowLoginModal(true)}
@@ -1189,6 +1217,7 @@ export function ReconnectGraphDashboard({
           onShowMyNetwork={handleShowMyNetwork}
           onShowMyNode={handleShowMyNode}
           onShowConnected={handleShowConnected}
+          onShowMembers={handleShowMembers}
           onShowEffectiveFollowers={handleShowEffectiveFollowers}
           onResetView={handleResetView}
           lassoConnectedCount={connectedHashes.size}

@@ -104,6 +104,7 @@ interface ReconnectGraphVisualizationProps {
   onClearSearchHighlight?: () => void;
   // Tile-based loading callback - called when viewport changes for progressive loading
   onTileViewportChange?: (boundingBox: { minX: number; maxX: number; minY: number; maxY: number }, zoomLevel: number) => void;
+  disableViewportPersistence?: boolean;
 }
 
 interface TooltipData {
@@ -145,6 +146,7 @@ export function ReconnectGraphVisualization({
   highlightedSearchNode = null,
   onClearSearchHighlight,
   onTileViewportChange,
+  disableViewportPersistence = false,
 }: ReconnectGraphVisualizationProps) {
   const [tooltip, setTooltip] = useState<TooltipData | null>(null);
   const [selection, setSelection] = useState<TooltipData[] | null>(null);
@@ -160,13 +162,18 @@ export function ReconnectGraphVisualization({
   // Track if viewport change is programmatic (search zoom) vs initial load
   const isProgrammaticViewportChangeRef = useRef<boolean>(false);
 
+  const shouldPersistViewport = !disableViewportPersistence;
+
   // Viewport state for persistence (uses centralized cookie helper)
   const [viewportState, setViewportState] = useState<ViewportState | null>(() => {
-    return getInitialViewport();
+    return shouldPersistViewport ? getInitialViewport() : null;
   });
   const latestViewportStateRef = useRef<ViewportState | null>(viewportState);
 
   useEffect(() => {
+    if (!shouldPersistViewport) {
+      return;
+    }
     // Don't reset sync flag for programmatic changes (like search zoom)
     // Only reset for initial viewport restoration
     if (isProgrammaticViewportChangeRef.current) {
@@ -682,6 +689,28 @@ export function ReconnectGraphVisualization({
   const LASSO_CATEGORY_FOUND = 100; // Rose/pink for found but not connected
   const LASSO_CATEGORY_CONNECTED = 101; // Blue for connected
 
+  // Compute discover-mode selection for all OpenPortability members
+  const computedMembersSelection = useMemo(() => {
+    if (!isMosaicView || highlightMode !== 'members' || !embeddingData || !embeddingData.x) {
+      return null;
+    }
+
+    const memberPoints: TooltipData[] = [];
+    for (let i = 0; i < filteredNodes.length; i++) {
+      const node = filteredNodes[i];
+      if (node.nodeType === 'member') {
+        memberPoints.push({
+          x: embeddingData.x[i],
+          y: embeddingData.y[i],
+          category: LASSO_CATEGORY_FOUND,
+          identifier: node.id,
+        });
+      }
+    }
+
+    return memberPoints.length > 0 ? memberPoints : null;
+  }, [isMosaicView, highlightMode, embeddingData, filteredNodes, highlightVersion]);
+
   // Compute lasso selection as useMemo instead of useEffect to avoid infinite loops
   // (useEffect with setState causes re-renders which re-trigger the effect)
   const computedLassoSelection = useMemo(() => {
@@ -775,10 +804,11 @@ export function ReconnectGraphVisualization({
   const combinedMosaicSelection = useMemo(() => {
     const combined: TooltipData[] = [];
     if (computedSearchSelection) combined.push(...computedSearchSelection);
+    if (computedMembersSelection) combined.push(...computedMembersSelection);
     if (computedLassoSelection) combined.push(...computedLassoSelection);
     if (combined.length === 0) return null;
     return combined;
-  }, [computedSearchSelection, computedLassoSelection]);
+  }, [computedSearchSelection, computedMembersSelection, computedLassoSelection]);
 
   // Callback pour le tooltip
   const handleTooltip = useCallback((dataPoint: TooltipData | null) => {
@@ -822,17 +852,19 @@ export function ReconnectGraphVisualization({
       latestViewportStateRef.current = newViewport;
       setViewportState(newViewport);
       
-      // Save to cookie (using centralized helper)
-      setGraphViewport(newViewport);
-      
-      // Mark viewport as synced so that subsequent user zoom/pan changes are saved
-      // Without this, the sync check in handleViewportState would block saves
-      // because the user's new viewport won't match the search viewport
-      viewportSyncedRef.current = true;
+      if (shouldPersistViewport) {
+        // Save to cookie (using centralized helper)
+        setGraphViewport(newViewport);
+        
+        // Mark viewport as synced so that subsequent user zoom/pan changes are saved
+        // Without this, the sync check in handleViewportState would block saves
+        // because the user's new viewport won't match the search viewport
+        viewportSyncedRef.current = true;
+      }
     }
   // IMPORTANT: Do NOT include embeddingData in deps - it changes on every render
   // We only want to center when highlightedSearchNode actually changes
-  }, [highlightedSearchNode, isMosaicView, contextNormalizationBounds, publicNormalizationBounds]);
+  }, [highlightedSearchNode, isMosaicView, contextNormalizationBounds, publicNormalizationBounds, shouldPersistViewport]);
 
   // Callback for viewport state changes - debounced save to cookie
   // IMPORTANT: Do NOT call setViewportState here for user-initiated changes!
@@ -843,7 +875,7 @@ export function ReconnectGraphVisualization({
     // If we have a saved viewport, wait until embedding-atlas reports a matching state
     // before persisting or triggering tile loads. This avoids using the initial default
     // viewport (centered) that happens before the saved viewport is applied.
-    if (viewportState && !viewportSyncedRef.current) {
+    if (shouldPersistViewport && viewportState && !viewportSyncedRef.current) {
       const positionTolerance = 0.5;
       const scaleTolerance = Math.max(0.1, viewportState.scale * 0.05);
       const isSynced =
@@ -857,11 +889,16 @@ export function ReconnectGraphVisualization({
       viewportSyncedRef.current = true;
     }
 
-    // Persist immediately so refreshes restore the latest view
-    setGraphViewport(state);
+    // DEBUG: compare raw embedding-atlas scale to toolbar zoom value
+    console.log(`🔍 [Viewport] scale=${state.scale.toFixed(4)} x=${state.x.toFixed(2)} y=${state.y.toFixed(2)}`);
 
-    // Keep latest viewport available for remounts (labels refresh)
-    latestViewportStateRef.current = state;
+    if (shouldPersistViewport) {
+      // Persist immediately so refreshes restore the latest view
+      setGraphViewport(state);
+
+      // Keep latest viewport available for remounts (labels refresh)
+      latestViewportStateRef.current = state;
+    }
     
     // DEBUG: Log raw viewport state from embedding-atlas
     // console.log(`🎯 [Viewport] Raw state: x=${state.x.toFixed(2)}, y=${state.y.toFixed(2)}, scale=${state.scale.toFixed(4)}`);
@@ -915,7 +952,7 @@ export function ReconnectGraphVisualization({
     } else {
       console.log(`🎯 [Viewport] NOT calling onTileViewportChange: callback=${!!onTileViewportChange}, bounds=${!!normalizationBoundsRef.current}`);
     }
-  }, [onTileViewportChange, width, height, viewportState]);
+  }, [onTileViewportChange, width, height, viewportState, shouldPersistViewport]);
 
   // Helper function to check if a point is inside a polygon (ray casting algorithm)
   const isPointInPolygon = useCallback((x: number, y: number, polygon: { x: number; y: number }[]): boolean => {
@@ -1021,8 +1058,9 @@ export function ReconnectGraphVisualization({
 
     // Filter for members only - lasso selection should only highlight member nodes
     const members = selectedNodes.filter(n => n.nodeType === 'member');
+    const nodesToFollow = members.length > 0 ? members : selectedNodes;
     
-    onLassoMembers(members);
+    onLassoMembers(nodesToFollow);
   }, [onLassoMembers, isPointInPolygon]);
 
   // Callback pour la sélection (point selection et fallback pour rectangle selection)
@@ -1295,7 +1333,9 @@ export function ReconnectGraphVisualization({
   // Viewport is restored from cookie on remount (via getInitialViewport)
   const labelsKey = validLabels?.length ?? 0;
   
-  const effectiveViewportState = latestViewportStateRef.current ?? viewportState;
+  const effectiveViewportState = shouldPersistViewport
+    ? (latestViewportStateRef.current ?? viewportState)
+    : viewportState;
 
   return (
     <div className="w-full h-full relative">

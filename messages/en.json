@@ -656,6 +656,8 @@
       "showMyNodeTooltip": "Centers the view on your position in the graph",
       "showDiscovered": "Show discoveries",
       "showDiscoveredTooltip": "Connections created from lasso selection on the graph",
+      "showMembers": "Show OpenPortability members",
+      "showMembersTooltip": "Highlights all OpenPortability members on the graph",
       "showEffectiveFollowers": "Show effective followers",
       "showEffectiveFollowersTooltip": "Followers who actually followed you on Bluesky or Mastodon via OpenPortability",
       "resetView": "Reset view",

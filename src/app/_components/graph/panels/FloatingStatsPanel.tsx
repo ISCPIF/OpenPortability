@@ -95,6 +95,7 @@ interface FloatingStatsPanelProps {
   onShowMyNetwork?: () => void;
   onShowMyNode?: () => void;
   onShowConnected?: () => void;
+  onShowMembers?: () => void;
   onShowEffectiveFollowers?: () => void; // callback to highlight only effective followers (purple) - followers who followed via OP
   onResetView?: () => void; // callback to reset graph viewport to initial state
   lassoConnectedCount?: number; // number of lasso connected nodes to show in legend
@@ -132,6 +133,7 @@ export function FloatingStatsPanel({
   onShowMyNetwork,
   onShowMyNode,
   onShowConnected,
+  onShowMembers,
   onShowEffectiveFollowers,
   onResetView,
   lassoConnectedCount = 0,
@@ -819,6 +821,26 @@ export function FloatingStatsPanel({
                     </div>
                   </div>
                 )}
+              </div>
+            </div>
+          )}
+
+          {/* Discover mode highlight button */}
+          {!showFollowers && !showFollowing && onShowMembers && (
+            <div className="mt-3 pt-3 border-t border-slate-700/50">
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={onShowMembers}
+                  className="flex-1 py-1.5 px-2 text-[10px] font-medium text-emerald-300 bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/30 rounded transition-colors"
+                >
+                  {t('buttons.showMembers')}
+                </button>
+                <div className="relative group">
+                  <Info className="w-3.5 h-3.5 text-emerald-400 cursor-help" />
+                  <div className="absolute bottom-full right-0 mb-1 w-48 p-2 bg-slate-800 border border-slate-600 rounded text-[9px] text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
+                    {t('buttons.showMembersTooltip')}
+                  </div>
+                </div>
               </div>
             </div>
           )}

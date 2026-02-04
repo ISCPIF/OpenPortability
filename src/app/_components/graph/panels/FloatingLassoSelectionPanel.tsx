@@ -95,6 +95,8 @@ interface MigrationResult {
 interface FloatingLassoSelectionPanelProps {
   lassoMembers: GraphNode[];
   onClearSelection: () => void;
+  manualSelectedHash?: string | null;
+  onClearManualSelection?: () => void;
   communityColors: string[];
   session?: {
     user?: {
@@ -127,6 +129,8 @@ interface FloatingLassoSelectionPanelProps {
 export function FloatingLassoSelectionPanel({
   lassoMembers,
   onClearSelection,
+  manualSelectedHash = null,
+  onClearManualSelection,
   communityColors,
   session,
   onShowLoginModal,
@@ -175,7 +179,7 @@ export function FloatingLassoSelectionPanel({
   useEffect(() => {
     setCurrentPage(0);
     setSelectedAccounts(new Set());
-  }, [lassoMembers]);
+  }, [lassoMembers, manualSelectedHash]);
 
   // Auto-switch tabs based on data availability
   // - In discover mode with no lasso selection: show search tab
@@ -184,7 +188,7 @@ export function FloatingLassoSelectionPanel({
   useEffect(() => {
     const foundCount = enrichedNodes.length;
     const connectedCount = lassoCompleted?.length || 0;
-    const hasLassoSelection = lassoMembers.length > 0;
+    const hasLassoSelection = lassoMembers.length > 0 || !!manualSelectedHash;
     
     if (isLoading) return;
     
@@ -202,6 +206,14 @@ export function FloatingLassoSelectionPanel({
       onTabChange?.('connected');
     }
   }, [enrichedNodes.length, lassoCompleted?.length, isLoading, onTabChange, viewMode, lassoMembers.length]);
+
+  useEffect(() => {
+    if (manualSelectedHash && viewMode === 'discover') {
+      setActiveTab('found');
+      setCurrentPage(0);
+      onTabChange?.('found');
+    }
+  }, [manualSelectedHash, viewMode, onTabChange]);
 
   // Search function with debounce
   const handleSearch = useCallback(async (query: string) => {
@@ -264,8 +276,17 @@ export function FloatingLassoSelectionPanel({
 
   // Fetch enriched node data from API when members change
   useEffect(() => {
-    if (lassoMembers.length === 0) {
+    const hashes = new Set<string>();
+    lassoMembers.forEach(member => {
+      hashes.add(coordHash(member.x, member.y));
+    });
+    if (manualSelectedHash) {
+      hashes.add(manualSelectedHash);
+    }
+
+    if (hashes.size === 0) {
       setEnrichedNodes([]);
+      setError(null);
       return;
     }
 
@@ -274,12 +295,12 @@ export function FloatingLassoSelectionPanel({
       setError(null);
 
       try {
-        const hashes = lassoMembers.map(m => coordHash(m.x, m.y));
+        const hashList = Array.from(hashes);
 
         const response = await fetch('/api/migrate/lasso_found', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ hashes }),
+          body: JSON.stringify({ hashes: hashList }),
         });
 
         if (!response.ok) {
@@ -290,8 +311,8 @@ export function FloatingLassoSelectionPanel({
         
         if (data.success && data.nodes) {
           setEnrichedNodes(data.nodes);
-          if (hashes.length !== data.nodes.length) {
-            console.warn(`⚠️ [LassoPanel] MISMATCH: ${hashes.length - data.nodes.length} nodes lost between frontend and API`);
+          if (hashList.length !== data.nodes.length) {
+            console.warn(`⚠️ [LassoPanel] MISMATCH: ${hashList.length - data.nodes.length} nodes lost between frontend and API`);
           }
         } else {
           setEnrichedNodes([]);
@@ -306,7 +327,7 @@ export function FloatingLassoSelectionPanel({
     };
 
     fetchEnrichedNodes();
-  }, [lassoMembers, labelsVersion]);
+  }, [lassoMembers, manualSelectedHash, labelsVersion]);
 
   // Paginate
   const paginatedNodes = useMemo(() => {
@@ -444,7 +465,7 @@ export function FloatingLassoSelectionPanel({
     }
   }, [isLoggedIn, hasBluesky, hasMastodon, enrichedNodes, selectedAccounts, onShowLoginModal, onRefreshLassoStats, onClearSelection, onMigrationStart, onMigrationProgress, onMigrationComplete]);
 
-  const hasSelection = lassoMembers && lassoMembers.length > 0;
+  const hasSelection = (lassoMembers && lassoMembers.length > 0) || !!manualSelectedHash;
 
   return (
     <div 
@@ -480,6 +501,7 @@ export function FloatingLassoSelectionPanel({
               onClick={(e) => {
                 e.stopPropagation();
                 onClearSelection();
+                onClearManualSelection?.();
               }}
               className="p-1 hover:bg-slate-800 rounded transition-colors"
               title="Clear selection"
@@ -766,13 +788,18 @@ export function FloatingLassoSelectionPanel({
               const community = (node.community ?? 0) % 10;
               const color = communityColors[community] || '#888888';
               const isSelected = selectedAccounts.has(node.twitter_id);
+              const isManualSelected = manualSelectedHash === node.hash;
               
               return (
                 <div
                   key={`${node.twitter_id}-${index}`}
                   onClick={() => toggleAccount(node.twitter_id)}
                   className={`px-3 py-2 border-b border-slate-800/50 cursor-pointer transition-colors ${
-                    isSelected ? 'bg-emerald-900/20' : 'hover:bg-slate-800/30'
+                    isManualSelected
+                      ? 'bg-amber-900/30 ring-1 ring-amber-500/40'
+                      : isSelected
+                        ? 'bg-emerald-900/20'
+                        : 'hover:bg-slate-800/30'
                   }`}
                 >
                   <div className="flex items-center gap-2">
@@ -831,6 +858,11 @@ export function FloatingLassoSelectionPanel({
                         {COMMUNITY_LABELS[community] || `Community ${community}`}
                       </span>
                     </div>
+                    {isManualSelected && (
+                      <span className="text-[9px] uppercase tracking-wide text-amber-300 border border-amber-400/40 rounded px-1.5 py-0.5">
+                        Clicked
+                      </span>
+                    )}
                   </div>
                 </div>
               );
