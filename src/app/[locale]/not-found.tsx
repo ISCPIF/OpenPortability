@@ -1,5 +1,6 @@
 import { Home, Search } from 'lucide-react'
 import Image from 'next/image'
+import Link from 'next/link'
 import { getTranslations } from 'next-intl/server'
 import { quantico } from '@/app/fonts/plex'
 import logoBlanc from '@/../public/logo/logo-openport-blanc.svg'
@@ -50,13 +51,13 @@ export default async function NotFound() {
           
           {/* Footer */}
           <div className="px-5 py-4 border-t flex justify-end border-slate-700/50">
-            <a
+            <Link
               href="/"
               className="flex items-center gap-2 px-4 py-2 text-[12px] font-medium rounded-lg transition-all bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 text-white shadow-lg shadow-rose-500/20"
             >
               <Home className="w-4 h-4" />
               {t('backHome')}
-            </a>
+            </Link>
           </div>
         </div>
 
