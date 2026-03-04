@@ -25,7 +25,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV NEXT_CONFIG_FILE=./next.config.prod.js
 
 # Build the application (generates .next/standalone)
-RUN npm run build
+RUN npx next build --webpack
 
 # -----------------------------------------------------------------------------
 # Stage 3: Production Runner (MINIMAL)

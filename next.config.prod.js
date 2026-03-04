@@ -8,7 +8,11 @@ const nextConfig = {
   },
 
   images: {
-    domains: ['pbs.twimg.com', 'abs.twimg.com', 'cdn.bsky.app'],
+    remotePatterns: [
+      { protocol: 'https', hostname: 'pbs.twimg.com' },
+      { protocol: 'https', hostname: 'abs.twimg.com' },
+      { protocol: 'https', hostname: 'cdn.bsky.app' },
+    ],
   },
 
   // Désactive le header X-Powered-By pour la sécurité
@@ -20,18 +24,18 @@ const nextConfig = {
   // Transpile embedding-atlas to avoid minification issues with its toolbar
   transpilePackages: ['embedding-atlas'],
 
-  // Désactiver le minifier SWC pour permettre à Webpack/Terser de gérer la minification
-  swcMinify: false,
-
   experimental: {
-    // Enable instrumentation hook for pg-notify listener startup
-    instrumentationHook: true,
-    
     staleTimes: {
       dynamic: 30,  // 30 secondes pour les pages dynamiques
       static: 300,  // 5 minutes pour les pages statiques
     },
     optimizePackageImports: ['lucide-react', '@heroicons/react', 'react-icons'],
+  },
+
+  turbopack: {
+    resolveAlias: {
+      worker_threads: './src/shims/worker_threads-browser.js',
+    },
   },
 
   // ✅ Webpack config pour production (embedding-atlas + duckdb)
@@ -42,6 +46,14 @@ const nextConfig = {
       config.module.generator['asset/resource'] = config.module.generator.asset;
       config.module.generator['asset/source'] = config.module.generator.asset;
       delete config.module.generator.asset;
+    }
+
+    if (!isServer) {
+      config.resolve = config.resolve || {};
+      config.resolve.fallback = {
+        ...(config.resolve.fallback || {}),
+        worker_threads: false,
+      };
     }
 
     // Fix pour embedding-atlas: isoler dans son propre chunk chargé dynamiquement
