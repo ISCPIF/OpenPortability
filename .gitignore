@@ -69,4 +69,5 @@ nginx.conf
 !Dockerfile
 /worker/Dockerfile
 /watcher/Dockerfile
-next.config.js
+next.config.*
+Dockerfile*
