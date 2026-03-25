@@ -961,16 +961,16 @@ export function ReconnectGraphDashboard({
   // Compute followerNodesFromHashes from baseNodes filtered by followerHashes (from context)
   // This allows FloatingFollowersCommunityPanel to display community breakdown
   const followerNodesFromHashes = useMemo(() => {
-    if (graphData.followerHashes.size === 0 || baseNodes.length === 0) return [];
+    if (graphData.followerHashes.size === 0 || displayNodes.length === 0) return [];
     
     // Helper to create coordinate hash (same format as used in visualization)
     const coordHash = (x: number, y: number): string => `${x.toFixed(6)}_${y.toFixed(6)}`;
     
-    return baseNodes.filter((node: GraphNode) => {
+    return displayNodes.filter((node: GraphNode) => {
       const hash = coordHash(node.x, node.y);
       return graphData.followerHashes.has(hash);
     });
-  }, [baseNodes, graphData.followerHashes]);
+  }, [displayNodes, graphData.followerHashes]);
 
   // Header height ~40px, Footer height varies by screen size
   // Mobile: ~40px (compact footer), Desktop: ~84px (full footer + EmbeddingAtlas status bar)
