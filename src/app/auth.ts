@@ -203,6 +203,7 @@ export const { auth, signIn, signOut, handlers } = NextAuth(async req => {
         issuer?: string;
         clientId?: string;
         clientSecret?: string;
+        client?: { token_endpoint_auth_method?: string };
         authorization?: string | { url: string; params?: Record<string, any> };
         token?: string | { url: string };
         userinfo?: string | { url: string };
@@ -210,6 +211,10 @@ export const { auth, signIn, signOut, handlers } = NextAuth(async req => {
       oauthProv.issuer = issuer;
       oauthProv.clientId = res.client_id;
       oauthProv.clientSecret = res.client_secret;
+      oauthProv.client = {
+        ...(oauthProv.client ?? {}),
+        token_endpoint_auth_method: 'client_secret_post',
+      };
       const authParams = new URLSearchParams({
         scope: "read write:follows write:statuses write:media",
         force_login: "true",
@@ -223,7 +228,8 @@ export const { auth, signIn, signOut, handlers } = NextAuth(async req => {
         undefined, 
         { 
           instance,
-          authorization: oauthProv.authorization
+          authorization: oauthProv.authorization,
+          tokenEndpointAuthMethod: oauthProv.client?.token_endpoint_auth_method
         }
       );
     } else if (mastodonError) {
@@ -244,6 +250,7 @@ export const { auth, signIn, signOut, handlers } = NextAuth(async req => {
   }
   return authConfig;
 });
+
 
 // Type guards
 export function isTwitterProfile(profile: any): profile is TwitterData {
